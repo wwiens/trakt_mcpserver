@@ -358,4 +358,130 @@ This code will expire in {minutes} minutes. I'll wait for your confirmation that
             
             result += "\n"
             
-        return result 
+        return result
+        
+    @staticmethod
+    def format_user_watched_movies(movies: List[Dict]) -> str:
+        """Format user watched movies data for MCP resource."""
+        result = "# Your Watched Movies on Trakt\n\n"
+        
+        if not movies:
+            return result + "You haven't watched any movies yet, or you need to authenticate first."
+        
+        for item in movies:
+            movie = item.get("movie", {})
+            last_watched = item.get("last_watched_at", "Unknown")
+            plays = item.get("plays", 0)
+            
+            title = movie.get("title", "Unknown")
+            year = movie.get("year", "")
+            year_str = f" ({year})" if year else ""
+            
+            result += f"- **{title}{year_str}** - Watched: {last_watched}, Plays: {plays}\n"
+            
+            if overview := movie.get("overview"):
+                result += f"  {overview}\n"
+            
+            result += "\n"
+            
+        return result
+        
+    @staticmethod
+    def format_checkin_response(response: Dict) -> str:
+        """Format the checkin response from Trakt API.
+        
+        Args:
+            response: The checkin response data
+            
+        Returns:
+            Formatted response message
+        """
+        try:
+            # Extract show and episode info
+            show = response.get("show", {})
+            episode = response.get("episode", {})
+            
+            show_title = show.get("title", "Unknown show")
+            episode_title = episode.get("title", "Unknown episode")
+            season = episode.get("season", 0)
+            number = episode.get("number", 0)
+            
+            # Format the success message
+            message = f"# Successfully Checked In\n\n"
+            message += f"You are now checked in to **{show_title}** - S{season:02d}E{number:02d}: {episode_title}\n\n"
+            
+            # Add watched_at time if available
+            if watched_at := response.get("watched_at"):
+                # Try to format the timestamp for better readability
+                try:
+                    # Format the timestamp (removing the 'Z' and truncating milliseconds)
+                    watched_time = watched_at.replace('Z', '').split('.')[0].replace('T', ' ')
+                    message += f"Watched at: {watched_time} UTC\n\n"
+                except:
+                    message += f"Watched at: {watched_at}\n\n"
+            
+            # Add sharing info if available
+            if sharing := response.get("sharing", {}):
+                platforms = []
+                for platform, shared in sharing.items():
+                    if shared:
+                        platforms.append(platform.capitalize())
+                
+                if platforms:
+                    message += f"Shared on: {', '.join(platforms)}\n\n"
+            
+            # Add checkin ID if available
+            if checkin_id := response.get("id"):
+                message += f"Checkin ID: {checkin_id}\n"
+                
+            return message
+            
+        except Exception as e:
+            # Fallback for any parsing errors
+            return f"Successfully checked in to the show.\n\nDetails: {str(response)}"
+            
+    @staticmethod
+    def format_show_search_results(results: List[Dict]) -> str:
+        """Format show search results from Trakt API.
+        
+        Args:
+            results: The search results data
+            
+        Returns:
+            Formatted search results message
+        """
+        if not results:
+            return "# Show Search Results\n\nNo shows found matching your query."
+        
+        message = "# Show Search Results\n\n"
+        message += "Here are the shows matching your search query:\n\n"
+        
+        for index, item in enumerate(results, 1):
+            show = item.get("show", {})
+            
+            # Extract show details
+            title = show.get("title", "Unknown show")
+            year = show.get("year", "")
+            year_str = f" ({year})" if year else ""
+            
+            # Extract IDs
+            ids = show.get("ids", {})
+            trakt_id = ids.get("trakt", "unknown")
+            
+            # Format the result entry with the Trakt ID included for easy reference
+            message += f"**{index}. {title}{year_str}** (ID: {trakt_id})\n"
+            
+            # Add overview if available
+            if overview := show.get("overview"):
+                # Truncate long overviews
+                if len(overview) > 200:
+                    overview = overview[:197] + "..."
+                message += f"  {overview}\n"
+            
+            # Add a note about using this ID for check-ins
+            message += f"  *Use this ID for check-ins: `{trakt_id}`*\n\n"
+        
+        # Add a tip for using the search results
+        message += "\nTo check in to a show, use the `checkin_to_show` tool with the show ID, season number, and episode number."
+        
+        return message 

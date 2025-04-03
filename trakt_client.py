@@ -308,4 +308,108 @@ class TraktClient:
         if os.path.exists(AUTH_TOKEN_FILE):
             os.remove(AUTH_TOKEN_FILE)
             
-        return True 
+        return True
+        
+    @handle_api_errors
+    async def get_user_watched_movies(self) -> List[Dict[str, Any]]:
+        """Get movies watched by the authenticated user.
+        
+        Returns:
+            List of movies watched by the user
+        """
+        if not self.is_authenticated():
+            return []
+        
+        return await self._make_request(TRAKT_ENDPOINTS["user_watched_movies"])
+        
+    @handle_api_errors
+    async def checkin_to_show(self, episode_season: int, episode_number: int, show_id: str = None, 
+                            show_title: str = None, show_year: int = None, message: str = "", 
+                            share_twitter: bool = False, share_mastodon: bool = False, share_tumblr: bool = False) -> Dict[str, Any]:
+        """Check in to a show episode the user is currently watching.
+        
+        Args:
+            episode_season: Season number
+            episode_number: Episode number
+            show_id: Trakt ID for the show (optional if show_title is provided)
+            show_title: Title of the show (optional if show_id is provided)
+            show_year: Year the show was released (optional, used with show_title)
+            message: Optional message to include with the checkin
+            share_twitter: Whether to share on Twitter
+            share_mastodon: Whether to share on Mastodon
+            share_tumblr: Whether to share on Tumblr
+            
+        Returns:
+            The checkin response from Trakt
+            
+        Raises:
+            ValueError: If the user is not authenticated or if insufficient show information is provided
+        """
+        if not self.is_authenticated():
+            raise ValueError("You must be authenticated to check in to a show")
+        
+        if not show_id and not show_title:
+            raise ValueError("Either show_id or show_title must be provided")
+        
+        # Prepare show data
+        show_data = {"ids": {}} if not show_title else {"title": show_title}
+        
+        # Add show ID if provided
+        if show_id:
+            show_data["ids"]["trakt"] = show_id
+            
+        # Add year if provided
+        if show_year:
+            show_data["year"] = show_year
+        
+        # Prepare episode data
+        episode_data = {
+            "season": episode_season,
+            "number": episode_number
+        }
+        
+        # Prepare sharing data if any sharing options are enabled
+        if share_twitter or share_mastodon or share_tumblr:
+            sharing_data = {
+                "twitter": share_twitter,
+                "mastodon": share_mastodon,
+                "tumblr": share_tumblr
+            }
+        else:
+            sharing_data = None
+        
+        # Prepare checkin data
+        data = {
+            "episode": episode_data,
+            "show": show_data
+        }
+        
+        # Add optional fields if provided
+        if message:
+            data["message"] = message
+            
+        if sharing_data:
+            data["sharing"] = sharing_data
+            
+        # Make the checkin request    
+        return await self._post_request(TRAKT_ENDPOINTS["checkin"], data)
+        
+    @handle_api_errors
+    async def search_shows(self, query: str, limit: int = DEFAULT_LIMIT) -> List[Dict[str, Any]]:
+        """Search for shows on Trakt.
+        
+        Args:
+            query: Search query string
+            limit: Maximum number of results to return
+            
+        Returns:
+            List of show search results
+        """
+        # Construct search endpoint with 'show' type filter
+        search_endpoint = f"{TRAKT_ENDPOINTS['search']}/show"
+        
+        # Make the search request
+        return await self._make_request(search_endpoint, params={
+            "query": query,
+            "limit": limit
+        }) 

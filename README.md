@@ -58,12 +58,30 @@ This entire project was developed using [Cursor](https://cursor.sh/), a code edi
 
 ## ✨ Features
 
+### 🌎 Public Trakt Data
+- Access trending and popular shows and movies
+- Discover the most favorited, played, and watched content
+- Get real-time data from Trakt's global community
+- Formatted responses with titles, years, and popularity metrics
+
+### 👤 Personal Trakt Data
+- **View Your Watched Shows**: Get a complete list of shows you've personally watched
+- See your exact last-watched dates for each series
+- Track how many times you've watched each show
+- **Check in to shows** you're currently watching to mark them as watched
+  - By show ID (more precise) or show title (more convenient)
+  - Share check-ins to Twitter, Mastodon, or Tumblr
+  - Include custom messages with your check-ins
+  - See when you watched the episode in human-readable format
+- **Search for shows** to find their details and IDs
+- Secure authentication with Trakt through device code flow
+- Personal data is fetched directly from your Trakt account
+
+### 🔄 General Features
 - Exposes Trakt API data through MCP resources
-- Provides tools for fetching real-time movies and shows information
+- Provides tools for fetching real-time entertainment information
 - Enables AI models to offer personalized entertainment recommendations
-- Updates regularly with the latest data from Trakt.tv
-- **User Authentication** for accessing personal viewing history
-- Access to your personally watched shows with play counts and last watch dates
+- Simple authentication and logout process
 
 ### 📺 Currently Trending Shows
 
@@ -104,6 +122,7 @@ The hottest movies right now:
 |----------|-------------|--------------|
 | `trakt://user/auth/status` | Current authentication status | Authentication status, token expiry |
 | `trakt://user/watched/shows` | Shows watched by the authenticated user | Show title, year, last watched date, play count |
+| `trakt://user/watched/movies` | Movies watched by the authenticated user | Movie title, year, last watched date, play count |
 
 ## 🛠️ Available Tools
 
@@ -123,6 +142,9 @@ fetch_played_shows(limit=10, period="weekly")
 
 # Get most watched shows with optional limit and period parameters
 fetch_watched_shows(limit=10, period="weekly")
+
+# Search for shows by title to get show IDs and details
+search_shows(query="Breaking Bad", limit=5)
 ```
 
 ### Movie Tools
@@ -156,6 +178,35 @@ clear_auth()
 
 # Fetch shows watched by the authenticated user
 fetch_user_watched_shows(limit=0)  # 0 for all shows
+
+# Fetch movies watched by the authenticated user
+fetch_user_watched_movies(limit=0)  # 0 for all movies
+```
+
+### Check-in Tools
+```python
+# Method 1: Check in using show ID (recommended when precision is important)
+# First use search_shows to find the correct show ID
+search_shows(query="Breaking Bad", limit=5)
+# Then use the ID for check-in
+checkin_to_show(
+    season=1, 
+    episode=3, 
+    show_id="1388",
+    message="Loving this show!"
+)
+
+# Method 2: Check in using show title (more convenient)
+checkin_to_show(
+    season=1, 
+    episode=1,
+    show_title="Breaking Bad", 
+    show_year=2008,  # Optional but helps with accuracy
+    message="I'm the one who knocks!",
+    share_twitter=True,
+    share_mastodon=False,
+    share_tumblr=False
+)
 ```
 
 ## 🔐 Authentication
@@ -219,6 +270,11 @@ Once installed, you can ask Claude questions like:
 - "What are the most watched shows of the month?"
 - "Show me the shows I've watched" (requires authentication)
 - "What was the last show I watched?" (requires authentication)
+- "Show me the movies I've watched" (requires authentication)
+- "What was the last movie I watched?" (requires authentication)
+- "Search for shows like 'Breaking Bad'"
+- "Check me in to Season 2 Episode 5 of Breaking Bad" (uses title)
+- "Check me in to Season 1 Episode 3 of show ID 1388 and share it on Twitter" (uses ID)
 
 Claude will use this MCP server to provide you with real-time data from Trakt.
 
@@ -226,21 +282,23 @@ Claude will use this MCP server to provide you with real-time data from Trakt.
 
 With authentication, you can access:
 
-- Your complete watched show history
-- Last watched dates for each show
-- Number of times you've watched each show
+- Your complete watched show and movie history
+- Last watched dates for each show and movie
+- Number of times you've watched each show and movie
+- Check in to shows you're currently watching and track your progress
 - Personal viewing statistics
+- Share your viewing activity on social media platforms
 
 All data is fetched directly from your Trakt account in real-time.
 
 ## 🔮 Future Development
 
 - Extending user authentication to access more personal data
-- Adding personal movie history
-- Implementing show and movie search capabilities
 - Adding calendar events for upcoming episodes
 - Supporting scrobbling (tracking what you're watching)
 - Implementing recommendations based on watch history
+- Extending search to include movies in addition to shows
+- Adding support for more social media platforms for sharing
 
 ## 📄 License
 

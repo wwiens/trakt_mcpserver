@@ -52,6 +52,23 @@ async def get_user_watched_shows() -> str:
     return FormatHelper.format_user_watched_shows(shows)
 
 
+@mcp.resource(MCP_RESOURCES["user_watched_movies"])
+async def get_user_watched_movies() -> str:
+    """Returns movies that the authenticated user has watched.
+    Requires authentication with Trakt.
+    
+    Returns:
+        Formatted markdown text with user's watched movies
+    """
+    client = TraktClient()
+    
+    if not client.is_authenticated():
+        return "# Authentication Required\n\nYou need to authenticate with Trakt to view your watched movies.\nUse the `start_device_auth` tool to begin authentication."
+    
+    movies = await client.get_user_watched_movies()
+    return FormatHelper.format_user_watched_movies(movies)
+
+
 # Authentication Tools
 @mcp.tool(name=TOOL_NAMES["start_device_auth"])
 async def start_device_auth() -> str:
@@ -105,7 +122,7 @@ async def check_auth_status() -> str:
     if client.is_authenticated():
         return """# Authentication Successful!
 
-You are now authenticated with Trakt. You can access your personal data using tools like `fetch_user_watched_shows`.
+You are now authenticated with Trakt. You can access your personal data using tools like `fetch_user_watched_shows` and `fetch_user_watched_movies`.
 
 If you want to log out at any point, you can use the `clear_auth` tool."""
     
@@ -135,7 +152,7 @@ If you want to log out at any point, you can use the `clear_auth` tool."""
         active_auth_flow = {}
         return """# Authentication Successful!
 
-You have successfully authorized the Trakt MCP application. You can now access your personal Trakt data using tools like `fetch_user_watched_shows`.
+You have successfully authorized the Trakt MCP application. You can now access your personal Trakt data using tools like `fetch_user_watched_shows` and `fetch_user_watched_movies`.
 
 If you want to log out at any point, you can use the `clear_auth` tool."""
     else:
@@ -199,6 +216,129 @@ After you've completed the authorization process on the Trakt website, please te
         shows = shows[:limit]
     
     return FormatHelper.format_user_watched_shows(shows)
+
+
+@mcp.tool(name=TOOL_NAMES["fetch_user_watched_movies"])
+async def fetch_user_watched_movies(limit: int = 0) -> str:
+    """Fetch movies watched by the authenticated user from Trakt.
+    
+    Args:
+        limit: Maximum number of movies to return (0 for all)
+        
+    Returns:
+        Information about user's watched movies
+    """
+    client = TraktClient()
+    
+    if not client.is_authenticated():
+        # Start the auth flow automatically
+        auth_instructions = await start_device_auth()
+        return f"""Authentication required to access your watched movies.
+
+{auth_instructions}
+
+After you've completed the authorization process on the Trakt website, please tell me "I've completed the authorization" so I can check if it was successful and retrieve your watched movies."""
+    
+    movies = await client.get_user_watched_movies()
+    
+    # Apply limit if requested
+    if limit > 0 and len(movies) > limit:
+        movies = movies[:limit]
+    
+    return FormatHelper.format_user_watched_movies(movies)
+
+
+@mcp.tool(name=TOOL_NAMES["search_shows"])
+async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
+    """Search for shows on Trakt by title.
+    
+    Args:
+        query: Search query string
+        limit: Maximum number of results to return
+        
+    Returns:
+        Formatted search results
+    """
+    client = TraktClient()
+    
+    # Perform the search
+    results = await client.search_shows(query, limit)
+    
+    # Format and return the results
+    return FormatHelper.format_show_search_results(results)
+
+
+@mcp.tool(name=TOOL_NAMES["checkin_to_show"])
+async def checkin_to_show(season: int, episode: int, show_id: str = None, show_title: str = None, 
+                         show_year: int = None, message: str = "", share_twitter: bool = False, 
+                         share_mastodon: bool = False, share_tumblr: bool = False) -> str:
+    """Check in to a show episode that the user is currently watching.
+    
+    This will mark the episode as watched on Trakt and can optionally share to connected social media.
+    First use the search_shows tool to find the correct show_id before checking in, or provide the show title.
+    
+    Args:
+        season: Season number
+        episode: Episode number
+        show_id: Trakt ID for the show (use search_shows to find this, optional if show_title is provided)
+        show_title: Title of the show (optional if show_id is provided)
+        show_year: Year the show was released (optional, can help with ambiguous titles)
+        message: Optional message to include with the checkin
+        share_twitter: Whether to share this checkin on Twitter
+        share_mastodon: Whether to share this checkin on Mastodon
+        share_tumblr: Whether to share this checkin on Tumblr
+        
+    Returns:
+        Confirmation of the checkin
+    """
+    client = TraktClient()
+    
+    if not client.is_authenticated():
+        # Start the auth flow automatically
+        auth_instructions = await start_device_auth()
+        return f"""Authentication required to check in to a show.
+
+{auth_instructions}
+
+After you've completed the authorization process on the Trakt website, please tell me "I've completed the authorization" so I can check if it was successful and check you in to the show."""
+    
+    # Validate that either show_id or show_title is provided
+    if not show_id and not show_title:
+        return "Error: You must provide either a show_id or a show_title. Use the search_shows tool to find the correct show ID."
+    
+    try:
+        # Attempt to check in to the show
+        response = await client.checkin_to_show(
+            episode_season=season, 
+            episode_number=episode, 
+            show_id=show_id, 
+            show_title=show_title,
+            show_year=show_year,
+            message=message,
+            share_twitter=share_twitter,
+            share_mastodon=share_mastodon,
+            share_tumblr=share_tumblr
+        )
+        
+        # Format the response
+        return FormatHelper.format_checkin_response(response)
+    except ValueError as e:
+        # Handle authentication errors
+        return f"Error: {str(e)}"
+    except Exception as e:
+        # Handle other errors
+        logger.error(f"Error checking in to show: {e}")
+        return f"""An error occurred while checking in to the show: {str(e)}
+
+Make sure you provided either:
+1. A valid show ID (use search_shows to find it)
+   Example: `search_shows(query="Breaking Bad")`
+   
+OR
+
+2. A show title (and optionally the year)
+   Example: `checkin_to_show(show_title="Breaking Bad", show_year=2008, season=1, episode=1)`"""
+
 
 # Show Resources
 @mcp.resource(MCP_RESOURCES["shows_trending"])

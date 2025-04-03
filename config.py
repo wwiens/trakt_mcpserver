@@ -21,6 +21,11 @@ TRAKT_ENDPOINTS = {
     
     # User-specific endpoints
     "user_watched_shows": "/sync/watched/shows",
+    "user_watched_movies": "/sync/watched/movies",
+    "checkin": "/checkin",
+    
+    # Search endpoints
+    "search": "/search",
 }
 
 # MCP resource URIs
@@ -41,6 +46,7 @@ MCP_RESOURCES = {
     # User resources
     "user_auth_status": "trakt://user/auth/status",
     "user_watched_shows": "trakt://user/watched/shows",
+    "user_watched_movies": "trakt://user/watched/movies",
 }
 
 # Default limits for API requests
@@ -73,4 +79,7 @@ TOOL_NAMES = {
     
     # User-specific tools
     "fetch_user_watched_shows": "fetch_user_watched_shows",
+    "fetch_user_watched_movies": "fetch_user_watched_movies",
+    "checkin_to_show": "checkin_to_show",
+    "search_shows": "search_shows",
 } 
