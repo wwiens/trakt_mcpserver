@@ -81,11 +81,15 @@ async def start_device_auth() -> str:
     logger.info(f"Started device auth flow: {active_auth_flow}")
     
     # Return instructions for the user
-    return FormatHelper.format_device_auth_instructions(
+    instructions = FormatHelper.format_device_auth_instructions(
         device_code_response.user_code,
         AUTH_VERIFICATION_URL,
         device_code_response.expires_in
     )
+    
+    return f"""{instructions}
+
+I won't automatically check your authentication status until you tell me you've completed the authorization. Once you've finished the authorization process on the Trakt website, simply tell me "I've completed the authorization" and I'll verify it for you."""
 
 
 @mcp.tool(name=TOOL_NAMES["check_auth_status"])
@@ -99,7 +103,11 @@ async def check_auth_status() -> str:
     
     # Check if already authenticated
     if client.is_authenticated():
-        return "You are authenticated with Trakt."
+        return """# Authentication Successful!
+
+You are now authenticated with Trakt. You can access your personal data using tools like `fetch_user_watched_shows`.
+
+If you want to log out at any point, you can use the `clear_auth` tool."""
     
     # Check if there's an active flow
     global active_auth_flow
@@ -125,10 +133,42 @@ async def check_auth_status() -> str:
     if token:
         # Authentication successful
         active_auth_flow = {}
-        return "Authentication successful! You can now access your personal Trakt data."
+        return """# Authentication Successful!
+
+You have successfully authorized the Trakt MCP application. You can now access your personal Trakt data using tools like `fetch_user_watched_shows`.
+
+If you want to log out at any point, you can use the `clear_auth` tool."""
     else:
         # Still waiting for user to authorize
-        return "Waiting for authorization... Please complete the steps provided earlier."
+        return """# Authorization Pending
+
+I don't see that you've completed the authorization yet. Please make sure to:
+
+1. Visit the Trakt activation page
+2. Enter your code
+3. Approve the authorization request
+
+If you've already done this and are still seeing this message, please wait a few seconds and try again by telling me "Please check my authorization status"."""
+
+
+@mcp.tool(name=TOOL_NAMES["clear_auth"])
+async def clear_auth() -> str:
+    """Clear the authentication token, effectively logging the user out of Trakt.
+    
+    Returns:
+        Status message about the logout
+    """
+    client = TraktClient()
+    
+    # Clear any active authentication flow
+    global active_auth_flow
+    active_auth_flow = {}
+    
+    # Try to clear the token
+    if client.clear_auth_token():
+        return "You have been successfully logged out of Trakt. Your authentication token has been cleared."
+    else:
+        return "You were not authenticated with Trakt."
 
 
 @mcp.tool(name=TOOL_NAMES["fetch_user_watched_shows"])
@@ -146,7 +186,11 @@ async def fetch_user_watched_shows(limit: int = 0) -> str:
     if not client.is_authenticated():
         # Start the auth flow automatically
         auth_instructions = await start_device_auth()
-        return f"Authentication required to access your watched shows.\n\n{auth_instructions}"
+        return f"""Authentication required to access your watched shows.
+
+{auth_instructions}
+
+After you've completed the authorization process on the Trakt website, please tell me "I've completed the authorization" so I can check if it was successful and retrieve your watched shows."""
     
     shows = await client.get_user_watched_shows()
     

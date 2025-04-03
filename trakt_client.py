@@ -286,4 +286,26 @@ class TraktClient:
         Returns:
             List of most watched movies data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["movies_watched"], params={"limit": limit, "period": period}) 
+        return await self._make_request(TRAKT_ENDPOINTS["movies_watched"], params={"limit": limit, "period": period})
+    
+    def clear_auth_token(self) -> bool:
+        """Clear the authentication token.
+        
+        Returns:
+            True if token was cleared, False if there was no token
+        """
+        if not self.auth_token:
+            return False
+            
+        # Remove authorization header
+        if "Authorization" in self.headers:
+            del self.headers["Authorization"]
+            
+        # Clear token object
+        self.auth_token = None
+        
+        # Remove saved token file
+        if os.path.exists(AUTH_TOKEN_FILE):
+            os.remove(AUTH_TOKEN_FILE)
+            
+        return True 

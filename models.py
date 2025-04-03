@@ -328,8 +328,10 @@ To access your personal Trakt data, you need to authenticate with Trakt.
 
 1. Visit: **{verification_url}**
 2. Enter code: **{user_code}**
+3. Complete the authorization process on the Trakt website
+4. **Important**: After authorizing on the Trakt website, please tell me "I've completed the authorization" so I can check your authentication status.
 
-This code will expire in {minutes} minutes. Once you have authorized the application, your request will continue automatically.
+This code will expire in {minutes} minutes. I'll wait for your confirmation that you've completed the authorization step before checking.
 """
     
     @staticmethod

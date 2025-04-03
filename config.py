@@ -69,6 +69,7 @@ TOOL_NAMES = {
     # User authentication tools
     "start_device_auth": "start_device_auth",
     "check_auth_status": "check_auth_status",
+    "clear_auth": "clear_auth",
     
     # User-specific tools
     "fetch_user_watched_shows": "fetch_user_watched_shows",
