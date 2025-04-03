@@ -1,13 +1,14 @@
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import logging
 import json
+import time
 
 from mcp.server.fastmcp import Context, FastMCP
 
 from trakt_client import TraktClient
-from models import FormatHelper
-from config import MCP_RESOURCES, DEFAULT_LIMIT, TOOL_NAMES
+from models import FormatHelper, TraktDeviceCode
+from config import MCP_RESOURCES, DEFAULT_LIMIT, TOOL_NAMES, AUTH_POLL_INTERVAL, AUTH_VERIFICATION_URL
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -15,6 +16,145 @@ logger = logging.getLogger("trakt_mcp")
 
 # Create a named server
 mcp = FastMCP("Trakt MCP")
+
+# Authentication storage for active device code flows
+active_auth_flow = {}
+
+# Authentication Resources
+@mcp.resource(MCP_RESOURCES["user_auth_status"])
+async def get_auth_status() -> str:
+    """Returns the current authentication status with Trakt.
+    
+    Returns:
+        Formatted markdown text with authentication status
+    """
+    client = TraktClient()
+    is_authenticated = client.is_authenticated()
+    expires_at = client.get_token_expiry() if is_authenticated else None
+    return FormatHelper.format_auth_status(is_authenticated, expires_at)
+
+
+# User Resources
+@mcp.resource(MCP_RESOURCES["user_watched_shows"])
+async def get_user_watched_shows() -> str:
+    """Returns shows that the authenticated user has watched.
+    Requires authentication with Trakt.
+    
+    Returns:
+        Formatted markdown text with user's watched shows
+    """
+    client = TraktClient()
+    
+    if not client.is_authenticated():
+        return "# Authentication Required\n\nYou need to authenticate with Trakt to view your watched shows.\nUse the `start_device_auth` tool to begin authentication."
+    
+    shows = await client.get_user_watched_shows()
+    return FormatHelper.format_user_watched_shows(shows)
+
+
+# Authentication Tools
+@mcp.tool(name=TOOL_NAMES["start_device_auth"])
+async def start_device_auth() -> str:
+    """Start the device authentication flow with Trakt.
+    
+    Returns:
+        Authentication instructions for the user
+    """
+    client = TraktClient()
+    
+    # Check if already authenticated
+    if client.is_authenticated():
+        return "You are already authenticated with Trakt."
+    
+    # Get device code
+    device_code_response = await client.get_device_code()
+    
+    # Store active auth flow
+    global active_auth_flow
+    active_auth_flow = {
+        "device_code": device_code_response.device_code,
+        "expires_at": int(time.time()) + device_code_response.expires_in,
+        "interval": device_code_response.interval,
+        "last_poll": 0
+    }
+    
+    logger.info(f"Started device auth flow: {active_auth_flow}")
+    
+    # Return instructions for the user
+    return FormatHelper.format_device_auth_instructions(
+        device_code_response.user_code,
+        AUTH_VERIFICATION_URL,
+        device_code_response.expires_in
+    )
+
+
+@mcp.tool(name=TOOL_NAMES["check_auth_status"])
+async def check_auth_status() -> str:
+    """Check the status of an ongoing device authentication flow.
+    
+    Returns:
+        Status of the authentication process
+    """
+    client = TraktClient()
+    
+    # Check if already authenticated
+    if client.is_authenticated():
+        return "You are authenticated with Trakt."
+    
+    # Check if there's an active flow
+    global active_auth_flow
+    if not active_auth_flow or "device_code" not in active_auth_flow:
+        return "No active authentication flow. Use the `start_device_auth` tool to begin authentication."
+    
+    # Check if flow is expired
+    current_time = int(time.time())
+    if current_time > active_auth_flow["expires_at"]:
+        active_auth_flow = {}
+        return "Authentication flow expired. Please start a new one with the `start_device_auth` tool."
+    
+    # Check if it's too early to poll again
+    if current_time - active_auth_flow["last_poll"] < active_auth_flow["interval"]:
+        seconds_to_wait = active_auth_flow["interval"] - (current_time - active_auth_flow["last_poll"])
+        return f"Please wait {seconds_to_wait} seconds before checking again."
+    
+    # Update last poll time
+    active_auth_flow["last_poll"] = current_time
+    
+    # Try to get token
+    token = await client.get_device_token(active_auth_flow["device_code"])
+    if token:
+        # Authentication successful
+        active_auth_flow = {}
+        return "Authentication successful! You can now access your personal Trakt data."
+    else:
+        # Still waiting for user to authorize
+        return "Waiting for authorization... Please complete the steps provided earlier."
+
+
+@mcp.tool(name=TOOL_NAMES["fetch_user_watched_shows"])
+async def fetch_user_watched_shows(limit: int = 0) -> str:
+    """Fetch shows watched by the authenticated user from Trakt.
+    
+    Args:
+        limit: Maximum number of shows to return (0 for all)
+        
+    Returns:
+        Information about user's watched shows
+    """
+    client = TraktClient()
+    
+    if not client.is_authenticated():
+        # Start the auth flow automatically
+        auth_instructions = await start_device_auth()
+        return f"Authentication required to access your watched shows.\n\n{auth_instructions}"
+    
+    shows = await client.get_user_watched_shows()
+    
+    # Apply limit if requested
+    if limit > 0 and len(shows) > limit:
+        shows = shows[:limit]
+    
+    return FormatHelper.format_user_watched_shows(shows)
 
 # Show Resources
 @mcp.resource(MCP_RESOURCES["shows_trending"])

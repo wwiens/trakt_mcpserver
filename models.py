@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
+import json
 
 
 class TraktShow(BaseModel):
@@ -48,6 +49,43 @@ class TraktPopularMovie(BaseModel):
     def from_api_response(cls, api_data: Dict) -> "TraktPopularMovie":
         """Create a TraktPopularMovie instance from raw API data."""
         return cls(movie=TraktMovie(**api_data))
+
+
+class TraktDeviceCode(BaseModel):
+    """Response from Trakt for device code authentication."""
+    device_code: str
+    user_code: str
+    verification_url: str
+    expires_in: int
+    interval: int
+
+
+class TraktAuthToken(BaseModel):
+    """Authentication token response from Trakt."""
+    access_token: str
+    refresh_token: str
+    expires_in: int
+    created_at: int
+    scope: str = "public"
+    token_type: str = "bearer"
+
+
+class TraktEpisode(BaseModel):
+    """Represents a Trakt episode."""
+    season: int
+    number: int
+    title: Optional[str] = None
+    ids: Optional[Dict[str, str]] = None
+    last_watched_at: Optional[str] = None
+
+
+class TraktUserShow(BaseModel):
+    """Represents a show watched by a user."""
+    show: TraktShow
+    last_watched_at: str
+    last_updated_at: str
+    seasons: Optional[List[Dict]] = None
+    plays: int
 
 
 class FormatHelper:
@@ -266,6 +304,54 @@ class FormatHelper:
             result += f"- **{title}{year_str}** - Watched by {watcher_count} users\n"
             
             if overview := movie.get("overview"):
+                result += f"  {overview}\n"
+            
+            result += "\n"
+            
+        return result
+    
+    @staticmethod
+    def format_auth_status(is_authenticated: bool, expires_at: Optional[int] = None) -> str:
+        """Format authentication status for MCP resource."""
+        if is_authenticated:
+            return f"# Authentication Status\n\nYou are authenticated with Trakt.\nToken expires at: {expires_at}"
+        else:
+            return "# Authentication Status\n\nYou are not authenticated with Trakt.\nUse the `start_device_auth` tool to authenticate."
+    
+    @staticmethod
+    def format_device_auth_instructions(user_code: str, verification_url: str, expires_in: int) -> str:
+        """Format device authentication instructions."""
+        minutes = int(expires_in / 60)
+        return f"""# Trakt Authentication Required
+
+To access your personal Trakt data, you need to authenticate with Trakt.
+
+1. Visit: **{verification_url}**
+2. Enter code: **{user_code}**
+
+This code will expire in {minutes} minutes. Once you have authorized the application, your request will continue automatically.
+"""
+    
+    @staticmethod
+    def format_user_watched_shows(shows: List[Dict]) -> str:
+        """Format user watched shows data for MCP resource."""
+        result = "# Your Watched Shows on Trakt\n\n"
+        
+        if not shows:
+            return result + "You haven't watched any shows yet, or you need to authenticate first."
+        
+        for item in shows:
+            show = item.get("show", {})
+            last_watched = item.get("last_watched_at", "Unknown")
+            plays = item.get("plays", 0)
+            
+            title = show.get("title", "Unknown")
+            year = show.get("year", "")
+            year_str = f" ({year})" if year else ""
+            
+            result += f"- **{title}{year_str}** - Watched: {last_watched}, Plays: {plays}\n"
+            
+            if overview := show.get("overview"):
                 result += f"  {overview}\n"
             
             result += "\n"

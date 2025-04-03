@@ -14,6 +14,13 @@ TRAKT_ENDPOINTS = {
     "movies_favorited": "/movies/favorited",
     "movies_played": "/movies/played",
     "movies_watched": "/movies/watched",
+    
+    # User authentication endpoints
+    "device_code": "/oauth/device/code",
+    "device_token": "/oauth/device/token",
+    
+    # User-specific endpoints
+    "user_watched_shows": "/sync/watched/shows",
 }
 
 # MCP resource URIs
@@ -30,10 +37,19 @@ MCP_RESOURCES = {
     "movies_favorited": "trakt://movies/favorited",
     "movies_played": "trakt://movies/played",
     "movies_watched": "trakt://movies/watched",
+    
+    # User resources
+    "user_auth_status": "trakt://user/auth/status",
+    "user_watched_shows": "trakt://user/watched/shows",
 }
 
 # Default limits for API requests
 DEFAULT_LIMIT = 10
+
+# Authentication settings
+AUTH_POLL_INTERVAL = 5  # seconds
+AUTH_EXPIRATION = 600  # seconds (10 minutes)
+AUTH_VERIFICATION_URL = "https://trakt.tv/activate"
 
 # Tool names
 TOOL_NAMES = {
@@ -49,4 +65,11 @@ TOOL_NAMES = {
     "fetch_favorited_movies": "fetch_favorited_movies",
     "fetch_played_movies": "fetch_played_movies",
     "fetch_watched_movies": "fetch_watched_movies",
+    
+    # User authentication tools
+    "start_device_auth": "start_device_auth",
+    "check_auth_status": "check_auth_status",
+    
+    # User-specific tools
+    "fetch_user_watched_shows": "fetch_user_watched_shows",
 } 
