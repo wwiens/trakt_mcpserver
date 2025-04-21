@@ -424,28 +424,35 @@ class TraktClient:
         })
         
     @handle_api_errors
-    async def get_movie_comments(self, movie_id: str, limit: int = DEFAULT_LIMIT, page: int = 1) -> List[Dict[str, Any]]:
-        """Get comments for a movie."""
+    async def get_movie_comments(self, movie_id: str, limit: int = DEFAULT_LIMIT, page: int = 1, sort: str = "newest") -> List[Dict[str, Any]]:
+        """Get comments for a movie.
+    
+        Args:
+            movie_id: Trakt ID of the movie
+            limit: Maximum number of comments to return
+            page: Page number for pagination
+            sort: How to sort comments (newest, oldest, likes, replies, highest, lowest, plays, watched)
+        """
         endpoint = TRAKT_ENDPOINTS["comments_movie"].replace(":id", movie_id)
-        return await self._make_request(endpoint, params={"limit": limit, "page": page})
+        return await self._make_request(endpoint, params={"limit": limit, "page": page, "sort": sort})
 
     @handle_api_errors
-    async def get_show_comments(self, show_id: str, limit: int = DEFAULT_LIMIT, page: int = 1) -> List[Dict[str, Any]]:
+    async def get_show_comments(self, show_id: str, limit: int = DEFAULT_LIMIT, page: int = 1, sort: str = "newest") -> List[Dict[str, Any]]:
         """Get comments for a show."""
         endpoint = TRAKT_ENDPOINTS["comments_show"].replace(":id", show_id)
-        return await self._make_request(endpoint, params={"limit": limit, "page": page})
+        return await self._make_request(endpoint, params={"limit": limit, "page": page, "sort": sort})
 
     @handle_api_errors
-    async def get_season_comments(self, show_id: str, season: int, limit: int = DEFAULT_LIMIT, page: int = 1) -> List[Dict[str, Any]]:
+    async def get_season_comments(self, show_id: str, season: int, limit: int = DEFAULT_LIMIT, page: int = 1, sort: str = "newest") -> List[Dict[str, Any]]:
         """Get comments for a season."""
         endpoint = TRAKT_ENDPOINTS["comments_season"].replace(":id", show_id).replace(":season", str(season))
-        return await self._make_request(endpoint, params={"limit": limit, "page": page})
+        return await self._make_request(endpoint, params={"limit": limit, "page": page, "sort": sort})
 
     @handle_api_errors
-    async def get_episode_comments(self, show_id: str, season: int, episode: int, limit: int = DEFAULT_LIMIT, page: int = 1) -> List[Dict[str, Any]]:
+    async def get_episode_comments(self, show_id: str, season: int, episode: int, limit: int = DEFAULT_LIMIT, page: int = 1, sort: str = "newest") -> List[Dict[str, Any]]:
         """Get comments for an episode."""
         endpoint = TRAKT_ENDPOINTS["comments_episode"].replace(":id", show_id).replace(":season", str(season)).replace(":episode", str(episode))
-        return await self._make_request(endpoint, params={"limit": limit, "page": page})
+        return await self._make_request(endpoint, params={"limit": limit, "page": page, "sort": sort})
 
     @handle_api_errors
     async def get_comment(self, comment_id: str) -> Dict[str, Any]:
@@ -454,10 +461,10 @@ class TraktClient:
         return await self._make_request(endpoint)
 
     @handle_api_errors
-    async def get_comment_replies(self, comment_id: str, limit: int = DEFAULT_LIMIT, page: int = 1) -> List[Dict[str, Any]]:
+    async def get_comment_replies(self, comment_id: str, limit: int = DEFAULT_LIMIT, page: int = 1, sort: str = "newest") -> List[Dict[str, Any]]:
         """Get replies for a comment."""
         endpoint = TRAKT_ENDPOINTS["comment_replies"].replace(":id", comment_id)
-        return await self._make_request(endpoint, params={"limit": limit, "page": page})
+        return await self._make_request(endpoint, params={"limit": limit, "page": page, "sort": sort})
 
     @handle_api_errors
     async def get_movie(self, movie_id: str) -> Dict[str, Any]:

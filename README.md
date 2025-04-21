@@ -232,23 +232,23 @@ checkin_to_show(
 
 ### Comment Tools
 ```python
-# Get comments for a movie
+# Get comments for a movie (sorted by newest by default)
 fetch_movie_comments(movie_id="123", limit=10, show_spoilers=False)
 
-# Get comments for a show
-fetch_show_comments(show_id="456", limit=10, show_spoilers=False)
+# Get comments for a show sorted by most likes
+fetch_show_comments(show_id="456", limit=10, show_spoilers=False, sort="likes")
 
-# Get comments for a specific season
-fetch_season_comments(show_id="456", season=1, limit=10, show_spoilers=False)
+# Get comments for a specific season sorted by highest rating
+fetch_season_comments(show_id="456", season=1, limit=10, show_spoilers=False, sort="highest")
 
-# Get comments for a specific episode
-fetch_episode_comments(show_id="456", season=1, episode=3, limit=10, show_spoilers=False)
+# Get comments for a specific episode sorted by most replies
+fetch_episode_comments(show_id="456", season=1, episode=3, limit=10, show_spoilers=False, sort="replies")
 
 # Get a specific comment
 fetch_comment(comment_id="789", show_spoilers=False)
 
-# Get a comment with its replies
-fetch_comment_replies(comment_id="789", limit=10, show_spoilers=False)
+# Get a comment with its replies sorted by oldest first
+fetch_comment_replies(comment_id="789", limit=10, show_spoilers=False, sort="oldest")
 ```
 
 ## 🔐 Authentication
@@ -324,6 +324,9 @@ Once installed, you can ask Claude questions like:
 - "Show me comment #12345 with its replies"
 - "Show me comments for Breaking Bad but include spoilers"
 - "Search for movies like 'The Godfather'"
+- "Show me the most liked comments for Breaking Bad" (uses sort="likes")
+- "Get the highest rated comments for The Godfather movie" (uses sort="highest")
+- "Show me the comments with most replies for Season 1 of Stranger Things" (uses sort="replies")
 
 Claude will use this MCP server to provide you with real-time data from Trakt.
 

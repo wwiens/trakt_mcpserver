@@ -97,7 +97,6 @@ TOOL_NAMES = {
     "fetch_user_watched_shows": "fetch_user_watched_shows",
     "fetch_user_watched_movies": "fetch_user_watched_movies",
     "checkin_to_show": "checkin_to_show",
-    "search_shows": "search_shows",
 
     # Comment tools
     "fetch_movie_comments": "fetch_movie_comments",
@@ -106,5 +105,8 @@ TOOL_NAMES = {
     "fetch_episode_comments": "fetch_episode_comments",
     "fetch_comment": "fetch_comment",
     "fetch_comment_replies": "fetch_comment_replies",
+
+    # Search tools
+    "search_shows": "search_shows",
     "search_movies": "search_movies",
 }

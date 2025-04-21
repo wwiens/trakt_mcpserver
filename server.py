@@ -638,13 +638,14 @@ async def fetch_watched_movies(limit: int = DEFAULT_LIMIT, period: str = "weekly
 
 
 @mcp.tool(name=TOOL_NAMES["fetch_movie_comments"])
-async def fetch_movie_comments(movie_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False) -> str:
+async def fetch_movie_comments(movie_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
     """Fetch comments for a movie from Trakt.
 
     Args:
         movie_id: Trakt ID of the movie
         limit: Maximum number of comments to return
         show_spoilers: Whether to show spoilers by default
+        sort: How to sort comments (newest, oldest, likes, replies, highest, lowest, plays, watched)
 
     Returns:
         Information about movie comments
@@ -657,17 +658,18 @@ async def fetch_movie_comments(movie_id: str, limit: int = DEFAULT_LIMIT, show_s
     except:
         title = f"Movie ID: {movie_id}"
 
-    comments = await client.get_movie_comments(movie_id, limit=limit)
+    comments = await client.get_movie_comments(movie_id, limit=limit, sort=sort)
     return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
 
 @mcp.tool(name=TOOL_NAMES["fetch_show_comments"])
-async def fetch_show_comments(show_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False) -> str:
+async def fetch_show_comments(show_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
     """Fetch comments for a show from Trakt.
 
     Args:
         show_id: Trakt ID of the show
         limit: Maximum number of comments to return
         show_spoilers: Whether to show spoilers by default
+        sort: How to sort comments (newest, oldest, likes, replies, highest, lowest, plays, watched)
 
     Returns:
         Information about show comments
@@ -680,11 +682,11 @@ async def fetch_show_comments(show_id: str, limit: int = DEFAULT_LIMIT, show_spo
     except:
         title = f"Show ID: {show_id}"
 
-    comments = await client.get_show_comments(show_id, limit=limit)
+    comments = await client.get_show_comments(show_id, limit=limit, sort=sort)
     return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
 
 @mcp.tool(name=TOOL_NAMES["fetch_season_comments"])
-async def fetch_season_comments(show_id: str, season: int, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False) -> str:
+async def fetch_season_comments(show_id: str, season: int, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
     """Fetch comments for a season from Trakt.
 
     Args:
@@ -692,6 +694,7 @@ async def fetch_season_comments(show_id: str, season: int, limit: int = DEFAULT_
         season: Season number
         limit: Maximum number of comments to return
         show_spoilers: Whether to show spoilers by default
+        sort: How to sort comments (newest, oldest, likes, replies, highest, lowest, plays, watched)
 
     Returns:
         Information about season comments
@@ -704,11 +707,11 @@ async def fetch_season_comments(show_id: str, season: int, limit: int = DEFAULT_
     except:
         title = f"Show ID: {show_id} - Season {season}"
 
-    comments = await client.get_season_comments(show_id, season, limit=limit)
+    comments = await client.get_season_comments(show_id, season, limit=limit, sort=sort)
     return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
 
 @mcp.tool(name=TOOL_NAMES["fetch_episode_comments"])
-async def fetch_episode_comments(show_id: str, season: int, episode: int, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False) -> str:
+async def fetch_episode_comments(show_id: str, season: int, episode: int, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
     """Fetch comments for an episode from Trakt.
 
     Args:
@@ -717,6 +720,7 @@ async def fetch_episode_comments(show_id: str, season: int, episode: int, limit:
         episode: Episode number
         limit: Maximum number of comments to return
         show_spoilers: Whether to show spoilers by default
+        sort: How to sort comments (newest, oldest, likes, replies, highest, lowest, plays, watched)
 
     Returns:
         Information about episode comments
@@ -729,7 +733,7 @@ async def fetch_episode_comments(show_id: str, season: int, episode: int, limit:
     except:
         title = f"Show ID: {show_id} - S{season:02d}E{episode:02d}"
 
-    comments = await client.get_episode_comments(show_id, season, episode, limit=limit)
+    comments = await client.get_episode_comments(show_id, season, episode, limit=limit, sort=sort)
     return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
 
 @mcp.tool(name=TOOL_NAMES["fetch_comment"])
@@ -748,20 +752,21 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
     return FormatHelper.format_comment(comment, show_spoilers=show_spoilers)
 
 @mcp.tool(name=TOOL_NAMES["fetch_comment_replies"])
-async def fetch_comment_replies(comment_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False) -> str:
+async def fetch_comment_replies(comment_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
     """Fetch replies for a comment from Trakt.
 
     Args:
         comment_id: Trakt ID of the comment
         limit: Maximum number of replies to return
         show_spoilers: Whether to show spoilers by default
+        sort: How to sort replies (newest, oldest, likes, replies, highest, lowest, plays, watched)
 
     Returns:
         Information about the comment and its replies
     """
     client = TraktClient()
     comment = await client.get_comment(comment_id)
-    replies = await client.get_comment_replies(comment_id, limit=limit)
+    replies = await client.get_comment_replies(comment_id, limit=limit, sort=sort)
     return FormatHelper.format_comment(comment, with_replies=True, replies=replies, show_spoilers=show_spoilers)
 
 
