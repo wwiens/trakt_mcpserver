@@ -77,6 +77,14 @@ This entire project was developed using [Cursor](https://cursor.sh/), a code edi
 - Secure authentication with Trakt through device code flow
 - Personal data is fetched directly from your Trakt account
 
+### 💬 Comments & Reviews
+- **View comments for shows and movies**: Read what others are saying about your favorite content
+- **See comments for specific seasons and episodes**: Get insights about particular parts of a show
+- **View individual comments and their replies**: Engage with the community's discussions
+- **Spoiler protection**: Comments with spoilers are hidden by default
+- **Toggle spoiler visibility**: Choose whether to show or hide spoilers
+- **View reviews**: Longer, more detailed comments are marked as reviews
+
 ### 🔄 General Features
 - Exposes Trakt API data through MCP resources
 - Provides tools for fetching real-time entertainment information
@@ -124,6 +132,16 @@ The hottest movies right now:
 | `trakt://user/watched/shows` | Shows watched by the authenticated user | Show title, year, last watched date, play count |
 | `trakt://user/watched/movies` | Movies watched by the authenticated user | Movie title, year, last watched date, play count |
 
+### Comment Resources
+| Resource | Description | Example Data |
+|----------|-------------|--------------|
+| `trakt://comments/movie/:id` | Comments for a specific movie | Comment text, author, date, likes |
+| `trakt://comments/show/:id` | Comments for a specific show | Comment text, author, date, likes |
+| `trakt://comments/show/:id/season/:season` | Comments for a specific season | Comment text, author, date, likes |
+| `trakt://comments/show/:id/season/:season/episode/:episode` | Comments for a specific episode | Comment text, author, date, likes |
+| `trakt://comments/:id` | A specific comment | Comment text, author, date, likes |
+| `trakt://comments/:id/replies` | Replies to a specific comment | Reply text, author, date |
+
 ## 🛠️ Available Tools
 
 ### Show Tools
@@ -145,6 +163,9 @@ fetch_watched_shows(limit=10, period="weekly")
 
 # Search for shows by title to get show IDs and details
 search_shows(query="Breaking Bad", limit=5)
+
+# Search for movies by title to get movie IDs and details
+search_movies(query="The Godfather", limit=5)
 ```
 
 ### Movie Tools
@@ -207,6 +228,27 @@ checkin_to_show(
     share_mastodon=False,
     share_tumblr=False
 )
+```
+
+### Comment Tools
+```python
+# Get comments for a movie (sorted by newest by default)
+fetch_movie_comments(movie_id="123", limit=10, show_spoilers=False)
+
+# Get comments for a show sorted by most likes
+fetch_show_comments(show_id="456", limit=10, show_spoilers=False, sort="likes")
+
+# Get comments for a specific season sorted by highest rating
+fetch_season_comments(show_id="456", season=1, limit=10, show_spoilers=False, sort="highest")
+
+# Get comments for a specific episode sorted by most replies
+fetch_episode_comments(show_id="456", season=1, episode=3, limit=10, show_spoilers=False, sort="replies")
+
+# Get a specific comment
+fetch_comment(comment_id="789", show_spoilers=False)
+
+# Get a comment with its replies sorted by oldest first
+fetch_comment_replies(comment_id="789", limit=10, show_spoilers=False, sort="oldest")
 ```
 
 ## 🔐 Authentication
@@ -275,6 +317,16 @@ Once installed, you can ask Claude questions like:
 - "Search for shows like 'Breaking Bad'"
 - "Check me in to Season 2 Episode 5 of Breaking Bad" (uses title)
 - "Check me in to Season 1 Episode 3 of show ID 1388 and share it on Twitter" (uses ID)
+- "Show me comments for Breaking Bad"
+- "What are people saying about The Godfather movie?"
+- "Show me comments for Season 1 of Stranger Things"
+- "Get comments for Season 2 Episode 5 of Game of Thrones"
+- "Show me comment #12345 with its replies"
+- "Show me comments for Breaking Bad but include spoilers"
+- "Search for movies like 'The Godfather'"
+- "Show me the most liked comments for Breaking Bad" (uses sort="likes")
+- "Get the highest rated comments for The Godfather movie" (uses sort="highest")
+- "Show me the comments with most replies for Season 1 of Stranger Things" (uses sort="replies")
 
 Claude will use this MCP server to provide you with real-time data from Trakt.
 
