@@ -34,6 +34,10 @@ TRAKT_ENDPOINTS = {
     "comments_episode": "/shows/:id/seasons/:season/episodes/:episode/comments/:sort",
     "comment": "/comments/:id",
     "comment_replies": "/comments/:id/replies/:sort",
+    
+    # Ratings endpoints
+    "show_ratings": "/shows/:id/ratings",
+    "movie_ratings": "/movies/:id/ratings",
 }
 
 # MCP resource URIs
@@ -63,6 +67,10 @@ MCP_RESOURCES = {
     "comments_episode": "trakt://comments/show/:id/season/:season/episode/:episode",
     "comment": "trakt://comments/:id",
     "comment_replies": "trakt://comments/:id/replies",
+    
+    # Ratings resources
+    "show_ratings": "trakt://shows/{show_id}/ratings",
+    "movie_ratings": "trakt://movies/{movie_id}/ratings",
 }
 
 # Default limits for API requests
@@ -105,6 +113,10 @@ TOOL_NAMES = {
     "fetch_episode_comments": "fetch_episode_comments",
     "fetch_comment": "fetch_comment",
     "fetch_comment_replies": "fetch_comment_replies",
+
+    # Ratings tools
+    "fetch_show_ratings": "fetch_show_ratings",
+    "fetch_movie_ratings": "fetch_movie_ratings",
 
     # Search tools
     "search_shows": "search_shows",

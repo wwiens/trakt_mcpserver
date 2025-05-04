@@ -786,6 +786,102 @@ async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
     return FormatHelper.format_movie_search_results(results)
 
 
+@mcp.tool(name=TOOL_NAMES["fetch_show_ratings"])
+async def fetch_show_ratings(show_id: str) -> str:
+    """Fetch ratings for a show from Trakt.
+
+    Args:
+        show_id: Trakt ID of the show
+
+    Returns:
+        Information about show ratings including average and distribution
+    """
+    client = TraktClient()
+
+    try:
+        show = await client.get_show(show_id)
+        show_title = show.get("title", f"Show ID: {show_id}")
+
+        ratings = await client.get_show_ratings(show_id)
+
+        return FormatHelper.format_show_ratings(ratings, show_title)
+    except Exception as e:
+        logger.error(f"Error fetching show ratings: {e}")
+        return f"Error fetching ratings for show ID {show_id}: {str(e)}"
+
+
+@mcp.tool(name=TOOL_NAMES["fetch_movie_ratings"])
+async def fetch_movie_ratings(movie_id: str) -> str:
+    """Fetch ratings for a movie from Trakt.
+
+    Args:
+        movie_id: Trakt ID of the movie
+
+    Returns:
+        Information about movie ratings including average and distribution
+    """
+    client = TraktClient()
+
+    try:
+        movie = await client.get_movie(movie_id)
+        movie_title = movie.get("title", f"Movie ID: {movie_id}")
+
+        ratings = await client.get_movie_ratings(movie_id)
+
+        return FormatHelper.format_movie_ratings(ratings, movie_title)
+    except Exception as e:
+        logger.error(f"Error fetching movie ratings: {e}")
+        return f"Error fetching ratings for movie ID {movie_id}: {str(e)}"
+
+
+@mcp.resource(MCP_RESOURCES["show_ratings"])
+async def get_show_ratings(show_id: str) -> str:
+    """Returns ratings for a specific show from Trakt.
+
+    Args:
+        show_id: Trakt ID of the show
+
+    Returns:
+        Formatted markdown text with show ratings
+    """
+    client = TraktClient()
+
+    try:
+        show = await client.get_show(show_id)
+        show_title = show.get("title", f"Show ID: {show_id}")
+
+        ratings = await client.get_show_ratings(show_id)
+
+        return FormatHelper.format_show_ratings(ratings, show_title)
+    except Exception as e:
+        logger.error(f"Error fetching show ratings: {e}")
+        return f"Error fetching ratings for show ID {show_id}: {str(e)}"
+
+
+@mcp.resource(MCP_RESOURCES["movie_ratings"])
+async def get_movie_ratings(movie_id: str) -> str:
+    """Returns ratings for a specific movie from Trakt.
+
+    Args:
+        movie_id: Trakt ID of the movie
+
+    Returns:
+        Formatted markdown text with movie ratings
+    """
+    client = TraktClient()
+
+    try:
+        movie = await client.get_movie(movie_id)
+        movie_title = movie.get("title", f"Movie ID: {movie_id}")
+
+        ratings = await client.get_movie_ratings(movie_id)
+
+        return FormatHelper.format_movie_ratings(ratings, movie_title)
+    except Exception as e:
+        logger.error(f"Error fetching movie ratings: {e}")
+        return f"Error fetching ratings for movie ID {movie_id}: {str(e)}"
+
+
 if __name__ == "__main__":
     print("Starting Trakt MCP server...")
     print("Run 'mcp dev server.py' to test with the MCP Inspector")
