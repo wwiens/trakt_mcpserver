@@ -477,3 +477,29 @@ class TraktClient:
         """Get details for a specific show."""
         endpoint = f"/shows/{show_id}"
         return await self._make_request(endpoint)
+        
+    @handle_api_errors
+    async def get_show_ratings(self, show_id: str) -> Dict[str, Any]:
+        """Get ratings for a specific show.
+        
+        Args:
+            show_id: Trakt ID of the show
+            
+        Returns:
+            Rating data including average rating and distribution
+        """
+        endpoint = TRAKT_ENDPOINTS["show_ratings"].replace(":id", show_id)
+        return await self._make_request(endpoint)
+        
+    @handle_api_errors
+    async def get_movie_ratings(self, movie_id: str) -> Dict[str, Any]:
+        """Get ratings for a specific movie.
+        
+        Args:
+            movie_id: Trakt ID of the movie
+            
+        Returns:
+            Rating data including average rating and distribution
+        """
+        endpoint = TRAKT_ENDPOINTS["movie_ratings"].replace(":id", movie_id)
+        return await self._make_request(endpoint)
