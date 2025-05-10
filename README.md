@@ -63,6 +63,7 @@ This entire project was developed using [Cursor](https://cursor.sh/), a code edi
 - Discover the most favorited, played, and watched content
 - Get real-time data from Trakt's global community
 - Formatted responses with titles, years, and popularity metrics
+- **View detailed ratings** for shows and movies including average scores and distribution
 
 ### 👤 Personal Trakt Data
 - **View Your Watched Shows**: Get a complete list of shows you've personally watched
@@ -84,6 +85,7 @@ This entire project was developed using [Cursor](https://cursor.sh/), a code edi
 - **Spoiler protection**: Comments with spoilers are hidden by default
 - **Toggle spoiler visibility**: Choose whether to show or hide spoilers
 - **View reviews**: Longer, more detailed comments are marked as reviews
+- **See ratings distribution**: View how many users gave each rating from 1-10
 
 ### 🔄 General Features
 - Exposes Trakt API data through MCP resources
@@ -141,6 +143,12 @@ The hottest movies right now:
 | `trakt://comments/show/:id/season/:season/episode/:episode` | Comments for a specific episode | Comment text, author, date, likes |
 | `trakt://comments/:id` | A specific comment | Comment text, author, date, likes |
 | `trakt://comments/:id/replies` | Replies to a specific comment | Reply text, author, date |
+
+### Rating Resources
+| Resource | Description | Example Data |
+|----------|-------------|--------------|
+| `trakt://shows/:id/ratings` | Ratings for a specific show | Average rating, vote count, distribution |
+| `trakt://movies/:id/ratings` | Ratings for a specific movie | Average rating, vote count, distribution |
 
 ## 🛠️ Available Tools
 
@@ -251,6 +259,15 @@ fetch_comment(comment_id="789", show_spoilers=False)
 fetch_comment_replies(comment_id="789", limit=10, show_spoilers=False, sort="oldest")
 ```
 
+### Rating Tools
+```python
+# Get ratings for a show
+fetch_show_ratings(show_id="game-of-thrones")
+
+# Get ratings for a movie
+fetch_movie_ratings(movie_id="tron-legacy-2010")
+```
+
 ## 🔐 Authentication
 
 The server uses Trakt's device authentication flow:
@@ -327,6 +344,9 @@ Once installed, you can ask Claude questions like:
 - "Show me the most liked comments for Breaking Bad" (uses sort="likes")
 - "Get the highest rated comments for The Godfather movie" (uses sort="highest")
 - "Show me the comments with most replies for Season 1 of Stranger Things" (uses sort="replies")
+- "What's the rating for Game of Thrones?"
+- "Show me the rating distribution for The Godfather"
+- "How highly rated is Breaking Bad?"
 
 Claude will use this MCP server to provide you with real-time data from Trakt.
 
@@ -349,7 +369,6 @@ All data is fetched directly from your Trakt account in real-time.
 - Adding calendar events for upcoming episodes
 - Supporting scrobbling (tracking what you're watching)
 - Implementing recommendations based on watch history
-- Extending search to include movies in addition to shows
 - Adding support for more social media platforms for sharing
 
 ## 📄 License
