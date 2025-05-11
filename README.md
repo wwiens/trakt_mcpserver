@@ -320,6 +320,18 @@ mcp dev server.py
 mcp install server.py
 ```
 
+### Running Tests
+```bash
+# Install test dependencies
+pip install -r requirements-dev.txt
+
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v -s
+```
+
 ## 📝 Using with Claude
 
 Once installed, you can ask Claude questions like:
