@@ -56,7 +56,7 @@ class TraktClient:
     def _save_auth_token(self, token: TraktAuthToken):
         """Save authentication token to storage."""
         with open(AUTH_TOKEN_FILE, "w") as f:
-            f.write(json.dumps(token.dict()))
+            f.write(json.dumps(token.model_dump()))
     
     def is_authenticated(self) -> bool:
         """Check if the client is authenticated."""
