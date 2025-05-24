@@ -651,15 +651,17 @@ async def fetch_movie_comments(movie_id: str, limit: int = DEFAULT_LIMIT, show_s
         Information about movie comments
     """
     client = TraktClient()
-
     try:
         movie = await client.get_movie(movie_id)
+        if isinstance(movie, str):
+            return f"Error fetching comments for Movie ID: {movie_id}: {movie}"
         title = f"Movie: {movie.get('title', 'Unknown')}"
-    except:
-        title = f"Movie ID: {movie_id}"
-
-    comments = await client.get_movie_comments(movie_id, limit=limit, sort=sort)
-    return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+        comments = await client.get_movie_comments(movie_id, limit=limit, sort=sort)
+        if isinstance(comments, str):
+            return f"Error fetching comments for {title}: {comments}"
+        return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+    except Exception as e:
+        return f"Error fetching comments for Movie ID: {movie_id}: {str(e)}"
 
 @mcp.tool(name=TOOL_NAMES["fetch_show_comments"])
 async def fetch_show_comments(show_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
@@ -675,15 +677,17 @@ async def fetch_show_comments(show_id: str, limit: int = DEFAULT_LIMIT, show_spo
         Information about show comments
     """
     client = TraktClient()
-
     try:
         show = await client.get_show(show_id)
+        if isinstance(show, str):
+            return f"Error fetching comments for Show ID: {show_id}: {show}"
         title = f"Show: {show.get('title', 'Unknown')}"
-    except:
-        title = f"Show ID: {show_id}"
-
-    comments = await client.get_show_comments(show_id, limit=limit, sort=sort)
-    return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+        comments = await client.get_show_comments(show_id, limit=limit, sort=sort)
+        if isinstance(comments, str):
+            return f"Error fetching comments for {title}: {comments}"
+        return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+    except Exception as e:
+        return f"Error fetching comments for Show ID: {show_id}: {str(e)}"
 
 @mcp.tool(name=TOOL_NAMES["fetch_season_comments"])
 async def fetch_season_comments(show_id: str, season: int, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
@@ -700,15 +704,17 @@ async def fetch_season_comments(show_id: str, season: int, limit: int = DEFAULT_
         Information about season comments
     """
     client = TraktClient()
-
     try:
         show = await client.get_show(show_id)
+        if isinstance(show, str):
+            return f"Error fetching comments for Show ID: {show_id} - Season {season}: {show}"
         title = f"Show: {show.get('title', 'Unknown')} - Season {season}"
-    except:
-        title = f"Show ID: {show_id} - Season {season}"
-
-    comments = await client.get_season_comments(show_id, season, limit=limit, sort=sort)
-    return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+        comments = await client.get_season_comments(show_id, season, limit=limit, sort=sort)
+        if isinstance(comments, str):
+            return f"Error fetching comments for {title}: {comments}"
+        return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+    except Exception as e:
+        return f"Error fetching comments for Show ID: {show_id} - Season {season}: {str(e)}"
 
 @mcp.tool(name=TOOL_NAMES["fetch_episode_comments"])
 async def fetch_episode_comments(show_id: str, season: int, episode: int, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
@@ -726,15 +732,17 @@ async def fetch_episode_comments(show_id: str, season: int, episode: int, limit:
         Information about episode comments
     """
     client = TraktClient()
-
     try:
         show = await client.get_show(show_id)
+        if isinstance(show, str):
+            return f"Error fetching comments for Show ID: {show_id} - S{season:02d}E{episode:02d}: {show}"
         title = f"Show: {show.get('title', 'Unknown')} - S{season:02d}E{episode:02d}"
-    except:
-        title = f"Show ID: {show_id} - S{season:02d}E{episode:02d}"
-
-    comments = await client.get_episode_comments(show_id, season, episode, limit=limit, sort=sort)
-    return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+        comments = await client.get_episode_comments(show_id, season, episode, limit=limit, sort=sort)
+        if isinstance(comments, str):
+            return f"Error fetching comments for {title}: {comments}"
+        return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+    except Exception as e:
+        return f"Error fetching comments for Show ID: {show_id} - S{season:02d}E{episode:02d}: {str(e)}"
 
 @mcp.tool(name=TOOL_NAMES["fetch_comment"])
 async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
@@ -748,8 +756,13 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
         Information about the comment
     """
     client = TraktClient()
-    comment = await client.get_comment(comment_id)
-    return FormatHelper.format_comment(comment, show_spoilers=show_spoilers)
+    try:
+        comment = await client.get_comment(comment_id)
+        if isinstance(comment, str):
+            return f"Error fetching comment {comment_id}: {comment}"
+        return FormatHelper.format_comment(comment, show_spoilers=show_spoilers)
+    except Exception as e:
+        return f"Error fetching comment {comment_id}: {str(e)}"
 
 @mcp.tool(name=TOOL_NAMES["fetch_comment_replies"])
 async def fetch_comment_replies(comment_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
@@ -765,9 +778,16 @@ async def fetch_comment_replies(comment_id: str, limit: int = DEFAULT_LIMIT, sho
         Information about the comment and its replies
     """
     client = TraktClient()
-    comment = await client.get_comment(comment_id)
-    replies = await client.get_comment_replies(comment_id, limit=limit, sort=sort)
-    return FormatHelper.format_comment(comment, with_replies=True, replies=replies, show_spoilers=show_spoilers)
+    try:
+        comment = await client.get_comment(comment_id)
+        if isinstance(comment, str):
+            return f"Error fetching comment replies for {comment_id}: {comment}"
+        replies = await client.get_comment_replies(comment_id, limit=limit, sort=sort)
+        if isinstance(replies, str):
+            return f"Error fetching comment replies for {comment_id}: {replies}"
+        return FormatHelper.format_comment(comment, with_replies=True, replies=replies, show_spoilers=show_spoilers)
+    except Exception as e:
+        return f"Error fetching comment replies for {comment_id}: {str(e)}"
 
 
 @mcp.tool(name=TOOL_NAMES["search_movies"])
@@ -797,16 +817,16 @@ async def fetch_show_ratings(show_id: str) -> str:
         Information about show ratings including average and distribution
     """
     client = TraktClient()
-
     try:
         show = await client.get_show(show_id)
+        if isinstance(show, str):
+            return f"Error fetching ratings for show ID {show_id}: {show}"
         show_title = show.get("title", f"Show ID: {show_id}")
-
         ratings = await client.get_show_ratings(show_id)
-
+        if isinstance(ratings, str):
+            return f"Error fetching ratings for show ID {show_id}: {ratings}"
         return FormatHelper.format_show_ratings(ratings, show_title)
     except Exception as e:
-        logger.error(f"Error fetching show ratings: {e}")
         return f"Error fetching ratings for show ID {show_id}: {str(e)}"
 
 
@@ -821,16 +841,16 @@ async def fetch_movie_ratings(movie_id: str) -> str:
         Information about movie ratings including average and distribution
     """
     client = TraktClient()
-
     try:
         movie = await client.get_movie(movie_id)
+        if isinstance(movie, str):
+            return f"Error fetching ratings for movie ID {movie_id}: {movie}"
         movie_title = movie.get("title", f"Movie ID: {movie_id}")
-
         ratings = await client.get_movie_ratings(movie_id)
-
+        if isinstance(ratings, str):
+            return f"Error fetching ratings for movie ID {movie_id}: {ratings}"
         return FormatHelper.format_movie_ratings(ratings, movie_title)
     except Exception as e:
-        logger.error(f"Error fetching movie ratings: {e}")
         return f"Error fetching ratings for movie ID {movie_id}: {str(e)}"
 
 
@@ -845,16 +865,16 @@ async def get_show_ratings(show_id: str) -> str:
         Formatted markdown text with show ratings
     """
     client = TraktClient()
-
     try:
         show = await client.get_show(show_id)
+        if isinstance(show, str):
+            return f"Error fetching ratings for show ID {show_id}: {show}"
         show_title = show.get("title", f"Show ID: {show_id}")
-
         ratings = await client.get_show_ratings(show_id)
-
+        if isinstance(ratings, str):
+            return f"Error fetching ratings for show ID {show_id}: {ratings}"
         return FormatHelper.format_show_ratings(ratings, show_title)
     except Exception as e:
-        logger.error(f"Error fetching show ratings: {e}")
         return f"Error fetching ratings for show ID {show_id}: {str(e)}"
 
 
@@ -869,16 +889,16 @@ async def get_movie_ratings(movie_id: str) -> str:
         Formatted markdown text with movie ratings
     """
     client = TraktClient()
-
     try:
         movie = await client.get_movie(movie_id)
+        if isinstance(movie, str):
+            return f"Error fetching ratings for movie ID {movie_id}: {movie}"
         movie_title = movie.get("title", f"Movie ID: {movie_id}")
-
         ratings = await client.get_movie_ratings(movie_id)
-
+        if isinstance(ratings, str):
+            return f"Error fetching ratings for movie ID {movie_id}: {ratings}"
         return FormatHelper.format_movie_ratings(ratings, movie_title)
     except Exception as e:
-        logger.error(f"Error fetching movie ratings: {e}")
         return f"Error fetching ratings for movie ID {movie_id}: {str(e)}"
 
 

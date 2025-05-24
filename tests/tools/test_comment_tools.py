@@ -1,175 +1,6 @@
 import pytest
 import asyncio
-from unittest.mock import patch, MagicMock
-import time
-import os
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent))
-
-from server import (
-    fetch_season_comments, fetch_episode_comments,
-    fetch_comment, fetch_comment_replies
-)
-from models import FormatHelper
-from trakt_client import TraktClient
-
-@pytest.mark.asyncio
-async def test_fetch_season_comments():
-    sample_show = {
-        "title": "Breaking Bad",
-        "year": 2008
-    }
-    
-    sample_comments = [
-        {
-            "user": {"username": "user1"},
-            "created_at": "2023-01-15T20:30:00Z",
-            "comment": "This season was amazing!",
-            "spoiler": False,
-            "review": False,
-            "replies": 2,
-            "likes": 10,
-            "id": "123"
-        }
-    ]
-    
-    with patch('server.TraktClient') as mock_client_class:
-        mock_client = mock_client_class.return_value
-        
-        show_future = asyncio.Future()
-        show_future.set_result(sample_show)
-        mock_client.get_show.return_value = show_future
-        
-        comments_future = asyncio.Future()
-        comments_future.set_result(sample_comments)
-        mock_client.get_season_comments.return_value = comments_future
-        
-        result = await fetch_season_comments(show_id="1", season=1, limit=5)
-        
-        assert "Show: Breaking Bad - Season 1" in result
-        assert "user1" in result
-        assert "This season was amazing!" in result
-        
-        mock_client.get_show.assert_called_once_with("1")
-        mock_client.get_season_comments.assert_called_once_with("1", 1, limit=5, sort="newest")
-
-@pytest.mark.asyncio
-async def test_fetch_episode_comments():
-    sample_show = {
-        "title": "Breaking Bad",
-        "year": 2008
-    }
-    
-    sample_comments = [
-        {
-            "user": {"username": "user1"},
-            "created_at": "2023-01-15T20:30:00Z",
-            "comment": "This episode was incredible!",
-            "spoiler": False,
-            "review": False,
-            "replies": 2,
-            "likes": 10,
-            "id": "123"
-        }
-    ]
-    
-    with patch('server.TraktClient') as mock_client_class:
-        mock_client = mock_client_class.return_value
-        
-        show_future = asyncio.Future()
-        show_future.set_result(sample_show)
-        mock_client.get_show.return_value = show_future
-        
-        comments_future = asyncio.Future()
-        comments_future.set_result(sample_comments)
-        mock_client.get_episode_comments.return_value = comments_future
-        
-        result = await fetch_episode_comments(show_id="1", season=1, episode=1, limit=5)
-        
-        assert "Show: Breaking Bad - S01E01" in result
-        assert "user1" in result
-        assert "This episode was incredible!" in result
-        
-        mock_client.get_show.assert_called_once_with("1")
-        mock_client.get_episode_comments.assert_called_once_with("1", 1, 1, limit=5, sort="newest")
-
-@pytest.mark.asyncio
-async def test_fetch_comment():
-    sample_comment = {
-        "user": {"username": "user1"},
-        "created_at": "2023-01-15T20:30:00Z",
-        "comment": "This is my comment!",
-        "spoiler": False,
-        "review": False,
-        "replies": 2,
-        "likes": 10,
-        "id": "123"
-    }
-    
-    with patch('server.TraktClient') as mock_client_class:
-        mock_client = mock_client_class.return_value
-        
-        future = asyncio.Future()
-        future.set_result(sample_comment)
-        mock_client.get_comment.return_value = future
-        
-        result = await fetch_comment(comment_id="123")
-        
-        assert "# Comment by user1" in result
-        assert "This is my comment!" in result
-        
-        mock_client.get_comment.assert_called_once_with("123")
-
-@pytest.mark.asyncio
-async def test_fetch_comment_replies():
-    sample_comment = {
-        "user": {"username": "user1"},
-        "created_at": "2023-01-15T20:30:00Z",
-        "comment": "This is my comment!",
-        "spoiler": False,
-        "review": False,
-        "replies": 2,
-        "likes": 10,
-        "id": "123"
-    }
-    
-    sample_replies = [
-        {
-            "user": {"username": "user2"},
-            "created_at": "2023-01-16T10:15:00Z",
-            "comment": "I agree with you!",
-            "spoiler": False,
-            "review": False,
-            "id": "124"
-        }
-    ]
-    
-    with patch('server.TraktClient') as mock_client_class:
-        mock_client = mock_client_class.return_value
-        
-        comment_future = asyncio.Future()
-        comment_future.set_result(sample_comment)
-        mock_client.get_comment.return_value = comment_future
-        
-        replies_future = asyncio.Future()
-        replies_future.set_result(sample_replies)
-        mock_client.get_comment_replies.return_value = replies_future
-        
-        result = await fetch_comment_replies(comment_id="123", limit=5)
-        
-        assert "# Comment by user1" in result
-        assert "This is my comment!" in result
-        assert "## Replies" in result
-        assert "user2" in result
-        assert "I agree with you!" in result
-        
-        mock_client.get_comment.assert_called_once_with("123")
-        mock_client.get_comment_replies.assert_called_once_with("123", limit=5, sort="newest")
-import pytest
-import asyncio
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 import time
 import os
 import sys
@@ -184,6 +15,22 @@ from server import (
 )
 from models import FormatHelper
 from trakt_client import TraktClient
+
+
+@pytest.fixture
+def mock_trakt_client():
+    """Mock TraktClient for testing."""
+    mock_client = MagicMock()
+    mock_client.get_comment = AsyncMock()
+    mock_client.get_movie_comments = AsyncMock()
+    mock_client.get_show_comments = AsyncMock()
+    mock_client.get_season_comments = AsyncMock()
+    mock_client.get_episode_comments = AsyncMock()
+    mock_client.get_comment_replies = AsyncMock()
+    mock_client.get_movie = AsyncMock()
+    mock_client.get_show = AsyncMock()
+    return mock_client
+
 
 @pytest.mark.asyncio
 async def test_fetch_season_comments():
@@ -361,3 +208,28 @@ async def test_fetch_comment_replies():
         # Verify the client methods were called
         mock_client.get_comment.assert_called_once_with("123")
         mock_client.get_comment_replies.assert_called_once_with("123", limit=5, sort="newest")
+
+@pytest.mark.asyncio
+async def test_fetch_comment_api_error_handling(mock_trakt_client):
+    with patch('server.TraktClient', return_value=mock_trakt_client):
+        from server import fetch_comment
+        
+        mock_trakt_client.get_comment.side_effect = Exception("Error: The requested resource was not found.")
+        
+        result = await fetch_comment("invalid_id")
+        
+        assert "Error fetching comment invalid_id" in result
+        assert "requested resource was not found" in result
+
+@pytest.mark.asyncio
+async def test_fetch_movie_comments_api_error_handling(mock_trakt_client):
+    with patch('server.TraktClient', return_value=mock_trakt_client):
+        from server import fetch_movie_comments
+        
+        mock_trakt_client.get_movie.side_effect = Exception("Error: The requested resource was not found.")
+        mock_trakt_client.get_movie_comments.side_effect = Exception("Error: The requested resource was not found.")
+        
+        result = await fetch_movie_comments("invalid_id")
+        
+        assert "Error fetching comments" in result
+        assert "invalid_id" in result
