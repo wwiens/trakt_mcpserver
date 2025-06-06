@@ -828,9 +828,18 @@ async def fetch_show_ratings(show_id: str) -> str:
 
     try:
         show = await client.get_show(show_id)
+        
+        # Check if the API returned an error string
+        if isinstance(show, str):
+            return f"Error fetching ratings for show ID {show_id}: {show}"
+            
         show_title = show.get("title", f"Show ID: {show_id}")
 
         ratings = await client.get_show_ratings(show_id)
+        
+        # Check if the API returned an error string
+        if isinstance(ratings, str):
+            return f"Error fetching ratings for {show_title}: {ratings}"
 
         return FormatHelper.format_show_ratings(ratings, show_title)
     except Exception as e:
@@ -852,9 +861,18 @@ async def fetch_movie_ratings(movie_id: str) -> str:
 
     try:
         movie = await client.get_movie(movie_id)
+        
+        # Check if the API returned an error string
+        if isinstance(movie, str):
+            return f"Error fetching ratings for movie ID {movie_id}: {movie}"
+            
         movie_title = movie.get("title", f"Movie ID: {movie_id}")
 
         ratings = await client.get_movie_ratings(movie_id)
+        
+        # Check if the API returned an error string
+        if isinstance(ratings, str):
+            return f"Error fetching ratings for {movie_title}: {ratings}"
 
         return FormatHelper.format_movie_ratings(ratings, movie_title)
     except Exception as e:
@@ -876,9 +894,18 @@ async def get_show_ratings(show_id: str) -> str:
 
     try:
         show = await client.get_show(show_id)
+        
+        # Check if the API returned an error string
+        if isinstance(show, str):
+            return f"Error fetching ratings for show ID {show_id}: {show}"
+            
         show_title = show.get("title", f"Show ID: {show_id}")
 
         ratings = await client.get_show_ratings(show_id)
+        
+        # Check if the API returned an error string
+        if isinstance(ratings, str):
+            return f"Error fetching ratings for {show_title}: {ratings}"
 
         return FormatHelper.format_show_ratings(ratings, show_title)
     except Exception as e:
@@ -900,9 +927,18 @@ async def get_movie_ratings(movie_id: str) -> str:
 
     try:
         movie = await client.get_movie(movie_id)
+        
+        # Check if the API returned an error string
+        if isinstance(movie, str):
+            return f"Error fetching ratings for movie ID {movie_id}: {movie}"
+            
         movie_title = movie.get("title", f"Movie ID: {movie_id}")
 
         ratings = await client.get_movie_ratings(movie_id)
+        
+        # Check if the API returned an error string
+        if isinstance(ratings, str):
+            return f"Error fetching ratings for {movie_title}: {ratings}"
 
         return FormatHelper.format_movie_ratings(ratings, movie_title)
     except Exception as e:

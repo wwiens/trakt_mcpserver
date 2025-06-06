@@ -311,6 +311,72 @@ async def test_fetch_show_ratings_error():
         
         mock_client.get_show.assert_called_once_with("1")
         mock_client.get_show_ratings.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_fetch_show_comments_string_error_handling():
+    """Test fetching show comments with a string error response."""
+    with patch('server.TraktClient') as mock_client_class:
+        # Configure the mock to return a string error
+        mock_client = mock_client_class.return_value
+        
+        # Create a future that returns a string error
+        show_future = asyncio.Future()
+        show_future.set_result("Error: The requested show was not found.")
+        mock_client.get_show.return_value = show_future
+        
+        # Call the tool function
+        result = await fetch_show_comments(show_id="1", limit=5)
+        
+        # Verify the result contains the error message
+        assert "Error fetching comments for Show ID: 1: Error: The requested show was not found." in result
+        
+        # Verify the client methods were called
+        mock_client.get_show.assert_called_once_with("1")
+        mock_client.get_show_comments.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_fetch_season_comments_string_error_handling():
+    """Test fetching season comments with a string error response."""
+    with patch('server.TraktClient') as mock_client_class:
+        # Configure the mock to return a string error
+        mock_client = mock_client_class.return_value
+        
+        # Create a future that returns a string error
+        show_future = asyncio.Future()
+        show_future.set_result("Error: The requested show was not found.")
+        mock_client.get_show.return_value = show_future
+        
+        # Call the tool function
+        result = await fetch_season_comments(show_id="1", season=1, limit=5)
+        
+        # Verify the result contains the error message
+        assert "Error fetching comments for Show ID: 1 - Season 1: Error: The requested show was not found." in result
+        
+        # Verify the client methods were called
+        mock_client.get_show.assert_called_once_with("1")
+        mock_client.get_season_comments.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_fetch_episode_comments_string_error_handling():
+    """Test fetching episode comments with a string error response."""
+    with patch('server.TraktClient') as mock_client_class:
+        # Configure the mock to return a string error
+        mock_client = mock_client_class.return_value
+        
+        # Create a future that returns a string error
+        show_future = asyncio.Future()
+        show_future.set_result("Error: The requested show was not found.")
+        mock_client.get_show.return_value = show_future
+        
+        # Call the tool function
+        result = await fetch_episode_comments(show_id="1", season=1, episode=1, limit=5)
+        
+        # Verify the result contains the error message
+        assert "Error fetching comments for Show ID: 1 - S01E01: Error: The requested show was not found." in result
+        
+        # Verify the client methods were called
+        mock_client.get_show.assert_called_once_with("1")
+        mock_client.get_episode_comments.assert_not_called()
 import pytest
 import asyncio
 from unittest.mock import patch, MagicMock
@@ -326,7 +392,8 @@ from server import (
     fetch_user_watched_shows, search_shows, checkin_to_show,
     fetch_trending_shows, fetch_popular_shows,
     fetch_favorited_shows, fetch_played_shows, fetch_watched_shows,
-    fetch_show_comments, fetch_show_ratings
+    fetch_show_comments, fetch_show_ratings,
+    fetch_season_comments, fetch_episode_comments
 )
 from models import FormatHelper
 from trakt_client import TraktClient

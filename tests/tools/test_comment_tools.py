@@ -361,3 +361,62 @@ async def test_fetch_comment_replies():
         # Verify the client methods were called
         mock_client.get_comment.assert_called_once_with("123")
         mock_client.get_comment_replies.assert_called_once_with("123", limit=5, sort="newest")
+
+@pytest.mark.asyncio
+async def test_fetch_comment_string_error_handling():
+    """Test fetching a comment with a string error response."""
+    with patch('server.TraktClient') as mock_client_class:
+        # Configure the mock to return a string error
+        mock_client = mock_client_class.return_value
+        
+        # Create a future that returns a string error
+        future = asyncio.Future()
+        future.set_result("Error: The requested comment was not found.")
+        mock_client.get_comment.return_value = future
+        
+        # Call the tool function
+        result = await fetch_comment(comment_id="123")
+        
+        # Verify the result contains the error message
+        assert "Error fetching comment 123: Error: The requested comment was not found." in result
+        
+        # Verify the client methods were called
+        mock_client.get_comment.assert_called_once_with("123")
+
+@pytest.mark.asyncio
+async def test_fetch_comment_replies_string_error_handling():
+    """Test fetching comment replies with a string error response."""
+    sample_comment = {
+        "user": {"username": "user1"},
+        "created_at": "2023-01-15T20:30:00Z",
+        "comment": "This is my comment!",
+        "spoiler": False,
+        "review": False,
+        "replies": 2,
+        "likes": 10,
+        "id": "123"
+    }
+    
+    with patch('server.TraktClient') as mock_client_class:
+        # Configure the mock
+        mock_client = mock_client_class.return_value
+        
+        # Create awaitable results
+        comment_future = asyncio.Future()
+        comment_future.set_result(sample_comment)
+        mock_client.get_comment.return_value = comment_future
+        
+        # Create a future that returns a string error for replies
+        replies_future = asyncio.Future()
+        replies_future.set_result("Error: Unable to fetch replies.")
+        mock_client.get_comment_replies.return_value = replies_future
+        
+        # Call the tool function
+        result = await fetch_comment_replies(comment_id="123", limit=5)
+        
+        # Verify the result contains the error message
+        assert "Error fetching comment replies for 123: Error: Unable to fetch replies." in result
+        
+        # Verify the client methods were called
+        mock_client.get_comment.assert_called_once_with("123")
+        mock_client.get_comment_replies.assert_called_once_with("123", limit=5, sort="newest")

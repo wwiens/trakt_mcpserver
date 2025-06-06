@@ -184,6 +184,27 @@ async def test_get_movie_ratings_error_handling():
         # Verify the client methods were called
         mock_client.get_movie.assert_called_once_with("1")
         mock_client.get_movie_ratings.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_get_movie_ratings_string_error_handling():
+    with patch('server.TraktClient') as mock_client_class:
+        # Configure the mock to return a string error
+        mock_client = mock_client_class.return_value
+        
+        # Create a future that returns a string error
+        future = asyncio.Future()
+        future.set_result("Error: The requested resource was not found.")
+        mock_client.get_movie.return_value = future
+        
+        # Call the resource function
+        result = await get_movie_ratings("1")
+        
+        # Verify the result contains the error message
+        assert "Error fetching ratings for movie ID 1: Error: The requested resource was not found." in result
+        
+        # Verify the client methods were called
+        mock_client.get_movie.assert_called_once_with("1")
+        mock_client.get_movie_ratings.assert_not_called()
 import pytest
 import asyncio
 from unittest.mock import patch, MagicMock
