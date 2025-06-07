@@ -3,15 +3,26 @@ include = [
     "**/*.py"
 ]
 exclude = [
-    "**/__pycache__"
+    "**/__pycache__",
+    "**/site-packages/**",
+    "**/.venv/**",
+    "**/venv/**"
 ]
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
 reportMissingTypeStubs = "warning"
-reportUnknownMemberType = "warning"
+reportUnknownMemberType = "warning" 
 reportUnknownVariableType = "warning"
 reportUnknownArgumentType = "warning"
 reportGeneralTypeIssues = "error"
 reportOptionalMemberAccess = "error"
 reportOptionalSubscript = "error"
-reportPrivateImportUsage = "warning"
+reportPrivateImportUsage = "error"
+reportUnnecessaryTypeIgnoreComment = "none"
+reportUnnecessaryIsInstance = "warning"
+reportUnnecessaryComparison = "warning"
+reportConstantRedefinition = "error"
+reportIncompatibleMethodOverride = "error"
+reportIncompatibleVariableOverride = "error"
+reportMissingParameterType = "error"
+reportMissingReturnType = "error"
