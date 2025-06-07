@@ -1,8 +1,7 @@
 import pytest
 import asyncio
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import time
-import os
 import sys
 from pathlib import Path
 
@@ -10,13 +9,9 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from server import (
     get_auth_status, get_user_watched_shows, get_user_watched_movies,
-    get_trending_shows, get_popular_shows, get_favorited_shows,
-    get_played_shows, get_watched_shows, get_trending_movies,
-    get_popular_movies, get_favorited_movies, get_played_movies,
-    get_watched_movies, get_show_ratings, get_movie_ratings
+    get_trending_shows, get_popular_shows, get_trending_movies,
+    get_show_ratings, get_movie_ratings
 )
-from models import FormatHelper
-from trakt_client import TraktClient
 
 @pytest.mark.asyncio
 async def test_get_auth_status_authenticated():

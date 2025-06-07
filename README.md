@@ -330,6 +330,9 @@ pytest
 
 # Run with verbose output
 pytest -v -s
+
+# Type checking
+pyright
 ```
 
 ## 📝 Using with Claude

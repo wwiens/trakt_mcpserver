@@ -17,7 +17,7 @@ T = TypeVar("T")
 AsyncFunc = Callable[..., Coroutine[Any, Any, T]]
 
 
-def handle_api_errors(func: AsyncFunc) -> AsyncFunc:
+def handle_api_errors(func: AsyncFunc[T]) -> AsyncFunc[T]:
     """Decorator to handle API errors gracefully.
     
     Args:

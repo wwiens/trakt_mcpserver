@@ -1,0 +1,17 @@
+[tool.pyright]
+include = [
+    "**/*.py"
+]
+exclude = [
+    "**/__pycache__"
+]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = "warning"
+reportUnknownMemberType = "warning"
+reportUnknownVariableType = "warning"
+reportUnknownArgumentType = "warning"
+reportGeneralTypeIssues = "error"
+reportOptionalMemberAccess = "error"
+reportOptionalSubscript = "error"
+reportPrivateImportUsage = "warning"

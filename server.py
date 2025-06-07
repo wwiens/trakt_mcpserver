@@ -1,14 +1,13 @@
-import asyncio
-from typing import Dict, Any, Optional
+from typing import Optional, Dict, Any
 import logging
 import json
 import time
 
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.fastmcp import FastMCP
 
 from trakt_client import TraktClient
-from models import FormatHelper, TraktDeviceCode
-from config import MCP_RESOURCES, DEFAULT_LIMIT, TOOL_NAMES, AUTH_POLL_INTERVAL, AUTH_VERIFICATION_URL
+from models import FormatHelper
+from config import MCP_RESOURCES, DEFAULT_LIMIT, TOOL_NAMES, AUTH_VERIFICATION_URL
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -18,7 +17,7 @@ logger = logging.getLogger("trakt_mcp")
 mcp = FastMCP("Trakt MCP")
 
 # Authentication storage for active device code flows
-active_auth_flow = {}
+active_auth_flow: Dict[str, Any] = {}
 
 # Authentication Resources
 @mcp.resource(MCP_RESOURCES["user_auth_status"])
@@ -269,8 +268,8 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
 
 
 @mcp.tool(name=TOOL_NAMES["checkin_to_show"])
-async def checkin_to_show(season: int, episode: int, show_id: str = None, show_title: str = None,
-                         show_year: int = None, message: str = "", share_twitter: bool = False,
+async def checkin_to_show(season: int, episode: int, show_id: Optional[str] = None, show_title: Optional[str] = None,
+                         show_year: Optional[int] = None, message: str = "", share_twitter: bool = False,
                          share_mastodon: bool = False, share_tumblr: bool = False) -> str:
     """Check in to a show episode that the user is currently watching.
 

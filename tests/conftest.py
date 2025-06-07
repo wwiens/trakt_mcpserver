@@ -1,17 +1,13 @@
 import pytest
-import asyncio
 import subprocess
 import time
-from unittest.mock import patch, MagicMock
-import os
-import json
+from unittest.mock import patch
 import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
 from fastmcp import Client
-from trakt_client import TraktClient
 from models import TraktAuthToken
 
 @pytest.fixture(scope="session")
@@ -30,7 +26,7 @@ async def mcp_server():
     server_process.wait()
 
 @pytest.fixture
-async def client(mcp_server):
+async def client(mcp_server: None):
     """Create a client connection to the MCP server."""
     async with Client("http://localhost:8000/sse") as client:
         yield client
