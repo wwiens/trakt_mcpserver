@@ -1,0 +1,37 @@
+[tool.pyright]
+include = [
+    "**/*.py"
+]
+exclude = [
+    "**/__pycache__",
+    "**/site-packages/**",
+    "**/.venv/**",
+    "**/venv/**"
+]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = "error"
+reportUnknownMemberType = "warning"
+reportUnknownVariableType = "warning"
+reportUnknownArgumentType = "error"
+reportGeneralTypeIssues = "error"
+reportOptionalMemberAccess = "error"
+reportOptionalSubscript = "error"
+reportPrivateImportUsage = "error"
+reportUnnecessaryTypeIgnoreComment = "none"
+reportUnnecessaryIsInstance = "error"
+reportUnnecessaryComparison = "error"
+reportConstantRedefinition = "error"
+reportIncompatibleMethodOverride = "error"
+reportIncompatibleVariableOverride = "error"
+reportMissingParameterType = "error"
+reportMissingReturnType = "error"
+reportUnusedImport = "error"
+reportUnusedVariable = "error"
+reportDuplicateImport = "error"
+reportWildcardImportFromLibrary = "error"
+reportSelfClsParameterName = "error"
+reportImplicitStringConcatenation = "warning"
+reportUndefinedVariable = "error"
+reportAssertAlwaysTrue = "error"
+reportFunctionMemberAccess = "error"

@@ -1,6 +1,5 @@
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
-import json
 
 
 class TraktShow(BaseModel):
@@ -36,7 +35,7 @@ class TraktPopularShow(BaseModel):
     show: TraktShow = Field(description="The show information")
     
     @classmethod
-    def from_api_response(cls, api_data: Dict) -> "TraktPopularShow":
+    def from_api_response(cls, api_data: Dict[str, Any]) -> "TraktPopularShow":
         """Create a TraktPopularShow instance from raw API data."""
         return cls(show=TraktShow(**api_data))
 
@@ -46,7 +45,7 @@ class TraktPopularMovie(BaseModel):
     movie: TraktMovie = Field(description="The movie information")
     
     @classmethod
-    def from_api_response(cls, api_data: Dict) -> "TraktPopularMovie":
+    def from_api_response(cls, api_data: Dict[str, Any]) -> "TraktPopularMovie":
         """Create a TraktPopularMovie instance from raw API data."""
         return cls(movie=TraktMovie(**api_data))
 
@@ -84,7 +83,7 @@ class TraktUserShow(BaseModel):
     show: TraktShow
     last_watched_at: str
     last_updated_at: str
-    seasons: Optional[List[Dict]] = None
+    seasons: Optional[List[Dict[str, Any]]] = None
     plays: int
 
 
@@ -92,7 +91,7 @@ class FormatHelper:
     """Helper class for formatting Trakt data for MCP responses."""
     
     @staticmethod
-    def format_trending_shows(shows: List[Dict]) -> str:
+    def format_trending_shows(shows: List[Dict[str, Any]]) -> str:
         """Format trending shows data for MCP resource."""
         result = "# Trending Shows on Trakt\n\n"
         
@@ -114,7 +113,7 @@ class FormatHelper:
         return result
     
     @staticmethod
-    def format_popular_shows(shows: List[Dict]) -> str:
+    def format_popular_shows(shows: List[Dict[str, Any]]) -> str:
         """Format popular shows data for MCP resource."""
         result = "# Popular Shows on Trakt\n\n"
         
@@ -133,7 +132,7 @@ class FormatHelper:
         return result
     
     @staticmethod
-    def format_favorited_shows(shows: List[Dict]) -> str:
+    def format_favorited_shows(shows: List[Dict[str, Any]]) -> str:
         """Format favorited shows data for MCP resource."""
         result = "# Most Favorited Shows on Trakt\n\n"
         
@@ -156,7 +155,7 @@ class FormatHelper:
         return result
     
     @staticmethod
-    def format_played_shows(shows: List[Dict]) -> str:
+    def format_played_shows(shows: List[Dict[str, Any]]) -> str:
         """Format played shows data for MCP resource."""
         result = "# Most Played Shows on Trakt\n\n"
         
@@ -179,7 +178,7 @@ class FormatHelper:
         return result
     
     @staticmethod
-    def format_watched_shows(shows: List[Dict]) -> str:
+    def format_watched_shows(shows: List[Dict[str, Any]]) -> str:
         """Format watched shows data for MCP resource."""
         result = "# Most Watched Shows on Trakt\n\n"
         
@@ -202,7 +201,7 @@ class FormatHelper:
         
     # Movie formatting methods
     @staticmethod
-    def format_trending_movies(movies: List[Dict]) -> str:
+    def format_trending_movies(movies: List[Dict[str, Any]]) -> str:
         """Format trending movies data for MCP resource."""
         result = "# Trending Movies on Trakt\n\n"
         
@@ -224,7 +223,7 @@ class FormatHelper:
         return result
     
     @staticmethod
-    def format_popular_movies(movies: List[Dict]) -> str:
+    def format_popular_movies(movies: List[Dict[str, Any]]) -> str:
         """Format popular movies data for MCP resource."""
         result = "# Popular Movies on Trakt\n\n"
         
@@ -243,7 +242,7 @@ class FormatHelper:
         return result
     
     @staticmethod
-    def format_favorited_movies(movies: List[Dict]) -> str:
+    def format_favorited_movies(movies: List[Dict[str, Any]]) -> str:
         """Format favorited movies data for MCP resource."""
         result = "# Most Favorited Movies on Trakt\n\n"
         
@@ -266,7 +265,7 @@ class FormatHelper:
         return result
     
     @staticmethod
-    def format_played_movies(movies: List[Dict]) -> str:
+    def format_played_movies(movies: List[Dict[str, Any]]) -> str:
         """Format played movies data for MCP resource."""
         result = "# Most Played Movies on Trakt\n\n"
         
@@ -289,7 +288,7 @@ class FormatHelper:
         return result
     
     @staticmethod
-    def format_watched_movies(movies: List[Dict]) -> str:
+    def format_watched_movies(movies: List[Dict[str, Any]]) -> str:
         """Format watched movies data for MCP resource."""
         result = "# Most Watched Movies on Trakt\n\n"
         
@@ -335,7 +334,7 @@ This code will expire in {minutes} minutes. I'll wait for your confirmation that
 """
     
     @staticmethod
-    def format_user_watched_shows(shows: List[Dict]) -> str:
+    def format_user_watched_shows(shows: List[Dict[str, Any]]) -> str:
         """Format user watched shows data for MCP resource."""
         result = "# Your Watched Shows on Trakt\n\n"
         
@@ -361,7 +360,7 @@ This code will expire in {minutes} minutes. I'll wait for your confirmation that
         return result
         
     @staticmethod
-    def format_user_watched_movies(movies: List[Dict]) -> str:
+    def format_user_watched_movies(movies: List[Dict[str, Any]]) -> str:
         """Format user watched movies data for MCP resource."""
         result = "# Your Watched Movies on Trakt\n\n"
         
@@ -387,7 +386,7 @@ This code will expire in {minutes} minutes. I'll wait for your confirmation that
         return result
         
     @staticmethod
-    def format_checkin_response(response: Dict) -> str:
+    def format_checkin_response(response: Dict[str, Any]) -> str:
         """Format the checkin response from Trakt API.
         
         Args:
@@ -422,7 +421,7 @@ This code will expire in {minutes} minutes. I'll wait for your confirmation that
             
             # Add sharing info if available
             if sharing := response.get("sharing", {}):
-                platforms = []
+                platforms: list[str] = []
                 for platform, shared in sharing.items():
                     if shared:
                         platforms.append(platform.capitalize())
@@ -436,12 +435,12 @@ This code will expire in {minutes} minutes. I'll wait for your confirmation that
                 
             return message
             
-        except Exception as e:
+        except Exception:
             # Fallback for any parsing errors
             return f"Successfully checked in to the show.\n\nDetails: {str(response)}"
             
     @staticmethod
-    def format_show_search_results(results: List[Dict]) -> str:
+    def format_show_search_results(results: List[Dict[str, Any]]) -> str:
         """Format show search results from Trakt API.
         
         Args:
@@ -487,7 +486,7 @@ This code will expire in {minutes} minutes. I'll wait for your confirmation that
         return message
         
     @staticmethod
-    def format_movie_search_results(results: List[Dict]) -> str:
+    def format_movie_search_results(results: List[Dict[str, Any]]) -> str:
         """Format movie search results from Trakt API."""
         if not results:
             return "# Movie Search Results\n\nNo movies found matching your query."
@@ -599,7 +598,7 @@ This code will expire in {minutes} minutes. I'll wait for your confirmation that
         return result
         
     @staticmethod
-    def format_comments(comments: List[Dict], title: str, show_spoilers: bool = False) -> str:
+    def format_comments(comments: List[Dict[str, Any]], title: str, show_spoilers: bool = False) -> str:
         """Format comments for MCP resource."""
         result = f"# Comments for {title}\n\n"
         
@@ -650,7 +649,7 @@ This code will expire in {minutes} minutes. I'll wait for your confirmation that
         return result
 
     @staticmethod
-    def format_comment(comment: Dict, with_replies: bool = False, replies: List[Dict] = None, show_spoilers: bool = False) -> str:
+    def format_comment(comment: Dict[str, Any], with_replies: bool = False, replies: Optional[List[Dict[str, Any]]] = None, show_spoilers: bool = False) -> str:
         """Format a single comment with optional replies."""
         username = comment.get("user", {}).get("username", "Anonymous")
         created_at = comment.get("created_at", "Unknown date")

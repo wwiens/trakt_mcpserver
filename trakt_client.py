@@ -1,7 +1,7 @@
 import os
 import time
 import json
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 import httpx
 from dotenv import load_dotenv
 
@@ -74,7 +74,7 @@ class TraktClient:
             return None
         return self.auth_token.created_at + self.auth_token.expires_in
     
-    async def _make_request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def _make_request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
         """Make an authenticated request to the Trakt API.
         
         Args:
@@ -90,6 +90,22 @@ class TraktClient:
             response = await client.get(url, headers=self.headers, params=params)
             response.raise_for_status()
             return response.json()
+    
+    async def _make_list_request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """Make a request that returns a list of items."""
+        result = await self._make_request(endpoint, params)
+        if isinstance(result, list):
+            return result
+        # If API returns an error object instead of list, return empty list
+        return []
+    
+    async def _make_dict_request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Make a request that returns a single item."""
+        result = await self._make_request(endpoint, params)
+        if isinstance(result, dict):
+            return result
+        # If API returns unexpected format, return empty dict
+        return {}
     
     async def _post_request(self, endpoint: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Make a POST request to the Trakt API.
@@ -160,7 +176,7 @@ class TraktClient:
         if not self.is_authenticated():
             return []
         
-        return await self._make_request(TRAKT_ENDPOINTS["user_watched_shows"])
+        return await self._make_list_request(TRAKT_ENDPOINTS["user_watched_shows"])
     
     @handle_api_errors
     async def get_trending_shows(self, limit: int = DEFAULT_LIMIT) -> List[Dict[str, Any]]:
@@ -172,7 +188,7 @@ class TraktClient:
         Returns:
             List of trending shows data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["shows_trending"], params={"limit": limit})
+        return await self._make_list_request(TRAKT_ENDPOINTS["shows_trending"], params={"limit": limit})
     
     @handle_api_errors
     async def get_popular_shows(self, limit: int = DEFAULT_LIMIT) -> List[Dict[str, Any]]:
@@ -184,7 +200,7 @@ class TraktClient:
         Returns:
             List of popular shows data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["shows_popular"], params={"limit": limit})
+        return await self._make_list_request(TRAKT_ENDPOINTS["shows_popular"], params={"limit": limit})
     
     @handle_api_errors
     async def get_favorited_shows(self, limit: int = DEFAULT_LIMIT, period: str = "weekly") -> List[Dict[str, Any]]:
@@ -197,7 +213,7 @@ class TraktClient:
         Returns:
             List of favorited shows data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["shows_favorited"], params={"limit": limit, "period": period})
+        return await self._make_list_request(TRAKT_ENDPOINTS["shows_favorited"], params={"limit": limit, "period": period})
     
     @handle_api_errors
     async def get_played_shows(self, limit: int = DEFAULT_LIMIT, period: str = "weekly") -> List[Dict[str, Any]]:
@@ -210,7 +226,7 @@ class TraktClient:
         Returns:
             List of most played shows data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["shows_played"], params={"limit": limit, "period": period})
+        return await self._make_list_request(TRAKT_ENDPOINTS["shows_played"], params={"limit": limit, "period": period})
     
     @handle_api_errors
     async def get_watched_shows(self, limit: int = DEFAULT_LIMIT, period: str = "weekly") -> List[Dict[str, Any]]:
@@ -223,7 +239,7 @@ class TraktClient:
         Returns:
             List of most watched shows data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["shows_watched"], params={"limit": limit, "period": period})
+        return await self._make_list_request(TRAKT_ENDPOINTS["shows_watched"], params={"limit": limit, "period": period})
     
     @handle_api_errors
     async def get_trending_movies(self, limit: int = DEFAULT_LIMIT) -> List[Dict[str, Any]]:
@@ -235,7 +251,7 @@ class TraktClient:
         Returns:
             List of trending movies data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["movies_trending"], params={"limit": limit})
+        return await self._make_list_request(TRAKT_ENDPOINTS["movies_trending"], params={"limit": limit})
     
     @handle_api_errors
     async def get_popular_movies(self, limit: int = DEFAULT_LIMIT) -> List[Dict[str, Any]]:
@@ -247,7 +263,7 @@ class TraktClient:
         Returns:
             List of popular movies data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["movies_popular"], params={"limit": limit})
+        return await self._make_list_request(TRAKT_ENDPOINTS["movies_popular"], params={"limit": limit})
     
     @handle_api_errors
     async def get_favorited_movies(self, limit: int = DEFAULT_LIMIT, period: str = "weekly") -> List[Dict[str, Any]]:
@@ -260,7 +276,7 @@ class TraktClient:
         Returns:
             List of favorited movies data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["movies_favorited"], params={"limit": limit, "period": period})
+        return await self._make_list_request(TRAKT_ENDPOINTS["movies_favorited"], params={"limit": limit, "period": period})
     
     @handle_api_errors
     async def get_played_movies(self, limit: int = DEFAULT_LIMIT, period: str = "weekly") -> List[Dict[str, Any]]:
@@ -273,7 +289,7 @@ class TraktClient:
         Returns:
             List of most played movies data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["movies_played"], params={"limit": limit, "period": period})
+        return await self._make_list_request(TRAKT_ENDPOINTS["movies_played"], params={"limit": limit, "period": period})
     
     @handle_api_errors
     async def get_watched_movies(self, limit: int = DEFAULT_LIMIT, period: str = "weekly") -> List[Dict[str, Any]]:
@@ -286,7 +302,7 @@ class TraktClient:
         Returns:
             List of most watched movies data
         """
-        return await self._make_request(TRAKT_ENDPOINTS["movies_watched"], params={"limit": limit, "period": period})
+        return await self._make_list_request(TRAKT_ENDPOINTS["movies_watched"], params={"limit": limit, "period": period})
     
     def clear_auth_token(self) -> bool:
         """Clear the authentication token.
@@ -320,11 +336,11 @@ class TraktClient:
         if not self.is_authenticated():
             return []
         
-        return await self._make_request(TRAKT_ENDPOINTS["user_watched_movies"])
+        return await self._make_list_request(TRAKT_ENDPOINTS["user_watched_movies"])
         
     @handle_api_errors
-    async def checkin_to_show(self, episode_season: int, episode_number: int, show_id: str = None, 
-                            show_title: str = None, show_year: int = None, message: str = "", 
+    async def checkin_to_show(self, episode_season: int, episode_number: int, show_id: Optional[str] = None, 
+                            show_title: Optional[str] = None, show_year: Optional[int] = None, message: str = "", 
                             share_twitter: bool = False, share_mastodon: bool = False, share_tumblr: bool = False) -> Dict[str, Any]:
         """Check in to a show episode the user is currently watching.
         
@@ -352,10 +368,12 @@ class TraktClient:
             raise ValueError("Either show_id or show_title must be provided")
         
         # Prepare show data
-        show_data = {"ids": {}} if not show_title else {"title": show_title}
+        show_data: Dict[str, Any] = {"ids": {}} if not show_title else {"title": show_title}
         
         # Add show ID if provided
         if show_id:
+            if "ids" not in show_data:
+                show_data["ids"] = {}
             show_data["ids"]["trakt"] = show_id
             
         # Add year if provided
@@ -363,23 +381,22 @@ class TraktClient:
             show_data["year"] = show_year
         
         # Prepare episode data
-        episode_data = {
+        episode_data: Dict[str, int] = {
             "season": episode_season,
             "number": episode_number
         }
         
         # Prepare sharing data if any sharing options are enabled
+        sharing_data: Optional[Dict[str, bool]] = None
         if share_twitter or share_mastodon or share_tumblr:
             sharing_data = {
                 "twitter": share_twitter,
                 "mastodon": share_mastodon,
                 "tumblr": share_tumblr
             }
-        else:
-            sharing_data = None
         
         # Prepare checkin data
-        data = {
+        data: Dict[str, Any] = {
             "episode": episode_data,
             "show": show_data
         }
@@ -409,7 +426,7 @@ class TraktClient:
         search_endpoint = f"{TRAKT_ENDPOINTS['search']}/show"
         
         # Make the search request
-        return await self._make_request(search_endpoint, params={
+        return await self._make_list_request(search_endpoint, params={
             "query": query,
             "limit": limit
         }) 
@@ -418,7 +435,7 @@ class TraktClient:
     async def search_movies(self, query: str, limit: int = DEFAULT_LIMIT) -> List[Dict[str, Any]]:
         """Search for movies on Trakt."""
         search_endpoint = f"{TRAKT_ENDPOINTS['search']}/movie"
-        return await self._make_request(search_endpoint, params={
+        return await self._make_list_request(search_endpoint, params={
             "query": query,
             "limit": limit
         })
@@ -434,49 +451,49 @@ class TraktClient:
             sort: How to sort comments (newest, oldest, likes, replies, highest, lowest, plays, watched)
         """
         endpoint = TRAKT_ENDPOINTS["comments_movie"].replace(":id", movie_id).replace(":sort", sort)
-        return await self._make_request(endpoint, params={"limit": limit, "page": page})
+        return await self._make_list_request(endpoint, params={"limit": limit, "page": page})
 
     @handle_api_errors
     async def get_show_comments(self, show_id: str, limit: int = DEFAULT_LIMIT, page: int = 1, sort: str = "newest") -> List[Dict[str, Any]]:
         """Get comments for a show."""
         endpoint = TRAKT_ENDPOINTS["comments_show"].replace(":id", show_id).replace(":sort", sort)
-        return await self._make_request(endpoint, params={"limit": limit, "page": page})
+        return await self._make_list_request(endpoint, params={"limit": limit, "page": page})
 
     @handle_api_errors
     async def get_season_comments(self, show_id: str, season: int, limit: int = DEFAULT_LIMIT, page: int = 1, sort: str = "newest") -> List[Dict[str, Any]]:
         """Get comments for a season."""
         endpoint = TRAKT_ENDPOINTS["comments_season"].replace(":id", show_id).replace(":season", str(season)).replace(":sort", sort)
-        return await self._make_request(endpoint, params={"limit": limit, "page": page})
+        return await self._make_list_request(endpoint, params={"limit": limit, "page": page})
 
     @handle_api_errors
     async def get_episode_comments(self, show_id: str, season: int, episode: int, limit: int = DEFAULT_LIMIT, page: int = 1, sort: str = "newest") -> List[Dict[str, Any]]:
         """Get comments for an episode."""
         endpoint = TRAKT_ENDPOINTS["comments_episode"].replace(":id", show_id).replace(":season", str(season)).replace(":episode", str(episode)).replace(":sort", sort)
-        return await self._make_request(endpoint, params={"limit": limit, "page": page})
+        return await self._make_list_request(endpoint, params={"limit": limit, "page": page})
 
     @handle_api_errors
     async def get_comment(self, comment_id: str) -> Dict[str, Any]:
         """Get a specific comment."""
         endpoint = TRAKT_ENDPOINTS["comment"].replace(":id", comment_id)
-        return await self._make_request(endpoint)
+        return await self._make_dict_request(endpoint)
 
     @handle_api_errors
     async def get_comment_replies(self, comment_id: str, limit: int = DEFAULT_LIMIT, page: int = 1, sort: str = "newest") -> List[Dict[str, Any]]:
         """Get replies for a comment."""
         endpoint = TRAKT_ENDPOINTS["comment_replies"].replace(":id", comment_id).replace(":sort", sort)
-        return await self._make_request(endpoint, params={"limit": limit, "page": page})
+        return await self._make_list_request(endpoint, params={"limit": limit, "page": page})
 
     @handle_api_errors
     async def get_movie(self, movie_id: str) -> Dict[str, Any]:
         """Get details for a specific movie."""
         endpoint = f"/movies/{movie_id}"
-        return await self._make_request(endpoint)
+        return await self._make_dict_request(endpoint)
 
     @handle_api_errors
     async def get_show(self, show_id: str) -> Dict[str, Any]:
         """Get details for a specific show."""
         endpoint = f"/shows/{show_id}"
-        return await self._make_request(endpoint)
+        return await self._make_dict_request(endpoint)
         
     @handle_api_errors
     async def get_show_ratings(self, show_id: str) -> Dict[str, Any]:
@@ -489,7 +506,7 @@ class TraktClient:
             Rating data including average rating and distribution
         """
         endpoint = TRAKT_ENDPOINTS["show_ratings"].replace(":id", show_id)
-        return await self._make_request(endpoint)
+        return await self._make_dict_request(endpoint)
         
     @handle_api_errors
     async def get_movie_ratings(self, movie_id: str) -> Dict[str, Any]:
@@ -502,4 +519,4 @@ class TraktClient:
             Rating data including average rating and distribution
         """
         endpoint = TRAKT_ENDPOINTS["movie_ratings"].replace(":id", movie_id)
-        return await self._make_request(endpoint)
+        return await self._make_dict_request(endpoint)

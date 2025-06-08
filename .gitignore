@@ -98,3 +98,6 @@ pip-delete-this-directory.txt
 # pyenv
 .python-version 
 .aider*
+
+# Claude Code local settings
+.claude/

@@ -2,7 +2,6 @@ import pytest
 import asyncio
 from unittest.mock import patch, MagicMock
 import time
-import os
 import sys
 from pathlib import Path
 
@@ -11,25 +10,12 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from server import (
     start_device_auth, check_auth_status, clear_auth,
-    fetch_user_watched_shows, fetch_user_watched_movies,
-    search_shows, search_movies, checkin_to_show,
-    fetch_trending_shows, fetch_popular_shows,
-    fetch_show_comments, fetch_movie_comments,
-    fetch_show_ratings, fetch_movie_ratings
+    fetch_user_watched_shows, search_shows, checkin_to_show,
+    fetch_trending_shows, fetch_show_comments, fetch_show_ratings
 )
-from models import FormatHelper
-from trakt_client import TraktClient
 
 @pytest.mark.asyncio
 async def test_start_device_auth():
-    device_code_response = {
-        "device_code": "device_code_123",
-        "user_code": "USER123",
-        "verification_url": "https://trakt.tv/activate",
-        "expires_in": 600,
-        "interval": 5
-    }
-    
     with patch('server.TraktClient') as mock_client_class, \
          patch('server.active_auth_flow', {}):
         
@@ -315,7 +301,7 @@ async def test_search_shows():
         
         # Verify the client methods were called - adjust the assertion to match how the method is actually called
         mock_client.search_shows.assert_called_once()
-        args, kwargs = mock_client.search_shows.call_args
+        args, _ = mock_client.search_shows.call_args
         assert args[0] == "breaking bad"  # First positional arg should be the query
         assert args[1] == 10  # Second positional arg should be the limit
 
