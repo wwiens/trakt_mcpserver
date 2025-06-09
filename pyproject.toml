@@ -26,15 +26,15 @@ select = [
 ]
 ignore = [
     "E501", # line too long (handled by formatter)
-    "S101", # Use of assert (legitimate in tests)
-    "S603", # subprocess call (legitimate in test fixtures)
-    "S607", # Starting process with partial executable path (legitimate in tests)
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
+    "S101", # Use of assert (legitimate in tests)
     "S105", # Possible hardcoded password (test data)
     "S106", # Possible hardcoded password passed to function (test data)
+    "S603", # subprocess call (legitimate in test fixtures)
+    "S607", # Starting process with partial executable path (legitimate in tests)
 ]
 "models.py" = [
     "S105", # token_type = "bearer" is legitimate OAuth config
