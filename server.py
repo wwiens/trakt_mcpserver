@@ -1,23 +1,26 @@
-from typing import Optional, Dict, Any
-import logging
 import json
+import logging
 import time
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from trakt_client import TraktClient
+from config import AUTH_VERIFICATION_URL, DEFAULT_LIMIT, MCP_RESOURCES, TOOL_NAMES
 from models import FormatHelper
-from config import MCP_RESOURCES, DEFAULT_LIMIT, TOOL_NAMES, AUTH_VERIFICATION_URL
+from trakt_client import TraktClient
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("trakt_mcp")
 
 # Create a named server
 mcp = FastMCP("Trakt MCP")
 
 # Authentication storage for active device code flows
-active_auth_flow: Dict[str, Any] = {}
+active_auth_flow: dict[str, Any] = {}
+
 
 # Authentication Resources
 @mcp.resource(MCP_RESOURCES["user_auth_status"])
@@ -91,7 +94,7 @@ async def start_device_auth() -> str:
         "device_code": device_code_response.device_code,
         "expires_at": int(time.time()) + device_code_response.expires_in,
         "interval": device_code_response.interval,
-        "last_poll": 0
+        "last_poll": 0,
     }
 
     logger.info(f"Started device auth flow: {active_auth_flow}")
@@ -100,7 +103,7 @@ async def start_device_auth() -> str:
     instructions = FormatHelper.format_device_auth_instructions(
         device_code_response.user_code,
         AUTH_VERIFICATION_URL,
-        device_code_response.expires_in
+        device_code_response.expires_in,
     )
 
     return f"""{instructions}
@@ -138,7 +141,9 @@ If you want to log out at any point, you can use the `clear_auth` tool."""
 
     # Check if it's too early to poll again
     if current_time - active_auth_flow["last_poll"] < active_auth_flow["interval"]:
-        seconds_to_wait = active_auth_flow["interval"] - (current_time - active_auth_flow["last_poll"])
+        seconds_to_wait = active_auth_flow["interval"] - (
+            current_time - active_auth_flow["last_poll"]
+        )
         return f"Please wait {seconds_to_wait} seconds before checking again."
 
     # Update last poll time
@@ -268,9 +273,17 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
 
 
 @mcp.tool(name=TOOL_NAMES["checkin_to_show"])
-async def checkin_to_show(season: int, episode: int, show_id: Optional[str] = None, show_title: Optional[str] = None,
-                         show_year: Optional[int] = None, message: str = "", share_twitter: bool = False,
-                         share_mastodon: bool = False, share_tumblr: bool = False) -> str:
+async def checkin_to_show(
+    season: int,
+    episode: int,
+    show_id: str | None = None,
+    show_title: str | None = None,
+    show_year: int | None = None,
+    message: str = "",
+    share_twitter: bool = False,
+    share_mastodon: bool = False,
+    share_tumblr: bool = False,
+) -> str:
     """Check in to a show episode that the user is currently watching.
 
     This will mark the episode as watched on Trakt and can optionally share to connected social media.
@@ -316,18 +329,18 @@ After you've completed the authorization process on the Trakt website, please te
             message=message,
             share_twitter=share_twitter,
             share_mastodon=share_mastodon,
-            share_tumblr=share_tumblr
+            share_tumblr=share_tumblr,
         )
 
         # Format the response
         return FormatHelper.format_checkin_response(response)
     except ValueError as e:
         # Handle authentication errors
-        return f"Error: {str(e)}"
+        return f"Error: {e!s}"
     except Exception as e:
         # Handle other errors
         logger.error(f"Error checking in to show: {e}")
-        return f"""An error occurred while checking in to the show: {str(e)}
+        return f"""An error occurred while checking in to the show: {e!s}
 
 Make sure you provided either:
 1. A valid show ID (use search_shows to find it)
@@ -376,7 +389,9 @@ async def get_favorited_shows() -> str:
 
     # Log the first show to see the structure
     if shows and len(shows) > 0:
-        logger.info(f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}")
+        logger.info(
+            f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
+        )
 
     return FormatHelper.format_favorited_shows(shows)
 
@@ -403,6 +418,7 @@ async def get_watched_shows() -> str:
     client = TraktClient()
     shows = await client.get_watched_shows(limit=DEFAULT_LIMIT)
     return FormatHelper.format_watched_shows(shows)
+
 
 # Movie Resources
 @mcp.resource(MCP_RESOURCES["movies_trending"])
@@ -441,7 +457,9 @@ async def get_favorited_movies() -> str:
 
     # Log the first movie to see the structure
     if movies and len(movies) > 0:
-        logger.info(f"Favorited movies API response structure: {json.dumps(movies[0], indent=2)}")
+        logger.info(
+            f"Favorited movies API response structure: {json.dumps(movies[0], indent=2)}"
+        )
 
     return FormatHelper.format_favorited_movies(movies)
 
@@ -468,6 +486,7 @@ async def get_watched_movies() -> str:
     client = TraktClient()
     movies = await client.get_watched_movies(limit=DEFAULT_LIMIT)
     return FormatHelper.format_watched_movies(movies)
+
 
 # Show Tools
 @mcp.tool(name=TOOL_NAMES["fetch_trending_shows"])
@@ -501,7 +520,9 @@ async def fetch_popular_shows(limit: int = DEFAULT_LIMIT) -> str:
 
 
 @mcp.tool(name=TOOL_NAMES["fetch_favorited_shows"])
-async def fetch_favorited_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly") -> str:
+async def fetch_favorited_shows(
+    limit: int = DEFAULT_LIMIT, period: str = "weekly"
+) -> str:
     """Fetch most favorited shows from Trakt.
 
     Args:
@@ -516,7 +537,9 @@ async def fetch_favorited_shows(limit: int = DEFAULT_LIMIT, period: str = "weekl
 
     # Log the first show to see the structure
     if shows and len(shows) > 0:
-        logger.info(f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}")
+        logger.info(
+            f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
+        )
 
     return FormatHelper.format_favorited_shows(shows)
 
@@ -538,7 +561,9 @@ async def fetch_played_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly")
 
 
 @mcp.tool(name=TOOL_NAMES["fetch_watched_shows"])
-async def fetch_watched_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly") -> str:
+async def fetch_watched_shows(
+    limit: int = DEFAULT_LIMIT, period: str = "weekly"
+) -> str:
     """Fetch most watched shows from Trakt.
 
     Args:
@@ -551,6 +576,7 @@ async def fetch_watched_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly"
     client = TraktClient()
     shows = await client.get_watched_shows(limit=limit, period=period)
     return FormatHelper.format_watched_shows(shows)
+
 
 # Movie Tools
 @mcp.tool(name=TOOL_NAMES["fetch_trending_movies"])
@@ -584,7 +610,9 @@ async def fetch_popular_movies(limit: int = DEFAULT_LIMIT) -> str:
 
 
 @mcp.tool(name=TOOL_NAMES["fetch_favorited_movies"])
-async def fetch_favorited_movies(limit: int = DEFAULT_LIMIT, period: str = "weekly") -> str:
+async def fetch_favorited_movies(
+    limit: int = DEFAULT_LIMIT, period: str = "weekly"
+) -> str:
     """Fetch most favorited movies from Trakt.
 
     Args:
@@ -599,13 +627,17 @@ async def fetch_favorited_movies(limit: int = DEFAULT_LIMIT, period: str = "week
 
     # Log the first movie to see the structure
     if movies and len(movies) > 0:
-        logger.info(f"Favorited movies API response structure: {json.dumps(movies[0], indent=2)}")
+        logger.info(
+            f"Favorited movies API response structure: {json.dumps(movies[0], indent=2)}"
+        )
 
     return FormatHelper.format_favorited_movies(movies)
 
 
 @mcp.tool(name=TOOL_NAMES["fetch_played_movies"])
-async def fetch_played_movies(limit: int = DEFAULT_LIMIT, period: str = "weekly") -> str:
+async def fetch_played_movies(
+    limit: int = DEFAULT_LIMIT, period: str = "weekly"
+) -> str:
     """Fetch most played movies from Trakt.
 
     Args:
@@ -621,7 +653,9 @@ async def fetch_played_movies(limit: int = DEFAULT_LIMIT, period: str = "weekly"
 
 
 @mcp.tool(name=TOOL_NAMES["fetch_watched_movies"])
-async def fetch_watched_movies(limit: int = DEFAULT_LIMIT, period: str = "weekly") -> str:
+async def fetch_watched_movies(
+    limit: int = DEFAULT_LIMIT, period: str = "weekly"
+) -> str:
     """Fetch most watched movies from Trakt.
 
     Args:
@@ -637,7 +671,12 @@ async def fetch_watched_movies(limit: int = DEFAULT_LIMIT, period: str = "weekly
 
 
 @mcp.tool(name=TOOL_NAMES["fetch_movie_comments"])
-async def fetch_movie_comments(movie_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
+async def fetch_movie_comments(
+    movie_id: str,
+    limit: int = DEFAULT_LIMIT,
+    show_spoilers: bool = False,
+    sort: str = "newest",
+) -> str:
     """Fetch comments for a movie from Trakt.
 
     Args:
@@ -656,16 +695,24 @@ async def fetch_movie_comments(movie_id: str, limit: int = DEFAULT_LIMIT, show_s
         if isinstance(movie, str):
             return f"Error fetching comments for Movie ID: {movie_id}: {movie}"
         title = f"Movie: {movie.get('title', 'Unknown')}"
-        
+
         comments = await client.get_movie_comments(movie_id, limit=limit, sort=sort)
         if isinstance(comments, str):
             return f"Error fetching comments for {title}: {comments}"
-        return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+        return FormatHelper.format_comments(
+            comments, title, show_spoilers=show_spoilers
+        )
     except Exception as e:
-        return f"Error fetching comments for Movie ID: {movie_id}: {str(e)}"
+        return f"Error fetching comments for Movie ID: {movie_id}: {e!s}"
+
 
 @mcp.tool(name=TOOL_NAMES["fetch_show_comments"])
-async def fetch_show_comments(show_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
+async def fetch_show_comments(
+    show_id: str,
+    limit: int = DEFAULT_LIMIT,
+    show_spoilers: bool = False,
+    sort: str = "newest",
+) -> str:
     """Fetch comments for a show from Trakt.
 
     Args:
@@ -684,16 +731,25 @@ async def fetch_show_comments(show_id: str, limit: int = DEFAULT_LIMIT, show_spo
         if isinstance(show, str):
             return f"Error fetching comments for Show ID: {show_id}: {show}"
         title = f"Show: {show.get('title', 'Unknown')}"
-        
+
         comments = await client.get_show_comments(show_id, limit=limit, sort=sort)
         if isinstance(comments, str):
             return f"Error fetching comments for {title}: {comments}"
-        return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+        return FormatHelper.format_comments(
+            comments, title, show_spoilers=show_spoilers
+        )
     except Exception as e:
-        return f"Error fetching comments for Show ID: {show_id}: {str(e)}"
+        return f"Error fetching comments for Show ID: {show_id}: {e!s}"
+
 
 @mcp.tool(name=TOOL_NAMES["fetch_season_comments"])
-async def fetch_season_comments(show_id: str, season: int, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
+async def fetch_season_comments(
+    show_id: str,
+    season: int,
+    limit: int = DEFAULT_LIMIT,
+    show_spoilers: bool = False,
+    sort: str = "newest",
+) -> str:
     """Fetch comments for a season from Trakt.
 
     Args:
@@ -713,16 +769,30 @@ async def fetch_season_comments(show_id: str, season: int, limit: int = DEFAULT_
         if isinstance(show, str):
             return f"Error fetching comments for Show ID: {show_id} - Season {season}: {show}"
         title = f"Show: {show.get('title', 'Unknown')} - Season {season}"
-        
-        comments = await client.get_season_comments(show_id, season, limit=limit, sort=sort)
+
+        comments = await client.get_season_comments(
+            show_id, season, limit=limit, sort=sort
+        )
         if isinstance(comments, str):
             return f"Error fetching comments for {title}: {comments}"
-        return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+        return FormatHelper.format_comments(
+            comments, title, show_spoilers=show_spoilers
+        )
     except Exception as e:
-        return f"Error fetching comments for Show ID: {show_id} - Season {season}: {str(e)}"
+        return (
+            f"Error fetching comments for Show ID: {show_id} - Season {season}: {e!s}"
+        )
+
 
 @mcp.tool(name=TOOL_NAMES["fetch_episode_comments"])
-async def fetch_episode_comments(show_id: str, season: int, episode: int, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
+async def fetch_episode_comments(
+    show_id: str,
+    season: int,
+    episode: int,
+    limit: int = DEFAULT_LIMIT,
+    show_spoilers: bool = False,
+    sort: str = "newest",
+) -> str:
     """Fetch comments for an episode from Trakt.
 
     Args:
@@ -743,13 +813,18 @@ async def fetch_episode_comments(show_id: str, season: int, episode: int, limit:
         if isinstance(show, str):
             return f"Error fetching comments for Show ID: {show_id} - S{season:02d}E{episode:02d}: {show}"
         title = f"Show: {show.get('title', 'Unknown')} - S{season:02d}E{episode:02d}"
-        
-        comments = await client.get_episode_comments(show_id, season, episode, limit=limit, sort=sort)
+
+        comments = await client.get_episode_comments(
+            show_id, season, episode, limit=limit, sort=sort
+        )
         if isinstance(comments, str):
             return f"Error fetching comments for {title}: {comments}"
-        return FormatHelper.format_comments(comments, title, show_spoilers=show_spoilers)
+        return FormatHelper.format_comments(
+            comments, title, show_spoilers=show_spoilers
+        )
     except Exception as e:
-        return f"Error fetching comments for Show ID: {show_id} - S{season:02d}E{episode:02d}: {str(e)}"
+        return f"Error fetching comments for Show ID: {show_id} - S{season:02d}E{episode:02d}: {e!s}"
+
 
 @mcp.tool(name=TOOL_NAMES["fetch_comment"])
 async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
@@ -769,10 +844,16 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
             return f"Error fetching comment {comment_id}: {comment}"
         return FormatHelper.format_comment(comment, show_spoilers=show_spoilers)
     except Exception as e:
-        return f"Error fetching comment {comment_id}: {str(e)}"
+        return f"Error fetching comment {comment_id}: {e!s}"
+
 
 @mcp.tool(name=TOOL_NAMES["fetch_comment_replies"])
-async def fetch_comment_replies(comment_id: str, limit: int = DEFAULT_LIMIT, show_spoilers: bool = False, sort: str = "newest") -> str:
+async def fetch_comment_replies(
+    comment_id: str,
+    limit: int = DEFAULT_LIMIT,
+    show_spoilers: bool = False,
+    sort: str = "newest",
+) -> str:
     """Fetch replies for a comment from Trakt.
 
     Args:
@@ -792,9 +873,11 @@ async def fetch_comment_replies(comment_id: str, limit: int = DEFAULT_LIMIT, sho
         replies = await client.get_comment_replies(comment_id, limit=limit, sort=sort)
         if isinstance(replies, str):
             return f"Error fetching comment replies for {comment_id}: {replies}"
-        return FormatHelper.format_comment(comment, with_replies=True, replies=replies, show_spoilers=show_spoilers)
+        return FormatHelper.format_comment(
+            comment, with_replies=True, replies=replies, show_spoilers=show_spoilers
+        )
     except Exception as e:
-        return f"Error fetching comment replies for {comment_id}: {str(e)}"
+        return f"Error fetching comment replies for {comment_id}: {e!s}"
 
 
 @mcp.tool(name=TOOL_NAMES["search_movies"])
@@ -827,15 +910,15 @@ async def fetch_show_ratings(show_id: str) -> str:
 
     try:
         show = await client.get_show(show_id)
-        
+
         # Check if the API returned an error string
         if isinstance(show, str):
             return f"Error fetching ratings for show ID {show_id}: {show}"
-            
+
         show_title = show.get("title", f"Show ID: {show_id}")
 
         ratings = await client.get_show_ratings(show_id)
-        
+
         # Check if the API returned an error string
         if isinstance(ratings, str):
             return f"Error fetching ratings for {show_title}: {ratings}"
@@ -843,7 +926,7 @@ async def fetch_show_ratings(show_id: str) -> str:
         return FormatHelper.format_show_ratings(ratings, show_title)
     except Exception as e:
         logger.error(f"Error fetching show ratings: {e}")
-        return f"Error fetching ratings for show ID {show_id}: {str(e)}"
+        return f"Error fetching ratings for show ID {show_id}: {e!s}"
 
 
 @mcp.tool(name=TOOL_NAMES["fetch_movie_ratings"])
@@ -860,15 +943,15 @@ async def fetch_movie_ratings(movie_id: str) -> str:
 
     try:
         movie = await client.get_movie(movie_id)
-        
+
         # Check if the API returned an error string
         if isinstance(movie, str):
             return f"Error fetching ratings for movie ID {movie_id}: {movie}"
-            
+
         movie_title = movie.get("title", f"Movie ID: {movie_id}")
 
         ratings = await client.get_movie_ratings(movie_id)
-        
+
         # Check if the API returned an error string
         if isinstance(ratings, str):
             return f"Error fetching ratings for {movie_title}: {ratings}"
@@ -876,7 +959,7 @@ async def fetch_movie_ratings(movie_id: str) -> str:
         return FormatHelper.format_movie_ratings(ratings, movie_title)
     except Exception as e:
         logger.error(f"Error fetching movie ratings: {e}")
-        return f"Error fetching ratings for movie ID {movie_id}: {str(e)}"
+        return f"Error fetching ratings for movie ID {movie_id}: {e!s}"
 
 
 @mcp.resource(MCP_RESOURCES["show_ratings"])
@@ -893,15 +976,15 @@ async def get_show_ratings(show_id: str) -> str:
 
     try:
         show = await client.get_show(show_id)
-        
+
         # Check if the API returned an error string
         if isinstance(show, str):
             return f"Error fetching ratings for show ID {show_id}: {show}"
-            
+
         show_title = show.get("title", f"Show ID: {show_id}")
 
         ratings = await client.get_show_ratings(show_id)
-        
+
         # Check if the API returned an error string
         if isinstance(ratings, str):
             return f"Error fetching ratings for {show_title}: {ratings}"
@@ -909,7 +992,7 @@ async def get_show_ratings(show_id: str) -> str:
         return FormatHelper.format_show_ratings(ratings, show_title)
     except Exception as e:
         logger.error(f"Error fetching show ratings: {e}")
-        return f"Error fetching ratings for show ID {show_id}: {str(e)}"
+        return f"Error fetching ratings for show ID {show_id}: {e!s}"
 
 
 @mcp.resource(MCP_RESOURCES["movie_ratings"])
@@ -926,15 +1009,15 @@ async def get_movie_ratings(movie_id: str) -> str:
 
     try:
         movie = await client.get_movie(movie_id)
-        
+
         # Check if the API returned an error string
         if isinstance(movie, str):
             return f"Error fetching ratings for movie ID {movie_id}: {movie}"
-            
+
         movie_title = movie.get("title", f"Movie ID: {movie_id}")
 
         ratings = await client.get_movie_ratings(movie_id)
-        
+
         # Check if the API returned an error string
         if isinstance(ratings, str):
             return f"Error fetching ratings for {movie_title}: {ratings}"
@@ -942,7 +1025,7 @@ async def get_movie_ratings(movie_id: str) -> str:
         return FormatHelper.format_movie_ratings(ratings, movie_title)
     except Exception as e:
         logger.error(f"Error fetching movie ratings: {e}")
-        return f"Error fetching ratings for movie ID {movie_id}: {str(e)}"
+        return f"Error fetching ratings for movie ID {movie_id}: {e!s}"
 
 
 if __name__ == "__main__":

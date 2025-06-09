@@ -60,6 +60,12 @@ pytest tests/client/test_trakt_client.py -v
 # Type checking with pyright
 pyright
 
+# Code linting and formatting with ruff
+ruff check          # Check for lint issues
+ruff check --fix    # Fix auto-fixable lint issues
+ruff format         # Format code
+ruff format --check # Check if code is formatted
+
 ```
 
 **Note:** Use `pytest.ini` configuration for async test support with `asyncio_default_fixture_loop_scope = session`.
