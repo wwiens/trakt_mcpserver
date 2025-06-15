@@ -333,6 +333,10 @@ pytest -v -s
 
 # Type checking
 pyright
+
+# Code linting and formatting with ruff
+ruff check
+ruff format --check
 ```
 
 ## 📝 Using with Claude
