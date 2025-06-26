@@ -2,7 +2,7 @@
 
 ![MCP Trakt](https://img.shields.io/badge/MCP-Trakt-ff69b4)
 ![Built with Cursor](https://img.shields.io/badge/Built%20with-Cursor-blue)
-![Powered by Claude](https://img.shields.io/badge/Powered%20by-Claude%203.7%20Sonnet-blueviolet)
+![Powered by Claude](https://img.shields.io/badge/Powered%20by-Claude%20Sonnet-blueviolet)
 
 A Model Context Protocol (MCP) server that creates a bridge between AI language models and the Trakt.tv API, allowing LLMs to access real-time entertainment data and personal Trakt viewing history. Built with a domain-focused architecture using FastMCP, providing clean separation of concerns across authentication, shows, movies, user data, comments, search, and check-in functionality.
 
@@ -48,13 +48,21 @@ Trakt has become the standard for entertainment tracking with:
 
 This MCP server taps into Trakt's rich API ecosystem to bring real-time entertainment data directly to your conversations with AI assistants like Claude.
 
-## 🚀 The Cursor Development Experience
+## 🚀 AI-Powered Development Experience
 
-This entire project was developed using [Cursor](https://cursor.sh/), a code editor built for the AI era, with Claude 3.7 Sonnet generating all code. This approach demonstrates:
+This project was developed using a combination of cutting-edge AI development tools:
+
+- **[Cursor](https://cursor.sh/)** - AI-powered code editor for rapid development
+- **[Aider](https://aider.chat/)** - AI pair programming tool for code collaboration
+- **[Claude Code](https://claude.ai/code)** - Claude's dedicated coding interface
+- **Claude Opus** - Architectural guidance and design decisions when needed
+
+This multi-tool approach demonstrates:
 
 - How AI-assisted development can dramatically accelerate building specialized MCP servers
 - The capabilities of modern AI in writing functional, well-structured code
 - A collaborative workflow between human intent and AI implementation
+- The power of using the right AI tool for each development phase
 
 ## ✨ Features
 
@@ -400,5 +408,5 @@ All data is fetched directly from your Trakt account in real-time.
 
 <div align="center">
   <p>Built with 🧠 AI and human collaboration</p>
-  <p>Powered by Cursor + Claude 3.7 Sonnet</p>
+  <p>Powered by Cursor + Aider + Claude Code + Claude Sonnet</p>
 </div>
