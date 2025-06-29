@@ -1,53 +1,26 @@
-import subprocess
+import os
 import sys
 import time
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-sys.path.append(str(Path(__file__).parent.parent))
+# Add project root to path - more explicit approach
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
-from fastmcp.client import Client
-
-from models import TraktAuthToken
-
-
-@pytest.fixture(scope="session")
-async def mcp_server():
-    """Start the MCP server for testing and tear down after tests."""
-    server_process = subprocess.Popen(
-        ["python", "-m", "mcp", "dev", "server.py"], env={"PORT": "8000"}
-    )
-
-    time.sleep(2)
-
-    yield
-
-    server_process.terminate()
-    server_process.wait()
-
-
-@pytest.fixture
-async def client(mcp_server: None):
-    """Create a client connection to the MCP server."""
-    async with Client("http://localhost:8000/sse") as client:
-        yield client
-
-
-@pytest.fixture
-def mock_trakt_client():
-    """Create a mock TraktClient for testing."""
-    with patch("server.TraktClient") as mock_client:
-        # Configure the mock client
-        instance = mock_client.return_value
-        instance.is_authenticated.return_value = True
-        yield instance
+# Also add project root using pathlib as backup
+project_root_pathlib = str(Path(__file__).parent.parent.resolve())
+if project_root_pathlib not in sys.path:
+    sys.path.insert(0, project_root_pathlib)
 
 
 @pytest.fixture
 def mock_auth_token():
     """Create a mock auth token for testing."""
+    from models.auth import TraktAuthToken
+
     return TraktAuthToken(
         access_token="mock_access_token",
         refresh_token="mock_refresh_token",

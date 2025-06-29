@@ -3,5 +3,6 @@ pytest-asyncio>=0.21.0
 fastmcp>=2.0.0
 pyright>=1.1.401
 ruff>=0.11.13
+pip-audit>=2.9.0
 types-requests>=2.32.0
 types-setuptools>=80.9.0

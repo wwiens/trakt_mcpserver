@@ -36,12 +36,14 @@ ignore = [
     "S603", # subprocess call (legitimate in test fixtures)
     "S607", # Starting process with partial executable path (legitimate in tests)
 ]
+
 "models.py" = [
     "S105", # token_type = "bearer" is legitimate OAuth config
 ]
 "trakt_client.py" = [
     "S105", # AUTH_TOKEN_FILE = "auth_token.json" is legitimate config
 ]
+
 
 [tool.ruff.format]
 quote-style = "double"
@@ -86,3 +88,4 @@ reportImplicitStringConcatenation = "warning"
 reportUndefinedVariable = "error"
 reportAssertAlwaysTrue = "error"
 reportFunctionMemberAccess = "error"
+reportUnusedFunction = "error"

@@ -1,152 +1,153 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-This is a **Model Context Protocol (MCP) server** that bridges AI language models with the Trakt.tv API for entertainment data access. The server is built using FastMCP and provides both public entertainment data and personal user data through OAuth authentication.
+**Model Context Protocol (MCP) server** bridging AI models with Trakt.tv API. Built with FastMCP, providing entertainment data access with OAuth authentication.
 
-### Key Architecture Components
+## Architecture - Single Responsibility Principle
 
-- **server.py**: Main MCP server with FastMCP decorators for resources and tools
-- **trakt_client.py**: HTTP client for Trakt API interactions using httpx
-- **models.py**: Pydantic models and data formatting utilities (FormatHelper class)
-- **config.py**: Centralized configuration for API endpoints, MCP resources, and tool names
-- **utils.py**: Error handling decorators and utility functions
+**CRITICAL REQUIREMENT**: Every file must have exactly ONE clear purpose. No exceptions.
 
-### Authentication Flow
+### Current Structure
 
-The project uses Trakt's OAuth device code flow:
+```
+server/           # MCP server modules by domain
+├── auth/         # Authentication tools/resources  
+├── shows/        # Show-specific tools/resources
+├── movies/       # Movie-specific tools/resources
+├── user/         # User data tools/resources
+├── comments/     # Comment tools
+├── search/       # Search tools
+└── checkin/      # Check-in tools
 
-1. Device code request generates user code and device code
-2. User visits activation URL and enters code
-3. Server polls token endpoint until user completes authorization
-4. Token stored in `auth_token.json` for persistent authentication
+client/           # HTTP clients by domain
+├── auth/         # Authentication client
+├── shows/        # Show API client
+├── movies/       # Movie API client  
+├── comments/     # Comments API client
+├── user/         # User API client
+├── search/       # Search API client
+└── checkin/      # Check-in API client
+
+models/           # Pydantic models by domain
+├── auth/         # Authentication models
+├── formatters/   # Domain-specific formatters
+├── movies/       # Movie models
+├── shows/        # Show models
+└── user/         # User models
+
+config/           # Configuration by domain
+├── auth/         # Auth constants
+├── api/          # API constants  
+├── endpoints/    # API endpoints by domain
+└── mcp/          # MCP resource/tool definitions
+    ├── resources/ # Domain-specific MCP resources
+    └── tools/     # Domain-specific MCP tools
+
+utils/api/        # API utilities
+├── errors.py     # Error handling decorator
+└── responses.py  # Response helpers
+```
+
+### Domain-Focused Imports
+
+```python
+# Use focused imports - import only what you need
+from client.auth.client import AuthClient
+from client.shows.client import ShowsClient
+from client.movies.client import MoviesClient
+from server.auth.tools import device_auth_start
+from models.auth.auth import TraktAuthToken
+from config.endpoints.shows import SHOWS_ENDPOINTS
+```
 
 ## Development Commands
 
-### Setup and Installation
+### Setup
 ```bash
-# Install dependencies
 pip install -r requirements.txt
-
-# Install development dependencies
 pip install -r requirements-dev.txt
-
-# Set up environment (copy and configure .env from .env.example)
 cp .env.example .env
 ```
 
-### Running and Testing
+### Testing & Quality
 ```bash
-# Run the MCP server directly
-python server.py
-
-# Test with MCP Inspector (recommended for development)
-mcp dev server.py
-
-# Install in Claude Desktop
-mcp install server.py
-
-# Run all tests
+# Tests (415 tests, all must pass)
 pytest
+pytest tests/client/auth/ -v  # Focused testing
 
-# Run tests with verbose output
-pytest -v -s
+# Code quality (zero tolerance for errors/warnings)
+ruff check --fix    # Linting  
+ruff format         # Formatting
+pyright             # Type checking
+pip-audit           # Security scanning
 
-# Run specific test file
-pytest tests/client/test_trakt_client.py -v
-
-# Type checking with pyright
-pyright
-
-# Code linting and formatting with ruff
-ruff check          # Check for lint issues
-ruff check --fix    # Fix auto-fixable lint issues
-ruff format         # Format code
-ruff format --check # Check if code is formatted
-
+# MCP server
+python server.py                                                        # Direct run
+mcp dev server.py                                                      # Development mode
+npx @modelcontextprotocol/inspector --cli python server.py --method tools/list    # MCP validation (list tools)
+npx @modelcontextprotocol/inspector --cli python server.py --method resources/list # MCP validation (list resources)
+npx @modelcontextprotocol/inspector --cli python server.py --method prompts/list   # MCP validation (list prompts)
+npx @modelcontextprotocol/inspector --cli python server.py --method tools/call     # Call specific tool
 ```
 
-**Note:** Use `pytest.ini` configuration for async test support with `asyncio_default_fixture_loop_scope = session`.
+## Code Quality Requirements
 
-### Testing Requirements
+### Single Responsibility Principle
+- **Every file has exactly ONE purpose** - no mixed concerns
+- **Every function has exactly ONE responsibility** 
+- **Every class has exactly ONE reason to change**
+- Files mixing domains are architectural violations
 
-- **Always run tests after large changes** - Use `pytest` to ensure all tests pass before completing tasks
-- **Run type checking** - Use `pyright` to verify type safety after code modifications
-- **Test specific areas** - Run focused tests with `pytest tests/specific/test_file.py -v` when working on particular modules
-- **Verify test count** - Ensure no tests are accidentally broken or removed during changes
-
-## Code Quality Guidelines
-
-### Type Hints
-- Type hints are required for all functions, methods, and class attributes
-- Use proper return type annotations including `None` where applicable
-- Prefer specific types over generic ones (e.g., `list[str]` over `list`)
-- Use `typing` module imports for complex types
-
-### Function Design
-- Functions must be focused and small - single responsibility principle
-- Prefer pure functions without side effects where possible
-- Use descriptive function and variable names
+### Type Safety
+- Type hints required for all functions/methods/attributes
+- Use specific types: `list[str]` not `list`
+- Return type annotations including `None`
 
 ### Code Standards
-- Follow PEP 8 style guidelines
-- Use meaningful variable and function names
-- Add docstrings for public functions and classes
-- Keep line length under 88 characters (Black formatter standard)
-- Prefer minimal inline comments that add value not obvious from the code
-- Avoid commenting what the code does; comment why when context is needed
+- PEP 8 compliance
+- 88 character line limit
+- Descriptive names (no abbreviations)
+- Docstrings for public functions/classes
+- No comments explaining what code does - only why when needed
 
-### Clean Code Principles
-- **DRY (Don't Repeat Yourself)**: Extract common logic into reusable functions/classes
-- **SOLID Principles**: Single responsibility, open/closed, dependency inversion
-- **Fail Fast**: Validate inputs early and return clear error messages
-- **Consistent Naming**: Use consistent patterns across the codebase
-- **Small Functions**: Keep functions under 20 lines when possible
-- **Avoid Deep Nesting**: Use early returns and guard clauses
-- **Explicit is Better**: Prefer explicit imports and clear variable names over clever shortcuts
+### Security
+- Never hardcode secrets (use environment variables)
+- Validate all inputs with Pydantic models
+- Never log sensitive data (tokens, user IDs)
+- Keep dependencies updated (`pip-audit`)
 
-### Security Best Practices
-- **Never hardcode secrets**: Use environment variables for API keys and sensitive data
-- **Input Validation**: Validate all external inputs using Pydantic models
-- **Error Handling**: Don't expose internal details in error messages to users
-- **Authentication**: Always verify tokens before accessing user data
-- **Logging Security**: Never log sensitive data (tokens, user IDs, personal info)
-- **Dependency Security**: Keep dependencies updated and audit for vulnerabilities
-- **File Permissions**: Ensure sensitive files like `auth_token.json` have proper permissions
+## Key Patterns
 
-## Code Architecture Notes
+### MCP Pattern
+- **Resources** (`@mcp.resource`) - Static data endpoints
+- **Tools** (`@mcp.tool`) - Interactive functions with parameters
 
-### MCP Resource vs Tool Pattern
-
-- **Resources** (`@mcp.resource`) - Static data endpoints like trending shows, user watched history
-- **Tools** (`@mcp.tool`) - Interactive functions with parameters like search, check-in, authentication
-
-### Error Handling Strategy
-
-- `@handle_api_errors` decorator in utils.py provides consistent API error handling
-- All API methods return either structured data or error strings
-- Authentication checks happen at tool/resource level, not client level
-
-### Configuration Management
-
-All endpoints, resource URIs, and tool names are centralized in `config.py`:
-
-- `TRAKT_ENDPOINTS` - API endpoint paths
-- `MCP_RESOURCES` - MCP resource URI patterns
-- `TOOL_NAMES` - Consistent tool naming
+### Error Handling
+- Use `@handle_api_errors` decorator from `utils.api.errors`
+- Return structured data or error strings
+- Authentication checks at tool/resource level
 
 ### Data Flow
+1. MCP tool/resource → server handler
+2. Server creates focused client → client method  
+3. HTTP request with error handling
+4. Pydantic model processing
+5. Domain-specific formatter → markdown response
 
-1. MCP tool/resource called → server.py handler
-2. Handler creates TraktClient instance → trakt_client.py method
-3. HTTP request to Trakt API with error handling
-4. Response processed through Pydantic models
-5. Data formatted via FormatHelper → markdown response
+### Authentication
+- OAuth device code flow
+- Tokens in `auth_token.json` (gitignored)
+- `TraktAuthToken` model handles persistence
+- Global `active_auth_flow` tracks authorization
 
-### Authentication Storage
+## Testing Requirements
 
-- Tokens stored in `auth_token.json` at project root (gitignored)
-- `TraktAuthToken` model handles token persistence and expiration
-- Global `active_auth_flow` dict tracks ongoing device authorization
+- **415 tests must pass** - no exceptions
+- **Test structure mirrors code structure** - tests/client/auth/ for client/auth/
+- **Run tests after any changes** - `pytest`
+- **Run type checking** - `pyright` 
+- **Run MCP validation** - `npx @modelcontextprotocol/inspector --cli python server.py --method tools/list`
+- **Focused testing** - `pytest tests/specific/module/ -v`
