@@ -132,32 +132,50 @@ async def fetch_show_ratings(show_id: str) -> str:
 def register_show_tools(mcp: FastMCP) -> None:
     """Register show tools with the MCP server."""
 
-    @mcp.tool(name=TOOL_NAMES["fetch_trending_shows"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_trending_shows"],
+        description="Fetch trending TV shows from Trakt",
+    )
     async def fetch_trending_shows_tool(limit: int = DEFAULT_LIMIT) -> str:
         return await fetch_trending_shows(limit)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_popular_shows"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_popular_shows"],
+        description="Fetch popular TV shows from Trakt",
+    )
     async def fetch_popular_shows_tool(limit: int = DEFAULT_LIMIT) -> str:
         return await fetch_popular_shows(limit)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_favorited_shows"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_favorited_shows"],
+        description="Fetch most favorited TV shows from Trakt",
+    )
     async def fetch_favorited_shows_tool(
         limit: int = DEFAULT_LIMIT, period: str = "weekly"
     ) -> str:
         return await fetch_favorited_shows(limit, period)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_played_shows"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_played_shows"],
+        description="Fetch most played TV shows from Trakt",
+    )
     async def fetch_played_shows_tool(
         limit: int = DEFAULT_LIMIT, period: str = "weekly"
     ) -> str:
         return await fetch_played_shows(limit, period)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_watched_shows"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_watched_shows"],
+        description="Fetch most watched TV shows from Trakt",
+    )
     async def fetch_watched_shows_tool(
         limit: int = DEFAULT_LIMIT, period: str = "weekly"
     ) -> str:
         return await fetch_watched_shows(limit, period)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_show_ratings"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_show_ratings"],
+        description="Fetch ratings and voting statistics for a specific TV show",
+    )
     async def fetch_show_ratings_tool(show_id: str) -> str:
         return await fetch_show_ratings(show_id)

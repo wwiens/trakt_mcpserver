@@ -9,6 +9,7 @@ from .auth import register_auth_resources, register_auth_tools
 from .checkin import register_checkin_tools
 from .comments import register_comment_tools
 from .movies import register_movie_resources, register_movie_tools
+from .prompts.basic import register_basic_prompts
 from .search import register_search_tools
 from .shows import register_show_resources, register_show_tools
 from .user import register_user_resources, register_user_tools
@@ -26,8 +27,8 @@ def create_server() -> FastMCP:
     Returns:
         Configured FastMCP server instance
     """
-    # Create a named server
-    mcp = FastMCP("Trakt MCP")
+    # Create a named server with proper metadata for capability negotiation
+    mcp = FastMCP(name="trakt-mcp-server")
 
     # Register all modules
     register_auth_resources(mcp)
@@ -46,6 +47,8 @@ def create_server() -> FastMCP:
 
     register_search_tools(mcp)
     register_checkin_tools(mcp)
+
+    register_basic_prompts(mcp)
 
     logger.info("All Trakt MCP modules registered successfully")
     return mcp

@@ -8,7 +8,7 @@ import pytest
 
 from client.auth import AuthClient
 from models.auth import TraktAuthToken, TraktDeviceCode
-from utils.api.errors import handle_api_errors
+from utils.api.errors import InvalidRequestError, handle_api_errors
 
 
 @pytest.mark.asyncio
@@ -231,6 +231,8 @@ async def test_handle_api_errors_decorator():
             "Not Found", request=MagicMock(), response=MagicMock(status_code=404)
         )
 
-    # The decorator should catch the exception and return an error message
-    result = await test_func()
-    assert "Error: The requested resource was not found." in result
+    # The decorator should catch the exception and raise an MCP error
+    with pytest.raises(InvalidRequestError) as exc_info:
+        await test_func()
+
+    assert exc_info.value.message == "The requested resource was not found."

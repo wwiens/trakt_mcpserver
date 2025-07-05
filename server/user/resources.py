@@ -43,10 +43,20 @@ async def get_user_watched_movies() -> str:
 def register_user_resources(mcp: FastMCP) -> None:
     """Register user resources with the MCP server."""
 
-    @mcp.resource(MCP_RESOURCES["user_watched_shows"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["user_watched_shows"],
+        name="user_watched_shows",
+        description="TV shows watched by the authenticated user from Trakt (requires authentication)",
+        mime_type="text/markdown",
+    )
     async def user_watched_shows_resource() -> str:
         return await get_user_watched_shows()
 
-    @mcp.resource(MCP_RESOURCES["user_watched_movies"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["user_watched_movies"],
+        name="user_watched_movies",
+        description="Movies watched by the authenticated user from Trakt (requires authentication)",
+        mime_type="text/markdown",
+    )
     async def user_watched_movies_resource() -> str:
         return await get_user_watched_movies()

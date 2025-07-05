@@ -97,7 +97,10 @@ OR
 def register_checkin_tools(mcp: FastMCP) -> None:
     """Register checkin tools with the MCP server."""
 
-    @mcp.tool(name=TOOL_NAMES["checkin_to_show"])
+    @mcp.tool(
+        name=TOOL_NAMES["checkin_to_show"],
+        description="Check in to a TV show episode you're currently watching on Trakt",
+    )
     async def checkin_to_show_tool(
         season: int,
         episode: int,

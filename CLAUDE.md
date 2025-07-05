@@ -20,7 +20,8 @@ server/           # MCP server modules by domain
 ├── user/         # User data tools/resources
 ├── comments/     # Comment tools
 ├── search/       # Search tools
-└── checkin/      # Check-in tools
+├── checkin/      # Check-in tools
+└── prompts/      # MCP prompts
 
 client/           # HTTP clients by domain
 ├── auth/         # Authentication client
@@ -74,7 +75,7 @@ cp .env.example .env
 
 ### Testing & Quality
 ```bash
-# Tests (415 tests, all must pass)
+# Tests
 pytest
 pytest tests/client/auth/ -v  # Focused testing
 
@@ -124,6 +125,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 ### MCP Pattern
 - **Resources** (`@mcp.resource`) - Static data endpoints
 - **Tools** (`@mcp.tool`) - Interactive functions with parameters
+- **Prompts** (`@mcp.prompt`) - Interactive conversation starters
 
 ### Error Handling
 - Use `@handle_api_errors` decorator from `utils.api.errors`
@@ -145,9 +147,10 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 
 ## Testing Requirements
 
-- **415 tests must pass** - no exceptions
+- **All tests must pass** - no exceptions
 - **Test structure mirrors code structure** - tests/client/auth/ for client/auth/
 - **Run tests after any changes** - `pytest`
 - **Run type checking** - `pyright` 
+- **Run code quality checks** - `ruff check --fix` and `ruff format`
 - **Run MCP validation** - `npx @modelcontextprotocol/inspector --cli python server.py --method tools/list`
 - **Focused testing** - `pytest tests/specific/module/ -v`
