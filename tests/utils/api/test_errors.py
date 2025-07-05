@@ -8,7 +8,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from utils.api.errors import AsyncFunc, T, handle_api_errors, logger
+from utils.api.errors import (
+    AsyncFunc,
+    InternalError,
+    InvalidRequestError,
+    T,
+    handle_api_errors,
+    logger,
+)
 
 
 class TestHandleApiErrorsDecorator:
@@ -59,10 +66,17 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger:
-            result = await decorated_func()
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InvalidRequestError) as exc_info,
+        ):
+            await decorated_func()
 
-        assert result == "Error: Unauthorized. Please check your Trakt API credentials."
+        assert (
+            exc_info.value.message
+            == "Authentication required. Please check your Trakt API credentials."
+        )
+        assert exc_info.value.data == {"http_status": 401}
         mock_logger.assert_called_once()
 
     @pytest.mark.asyncio
@@ -79,10 +93,14 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger:
-            result = await decorated_func()
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InvalidRequestError) as exc_info,
+        ):
+            await decorated_func()
 
-        assert result == "Error: The requested resource was not found."
+        assert exc_info.value.message == "The requested resource was not found."
+        assert exc_info.value.data == {"http_status": 404}
         mock_logger.assert_called_once()
 
     @pytest.mark.asyncio
@@ -99,10 +117,14 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger:
-            result = await decorated_func()
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InvalidRequestError) as exc_info,
+        ):
+            await decorated_func()
 
-        assert result == "Error: Rate limit exceeded. Please try again later."
+        assert exc_info.value.message == "Rate limit exceeded. Please try again later."
+        assert exc_info.value.data == {"http_status": 429}
         mock_logger.assert_called_once()
 
     @pytest.mark.asyncio
@@ -121,10 +143,17 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger:
-            result = await decorated_func()
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InternalError) as exc_info,
+        ):
+            await decorated_func()
 
-        assert result == "Error: HTTP 503 - Please try again later."
+        assert exc_info.value.message == "HTTP 503 error occurred"
+        assert exc_info.value.data == {
+            "http_status": 503,
+            "response": "Service Unavailable",
+        }
         mock_logger.assert_called_once()
 
     @pytest.mark.asyncio
@@ -135,27 +164,45 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger:
-            result = await decorated_func()
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InternalError) as exc_info,
+        ):
+            await decorated_func()
 
         assert (
-            result
-            == "Error: Unable to connect to Trakt API. Please check your internet connection."
+            exc_info.value.message
+            == "Unable to connect to Trakt API. Please check your internet connection."
         )
+        assert exc_info.value.data == {
+            "error_type": "request_error",
+            "details": "Connection failed",
+        }
         mock_logger.assert_called_once_with("Request error: Connection failed")
 
     @pytest.mark.asyncio
     async def test_unexpected_error_handling(self, mock_async_func: AsyncMock) -> None:
         """Test handling of unexpected errors."""
-        unexpected_error = ValueError("Unexpected error")
+
+        # Use a custom exception that's not in the business logic list
+        class UnexpectedException(Exception):
+            pass
+
+        unexpected_error = UnexpectedException("Unexpected error")
         mock_async_func.side_effect = unexpected_error
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "exception") as mock_logger:
-            result = await decorated_func()
+        with (
+            patch.object(logger, "exception") as mock_logger,
+            pytest.raises(InternalError) as exc_info,
+        ):
+            await decorated_func()
 
-        assert result == "Error: An unexpected error occurred: Unexpected error"
+        assert (
+            exc_info.value.message == "An unexpected error occurred: Unexpected error"
+        )
+        assert exc_info.value.data == {"error_type": "unexpected_error"}
         mock_logger.assert_called_once_with("Unexpected error")
 
     @pytest.mark.asyncio
@@ -191,7 +238,7 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger:
+        with patch.object(logger, "error") as mock_logger, pytest.raises(InternalError):
             await decorated_func()
 
         # Check that the log message includes status code and response text
@@ -313,7 +360,8 @@ class TestDecoratorIntegration:
         async def test_func() -> str:
             return "should not reach here"
 
-        with patch.object(logger, "error"):
-            result = await test_func()
+        with patch.object(logger, "error"), pytest.raises(InternalError) as exc_info:
+            await test_func()
 
-        assert result == "Error: HTTP 400 - Please try again later."
+        assert exc_info.value.message == "HTTP 400 error occurred"
+        assert exc_info.value.data == {"http_status": 400, "response": "Bad Request"}

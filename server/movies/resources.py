@@ -111,23 +111,48 @@ async def get_movie_ratings(movie_id: str) -> str:
 def register_movie_resources(mcp: FastMCP) -> None:
     """Register movie resources with the MCP server."""
 
-    @mcp.resource(MCP_RESOURCES["movies_trending"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["movies_trending"],
+        name="movies_trending",
+        description="Most watched movies over the last 24 hours from Trakt",
+        mime_type="text/markdown",
+    )
     async def movies_trending_resource() -> str:
         return await get_trending_movies()
 
-    @mcp.resource(MCP_RESOURCES["movies_popular"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["movies_popular"],
+        name="movies_popular",
+        description="Most popular movies from Trakt based on ratings and votes",
+        mime_type="text/markdown",
+    )
     async def movies_popular_resource() -> str:
         return await get_popular_movies()
 
-    @mcp.resource(MCP_RESOURCES["movies_favorited"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["movies_favorited"],
+        name="movies_favorited",
+        description="Most favorited movies from Trakt in the current weekly period",
+        mime_type="text/markdown",
+    )
     async def movies_favorited_resource() -> str:
         return await get_favorited_movies()
 
-    @mcp.resource(MCP_RESOURCES["movies_played"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["movies_played"],
+        name="movies_played",
+        description="Most played movies from Trakt in the current weekly period",
+        mime_type="text/markdown",
+    )
     async def movies_played_resource() -> str:
         return await get_played_movies()
 
-    @mcp.resource(MCP_RESOURCES["movies_watched"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["movies_watched"],
+        name="movies_watched",
+        description="Most watched movies by unique users from Trakt in the current weekly period",
+        mime_type="text/markdown",
+    )
     async def movies_watched_resource() -> str:
         return await get_watched_movies()
 

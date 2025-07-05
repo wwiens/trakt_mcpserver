@@ -135,32 +135,50 @@ async def fetch_movie_ratings(movie_id: str) -> str:
 def register_movie_tools(mcp: FastMCP) -> None:
     """Register movie tools with the MCP server."""
 
-    @mcp.tool(name=TOOL_NAMES["fetch_trending_movies"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_trending_movies"],
+        description="Fetch trending movies from Trakt",
+    )
     async def fetch_trending_movies_tool(limit: int = DEFAULT_LIMIT) -> str:
         return await fetch_trending_movies(limit)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_popular_movies"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_popular_movies"],
+        description="Fetch popular movies from Trakt",
+    )
     async def fetch_popular_movies_tool(limit: int = DEFAULT_LIMIT) -> str:
         return await fetch_popular_movies(limit)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_favorited_movies"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_favorited_movies"],
+        description="Fetch most favorited movies from Trakt",
+    )
     async def fetch_favorited_movies_tool(
         limit: int = DEFAULT_LIMIT, period: str = "weekly"
     ) -> str:
         return await fetch_favorited_movies(limit, period)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_played_movies"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_played_movies"],
+        description="Fetch most played movies from Trakt",
+    )
     async def fetch_played_movies_tool(
         limit: int = DEFAULT_LIMIT, period: str = "weekly"
     ) -> str:
         return await fetch_played_movies(limit, period)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_watched_movies"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_watched_movies"],
+        description="Fetch most watched movies from Trakt",
+    )
     async def fetch_watched_movies_tool(
         limit: int = DEFAULT_LIMIT, period: str = "weekly"
     ) -> str:
         return await fetch_watched_movies(limit, period)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_movie_ratings"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_movie_ratings"],
+        description="Fetch ratings and voting statistics for a specific movie",
+    )
     async def fetch_movie_ratings_tool(movie_id: str) -> str:
         return await fetch_movie_ratings(movie_id)

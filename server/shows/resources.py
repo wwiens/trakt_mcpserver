@@ -110,23 +110,48 @@ async def get_show_ratings(show_id: str) -> str:
 def register_show_resources(mcp: FastMCP) -> None:
     """Register show resources with the MCP server."""
 
-    @mcp.resource(MCP_RESOURCES["shows_trending"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["shows_trending"],
+        name="shows_trending",
+        description="Most watched TV shows over the last 24 hours from Trakt",
+        mime_type="text/markdown",
+    )
     async def shows_trending_resource() -> str:
         return await get_trending_shows()
 
-    @mcp.resource(MCP_RESOURCES["shows_popular"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["shows_popular"],
+        name="shows_popular",
+        description="Most popular TV shows from Trakt based on ratings and votes",
+        mime_type="text/markdown",
+    )
     async def shows_popular_resource() -> str:
         return await get_popular_shows()
 
-    @mcp.resource(MCP_RESOURCES["shows_favorited"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["shows_favorited"],
+        name="shows_favorited",
+        description="Most favorited TV shows from Trakt in the current weekly period",
+        mime_type="text/markdown",
+    )
     async def shows_favorited_resource() -> str:
         return await get_favorited_shows()
 
-    @mcp.resource(MCP_RESOURCES["shows_played"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["shows_played"],
+        name="shows_played",
+        description="Most played TV shows from Trakt in the current weekly period",
+        mime_type="text/markdown",
+    )
     async def shows_played_resource() -> str:
         return await get_played_shows()
 
-    @mcp.resource(MCP_RESOURCES["shows_watched"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["shows_watched"],
+        name="shows_watched",
+        description="Most watched TV shows by unique users from Trakt in the current weekly period",
+        mime_type="text/markdown",
+    )
     async def shows_watched_resource() -> str:
         return await get_watched_shows()
 

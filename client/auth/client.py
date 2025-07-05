@@ -4,11 +4,9 @@ import json
 import os
 import time
 
-import httpx
-
 from config.endpoints import TRAKT_ENDPOINTS
 from models.auth import TraktAuthToken, TraktDeviceCode
-from utils.api.errors import handle_api_errors
+from utils.api.errors import InternalError, handle_api_errors
 
 from ..base import BaseClient
 
@@ -98,9 +96,9 @@ class AuthClient(BaseClient):
             self._save_auth_token(token)
             self._update_headers_with_token()
             return token
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 400:
-                # User hasn't authorized yet
+        except InternalError as e:
+            # Check if this is a 400 error (user hasn't authorized yet)
+            if e.data and e.data.get("http_status") == 400:
                 return None
             raise
 

@@ -139,14 +139,23 @@ async def clear_auth() -> str:
 def register_auth_tools(mcp: FastMCP) -> None:
     """Register authentication tools with the MCP server."""
 
-    @mcp.tool(name=TOOL_NAMES["start_device_auth"])
+    @mcp.tool(
+        name=TOOL_NAMES["start_device_auth"],
+        description="Start the device authentication flow with Trakt TV",
+    )
     async def start_device_auth_tool() -> str:
         return await start_device_auth()
 
-    @mcp.tool(name=TOOL_NAMES["check_auth_status"])
+    @mcp.tool(
+        name=TOOL_NAMES["check_auth_status"],
+        description="Check the status of an ongoing device authentication flow",
+    )
     async def check_auth_status_tool() -> str:
         return await check_auth_status()
 
-    @mcp.tool(name=TOOL_NAMES["clear_auth"])
+    @mcp.tool(
+        name=TOOL_NAMES["clear_auth"],
+        description="Clear the authentication token and log out of Trakt",
+    )
     async def clear_auth_tool() -> str:
         return await clear_auth()

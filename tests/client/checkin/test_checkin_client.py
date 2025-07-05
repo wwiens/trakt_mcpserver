@@ -131,12 +131,12 @@ async def test_checkin_to_show_not_authenticated():
         client = CheckinClient()
         # No authentication set
 
-        result = await client.checkin_to_show(
-            show_id="1", episode_season=1, episode_number=1
-        )
+        with pytest.raises(ValueError) as exc_info:
+            await client.checkin_to_show(
+                show_id="1", episode_season=1, episode_number=1
+            )
 
-        assert isinstance(result, str)
-        assert "You must be authenticated to check in to a show" in result
+        assert "You must be authenticated to check in to a show" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -160,7 +160,7 @@ async def test_checkin_to_show_missing_info():
         )
 
         # Missing both show_id and show_title
-        result = await client.checkin_to_show(episode_season=1, episode_number=1)
+        with pytest.raises(ValueError) as exc_info:
+            await client.checkin_to_show(episode_season=1, episode_number=1)
 
-        assert isinstance(result, str)
-        assert "Either show_id or show_title must be provided" in result
+        assert "Either show_id or show_title must be provided" in str(exc_info.value)

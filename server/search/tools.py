@@ -46,10 +46,16 @@ async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
 def register_search_tools(mcp: FastMCP) -> None:
     """Register search tools with the MCP server."""
 
-    @mcp.tool(name=TOOL_NAMES["search_shows"])
+    @mcp.tool(
+        name=TOOL_NAMES["search_shows"],
+        description="Search for TV shows on Trakt by title",
+    )
     async def search_shows_tool(query: str, limit: int = DEFAULT_LIMIT) -> str:
         return await search_shows(query, limit)
 
-    @mcp.tool(name=TOOL_NAMES["search_movies"])
+    @mcp.tool(
+        name=TOOL_NAMES["search_movies"],
+        description="Search for movies on Trakt by title",
+    )
     async def search_movies_tool(query: str, limit: int = DEFAULT_LIMIT) -> str:
         return await search_movies(query, limit)
