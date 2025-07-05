@@ -66,7 +66,10 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger, pytest.raises(InvalidRequestError) as exc_info:
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InvalidRequestError) as exc_info,
+        ):
             await decorated_func()
 
         assert (
@@ -90,7 +93,10 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger, pytest.raises(InvalidRequestError) as exc_info:
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InvalidRequestError) as exc_info,
+        ):
             await decorated_func()
 
         assert exc_info.value.message == "The requested resource was not found."
@@ -111,7 +117,10 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger, pytest.raises(InvalidRequestError) as exc_info:
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InvalidRequestError) as exc_info,
+        ):
             await decorated_func()
 
         assert exc_info.value.message == "Rate limit exceeded. Please try again later."
@@ -134,7 +143,10 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger, pytest.raises(InternalError) as exc_info:
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InternalError) as exc_info,
+        ):
             await decorated_func()
 
         assert exc_info.value.message == "HTTP 503 error occurred"
@@ -152,7 +164,10 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger, pytest.raises(InternalError) as exc_info:
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InternalError) as exc_info,
+        ):
             await decorated_func()
 
         assert (
@@ -178,7 +193,10 @@ class TestHandleApiErrorsDecorator:
 
         decorated_func = handle_api_errors(mock_async_func)
 
-        with patch.object(logger, "exception") as mock_logger, pytest.raises(InternalError) as exc_info:
+        with (
+            patch.object(logger, "exception") as mock_logger,
+            pytest.raises(InternalError) as exc_info,
+        ):
             await decorated_func()
 
         assert (
