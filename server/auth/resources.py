@@ -23,6 +23,11 @@ async def get_auth_status() -> str:
 def register_auth_resources(mcp: FastMCP) -> None:
     """Register authentication resources with the MCP server."""
 
-    @mcp.resource(MCP_RESOURCES["user_auth_status"])
+    @mcp.resource(
+        uri=MCP_RESOURCES["user_auth_status"],
+        name="user_auth_status",
+        description="Current authentication status with Trakt including token expiry",
+        mime_type="text/markdown",
+    )
     async def auth_status_resource() -> str:
         return await get_auth_status()

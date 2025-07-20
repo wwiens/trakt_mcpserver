@@ -72,10 +72,16 @@ After you've completed the authorization process on the Trakt website, please te
 def register_user_tools(mcp: FastMCP) -> None:
     """Register user tools with the MCP server."""
 
-    @mcp.tool(name=TOOL_NAMES["fetch_user_watched_shows"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_user_watched_shows"],
+        description="Fetch TV shows watched by the authenticated user from Trakt",
+    )
     async def fetch_user_watched_shows_tool(limit: int = 0) -> str:
         return await fetch_user_watched_shows(limit)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_user_watched_movies"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_user_watched_movies"],
+        description="Fetch movies watched by the authenticated user from Trakt",
+    )
     async def fetch_user_watched_movies_tool(limit: int = 0) -> str:
         return await fetch_user_watched_movies(limit)

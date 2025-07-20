@@ -200,7 +200,10 @@ async def fetch_comment_replies(
 def register_comment_tools(mcp: FastMCP) -> None:
     """Register comment tools with the MCP server."""
 
-    @mcp.tool(name=TOOL_NAMES["fetch_movie_comments"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_movie_comments"],
+        description="Fetch comments for a specific movie from Trakt",
+    )
     async def fetch_movie_comments_tool(
         movie_id: str,
         limit: int = DEFAULT_LIMIT,
@@ -209,7 +212,10 @@ def register_comment_tools(mcp: FastMCP) -> None:
     ) -> str:
         return await fetch_movie_comments(movie_id, limit, show_spoilers, sort)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_show_comments"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_show_comments"],
+        description="Fetch comments for a specific TV show from Trakt",
+    )
     async def fetch_show_comments_tool(
         show_id: str,
         limit: int = DEFAULT_LIMIT,
@@ -218,7 +224,10 @@ def register_comment_tools(mcp: FastMCP) -> None:
     ) -> str:
         return await fetch_show_comments(show_id, limit, show_spoilers, sort)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_season_comments"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_season_comments"],
+        description="Fetch comments for a specific TV show season from Trakt",
+    )
     async def fetch_season_comments_tool(
         show_id: str,
         season: int,
@@ -228,7 +237,10 @@ def register_comment_tools(mcp: FastMCP) -> None:
     ) -> str:
         return await fetch_season_comments(show_id, season, limit, show_spoilers, sort)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_episode_comments"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_episode_comments"],
+        description="Fetch comments for a specific TV show episode from Trakt",
+    )
     async def fetch_episode_comments_tool(
         show_id: str,
         season: int,
@@ -241,11 +253,17 @@ def register_comment_tools(mcp: FastMCP) -> None:
             show_id, season, episode, limit, show_spoilers, sort
         )
 
-    @mcp.tool(name=TOOL_NAMES["fetch_comment"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_comment"],
+        description="Fetch a specific comment from Trakt",
+    )
     async def fetch_comment_tool(comment_id: str, show_spoilers: bool = False) -> str:
         return await fetch_comment(comment_id, show_spoilers)
 
-    @mcp.tool(name=TOOL_NAMES["fetch_comment_replies"])
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_comment_replies"],
+        description="Fetch replies for a specific comment from Trakt",
+    )
     async def fetch_comment_replies_tool(
         comment_id: str,
         limit: int = DEFAULT_LIMIT,
