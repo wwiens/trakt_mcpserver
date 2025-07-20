@@ -40,6 +40,8 @@ class TestShowFormatters:
             "format_favorited_shows",
             "format_played_shows",
             "format_watched_shows",
+            "format_show_summary",
+            "format_show_extended",
         ]
 
         for method_name in expected_methods:
@@ -57,3 +59,110 @@ class TestShowFormatters:
                     assert isinstance(attr, staticmethod), (
                         f"Method {attr_name} should be static"
                     )
+
+    def test_format_show_summary(self) -> None:
+        """Test format_show_summary with basic show data."""
+        show_data = {
+            "title": "Breaking Bad",
+            "year": 2008,
+            "overview": "A high school chemistry teacher turned meth producer.",
+            "ids": {"trakt": 54321},
+        }
+        result = ShowFormatters.format_show_summary(show_data)
+        assert isinstance(result, str)
+        assert "## Breaking Bad (2008)" in result
+        assert "A high school chemistry teacher turned meth producer." in result
+        assert "Trakt ID: 54321" in result
+
+    def test_format_show_summary_with_missing_data(self) -> None:
+        """Test format_show_summary with missing fields."""
+        show_data = {"title": "Test Show"}
+        result = ShowFormatters.format_show_summary(show_data)
+        assert isinstance(result, str)
+        assert "Test Show" in result
+        assert "No overview available." in result
+
+    def test_format_show_summary_empty_data(self) -> None:
+        """Test format_show_summary with empty data."""
+        result = ShowFormatters.format_show_summary({})
+        assert isinstance(result, str)
+        assert "No show data available." in result
+
+    def test_format_show_extended(self) -> None:
+        """Test format_show_extended with comprehensive show data."""
+        show_data = {
+            "title": "Game of Thrones",
+            "year": 2011,
+            "ids": {"trakt": 1},
+            "tagline": "Winter Is Coming",
+            "overview": "An epic fantasy drama series.",
+            "first_aired": "2011-04-18T01:00:00.000Z",
+            "airs": {"day": "Sunday", "time": "21:00", "timezone": "America/New_York"},
+            "runtime": 60,
+            "certification": "TV-MA",
+            "network": "HBO",
+            "country": "us",
+            "status": "returning_series",
+            "rating": 9.0,
+            "votes": 111,
+            "comment_count": 92,
+            "languages": ["en"],
+            "genres": ["drama", "fantasy"],
+            "aired_episodes": 50,
+            "homepage": "http://www.hbo.com/game-of-thrones/",
+        }
+        result = ShowFormatters.format_show_extended(show_data)
+        assert isinstance(result, str)
+        assert "## Game of Thrones (2011) - Returning Series" in result
+        assert "*Winter Is Coming*" in result
+        assert "An epic fantasy drama series." in result
+        assert "- Status: returning series" in result
+        assert "- Runtime: 60 minutes" in result
+        assert "- Certification: TV-MA" in result
+        assert "- Network: HBO" in result
+        assert "- Air Time: Sundays at 21:00 (America/New_York)" in result
+        assert "- Aired Episodes: 50" in result
+        assert "- Country: US" in result
+        assert "- Genres: drama, fantasy" in result
+        assert "- Languages: en" in result
+        assert "- Homepage: http://www.hbo.com/game-of-thrones/" in result
+        assert "- Rating: 9.0/10 (111 votes)" in result
+        assert "- Comments: 92" in result
+        assert "Trakt ID: 1" in result
+
+    def test_format_show_extended_with_partial_data(self) -> None:
+        """Test format_show_extended with partial data."""
+        show_data = {
+            "title": "Test Show",
+            "year": 2023,
+            "status": "pilot",
+            "rating": 7.5,
+            "votes": 50,
+            "airs": {"day": "Monday"},
+        }
+        result = ShowFormatters.format_show_extended(show_data)
+        assert isinstance(result, str)
+        assert "## Test Show (2023) - Pilot" in result
+        assert "- Status: pilot" in result
+        assert "- Air Time: Mondays" in result
+        assert "- Rating: 7.5/10 (50 votes)" in result
+        # Ensure optional fields don't appear
+        assert "- Runtime:" not in result
+        assert "- Certification:" not in result
+        assert "- Network:" not in result
+        assert "- Aired Episodes:" not in result
+        assert "- Genres:" not in result
+        assert "- Languages:" not in result
+        assert "- Homepage:" not in result
+        assert "- Comments:" not in result
+
+    def test_format_show_extended_with_partial_airs(self) -> None:
+        """Test format_show_extended with partial airs data."""
+        show_data = {
+            "title": "Test Show",
+            "year": 2023,
+            "airs": {"time": "20:00", "timezone": "UTC"},
+        }
+        result = ShowFormatters.format_show_extended(show_data)
+        assert isinstance(result, str)
+        assert "- Air Time: at 20:00 (UTC)" in result

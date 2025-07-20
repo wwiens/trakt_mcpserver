@@ -156,3 +156,102 @@ class MovieFormatters:
                 result += f"| {rating}/10 | {count} | {percentage:.1f}% |\n"
 
         return result
+
+    @staticmethod
+    def format_movie_summary(movie: dict[str, Any]) -> str:
+        """Format basic movie summary data.
+
+        Args:
+            movie: Movie data from Trakt API
+
+        Returns:
+            Formatted markdown text with basic movie information
+        """
+        if not movie:
+            return "No movie data available."
+
+        title = movie.get("title", "Unknown")
+        year = movie.get("year", "")
+        year_str = f" ({year})" if year else ""
+        overview = movie.get("overview", "No overview available.")
+        ids = movie.get("ids", {})
+        trakt_id = ids.get("trakt", "Unknown")
+
+        result = f"## {title}{year_str}\n\n"
+        result += f"{overview}\n\n"
+        result += f"Trakt ID: {trakt_id}\n"
+
+        return result
+
+    @staticmethod
+    def format_movie_extended(movie: dict[str, Any]) -> str:
+        """Format extended movie details data.
+
+        Args:
+            movie: Extended movie data from Trakt API
+
+        Returns:
+            Formatted markdown text with comprehensive movie information
+        """
+        if not movie:
+            return "No movie data available."
+
+        # Basic info
+        title = movie.get("title", "Unknown")
+        year = movie.get("year", "")
+        year_str = f" ({year})" if year else ""
+        status = movie.get("status", "unknown")
+        tagline = movie.get("tagline", "")
+        overview = movie.get("overview", "No overview available.")
+        ids = movie.get("ids", {})
+        trakt_id = ids.get("trakt", "Unknown")
+
+        # Format title with status
+        result = f"## {title}{year_str} - {status.title().replace('_', ' ')}\n"
+
+        # Add tagline if available
+        if tagline:
+            result += f"*{tagline}*\n"
+
+        result += f"\n{overview}\n\n"
+
+        # Production Details
+        result += "### Production Details\n"
+        result += f"- Status: {status.replace('_', ' ')}\n"
+
+        if runtime := movie.get("runtime"):
+            result += f"- Runtime: {runtime} minutes\n"
+
+        if certification := movie.get("certification"):
+            result += f"- Certification: {certification}\n"
+
+        if released := movie.get("released"):
+            result += f"- Released: {released}\n"
+
+        if country := movie.get("country"):
+            result += f"- Country: {country.upper()}\n"
+
+        if genres := movie.get("genres"):
+            genres_str = ", ".join(genres)
+            result += f"- Genres: {genres_str}\n"
+
+        if languages := movie.get("languages"):
+            languages_str = ", ".join(languages)
+            result += f"- Languages: {languages_str}\n"
+
+        if homepage := movie.get("homepage"):
+            result += f"- Homepage: {homepage}\n"
+
+        # Ratings & Engagement
+        result += "\n### Ratings & Engagement\n"
+
+        rating = movie.get("rating", 0)
+        votes = movie.get("votes", 0)
+        result += f"- Rating: {rating:.1f}/10 ({votes} votes)\n"
+
+        if comment_count := movie.get("comment_count"):
+            result += f"- Comments: {comment_count}\n"
+
+        result += f"\nTrakt ID: {trakt_id}\n"
+
+        return result

@@ -18,6 +18,7 @@ from server.shows.tools import (
     fetch_played_shows,
     fetch_popular_shows,
     fetch_show_ratings,
+    fetch_show_summary,
     fetch_trending_shows,
     fetch_watched_shows,
 )
@@ -339,3 +340,156 @@ async def test_fetch_episode_comments_string_error_handling():
         mock_client.get_episode_comments.assert_called_once_with(
             "1", 1, 1, limit=5, sort="newest"
         )
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_summary_extended():
+    """Test fetching show summary with extended data (default)."""
+    sample_show = {
+        "title": "Breaking Bad",
+        "year": 2008,
+        "ids": {"trakt": 54321},
+        "tagline": "Chemistry is the study of change.",
+        "overview": "A high school chemistry teacher turned meth producer.",
+        "first_aired": "2008-01-20T02:00:00.000Z",
+        "airs": {"day": "Sunday", "time": "21:00", "timezone": "America/New_York"},
+        "runtime": 47,
+        "certification": "TV-MA",
+        "network": "AMC",
+        "country": "us",
+        "status": "ended",
+        "rating": 9.5,
+        "votes": 200,
+        "comment_count": 150,
+        "languages": ["en"],
+        "genres": ["drama", "crime"],
+        "aired_episodes": 62,
+        "homepage": "http://www.amc.com/shows/breaking-bad",
+    }
+
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        show_future: asyncio.Future[Any] = asyncio.Future()
+        show_future.set_result(sample_show)
+        mock_client.get_show_extended.return_value = show_future
+
+        result = await fetch_show_summary(show_id="54321")
+
+        assert "## Breaking Bad (2008) - Ended" in result
+        assert "*Chemistry is the study of change.*" in result
+        assert "A high school chemistry teacher turned meth producer." in result
+        assert "- Status: ended" in result
+        assert "- Runtime: 47 minutes" in result
+        assert "- Certification: TV-MA" in result
+        assert "- Network: AMC" in result
+        assert "- Air Time: Sundays at 21:00 (America/New_York)" in result
+        assert "- Aired Episodes: 62" in result
+        assert "- Country: US" in result
+        assert "- Genres: drama, crime" in result
+        assert "- Languages: en" in result
+        assert "- Homepage: http://www.amc.com/shows/breaking-bad" in result
+        assert "- Rating: 9.5/10 (200 votes)" in result
+        assert "- Comments: 150" in result
+        assert "Trakt ID: 54321" in result
+
+        mock_client.get_show_extended.assert_called_once_with("54321")
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_summary_basic():
+    """Test fetching show summary with basic data only."""
+    sample_show = {
+        "title": "Breaking Bad",
+        "year": 2008,
+        "overview": "A high school chemistry teacher turned meth producer.",
+        "ids": {"trakt": 54321},
+    }
+
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        show_future: asyncio.Future[Any] = asyncio.Future()
+        show_future.set_result(sample_show)
+        mock_client.get_show.return_value = show_future
+
+        result = await fetch_show_summary(show_id="54321", extended=False)
+
+        assert "## Breaking Bad (2008)" in result
+        assert "A high school chemistry teacher turned meth producer." in result
+        assert "Trakt ID: 54321" in result
+        # Should not contain extended data
+        assert "- Status:" not in result
+        assert "- Runtime:" not in result
+        assert "- Network:" not in result
+        assert "- Air Time:" not in result
+
+        mock_client.get_show.assert_called_once_with("54321")
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_summary_extended_error():
+    """Test fetching show summary with extended mode error."""
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_exception(Exception("API error"))
+        mock_client.get_show_extended.return_value = future
+
+        result = await fetch_show_summary(show_id="54321")
+
+        assert "Error fetching show summary for ID 54321" in result
+        mock_client.get_show_extended.assert_called_once_with("54321")
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_summary_basic_error():
+    """Test fetching show summary with basic mode error."""
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_exception(Exception("API error"))
+        mock_client.get_show.return_value = future
+
+        result = await fetch_show_summary(show_id="54321", extended=False)
+
+        assert "Error fetching show summary for ID 54321" in result
+        mock_client.get_show.assert_called_once_with("54321")
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_summary_extended_string_error():
+    """Test fetching show summary with extended mode string error response."""
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_result("Error: Show not found")
+        mock_client.get_show_extended.return_value = future
+
+        result = await fetch_show_summary(show_id="54321")
+
+        assert (
+            "Error fetching show summary for ID 54321: Error: Show not found" in result
+        )
+        mock_client.get_show_extended.assert_called_once_with("54321")
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_summary_basic_string_error():
+    """Test fetching show summary with basic mode string error response."""
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_result("Error: Show not found")
+        mock_client.get_show.return_value = future
+
+        result = await fetch_show_summary(show_id="54321", extended=False)
+
+        assert (
+            "Error fetching show summary for ID 54321: Error: Show not found" in result
+        )
+        mock_client.get_show.assert_called_once_with("54321")
