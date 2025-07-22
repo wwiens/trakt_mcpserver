@@ -25,6 +25,20 @@ class ShowDetailsClient(BaseClient):
         return await self._make_dict_request(endpoint)
 
     @handle_api_errors
+    async def get_show_extended(self, show_id: str) -> dict[str, Any]:
+        """Get extended details for a specific show.
+
+        Args:
+            show_id: The Trakt show ID
+
+        Returns:
+            Extended show details data including airs object, status, enhanced overview
+        """
+        endpoint = f"/shows/{show_id}"
+        params = {"extended": "full"}
+        return await self._make_dict_request(endpoint, params=params)
+
+    @handle_api_errors
     async def get_show_ratings(self, show_id: str) -> dict[str, Any]:
         """Get ratings for a specific show.
 

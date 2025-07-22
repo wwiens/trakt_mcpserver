@@ -25,6 +25,20 @@ class MovieDetailsClient(BaseClient):
         return await self._make_dict_request(endpoint)
 
     @handle_api_errors
+    async def get_movie_extended(self, movie_id: str) -> dict[str, Any]:
+        """Get extended details for a specific movie.
+
+        Args:
+            movie_id: The Trakt movie ID
+
+        Returns:
+            Extended movie details data including status, enhanced overview, and metadata
+        """
+        endpoint = f"/movies/{movie_id}"
+        params = {"extended": "full"}
+        return await self._make_dict_request(endpoint, params=params)
+
+    @handle_api_errors
     async def get_movie_ratings(self, movie_id: str) -> dict[str, Any]:
         """Get ratings for a specific movie.
 

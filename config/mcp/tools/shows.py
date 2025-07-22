@@ -8,4 +8,5 @@ SHOW_TOOLS = {
     "fetch_played_shows": "fetch_played_shows",
     "fetch_watched_shows": "fetch_watched_shows",
     "fetch_show_ratings": "fetch_show_ratings",
+    "fetch_show_summary": "fetch_show_summary",
 }

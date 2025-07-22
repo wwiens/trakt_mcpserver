@@ -75,3 +75,93 @@ async def test_get_show_ratings():
         assert result["rating"] == 9.0
         assert result["votes"] == 1000
         assert "distribution" in result
+
+
+@pytest.mark.asyncio
+async def test_get_show_extended():
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "title": "Game of Thrones",
+        "year": 2011,
+        "ids": {
+            "trakt": 1,
+            "slug": "game-of-thrones",
+            "tvdb": 121361,
+            "imdb": "tt0944947",
+            "tmdb": 1399,
+        },
+        "tagline": "Winter Is Coming",
+        "overview": "Game of Thrones is an American fantasy drama television series created for HBO by David Benioff and D. B. Weiss. It is an adaptation of A Song of Ice and Fire, George R. R. Martin's series of fantasy novels, the first of which is titled A Game of Thrones.",
+        "first_aired": "2011-04-18T01:00:00.000Z",
+        "airs": {"day": "Sunday", "time": "21:00", "timezone": "America/New_York"},
+        "runtime": 60,
+        "certification": "TV-MA",
+        "network": "HBO",
+        "country": "us",
+        "updated_at": "2014-08-22T08:32:06.000Z",
+        "trailer": None,
+        "homepage": "http://www.hbo.com/game-of-thrones/index.html",
+        "status": "returning series",
+        "rating": 9,
+        "votes": 111,
+        "comment_count": 92,
+        "languages": ["en"],
+        "available_translations": [
+            "en",
+            "tr",
+            "sk",
+            "de",
+            "ru",
+            "fr",
+            "hu",
+            "zh",
+            "el",
+            "pt",
+            "es",
+        ],
+        "genres": ["drama", "fantasy"],
+        "aired_episodes": 50,
+        "original_title": "Game of Thrones",
+    }
+    mock_response.raise_for_status = MagicMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_client.return_value.__aenter__.return_value.get.return_value = (
+            mock_response
+        )
+
+        client = ShowsClient()
+        result = await client.get_show_extended("1")
+
+        # Verify the request was made with extended parameter
+        mock_client.return_value.__aenter__.return_value.get.assert_called_once()
+        call_args = mock_client.return_value.__aenter__.return_value.get.call_args
+        assert call_args[1]["params"] == {"extended": "full"}
+
+        # Verify response data
+        assert isinstance(result, dict)
+        assert result["title"] == "Game of Thrones"
+        assert result["year"] == 2011
+        assert result["status"] == "returning series"
+        assert result["tagline"] == "Winter Is Coming"
+        assert result["certification"] == "TV-MA"
+        assert result["network"] == "HBO"
+        assert result["runtime"] == 60
+        assert result["country"] == "us"
+        assert result["homepage"] == "http://www.hbo.com/game-of-thrones/index.html"
+        assert result["aired_episodes"] == 50
+        assert result["original_title"] == "Game of Thrones"
+        assert "overview" in result
+        assert "first_aired" in result
+        assert "languages" in result
+        assert "genres" in result
+        assert "airs" in result
+        assert result["airs"]["day"] == "Sunday"
+        assert result["airs"]["time"] == "21:00"
+        assert result["airs"]["timezone"] == "America/New_York"
