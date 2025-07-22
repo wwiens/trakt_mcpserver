@@ -65,13 +65,11 @@ class TestMovieFormatters:
         movie_data = {
             "title": "The Matrix",
             "year": 1999,
-            "overview": "A computer hacker learns about the true nature of reality.",
             "ids": {"trakt": 12345},
         }
         result = MovieFormatters.format_movie_summary(movie_data)
         assert isinstance(result, str)
         assert "## The Matrix (1999)" in result
-        assert "A computer hacker learns about the true nature of reality." in result
         assert "Trakt ID: 12345" in result
 
     def test_format_movie_summary_with_missing_data(self) -> None:
@@ -80,7 +78,6 @@ class TestMovieFormatters:
         result = MovieFormatters.format_movie_summary(movie_data)
         assert isinstance(result, str)
         assert "Test Movie" in result
-        assert "No overview available." in result
 
     def test_format_movie_summary_empty_data(self) -> None:
         """Test format_movie_summary with empty data."""

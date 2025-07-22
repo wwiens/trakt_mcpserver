@@ -138,12 +138,12 @@ async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
     Args:
         movie_id: Trakt ID of the movie
         extended: If True, return comprehensive data with production status and metadata.
-                 If False, return basic movie information (title, year, overview, IDs).
+                 If False, return basic movie information (title, year, IDs).
 
     Returns:
         Movie information formatted as markdown. Extended mode includes production status,
         ratings, metadata, and detailed information. Basic mode includes title, year,
-        overview, and Trakt ID only.
+        and Trakt ID only.
     """
     client = MoviesClient()
 
@@ -218,7 +218,7 @@ def register_movie_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_movie_summary"],
-        description="Get movie summary from Trakt. Default behavior (extended=true): Returns comprehensive data including production status, ratings, genres, runtime, certification, and metadata. Basic mode (extended=false): Returns only title, year, overview, and Trakt ID.",
+        description="Get movie summary from Trakt. Default behavior (extended=true): Returns comprehensive data including production status, ratings, genres, runtime, certification, and metadata. Basic mode (extended=false): Returns only title, year, and Trakt ID.",
     )
     async def fetch_movie_summary_tool(movie_id: str, extended: bool = True) -> str:
         return await fetch_movie_summary(movie_id, extended)

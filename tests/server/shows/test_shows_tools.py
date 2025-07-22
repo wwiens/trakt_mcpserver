@@ -402,7 +402,6 @@ async def test_fetch_show_summary_basic():
     sample_show = {
         "title": "Breaking Bad",
         "year": 2008,
-        "overview": "A high school chemistry teacher turned meth producer.",
         "ids": {"trakt": 54321},
     }
 
@@ -416,7 +415,6 @@ async def test_fetch_show_summary_basic():
         result = await fetch_show_summary(show_id="54321", extended=False)
 
         assert "## Breaking Bad (2008)" in result
-        assert "A high school chemistry teacher turned meth producer." in result
         assert "Trakt ID: 54321" in result
         # Should not contain extended data
         assert "- Status:" not in result

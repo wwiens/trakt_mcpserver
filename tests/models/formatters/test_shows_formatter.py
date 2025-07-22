@@ -65,13 +65,11 @@ class TestShowFormatters:
         show_data = {
             "title": "Breaking Bad",
             "year": 2008,
-            "overview": "A high school chemistry teacher turned meth producer.",
             "ids": {"trakt": 54321},
         }
         result = ShowFormatters.format_show_summary(show_data)
         assert isinstance(result, str)
         assert "## Breaking Bad (2008)" in result
-        assert "A high school chemistry teacher turned meth producer." in result
         assert "Trakt ID: 54321" in result
 
     def test_format_show_summary_with_missing_data(self) -> None:
@@ -80,7 +78,6 @@ class TestShowFormatters:
         result = ShowFormatters.format_show_summary(show_data)
         assert isinstance(result, str)
         assert "Test Show" in result
-        assert "No overview available." in result
 
     def test_format_show_summary_empty_data(self) -> None:
         """Test format_show_summary with empty data."""

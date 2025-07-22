@@ -171,7 +171,7 @@ fetch_show_ratings(show_id="game-of-thrones")
 # Get comprehensive show summary (includes air times, production status, ratings, metadata)
 fetch_show_summary(show_id="game-of-thrones", extended=True)  # Default: comprehensive
 
-# Get basic show summary (title, year, overview, ID only)
+# Get basic show summary (title, year, ID only)
 fetch_show_summary(show_id="game-of-thrones", extended=False)
 
 # Search for movies by title to get movie IDs and details
@@ -201,7 +201,7 @@ fetch_movie_ratings(movie_id="tron-legacy-2010")
 # Get comprehensive movie summary (includes production status, ratings, genres, runtime, certification, metadata)
 fetch_movie_summary(movie_id="tron-legacy-2010", extended=True)  # Default: comprehensive
 
-# Get basic movie summary (title, year, overview, ID only)
+# Get basic movie summary (title, year, ID only)
 fetch_movie_summary(movie_id="tron-legacy-2010", extended=False)
 ```
 
@@ -390,7 +390,7 @@ Once installed, you can ask Claude questions like:
 - "How highly rated is Breaking Bad?"
 - "Get a detailed summary of Breaking Bad" (comprehensive data with air times, status, ratings)
 - "Show me details about The Godfather movie" (comprehensive data with production status, metadata)
-- "Give me basic info for Game of Thrones" (basic summary with title, year, overview only)
+- "Give me basic info for Game of Thrones" (basic summary with title, year, ID only)
 
 Claude will use this MCP server to provide you with real-time data from Trakt.
 

@@ -219,7 +219,6 @@ async def test_fetch_movie_summary_basic():
     sample_movie = {
         "title": "The Matrix",
         "year": 1999,
-        "overview": "A computer hacker learns about the true nature of reality.",
         "ids": {"trakt": 12345},
     }
 
@@ -233,7 +232,6 @@ async def test_fetch_movie_summary_basic():
         result = await fetch_movie_summary(movie_id="12345", extended=False)
 
         assert "## The Matrix (1999)" in result
-        assert "A computer hacker learns about the true nature of reality." in result
         assert "Trakt ID: 12345" in result
         # Should not contain extended data
         assert "- Status:" not in result

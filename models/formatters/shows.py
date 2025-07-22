@@ -165,7 +165,7 @@ class ShowFormatters:
             show: Show data from Trakt API
 
         Returns:
-            Formatted markdown text with basic show information
+            Formatted markdown text with basic show information (title, year, ID only)
         """
         if not show:
             return "No show data available."
@@ -173,12 +173,10 @@ class ShowFormatters:
         title = show.get("title", "Unknown")
         year = show.get("year", "")
         year_str = f" ({year})" if year else ""
-        overview = show.get("overview", "No overview available.")
         ids = show.get("ids", {})
         trakt_id = ids.get("trakt", "Unknown")
 
         result = f"## {title}{year_str}\n\n"
-        result += f"{overview}\n\n"
         result += f"Trakt ID: {trakt_id}\n"
 
         return result

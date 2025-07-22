@@ -135,12 +135,12 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
     Args:
         show_id: Trakt ID of the show
         extended: If True, return comprehensive data with air times, production status and metadata.
-                 If False, return basic show information (title, year, overview, IDs).
+                 If False, return basic show information (title, year, IDs).
 
     Returns:
         Show information formatted as markdown. Extended mode includes air times, production status,
         ratings, metadata, and detailed information. Basic mode includes title, year,
-        overview, and Trakt ID only.
+        and Trakt ID only.
     """
     client = ShowsClient()
 
@@ -215,7 +215,7 @@ def register_show_tools(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_summary"],
-        description="Get TV show summary from Trakt. Default behavior (extended=true): Returns comprehensive data including air times, production status, ratings, genres, runtime, network, and metadata. Basic mode (extended=false): Returns only title, year, overview, and Trakt ID.",
+        description="Get TV show summary from Trakt. Default behavior (extended=true): Returns comprehensive data including air times, production status, ratings, genres, runtime, network, and metadata. Basic mode (extended=false): Returns only title, year, and Trakt ID.",
     )
     async def fetch_show_summary_tool(show_id: str, extended: bool = True) -> str:
         return await fetch_show_summary(show_id, extended)

@@ -165,7 +165,7 @@ class MovieFormatters:
             movie: Movie data from Trakt API
 
         Returns:
-            Formatted markdown text with basic movie information
+            Formatted markdown text with basic movie information (title, year, ID only)
         """
         if not movie:
             return "No movie data available."
@@ -173,12 +173,10 @@ class MovieFormatters:
         title = movie.get("title", "Unknown")
         year = movie.get("year", "")
         year_str = f" ({year})" if year else ""
-        overview = movie.get("overview", "No overview available.")
         ids = movie.get("ids", {})
         trakt_id = ids.get("trakt", "Unknown")
 
         result = f"## {title}{year_str}\n\n"
-        result += f"{overview}\n\n"
         result += f"Trakt ID: {trakt_id}\n"
 
         return result
