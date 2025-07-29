@@ -129,6 +129,39 @@ async def fetch_show_ratings(show_id: str) -> str:
         return f"Error fetching ratings for show ID {show_id}: {e!s}"
 
 
+async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
+    """Fetch show summary from Trakt.
+
+    Args:
+        show_id: Trakt ID of the show
+        extended: If True, return comprehensive data with air times, production status and metadata.
+                 If False, return basic show information (title, year, IDs).
+
+    Returns:
+        Show information formatted as markdown. Extended mode includes air times, production status,
+        ratings, metadata, and detailed information. Basic mode includes title, year,
+        and Trakt ID only.
+    """
+    client = ShowsClient()
+
+    try:
+        if extended:
+            show = await client.get_show_extended(show_id)
+            # Check if the API returned an error string
+            if isinstance(show, str):
+                return f"Error fetching show summary for ID {show_id}: {show}"
+            return ShowFormatters.format_show_extended(show)
+        else:
+            show = await client.get_show(show_id)
+            # Check if the API returned an error string
+            if isinstance(show, str):
+                return f"Error fetching show summary for ID {show_id}: {show}"
+            return ShowFormatters.format_show_summary(show)
+    except Exception as e:
+        logger.error(f"Error fetching show summary: {e}")
+        return f"Error fetching show summary for ID {show_id}: {e!s}"
+
+
 def register_show_tools(mcp: FastMCP) -> None:
     """Register show tools with the MCP server."""
 
@@ -179,3 +212,10 @@ def register_show_tools(mcp: FastMCP) -> None:
     )
     async def fetch_show_ratings_tool(show_id: str) -> str:
         return await fetch_show_ratings(show_id)
+
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_show_summary"],
+        description="Get TV show summary from Trakt. Default behavior (extended=true): Returns comprehensive data including air times, production status, ratings, genres, runtime, network, and metadata. Basic mode (extended=false): Returns only title, year, and Trakt ID.",
+    )
+    async def fetch_show_summary_tool(show_id: str, extended: bool = True) -> str:
+        return await fetch_show_summary(show_id, extended)

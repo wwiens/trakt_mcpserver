@@ -40,6 +40,8 @@ class TestMovieFormatters:
             "format_favorited_movies",
             "format_played_movies",
             "format_watched_movies",
+            "format_movie_summary",
+            "format_movie_extended",
         ]
 
         for method_name in expected_methods:
@@ -57,3 +59,88 @@ class TestMovieFormatters:
                     assert isinstance(attr, staticmethod), (
                         f"Method {attr_name} should be static"
                     )
+
+    def test_format_movie_summary(self) -> None:
+        """Test format_movie_summary with basic movie data."""
+        movie_data = {
+            "title": "The Matrix",
+            "year": 1999,
+            "ids": {"trakt": 12345},
+        }
+        result = MovieFormatters.format_movie_summary(movie_data)
+        assert isinstance(result, str)
+        assert "## The Matrix (1999)" in result
+        assert "Trakt ID: 12345" in result
+
+    def test_format_movie_summary_with_missing_data(self) -> None:
+        """Test format_movie_summary with missing fields."""
+        movie_data = {"title": "Test Movie"}
+        result = MovieFormatters.format_movie_summary(movie_data)
+        assert isinstance(result, str)
+        assert "Test Movie" in result
+
+    def test_format_movie_summary_empty_data(self) -> None:
+        """Test format_movie_summary with empty data."""
+        result = MovieFormatters.format_movie_summary({})
+        assert isinstance(result, str)
+        assert "No movie data available." in result
+
+    def test_format_movie_extended(self) -> None:
+        """Test format_movie_extended with comprehensive movie data."""
+        movie_data = {
+            "title": "TRON: Legacy",
+            "year": 2010,
+            "ids": {"trakt": 1},
+            "tagline": "The Game Has Changed.",
+            "overview": "Sam Flynn investigates his father's disappearance.",
+            "released": "2010-12-16",
+            "runtime": 125,
+            "country": "us",
+            "status": "released",
+            "rating": 8.0,
+            "votes": 111,
+            "comment_count": 92,
+            "languages": ["en"],
+            "genres": ["action", "sci-fi"],
+            "certification": "PG-13",
+            "homepage": "http://disney.go.com/tron/",
+        }
+        result = MovieFormatters.format_movie_extended(movie_data)
+        assert isinstance(result, str)
+        assert "## TRON: Legacy (2010) - Released" in result
+        assert "*The Game Has Changed.*" in result
+        assert "Sam Flynn investigates his father's disappearance." in result
+        assert "- Status: released" in result
+        assert "- Runtime: 125 minutes" in result
+        assert "- Certification: PG-13" in result
+        assert "- Released: 2010-12-16" in result
+        assert "- Country: US" in result
+        assert "- Genres: action, sci-fi" in result
+        assert "- Languages: en" in result
+        assert "- Homepage: http://disney.go.com/tron/" in result
+        assert "- Rating: 8.0/10 (111 votes)" in result
+        assert "- Comments: 92" in result
+        assert "Trakt ID: 1" in result
+
+    def test_format_movie_extended_with_partial_data(self) -> None:
+        """Test format_movie_extended with partial data."""
+        movie_data = {
+            "title": "Test Movie",
+            "year": 2023,
+            "status": "in_production",
+            "rating": 7.5,
+            "votes": 50,
+        }
+        result = MovieFormatters.format_movie_extended(movie_data)
+        assert isinstance(result, str)
+        assert "## Test Movie (2023) - In Production" in result
+        assert "- Status: in production" in result
+        assert "- Rating: 7.5/10 (50 votes)" in result
+        # Ensure optional fields don't appear
+        assert "- Runtime:" not in result
+        assert "- Certification:" not in result
+        assert "- Released:" not in result
+        assert "- Genres:" not in result
+        assert "- Languages:" not in result
+        assert "- Homepage:" not in result
+        assert "- Comments:" not in result

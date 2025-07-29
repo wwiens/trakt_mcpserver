@@ -132,6 +132,39 @@ async def fetch_movie_ratings(movie_id: str) -> str:
         return f"Error fetching ratings for movie ID {movie_id}: {e!s}"
 
 
+async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
+    """Fetch movie summary from Trakt.
+
+    Args:
+        movie_id: Trakt ID of the movie
+        extended: If True, return comprehensive data with production status and metadata.
+                 If False, return basic movie information (title, year, IDs).
+
+    Returns:
+        Movie information formatted as markdown. Extended mode includes production status,
+        ratings, metadata, and detailed information. Basic mode includes title, year,
+        and Trakt ID only.
+    """
+    client = MoviesClient()
+
+    try:
+        if extended:
+            movie = await client.get_movie_extended(movie_id)
+            # Check if the API returned an error string
+            if isinstance(movie, str):
+                return f"Error fetching movie summary for ID {movie_id}: {movie}"
+            return MovieFormatters.format_movie_extended(movie)
+        else:
+            movie = await client.get_movie(movie_id)
+            # Check if the API returned an error string
+            if isinstance(movie, str):
+                return f"Error fetching movie summary for ID {movie_id}: {movie}"
+            return MovieFormatters.format_movie_summary(movie)
+    except Exception as e:
+        logger.error(f"Error fetching movie summary: {e}")
+        return f"Error fetching movie summary for ID {movie_id}: {e!s}"
+
+
 def register_movie_tools(mcp: FastMCP) -> None:
     """Register movie tools with the MCP server."""
 
@@ -182,3 +215,10 @@ def register_movie_tools(mcp: FastMCP) -> None:
     )
     async def fetch_movie_ratings_tool(movie_id: str) -> str:
         return await fetch_movie_ratings(movie_id)
+
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_movie_summary"],
+        description="Get movie summary from Trakt. Default behavior (extended=true): Returns comprehensive data including production status, ratings, genres, runtime, certification, and metadata. Basic mode (extended=false): Returns only title, year, and Trakt ID.",
+    )
+    async def fetch_movie_summary_tool(movie_id: str, extended: bool = True) -> str:
+        return await fetch_movie_summary(movie_id, extended)

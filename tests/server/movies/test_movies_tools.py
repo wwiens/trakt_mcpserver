@@ -9,7 +9,11 @@ import pytest
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.comments.tools import fetch_movie_comments
-from server.movies.tools import fetch_movie_ratings, fetch_trending_movies
+from server.movies.tools import (
+    fetch_movie_ratings,
+    fetch_movie_summary,
+    fetch_trending_movies,
+)
 
 
 @pytest.mark.asyncio
@@ -158,3 +162,150 @@ async def test_fetch_movie_comments_string_error_handling():
         mock_client.get_movie_comments.assert_called_once_with(
             "1", limit=5, sort="newest"
         )
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_summary_extended():
+    """Test fetching movie summary with extended data (default)."""
+    sample_movie = {
+        "title": "The Matrix",
+        "year": 1999,
+        "ids": {"trakt": 12345},
+        "tagline": "The future is not set.",
+        "overview": "A computer hacker learns about the true nature of reality.",
+        "released": "1999-03-31",
+        "runtime": 136,
+        "country": "us",
+        "status": "released",
+        "rating": 8.7,
+        "votes": 150,
+        "comment_count": 75,
+        "languages": ["en"],
+        "genres": ["action", "sci-fi"],
+        "certification": "R",
+        "homepage": "http://www.thematrix.com/",
+    }
+
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        movie_future: asyncio.Future[Any] = asyncio.Future()
+        movie_future.set_result(sample_movie)
+        mock_client.get_movie_extended.return_value = movie_future
+
+        result = await fetch_movie_summary(movie_id="12345")
+
+        assert "## The Matrix (1999) - Released" in result
+        assert "*The future is not set.*" in result
+        assert "A computer hacker learns about the true nature of reality." in result
+        assert "- Status: released" in result
+        assert "- Runtime: 136 minutes" in result
+        assert "- Certification: R" in result
+        assert "- Released: 1999-03-31" in result
+        assert "- Country: US" in result
+        assert "- Genres: action, sci-fi" in result
+        assert "- Languages: en" in result
+        assert "- Homepage: http://www.thematrix.com/" in result
+        assert "- Rating: 8.7/10 (150 votes)" in result
+        assert "- Comments: 75" in result
+        assert "Trakt ID: 12345" in result
+
+        mock_client.get_movie_extended.assert_called_once_with("12345")
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_summary_basic():
+    """Test fetching movie summary with basic data only."""
+    sample_movie = {
+        "title": "The Matrix",
+        "year": 1999,
+        "ids": {"trakt": 12345},
+    }
+
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        movie_future: asyncio.Future[Any] = asyncio.Future()
+        movie_future.set_result(sample_movie)
+        mock_client.get_movie.return_value = movie_future
+
+        result = await fetch_movie_summary(movie_id="12345", extended=False)
+
+        assert "## The Matrix (1999)" in result
+        assert "Trakt ID: 12345" in result
+        # Should not contain extended data
+        assert "- Status:" not in result
+        assert "- Runtime:" not in result
+        assert "- Certification:" not in result
+
+        mock_client.get_movie.assert_called_once_with("12345")
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_summary_extended_error():
+    """Test fetching movie summary with extended mode error."""
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_exception(Exception("API error"))
+        mock_client.get_movie_extended.return_value = future
+
+        result = await fetch_movie_summary(movie_id="12345")
+
+        assert "Error fetching movie summary for ID 12345" in result
+        mock_client.get_movie_extended.assert_called_once_with("12345")
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_summary_basic_error():
+    """Test fetching movie summary with basic mode error."""
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_exception(Exception("API error"))
+        mock_client.get_movie.return_value = future
+
+        result = await fetch_movie_summary(movie_id="12345", extended=False)
+
+        assert "Error fetching movie summary for ID 12345" in result
+        mock_client.get_movie.assert_called_once_with("12345")
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_summary_extended_string_error():
+    """Test fetching movie summary with extended mode string error response."""
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_result("Error: Movie not found")
+        mock_client.get_movie_extended.return_value = future
+
+        result = await fetch_movie_summary(movie_id="12345")
+
+        assert (
+            "Error fetching movie summary for ID 12345: Error: Movie not found"
+            in result
+        )
+        mock_client.get_movie_extended.assert_called_once_with("12345")
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_summary_basic_string_error():
+    """Test fetching movie summary with basic mode string error response."""
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_result("Error: Movie not found")
+        mock_client.get_movie.return_value = future
+
+        result = await fetch_movie_summary(movie_id="12345", extended=False)
+
+        assert (
+            "Error fetching movie summary for ID 12345: Error: Movie not found"
+            in result
+        )
+        mock_client.get_movie.assert_called_once_with("12345")

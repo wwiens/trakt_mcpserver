@@ -8,4 +8,5 @@ MOVIE_TOOLS = {
     "fetch_played_movies": "fetch_played_movies",
     "fetch_watched_movies": "fetch_watched_movies",
     "fetch_movie_ratings": "fetch_movie_ratings",
+    "fetch_movie_summary": "fetch_movie_summary",
 }

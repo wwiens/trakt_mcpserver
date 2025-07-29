@@ -156,3 +156,120 @@ class ShowFormatters:
                 result += f"| {rating}/10 | {count} | {percentage:.1f}% |\n"
 
         return result
+
+    @staticmethod
+    def format_show_summary(show: dict[str, Any]) -> str:
+        """Format basic show summary data.
+
+        Args:
+            show: Show data from Trakt API
+
+        Returns:
+            Formatted markdown text with basic show information (title, year, ID only)
+        """
+        if not show:
+            return "No show data available."
+
+        title = show.get("title", "Unknown")
+        year = show.get("year", "")
+        year_str = f" ({year})" if year else ""
+        ids = show.get("ids", {})
+        trakt_id = ids.get("trakt", "Unknown")
+
+        result = f"## {title}{year_str}\n\n"
+        result += f"Trakt ID: {trakt_id}\n"
+
+        return result
+
+    @staticmethod
+    def format_show_extended(show: dict[str, Any]) -> str:
+        """Format extended show details data.
+
+        Args:
+            show: Extended show data from Trakt API
+
+        Returns:
+            Formatted markdown text with comprehensive show information
+        """
+        if not show:
+            return "No show data available."
+
+        # Basic info
+        title = show.get("title", "Unknown")
+        year = show.get("year", "")
+        year_str = f" ({year})" if year else ""
+        status = show.get("status", "unknown")
+        tagline = show.get("tagline", "")
+        overview = show.get("overview", "No overview available.")
+        ids = show.get("ids", {})
+        trakt_id = ids.get("trakt", "Unknown")
+
+        # Format title with status
+        result = f"## {title}{year_str} - {status.title().replace('_', ' ')}\n"
+
+        # Add tagline if available
+        if tagline:
+            result += f"*{tagline}*\n"
+
+        result += f"\n{overview}\n\n"
+
+        # Production Details
+        result += "### Production Details\n"
+        result += f"- Status: {status.replace('_', ' ')}\n"
+
+        if runtime := show.get("runtime"):
+            result += f"- Runtime: {runtime} minutes\n"
+
+        if certification := show.get("certification"):
+            result += f"- Certification: {certification}\n"
+
+        if network := show.get("network"):
+            result += f"- Network: {network}\n"
+
+        # Air time information
+        if airs := show.get("airs"):
+            day = airs.get("day", "")
+            time = airs.get("time", "")
+            timezone = airs.get("timezone", "")
+            if day or time:
+                air_time_str = "- Air Time: "
+                if day and time:
+                    air_time_str += f"{day}s at {time}"
+                elif day:
+                    air_time_str += f"{day}s"
+                elif time:
+                    air_time_str += f"at {time}"
+                if timezone:
+                    air_time_str += f" ({timezone})"
+                result += air_time_str + "\n"
+
+        if aired_episodes := show.get("aired_episodes"):
+            result += f"- Aired Episodes: {aired_episodes}\n"
+
+        if country := show.get("country"):
+            result += f"- Country: {country.upper()}\n"
+
+        if genres := show.get("genres"):
+            genres_str = ", ".join(genres)
+            result += f"- Genres: {genres_str}\n"
+
+        if languages := show.get("languages"):
+            languages_str = ", ".join(languages)
+            result += f"- Languages: {languages_str}\n"
+
+        if homepage := show.get("homepage"):
+            result += f"- Homepage: {homepage}\n"
+
+        # Ratings & Engagement
+        result += "\n### Ratings & Engagement\n"
+
+        rating = show.get("rating", 0)
+        votes = show.get("votes", 0)
+        result += f"- Rating: {rating:.1f}/10 ({votes} votes)\n"
+
+        if comment_count := show.get("comment_count"):
+            result += f"- Comments: {comment_count}\n"
+
+        result += f"\nTrakt ID: {trakt_id}\n"
+
+        return result
