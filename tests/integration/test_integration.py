@@ -306,6 +306,9 @@ async def test_show_ratings_integration():
 
 @pytest.mark.asyncio
 async def test_error_handling_integration():
+    """Test that MCP errors propagate correctly through the system."""
+    from utils.api.errors import InternalError, InvalidRequestError
+
     # Set up mock responses for the focused clients that will trigger errors
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -318,29 +321,31 @@ async def test_error_handling_integration():
         mock_instance = mock_client.return_value.__aenter__.return_value
         mock_instance.get.side_effect = Exception("API error")
 
-        # Test error handling in a resource function directly
-        with patch("server.shows.resources.ShowsClient", return_value=ShowsClient()):
+        # Test error handling in a resource function directly - should raise MCP error
+        with (
+            patch("server.shows.resources.ShowsClient", return_value=ShowsClient()),
+            pytest.raises((InternalError, InvalidRequestError)) as exc_info,
+        ):
             from server.shows.resources import get_show_ratings
 
-            resource_result = await get_show_ratings(show_id="1")
+            await get_show_ratings(show_id="1")
 
-        # Verify the resource result indicates some issue (either error or no data)
-        assert (
-            "Error fetching" in resource_result
-            or "No ratings data available" in resource_result
-        )
+        # Verify it's a proper MCP error
+        assert hasattr(exc_info.value, "code")
+        assert hasattr(exc_info.value, "message")
 
-        # Test error handling in a tool function directly
-        with patch("server.shows.tools.ShowsClient", return_value=ShowsClient()):
+        # Test error handling in a tool function directly - should raise MCP error
+        with (
+            patch("server.shows.tools.ShowsClient", return_value=ShowsClient()),
+            pytest.raises((InternalError, InvalidRequestError)) as exc_info,
+        ):
             from server.shows.tools import fetch_show_ratings
 
-            tool_result = await fetch_show_ratings(show_id="1")
+            await fetch_show_ratings(show_id="1")
 
-        # Verify the tool result indicates some issue (either error or no data)
-        assert (
-            "Error fetching" in tool_result
-            or "No ratings data available" in tool_result
-        )
+        # Verify it's a proper MCP error
+        assert hasattr(exc_info.value, "code")
+        assert hasattr(exc_info.value, "message")
 
 
 @pytest.mark.asyncio

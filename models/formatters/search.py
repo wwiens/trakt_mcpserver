@@ -23,7 +23,11 @@ class SearchFormatters:
         message += "Here are the shows matching your search query:\n\n"
 
         for index, item in enumerate(results, 1):
+            if not item:
+                continue
             show = item.get("show", {})
+            if not show:
+                continue
 
             # Extract show details
             title = show.get("title", "Unknown show")
@@ -62,7 +66,11 @@ class SearchFormatters:
         message += "Here are the movies matching your search query:\n\n"
 
         for index, item in enumerate(results, 1):
+            if not item:
+                continue
             movie = item.get("movie", {})
+            if not movie:
+                continue
 
             title = movie.get("title", "Unknown movie")
             year = movie.get("year", "")

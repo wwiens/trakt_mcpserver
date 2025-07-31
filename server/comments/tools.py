@@ -27,17 +27,11 @@ async def fetch_movie_comments(
         Information about movie comments
     """
     client = CommentsClient()
-
-    try:
-        comments = await client.get_movie_comments(movie_id, limit=limit, sort=sort)
-        if isinstance(comments, str):
-            return f"Error fetching comments for Movie ID: {movie_id}: {comments}"
-        title = f"Movie ID: {movie_id}"
-        return CommentsFormatters.format_comments(
-            comments, title, show_spoilers=show_spoilers
-        )
-    except Exception as e:
-        return f"Error fetching comments for Movie ID: {movie_id}: {e!s}"
+    comments = await client.get_movie_comments(movie_id, limit=limit, sort=sort)
+    title = f"Movie ID: {movie_id}"
+    return CommentsFormatters.format_comments(
+        comments, title, show_spoilers=show_spoilers
+    )
 
 
 async def fetch_show_comments(
@@ -58,17 +52,11 @@ async def fetch_show_comments(
         Information about show comments
     """
     client = CommentsClient()
-
-    try:
-        comments = await client.get_show_comments(show_id, limit=limit, sort=sort)
-        if isinstance(comments, str):
-            return f"Error fetching comments for Show ID: {show_id}: {comments}"
-        title = f"Show ID: {show_id}"
-        return CommentsFormatters.format_comments(
-            comments, title, show_spoilers=show_spoilers
-        )
-    except Exception as e:
-        return f"Error fetching comments for Show ID: {show_id}: {e!s}"
+    comments = await client.get_show_comments(show_id, limit=limit, sort=sort)
+    title = f"Show ID: {show_id}"
+    return CommentsFormatters.format_comments(
+        comments, title, show_spoilers=show_spoilers
+    )
 
 
 async def fetch_season_comments(
@@ -91,21 +79,11 @@ async def fetch_season_comments(
         Information about season comments
     """
     client = CommentsClient()
-
-    try:
-        comments = await client.get_season_comments(
-            show_id, season, limit=limit, sort=sort
-        )
-        if isinstance(comments, str):
-            return f"Error fetching comments for Show ID: {show_id} - Season {season}: {comments}"
-        title = f"Show ID: {show_id} - Season {season}"
-        return CommentsFormatters.format_comments(
-            comments, title, show_spoilers=show_spoilers
-        )
-    except Exception as e:
-        return (
-            f"Error fetching comments for Show ID: {show_id} - Season {season}: {e!s}"
-        )
+    comments = await client.get_season_comments(show_id, season, limit=limit, sort=sort)
+    title = f"Show ID: {show_id} - Season {season}"
+    return CommentsFormatters.format_comments(
+        comments, title, show_spoilers=show_spoilers
+    )
 
 
 async def fetch_episode_comments(
@@ -130,19 +108,13 @@ async def fetch_episode_comments(
         Information about episode comments
     """
     client = CommentsClient()
-
-    try:
-        comments = await client.get_episode_comments(
-            show_id, season, episode, limit=limit, sort=sort
-        )
-        if isinstance(comments, str):
-            return f"Error fetching comments for Show ID: {show_id} - S{season:02d}E{episode:02d}: {comments}"
-        title = f"Show ID: {show_id} - S{season:02d}E{episode:02d}"
-        return CommentsFormatters.format_comments(
-            comments, title, show_spoilers=show_spoilers
-        )
-    except Exception as e:
-        return f"Error fetching comments for Show ID: {show_id} - S{season:02d}E{episode:02d}: {e!s}"
+    comments = await client.get_episode_comments(
+        show_id, season, episode, limit=limit, sort=sort
+    )
+    title = f"Show ID: {show_id} - S{season:02d}E{episode:02d}"
+    return CommentsFormatters.format_comments(
+        comments, title, show_spoilers=show_spoilers
+    )
 
 
 async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
@@ -156,13 +128,8 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
         Information about the comment
     """
     client = CommentsClient()
-    try:
-        comment = await client.get_comment(comment_id)
-        if isinstance(comment, str):
-            return f"Error fetching comment {comment_id}: {comment}"
-        return CommentsFormatters.format_comment(comment, show_spoilers=show_spoilers)
-    except Exception as e:
-        return f"Error fetching comment {comment_id}: {e!s}"
+    comment = await client.get_comment(comment_id)
+    return CommentsFormatters.format_comment(comment, show_spoilers=show_spoilers)
 
 
 async def fetch_comment_replies(
@@ -183,18 +150,11 @@ async def fetch_comment_replies(
         Information about the comment and its replies
     """
     client = CommentsClient()
-    try:
-        comment = await client.get_comment(comment_id)
-        if isinstance(comment, str):
-            return f"Error fetching comment replies for {comment_id}: {comment}"
-        replies = await client.get_comment_replies(comment_id, limit=limit, sort=sort)
-        if isinstance(replies, str):
-            return f"Error fetching comment replies for {comment_id}: {replies}"
-        return CommentsFormatters.format_comment(
-            comment, with_replies=True, replies=replies, show_spoilers=show_spoilers
-        )
-    except Exception as e:
-        return f"Error fetching comment replies for {comment_id}: {e!s}"
+    comment = await client.get_comment(comment_id)
+    replies = await client.get_comment_replies(comment_id, limit=limit, sort=sort)
+    return CommentsFormatters.format_comment(
+        comment, with_replies=True, replies=replies, show_spoilers=show_spoilers
+    )
 
 
 def register_comment_tools(mcp: FastMCP) -> None:

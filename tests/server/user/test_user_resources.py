@@ -62,7 +62,7 @@ async def test_get_user_watched_shows_not_authenticated():
         result = await get_user_watched_shows()
 
         # Verify the result
-        assert "# Authentication Required" in result
+        assert "# Authentication required" in result
         assert "You need to authenticate with Trakt" in result
 
         # Verify the client methods were called
@@ -120,7 +120,7 @@ async def test_get_user_watched_movies_not_authenticated():
         result = await get_user_watched_movies()
 
         # Verify the result
-        assert "# Authentication Required" in result
+        assert "# Authentication required" in result
         assert "You need to authenticate with Trakt" in result
 
         # Verify the client methods were called

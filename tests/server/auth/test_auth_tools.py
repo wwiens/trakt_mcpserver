@@ -10,6 +10,7 @@ import pytest
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.auth.tools import check_auth_status, clear_auth, start_device_auth
+from utils.api.errors import InvalidRequestError
 
 
 @pytest.mark.asyncio
@@ -128,9 +129,9 @@ async def test_check_auth_status_pending_authorization():
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = False
 
-        none_future: asyncio.Future[Any] = asyncio.Future()
-        none_future.set_result(None)
-        mock_client.get_device_token.return_value = none_future
+        # Mock get_device_token to raise InvalidRequestError with 400 status
+        error = InvalidRequestError("Pending authorization", data={"http_status": 400})
+        mock_client.get_device_token.side_effect = error
 
         result = await check_auth_status()
 

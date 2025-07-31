@@ -40,7 +40,6 @@ async def test_fetch_user_watched_shows_authenticated():
         assert "Breaking Bad (2008)" in result
         assert "Plays: 5" in result
 
-        mock_client.is_authenticated.assert_called_once()
         mock_client.get_user_watched_shows.assert_called_once()
 
 
@@ -52,7 +51,11 @@ async def test_fetch_user_watched_shows_not_authenticated():
         patch("server.user.tools.start_device_auth") as mock_start_auth,
     ):
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = False
+
+        # Mock get_user_watched_shows to raise InvalidParamsError (not authenticated)
+        from config.errors import AUTH_REQUIRED
+        from utils.api.errors import InvalidParamsError
+        mock_client.get_user_watched_shows.side_effect = InvalidParamsError(AUTH_REQUIRED)
 
         mock_start_auth.return_value = (
             "# Trakt Authentication Required\n\nPlease authenticate..."
@@ -63,8 +66,7 @@ async def test_fetch_user_watched_shows_not_authenticated():
         assert "Authentication required" in result
         assert "# Trakt Authentication Required" in result
 
-        mock_client.is_authenticated.assert_called_once()
-        mock_client.get_user_watched_shows.assert_not_called()
+        mock_client.get_user_watched_shows.assert_called_once()
         mock_start_auth.assert_called_once()
 
 
@@ -117,7 +119,6 @@ async def test_fetch_user_watched_shows_with_limit():
         # Should not contain third show
         assert "Stranger Things (2016)" not in result
 
-        mock_client.is_authenticated.assert_called_once()
         mock_client.get_user_watched_shows.assert_called_once()
 
 
@@ -150,7 +151,6 @@ async def test_fetch_user_watched_movies_authenticated():
         assert "Inception (2010)" in result
         assert "Plays: 3" in result
 
-        mock_client.is_authenticated.assert_called_once()
         mock_client.get_user_watched_movies.assert_called_once()
 
 
@@ -162,7 +162,11 @@ async def test_fetch_user_watched_movies_not_authenticated():
         patch("server.user.tools.start_device_auth") as mock_start_auth,
     ):
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = False
+
+        # Mock get_user_watched_movies to raise InvalidParamsError (not authenticated)
+        from config.errors import AUTH_REQUIRED
+        from utils.api.errors import InvalidParamsError
+        mock_client.get_user_watched_movies.side_effect = InvalidParamsError(AUTH_REQUIRED)
 
         mock_start_auth.return_value = (
             "# Trakt Authentication Required\n\nPlease authenticate..."
@@ -173,8 +177,7 @@ async def test_fetch_user_watched_movies_not_authenticated():
         assert "Authentication required" in result
         assert "# Trakt Authentication Required" in result
 
-        mock_client.is_authenticated.assert_called_once()
-        mock_client.get_user_watched_movies.assert_not_called()
+        mock_client.get_user_watched_movies.assert_called_once()
         mock_start_auth.assert_called_once()
 
 
@@ -227,7 +230,6 @@ async def test_fetch_user_watched_movies_with_limit():
         # Should not contain third movie
         assert "Interstellar (2014)" not in result
 
-        mock_client.is_authenticated.assert_called_once()
         mock_client.get_user_watched_movies.assert_called_once()
 
 
@@ -269,7 +271,6 @@ async def test_fetch_user_watched_shows_limit_zero():
         assert "Breaking Bad (2008)" in result
         assert "The Office (2005)" in result
 
-        mock_client.is_authenticated.assert_called_once()
         mock_client.get_user_watched_shows.assert_called_once()
 
 
@@ -311,5 +312,4 @@ async def test_fetch_user_watched_movies_limit_zero():
         assert "Inception (2010)" in result
         assert "The Matrix (1999)" in result
 
-        mock_client.is_authenticated.assert_called_once()
         mock_client.get_user_watched_movies.assert_called_once()

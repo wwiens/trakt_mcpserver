@@ -7,6 +7,7 @@ from client.search import SearchClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.search import SearchFormatters
+from utils.validation import validate_limit, validate_non_empty_string
 
 
 async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
@@ -19,6 +20,10 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
     Returns:
         Formatted search results
     """
+    # Validate inputs
+    validate_non_empty_string(query, "query")
+    validate_limit(limit)
+
     client = SearchClient()
 
     # Perform the search
@@ -38,6 +43,10 @@ async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
     Returns:
         Formatted search results
     """
+    # Validate inputs
+    validate_non_empty_string(query, "query")
+    validate_limit(limit)
+
     client = SearchClient()
     results = await client.search_movies(query, limit)
     return SearchFormatters.format_movie_search_results(results)

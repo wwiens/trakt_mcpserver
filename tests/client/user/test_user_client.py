@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from client.user import UserClient
+from utils.api.errors import InvalidParamsError
 
 
 @pytest.mark.asyncio
@@ -26,7 +27,7 @@ async def test_user_client_init_without_credentials():
     """Test UserClient initialization without credentials raises error."""
     with (
         patch.dict(os.environ, {"TRAKT_CLIENT_ID": "", "TRAKT_CLIENT_SECRET": ""}),
-        pytest.raises(ValueError, match="Trakt API credentials not found"),
+        pytest.raises(InvalidParamsError, match="Invalid Trakt API credentials: not found in .env file"),
     ):
         UserClient()
 

@@ -1,17 +1,12 @@
 # pyright: reportUnusedFunction=none
 """Show tools for the Trakt MCP server."""
 
-import json
-import logging
-
 from mcp.server.fastmcp import FastMCP
 
 from client.shows import ShowsClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.shows import ShowFormatters
-
-logger = logging.getLogger("trakt_mcp")
 
 
 async def fetch_trending_shows(limit: int = DEFAULT_LIMIT) -> str:
@@ -56,13 +51,6 @@ async def fetch_favorited_shows(
     """
     client = ShowsClient()
     shows = await client.get_favorited_shows(limit=limit, period=period)
-
-    # Log the first show to see the structure
-    if shows and len(shows) > 0:
-        logger.info(
-            f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
-        )
-
     return ShowFormatters.format_favorited_shows(shows)
 
 
@@ -108,25 +96,12 @@ async def fetch_show_ratings(show_id: str) -> str:
         Information about show ratings including average and distribution
     """
     client = ShowsClient()
+    show = await client.get_show(show_id)
 
-    try:
-        show = await client.get_show(show_id)
+    show_title = show.get("title", "Unknown Show")
+    ratings = await client.get_show_ratings(show_id)
 
-        # Check if the API returned an error string
-        if isinstance(show, str):
-            return f"Error fetching show details: {show}"
-
-        show_title = show.get("title", "Unknown Show")
-        ratings = await client.get_show_ratings(show_id)
-
-        # Check if the API returned an error string
-        if isinstance(ratings, str):
-            return f"Error fetching ratings for {show_title}: {ratings}"
-
-        return ShowFormatters.format_show_ratings(ratings, show_title)
-    except Exception as e:
-        logger.error(f"Error fetching show ratings: {e}")
-        return f"Error fetching ratings for show ID {show_id}: {e!s}"
+    return ShowFormatters.format_show_ratings(ratings, show_title)
 
 
 async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
@@ -143,23 +118,12 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
         and Trakt ID only.
     """
     client = ShowsClient()
-
-    try:
-        if extended:
-            show = await client.get_show_extended(show_id)
-            # Check if the API returned an error string
-            if isinstance(show, str):
-                return f"Error fetching show summary for ID {show_id}: {show}"
-            return ShowFormatters.format_show_extended(show)
-        else:
-            show = await client.get_show(show_id)
-            # Check if the API returned an error string
-            if isinstance(show, str):
-                return f"Error fetching show summary for ID {show_id}: {show}"
-            return ShowFormatters.format_show_summary(show)
-    except Exception as e:
-        logger.error(f"Error fetching show summary: {e}")
-        return f"Error fetching show summary for ID {show_id}: {e!s}"
+    if extended:
+        show = await client.get_show_extended(show_id)
+        return ShowFormatters.format_show_extended(show)
+    else:
+        show = await client.get_show(show_id)
+        return ShowFormatters.format_show_summary(show)
 
 
 def register_show_tools(mcp: FastMCP) -> None:

@@ -6,6 +6,9 @@ from unittest.mock import patch
 
 import pytest
 
+from config.errors import AUTH_REQUIRED
+from utils.api.errors import InternalError, InvalidRequestError
+
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.comments.tools import (
@@ -239,104 +242,99 @@ async def test_fetch_show_ratings():
 
 
 @pytest.mark.asyncio
-async def test_fetch_show_ratings_error():
+async def test_fetch_show_ratings_auth_error_propagation():
+    """Test that exceptions from client methods propagate through server tools."""
+    from utils.api.errors import InvalidRequestError
+
     with patch("server.shows.tools.ShowsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("API error"))
-        mock_client.get_show.return_value = future
+        # Mock client to raise MCP error
+        mock_client.get_show.side_effect = InvalidRequestError(
+            AUTH_REQUIRED,
+            data={"http_status": 401},
+        )
 
-        result = await fetch_show_ratings(show_id="1")
+        # The server tool should let the exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_show_ratings(show_id="1")
 
-        assert "Error fetching ratings for show ID 1" in result
+        assert "Authentication required" in exc_info.value.message
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 401
 
         mock_client.get_show.assert_called_once_with("1")
         mock_client.get_show_ratings.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_fetch_show_comments_string_error_handling():
-    """Test fetching show comments with a string error response."""
+async def test_fetch_show_comments_error_propagation():
+    """Test that show comments fetch errors propagate correctly."""
     with (
         patch("server.comments.tools.CommentsClient") as mock_comments_client_class,
     ):
-        # Configure the mock to return a string error
         mock_client = mock_comments_client_class.return_value
 
-        # Create a future that returns a string error
-        comments_future: asyncio.Future[Any] = asyncio.Future()
-        comments_future.set_result("Error: The requested show was not found.")
-        mock_client.get_show_comments.return_value = comments_future
+        # Mock client method to raise InvalidRequestError
+        async def async_raise_error(*args: Any, **kwargs: Any) -> None:
+            raise InvalidRequestError("The requested show was not found.", -32600)
 
-        # Call the tool function
-        result = await fetch_show_comments(show_id="1", limit=5)
+        mock_client.get_show_comments.side_effect = async_raise_error
 
-        # Verify the result contains the error message
-        assert (
-            "Error fetching comments for Show ID: 1: Error: The requested show was not found."
-            in result
-        )
+        # Server tool should let the MCP exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_show_comments(show_id="1", limit=5)
 
-        # Verify the client methods were called
+        assert exc_info.value.code == -32600
+        assert "The requested show was not found." in str(exc_info.value)
         mock_client.get_show_comments.assert_called_once_with(
             "1", limit=5, sort="newest"
         )
 
 
 @pytest.mark.asyncio
-async def test_fetch_season_comments_string_error_handling():
-    """Test fetching season comments with a string error response."""
+async def test_fetch_season_comments_error_propagation():
+    """Test that season comments fetch errors propagate correctly."""
     with (
         patch("server.comments.tools.CommentsClient") as mock_comments_client_class,
     ):
-        # Configure the mock to return a string error
         mock_client = mock_comments_client_class.return_value
 
-        # Create a future that returns a string error
-        comments_future: asyncio.Future[Any] = asyncio.Future()
-        comments_future.set_result("Error: The requested show was not found.")
-        mock_client.get_season_comments.return_value = comments_future
-
-        # Call the tool function
-        result = await fetch_season_comments(show_id="1", season=1, limit=5)
-
-        # Verify the result contains the error message
-        assert (
-            "Error fetching comments for Show ID: 1 - Season 1: Error: The requested show was not found."
-            in result
+        # Mock client method to raise InvalidRequestError
+        mock_client.get_season_comments.side_effect = InvalidRequestError(
+            "The requested show was not found.", -32600
         )
 
-        # Verify the client methods were called
+        # Server tool should let the MCP exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_season_comments(show_id="1", season=1, limit=5)
+
+        assert exc_info.value.code == -32600
+        assert "The requested show was not found." in str(exc_info.value)
         mock_client.get_season_comments.assert_called_once_with(
             "1", 1, limit=5, sort="newest"
         )
 
 
 @pytest.mark.asyncio
-async def test_fetch_episode_comments_string_error_handling():
-    """Test fetching episode comments with a string error response."""
+async def test_fetch_episode_comments_error_propagation():
+    """Test that episode comments fetch errors propagate correctly."""
     with (
         patch("server.comments.tools.CommentsClient") as mock_comments_client_class,
     ):
-        # Configure the mock to return a string error
         mock_client = mock_comments_client_class.return_value
 
-        # Create a future that returns a string error
-        comments_future: asyncio.Future[Any] = asyncio.Future()
-        comments_future.set_result("Error: The requested show was not found.")
-        mock_client.get_episode_comments.return_value = comments_future
-
-        # Call the tool function
-        result = await fetch_episode_comments(show_id="1", season=1, episode=1, limit=5)
-
-        # Verify the result contains the error message
-        assert (
-            "Error fetching comments for Show ID: 1 - S01E01: Error: The requested show was not found."
-            in result
+        # Mock client method to raise InvalidRequestError
+        mock_client.get_episode_comments.side_effect = InvalidRequestError(
+            "The requested show was not found.", -32600
         )
 
-        # Verify the client methods were called
+        # Server tool should let the MCP exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_episode_comments(show_id="1", season=1, episode=1, limit=5)
+
+        assert exc_info.value.code == -32600
+        assert "The requested show was not found." in str(exc_info.value)
         mock_client.get_episode_comments.assert_called_once_with(
             "1", 1, 1, limit=5, sort="newest"
         )
@@ -426,68 +424,171 @@ async def test_fetch_show_summary_basic():
 
 
 @pytest.mark.asyncio
-async def test_fetch_show_summary_extended_error():
-    """Test fetching show summary with extended mode error."""
+async def test_fetch_show_summary_extended_invalid_request_error():
+    """Test that exceptions from client methods propagate through server tools."""
+    from utils.api.errors import InvalidRequestError
+
     with patch("server.shows.tools.ShowsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("API error"))
-        mock_client.get_show_extended.return_value = future
+        # Mock client to raise MCP error
+        mock_client.get_show_extended.side_effect = InvalidRequestError(
+            "The requested resource was not found.", data={"http_status": 404}
+        )
 
-        result = await fetch_show_summary(show_id="54321")
+        # The server tool should let the exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_show_summary(show_id="54321")
 
-        assert "Error fetching show summary for ID 54321" in result
+        assert "not found" in exc_info.value.message
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 404
+
         mock_client.get_show_extended.assert_called_once_with("54321")
 
 
 @pytest.mark.asyncio
-async def test_fetch_show_summary_basic_error():
-    """Test fetching show summary with basic mode error."""
+async def test_fetch_show_summary_basic_internal_error():
+    """Test that exceptions from client methods propagate through server tools."""
+    from utils.api.errors import InternalError
+
     with patch("server.shows.tools.ShowsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("API error"))
-        mock_client.get_show.return_value = future
+        # Mock client to raise MCP error
+        mock_client.get_show.side_effect = InternalError(
+            "HTTP 500 error occurred",
+            data={"http_status": 500, "response": "Internal Server Error"},
+        )
 
-        result = await fetch_show_summary(show_id="54321", extended=False)
+        # The server tool should let the exception propagate
+        with pytest.raises(InternalError) as exc_info:
+            await fetch_show_summary(show_id="54321", extended=False)
 
-        assert "Error fetching show summary for ID 54321" in result
+        assert "HTTP 500 error occurred" in exc_info.value.message
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 500
+
         mock_client.get_show.assert_called_once_with("54321")
 
 
 @pytest.mark.asyncio
-async def test_fetch_show_summary_extended_string_error():
-    """Test fetching show summary with extended mode string error response."""
+async def test_fetch_show_summary_extended_error_propagation():
+    """Test that show summary extended fetch errors propagate correctly."""
     with patch("server.shows.tools.ShowsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result("Error: Show not found")
-        mock_client.get_show_extended.return_value = future
-
-        result = await fetch_show_summary(show_id="54321")
-
-        assert (
-            "Error fetching show summary for ID 54321: Error: Show not found" in result
+        # Mock client method to raise InvalidRequestError
+        mock_client.get_show_extended.side_effect = InvalidRequestError(
+            "Show not found", -32600
         )
+
+        # Server tool should let the MCP exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_show_summary(show_id="54321")
+
+        assert exc_info.value.code == -32600
+        assert "Show not found" in str(exc_info.value)
         mock_client.get_show_extended.assert_called_once_with("54321")
 
 
 @pytest.mark.asyncio
-async def test_fetch_show_summary_basic_string_error():
-    """Test fetching show summary with basic mode string error response."""
+async def test_fetch_show_summary_basic_error_propagation():
+    """Test that show summary basic fetch errors propagate correctly."""
     with patch("server.shows.tools.ShowsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result("Error: Show not found")
-        mock_client.get_show.return_value = future
+        # Mock client method to raise InvalidRequestError
+        mock_client.get_show.side_effect = InvalidRequestError("Show not found", -32600)
 
-        result = await fetch_show_summary(show_id="54321", extended=False)
+        # Server tool should let the MCP exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_show_summary(show_id="54321", extended=False)
 
-        assert (
-            "Error fetching show summary for ID 54321: Error: Show not found" in result
-        )
+        assert exc_info.value.code == -32600
+        assert "Show not found" in str(exc_info.value)
         mock_client.get_show.assert_called_once_with("54321")
+
+
+# New comprehensive error handling tests for Phase 3
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_ratings_error_propagation():
+    """Test that show ratings fetch errors propagate correctly."""
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        # Mock client method to raise InvalidRequestError
+        mock_client.get_show.side_effect = InvalidRequestError("Show not found", -32600)
+
+        # Server tool should let the MCP exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_show_ratings(show_id="invalid_id")
+
+        assert exc_info.value.code == -32600
+        assert "Show not found" in str(exc_info.value)
+        mock_client.get_show.assert_called_once_with("invalid_id")
+        mock_client.get_show_ratings.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_ratings_multiple_error_types():
+    """Test different MCP error types propagate correctly."""
+    test_cases = [
+        (
+            InvalidRequestError(
+                "Rate limit exceeded. Please try again later.",
+                data={"http_status": 429},
+            ),
+            429,
+        ),
+        (
+            InvalidRequestError(
+                "Access forbidden. You don't have permission.",
+                data={"http_status": 403},
+            ),
+            403,
+        ),
+        (
+            InternalError(
+                "Unable to connect to Trakt API.", data={"error_type": "request_error"}
+            ),
+            None,
+        ),
+    ]
+
+    for error, expected_status in test_cases:
+        with patch("server.shows.tools.ShowsClient") as mock_client_class:
+            mock_client = mock_client_class.return_value
+            mock_client.get_show.side_effect = error
+
+            with pytest.raises(type(error)) as exc_info:
+                await fetch_show_ratings(show_id="123")
+
+            assert exc_info.value.message == error.message
+            if expected_status:
+                assert exc_info.value.data is not None
+                assert exc_info.value.data["http_status"] == expected_status
+
+
+@pytest.mark.asyncio
+async def test_fetch_trending_shows_error_propagation():
+    """Test that trending shows tool propagates MCP errors correctly."""
+    from utils.api.errors import InvalidRequestError
+
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        mock_client.get_trending_shows.side_effect = InvalidRequestError(
+            AUTH_REQUIRED,
+            data={"http_status": 401},
+        )
+
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_trending_shows(limit=10)
+
+        assert "Authentication required" in exc_info.value.message
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 401
+        mock_client.get_trending_shows.assert_called_once_with(limit=10)

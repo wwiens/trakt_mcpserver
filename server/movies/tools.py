@@ -1,17 +1,13 @@
 # pyright: reportUnusedFunction=none
 """Movie tools for the Trakt MCP server."""
 
-import json
-import logging
-
 from mcp.server.fastmcp import FastMCP
 
 from client.movies import MoviesClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.movies import MovieFormatters
-
-logger = logging.getLogger("trakt_mcp")
+from utils.validation import validate_limit, validate_period_option, validate_trakt_id
 
 
 async def fetch_trending_movies(limit: int = DEFAULT_LIMIT) -> str:
@@ -56,13 +52,6 @@ async def fetch_favorited_movies(
     """
     client = MoviesClient()
     movies = await client.get_favorited_movies(limit=limit, period=period)
-
-    # Log the first movie to see the structure
-    if movies and len(movies) > 0:
-        logger.info(
-            f"Favorited movies API response structure: {json.dumps(movies[0], indent=2)}"
-        )
-
     return MovieFormatters.format_favorited_movies(movies)
 
 
@@ -95,6 +84,10 @@ async def fetch_watched_movies(
     Returns:
         Information about most watched movies
     """
+    # Validate inputs
+    validate_limit(limit)
+    validate_period_option(period)
+
     client = MoviesClient()
     movies = await client.get_watched_movies(limit=limit, period=period)
     return MovieFormatters.format_watched_movies(movies)
@@ -109,27 +102,17 @@ async def fetch_movie_ratings(movie_id: str) -> str:
     Returns:
         Information about movie ratings including average and distribution
     """
+    # Validate inputs
+    validate_trakt_id(movie_id, "movie")
+
     client = MoviesClient()
+    movie = await client.get_movie(movie_id)
 
-    try:
-        movie = await client.get_movie(movie_id)
+    movie_title = movie.get("title", f"Movie ID: {movie_id}")
 
-        # Check if the API returned an error string
-        if isinstance(movie, str):
-            return f"Error fetching ratings for movie ID {movie_id}: {movie}"
+    ratings = await client.get_movie_ratings(movie_id)
 
-        movie_title = movie.get("title", f"Movie ID: {movie_id}")
-
-        ratings = await client.get_movie_ratings(movie_id)
-
-        # Check if the API returned an error string
-        if isinstance(ratings, str):
-            return f"Error fetching ratings for {movie_title}: {ratings}"
-
-        return MovieFormatters.format_movie_ratings(ratings, movie_title)
-    except Exception as e:
-        logger.error(f"Error fetching movie ratings: {e}")
-        return f"Error fetching ratings for movie ID {movie_id}: {e!s}"
+    return MovieFormatters.format_movie_ratings(ratings, movie_title)
 
 
 async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
@@ -145,24 +128,16 @@ async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
         ratings, metadata, and detailed information. Basic mode includes title, year,
         and Trakt ID only.
     """
-    client = MoviesClient()
+    # Validate inputs
+    validate_trakt_id(movie_id, "movie")
 
-    try:
-        if extended:
-            movie = await client.get_movie_extended(movie_id)
-            # Check if the API returned an error string
-            if isinstance(movie, str):
-                return f"Error fetching movie summary for ID {movie_id}: {movie}"
-            return MovieFormatters.format_movie_extended(movie)
-        else:
-            movie = await client.get_movie(movie_id)
-            # Check if the API returned an error string
-            if isinstance(movie, str):
-                return f"Error fetching movie summary for ID {movie_id}: {movie}"
-            return MovieFormatters.format_movie_summary(movie)
-    except Exception as e:
-        logger.error(f"Error fetching movie summary: {e}")
-        return f"Error fetching movie summary for ID {movie_id}: {e!s}"
+    client = MoviesClient()
+    if extended:
+        movie = await client.get_movie_extended(movie_id)
+        return MovieFormatters.format_movie_extended(movie)
+    else:
+        movie = await client.get_movie(movie_id)
+        return MovieFormatters.format_movie_summary(movie)
 
 
 def register_movie_tools(mcp: FastMCP) -> None:

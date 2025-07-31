@@ -8,7 +8,7 @@ import pytest
 
 from client.auth import AuthClient
 from models.auth import TraktAuthToken, TraktDeviceCode
-from utils.api.errors import InvalidRequestError, handle_api_errors
+from utils.api.errors import InvalidParamsError, InvalidRequestError, handle_api_errors
 
 
 @pytest.mark.asyncio
@@ -27,7 +27,7 @@ async def test_auth_client_init_with_credentials():
 async def test_auth_client_init_without_credentials():
     with (
         patch.dict(os.environ, {"TRAKT_CLIENT_ID": "", "TRAKT_CLIENT_SECRET": ""}),
-        pytest.raises(ValueError, match="Trakt API credentials not found"),
+        pytest.raises(InvalidParamsError, match="Invalid Trakt API credentials: not found in .env file"),
     ):
         AuthClient()
 
@@ -197,6 +197,15 @@ async def test_auth_client_get_device_token_success():
 
 
 def test_clear_auth_token():
+    mock_token_data = {
+        "access_token": "test_token",
+        "refresh_token": "test_refresh",
+        "expires_in": 7200,
+        "created_at": int(time.time()),
+        "scope": "public",
+        "token_type": "bearer",
+    }
+
     with (
         patch("dotenv.load_dotenv"),
         patch.dict(
@@ -204,20 +213,16 @@ def test_clear_auth_token():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
         patch("os.path.exists", return_value=True),
+        patch("builtins.open", mock_open(read_data=json.dumps(mock_token_data))),
         patch("os.remove") as mock_remove,
     ):
         client = AuthClient()
-        client.auth_token = TraktAuthToken(
-            access_token="test_token",
-            refresh_token="test_refresh",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
+        # Auth token is loaded from mocked file
+        assert client.auth_token is not None
 
-        client.clear_auth_token()
+        result = client.clear_auth_token()
 
+        assert result is True
         assert client.auth_token is None
         mock_remove.assert_called_once_with("auth_token.json")
 
@@ -235,4 +240,4 @@ async def test_handle_api_errors_decorator():
     with pytest.raises(InvalidRequestError) as exc_info:
         await test_func()
 
-    assert exc_info.value.message == "The requested resource was not found."
+    assert exc_info.value.message == "Resource not found: resource with requested"

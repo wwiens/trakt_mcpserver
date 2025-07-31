@@ -6,7 +6,7 @@ import time
 
 from config.endpoints import TRAKT_ENDPOINTS
 from models.auth import TraktAuthToken, TraktDeviceCode
-from utils.api.errors import InternalError, handle_api_errors
+from utils.api.errors import InvalidRequestError, handle_api_errors
 
 from ..base import BaseClient
 
@@ -32,8 +32,9 @@ class AuthClient(BaseClient):
                 with open(AUTH_TOKEN_FILE) as f:
                     token_data = json.load(f)
                     return TraktAuthToken(**token_data)
-            except Exception as e:
-                print(f"Error loading auth token: {e}")
+            except (json.JSONDecodeError, ValueError, KeyError, OSError):
+                # File is corrupted, invalid, or inaccessible - return None to allow fresh auth
+                return None
         return None
 
     def _save_auth_token(self, token: TraktAuthToken):
@@ -88,18 +89,16 @@ class AuthClient(BaseClient):
 
         try:
             response = await self._post_request(TRAKT_ENDPOINTS["device_token"], data)
-            if isinstance(response, str):
-                # Error response, user hasn't authorized yet
-                return None
             token = TraktAuthToken(**response)
             self.auth_token = token
             self._save_auth_token(token)
             self._update_headers_with_token()
             return token
-        except InternalError as e:
-            # Check if this is a 400 error (user hasn't authorized yet)
+        except InvalidRequestError as e:
+            # 400 status from device token endpoint means "authorization pending"
             if e.data and e.data.get("http_status") == 400:
                 return None
+            # Re-raise other InvalidRequestError cases
             raise
 
     def clear_auth_token(self) -> bool:
@@ -116,7 +115,7 @@ class AuthClient(BaseClient):
                 if "Authorization" in self.headers:
                     del self.headers["Authorization"]
                 return True
-            except Exception as e:
-                print(f"Error clearing auth token: {e}")
+            except OSError:
+                # Permission denied or other OS error - return False
                 return False
         return False

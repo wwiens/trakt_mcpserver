@@ -43,7 +43,6 @@ async def test_checkin_to_show_authenticated():
         assert "S01E01" in result
 
         # Verify the client methods were called
-        mock_client.is_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_called_once_with(
             episode_season=1,
             episode_number=1,
@@ -64,9 +63,13 @@ async def test_checkin_to_show_not_authenticated():
         patch("server.checkin.tools.CheckinClient") as mock_client_class,
         patch("server.checkin.tools.start_device_auth") as mock_start_auth,
     ):
-        # Configure the mock
+        # Configure the mock to raise InvalidParamsError when checkin_to_show is called
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = False
+
+        # Mock checkin_to_show to raise InvalidParamsError (not authenticated)
+        from config.errors import AUTH_REQUIRED
+        from utils.api.errors import InvalidParamsError
+        mock_client.checkin_to_show.side_effect = InvalidParamsError(AUTH_REQUIRED)
 
         # Mock the start_device_auth function
         mock_start_auth.return_value = (
@@ -81,8 +84,7 @@ async def test_checkin_to_show_not_authenticated():
         assert "# Trakt Authentication Required" in result
 
         # Verify the client methods were called
-        mock_client.is_authenticated.assert_called_once()
-        mock_client.checkin_to_show.assert_not_called()
+        mock_client.checkin_to_show.assert_called_once()
         mock_start_auth.assert_called_once()
 
 
@@ -98,10 +100,9 @@ async def test_checkin_to_show_missing_info():
         result = await checkin_to_show(season=1, episode=1)
 
         # Verify the result
-        assert "Error: You must provide either a show_id or a show_title" in result
+        assert "Error: Missing required parameter: show_id or show_title" in result
 
-        # Verify the client methods were called
-        mock_client.is_authenticated.assert_called_once()
+        # Verify the client methods were not called due to parameter validation
         mock_client.checkin_to_show.assert_not_called()
 
 
@@ -130,7 +131,6 @@ async def test_checkin_to_show_with_title():
         assert "# Successfully Checked In" in result
         assert "Breaking Bad" in result
 
-        mock_client.is_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_called_once_with(
             episode_season=1,
             episode_number=1,
@@ -188,7 +188,7 @@ async def test_checkin_to_show_with_message_and_sharing():
 
 @pytest.mark.asyncio
 async def test_checkin_to_show_value_error():
-    """Test checking in to a show with ValueError (authentication error)."""
+    """Test checking in to a show with ValueError - should propagate exception."""
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
@@ -197,17 +197,17 @@ async def test_checkin_to_show_value_error():
         future.set_exception(ValueError("Authentication failed"))
         mock_client.checkin_to_show.return_value = future
 
-        result = await checkin_to_show(season=1, episode=1, show_id="1")
+        with pytest.raises(ValueError) as exc_info:
+            await checkin_to_show(season=1, episode=1, show_id="1")
 
-        assert "Error: Authentication failed" in result
+        assert "Authentication failed" in str(exc_info.value)
 
-        mock_client.is_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_checkin_to_show_general_error():
-    """Test checking in to a show with general error."""
+    """Test checking in to a show with general error - should propagate exception."""
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
@@ -216,15 +216,11 @@ async def test_checkin_to_show_general_error():
         future.set_exception(Exception("Network error"))
         mock_client.checkin_to_show.return_value = future
 
-        result = await checkin_to_show(season=1, episode=1, show_id="1")
+        with pytest.raises(Exception) as exc_info:
+            await checkin_to_show(season=1, episode=1, show_id="1")
 
-        assert (
-            "An error occurred while checking in to the show: Network error" in result
-        )
-        assert "Make sure you provided either:" in result
-        assert "search_shows" in result
+        assert "Network error" in str(exc_info.value)
 
-        mock_client.is_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_called_once()
 
 

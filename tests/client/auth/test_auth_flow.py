@@ -132,10 +132,10 @@ async def test_device_token_pending_authorization():
         client = AuthClient()
 
         # Try to get a token, should return None because authorization is pending
-        token = await client.get_device_token("device_code_123")
+        result = await client.get_device_token("device_code_123")
 
-        # Verify no token was returned
-        assert token is None
+        # Verify it returns None for pending authorization
+        assert result is None
 
         # Verify the client is not authenticated
         assert client.is_authenticated() is False
@@ -167,10 +167,10 @@ async def test_device_token_expired():
         client = AuthClient()
 
         # Try to get a token, should return None because the code has expired
-        token = await client.get_device_token("device_code_123")
+        result = await client.get_device_token("device_code_123")
 
-        # Verify no token was returned
-        assert token is None
+        # Verify it returns None for expired code
+        assert result is None
 
         # Verify the client is not authenticated
         assert client.is_authenticated() is False

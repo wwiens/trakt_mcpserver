@@ -51,6 +51,33 @@ class TestHandleApiErrorsDecorator:
         mock_async_func.assert_called_once_with("arg1", kwarg1="value1")
 
     @pytest.mark.asyncio
+    async def test_http_400_bad_request_error(self, mock_async_func: AsyncMock) -> None:
+        """Test handling of HTTP 400 Bad Request error."""
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.text = "Bad Request"
+
+        http_error = httpx.HTTPStatusError(
+            message="400 Bad Request", request=MagicMock(), response=mock_response
+        )
+        mock_async_func.side_effect = http_error
+
+        decorated_func = handle_api_errors(mock_async_func)
+
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InvalidRequestError) as exc_info,
+        ):
+            await decorated_func()
+
+        assert (
+            exc_info.value.message
+            == "Bad request. Please check your request parameters."
+        )
+        assert exc_info.value.data == {"http_status": 400}
+        mock_logger.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_http_401_unauthorized_error(
         self, mock_async_func: AsyncMock
     ) -> None:
@@ -74,9 +101,36 @@ class TestHandleApiErrorsDecorator:
 
         assert (
             exc_info.value.message
-            == "Authentication required. Please check your Trakt API credentials."
+            == "Authentication required. Use the 'start_device_auth' tool to authenticate with Trakt."
         )
         assert exc_info.value.data == {"http_status": 401}
+        mock_logger.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_http_403_forbidden_error(self, mock_async_func: AsyncMock) -> None:
+        """Test handling of HTTP 403 Forbidden error."""
+        mock_response = MagicMock()
+        mock_response.status_code = 403
+        mock_response.text = "Forbidden"
+
+        http_error = httpx.HTTPStatusError(
+            message="403 Forbidden", request=MagicMock(), response=mock_response
+        )
+        mock_async_func.side_effect = http_error
+
+        decorated_func = handle_api_errors(mock_async_func)
+
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InvalidRequestError) as exc_info,
+        ):
+            await decorated_func()
+
+        assert (
+            exc_info.value.message
+            == "Access forbidden. You don't have permission to access this resource."
+        )
+        assert exc_info.value.data == {"http_status": 403}
         mock_logger.assert_called_once()
 
     @pytest.mark.asyncio
@@ -99,8 +153,39 @@ class TestHandleApiErrorsDecorator:
         ):
             await decorated_func()
 
-        assert exc_info.value.message == "The requested resource was not found."
+        assert exc_info.value.message == "Resource not found: resource with requested"
         assert exc_info.value.data == {"http_status": 404}
+        mock_logger.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_http_422_unprocessable_entity_error(
+        self, mock_async_func: AsyncMock
+    ) -> None:
+        """Test handling of HTTP 422 Unprocessable Entity error."""
+        mock_response = MagicMock()
+        mock_response.status_code = 422
+        mock_response.text = "Unprocessable Entity"
+
+        http_error = httpx.HTTPStatusError(
+            message="422 Unprocessable Entity",
+            request=MagicMock(),
+            response=mock_response,
+        )
+        mock_async_func.side_effect = http_error
+
+        decorated_func = handle_api_errors(mock_async_func)
+
+        with (
+            patch.object(logger, "error") as mock_logger,
+            pytest.raises(InvalidRequestError) as exc_info,
+        ):
+            await decorated_func()
+
+        assert (
+            exc_info.value.message
+            == "Unprocessable entity. The request is syntactically correct but semantically invalid."
+        )
+        assert exc_info.value.data == {"http_status": 422}
         mock_logger.assert_called_once()
 
     @pytest.mark.asyncio
@@ -360,8 +445,14 @@ class TestDecoratorIntegration:
         async def test_func() -> str:
             return "should not reach here"
 
-        with patch.object(logger, "error"), pytest.raises(InternalError) as exc_info:
+        with (
+            patch.object(logger, "error"),
+            pytest.raises(InvalidRequestError) as exc_info,
+        ):
             await test_func()
 
-        assert exc_info.value.message == "HTTP 400 error occurred"
-        assert exc_info.value.data == {"http_status": 400, "response": "Bad Request"}
+        assert (
+            exc_info.value.message
+            == "Bad request. Please check your request parameters."
+        )
+        assert exc_info.value.data == {"http_status": 400}

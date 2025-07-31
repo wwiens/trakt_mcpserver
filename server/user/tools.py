@@ -6,6 +6,8 @@ from mcp.server.fastmcp import FastMCP
 from client.user import UserClient
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.user import UserFormatters
+from utils.api.errors import InvalidParamsError, InvalidRequestError
+from utils.validation import validate_limit
 
 # Import start_device_auth from auth module
 from ..auth.tools import start_device_auth
@@ -20,18 +22,34 @@ async def fetch_user_watched_shows(limit: int = 0) -> str:
     Returns:
         Information about user's watched shows
     """
+    # Validate inputs
+    validate_limit(limit)
+
     client = UserClient()
 
-    if not client.is_authenticated():
-        # Start the auth flow automatically
+    try:
+        shows = await client.get_user_watched_shows()
+    except InvalidParamsError:
+        # Client-side parameter validation error
         auth_instructions = await start_device_auth()
         return f"""Authentication required to access your watched shows.
 
 {auth_instructions}
 
 After you've completed the authorization process on the Trakt website, please tell me "I've completed the authorization" so I can check if it was successful and retrieve your watched shows."""
+    except InvalidRequestError as e:
+        # Check if this is an auth-related error (401 Unauthorized)
+        if e.data and e.data.get("http_status") == 401:
+            # Start the auth flow automatically for auth errors
+            auth_instructions = await start_device_auth()
+            return f"""Authentication required to access your watched shows.
 
-    shows = await client.get_user_watched_shows()
+{auth_instructions}
+
+After you've completed the authorization process on the Trakt website, please tell me "I've completed the authorization" so I can check if it was successful and retrieve your watched shows."""
+        else:
+            # Re-raise non-auth InvalidRequestError (rate limit, etc.)
+            raise
 
     # Apply limit if requested
     if limit > 0 and len(shows) > limit:
@@ -49,18 +67,34 @@ async def fetch_user_watched_movies(limit: int = 0) -> str:
     Returns:
         Information about user's watched movies
     """
+    # Validate inputs
+    validate_limit(limit)
+
     client = UserClient()
 
-    if not client.is_authenticated():
-        # Start the auth flow automatically
+    try:
+        movies = await client.get_user_watched_movies()
+    except InvalidParamsError:
+        # Client-side parameter validation error
         auth_instructions = await start_device_auth()
         return f"""Authentication required to access your watched movies.
 
 {auth_instructions}
 
 After you've completed the authorization process on the Trakt website, please tell me "I've completed the authorization" so I can check if it was successful and retrieve your watched movies."""
+    except InvalidRequestError as e:
+        # Check if this is an auth-related error (401 Unauthorized)
+        if e.data and e.data.get("http_status") == 401:
+            # Start the auth flow automatically for auth errors
+            auth_instructions = await start_device_auth()
+            return f"""Authentication required to access your watched movies.
 
-    movies = await client.get_user_watched_movies()
+{auth_instructions}
+
+After you've completed the authorization process on the Trakt website, please tell me "I've completed the authorization" so I can check if it was successful and retrieve your watched movies."""
+        else:
+            # Re-raise non-auth InvalidRequestError (rate limit, etc.)
+            raise
 
     # Apply limit if requested
     if limit > 0 and len(movies) > limit:

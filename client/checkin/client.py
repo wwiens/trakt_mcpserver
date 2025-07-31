@@ -3,7 +3,8 @@
 from typing import Any
 
 from config.endpoints import TRAKT_ENDPOINTS
-from utils.api.errors import handle_api_errors
+from config.errors import AUTH_REQUIRED, MISSING_PARAMETER
+from utils.api.errors import InvalidParamsError, handle_api_errors
 
 from ..auth import AuthClient
 
@@ -41,13 +42,15 @@ class CheckinClient(AuthClient):
             Check-in response data
 
         Raises:
-            ValueError: If not authenticated or missing required parameters
+            InvalidParamsError: If not authenticated or missing required parameters
         """
         if not self.is_authenticated():
-            raise ValueError("You must be authenticated to check in to a show")
+            raise InvalidParamsError(AUTH_REQUIRED)
 
         if not show_id and not show_title:
-            raise ValueError("Either show_id or show_title must be provided")
+            raise InvalidParamsError(
+                MISSING_PARAMETER.format(parameter="show_id or show_title")
+            )
 
         # Prepare show data
         show_data: dict[str, Any] = (

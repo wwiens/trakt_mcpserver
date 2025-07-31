@@ -6,6 +6,8 @@ from unittest.mock import patch
 
 import pytest
 
+from utils.api.errors import InvalidRequestError
+
 # Add the project root directory to Python path
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
@@ -138,11 +140,9 @@ async def test_get_movie_ratings_error_handling():
         future.set_exception(Exception("API error"))
         mock_client.get_movie.return_value = future
 
-        # Call the resource function
-        result = await get_movie_ratings("1")
-
-        # Verify the result contains an error message
-        assert "Error fetching ratings for movie ID 1" in result
+        # Call the resource function and expect the exception to propagate
+        with pytest.raises(Exception, match="API error"):
+            await get_movie_ratings("1")
 
         # Verify the client methods were called
         mock_client.get_movie.assert_called_once_with("1")
@@ -150,25 +150,22 @@ async def test_get_movie_ratings_error_handling():
 
 
 @pytest.mark.asyncio
-async def test_get_movie_ratings_string_error_handling():
+async def test_get_movie_ratings_error_propagation():
+    """Test that movie ratings resource errors propagate correctly."""
     with patch("server.movies.resources.MoviesClient") as mock_client_class:
-        # Configure the mock to return a string error
         mock_client = mock_client_class.return_value
 
-        # Create a future that returns a string error
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result("Error: The requested resource was not found.")
-        mock_client.get_movie.return_value = future
+        # Mock client method to raise InvalidRequestError
+        async def async_raise_error(*args: Any, **kwargs: Any) -> None:
+            raise InvalidRequestError("The requested resource was not found.", -32600)
 
-        # Call the resource function
-        result = await get_movie_ratings("1")
+        mock_client.get_movie.side_effect = async_raise_error
 
-        # Verify the result contains the error message
-        assert (
-            "Error fetching ratings for movie ID 1: Error: The requested resource was not found."
-            in result
-        )
+        # Server resource should let the MCP exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await get_movie_ratings("1")
 
-        # Verify the client methods were called
+        assert exc_info.value.code == -32600
+        assert "The requested resource was not found." in str(exc_info.value)
         mock_client.get_movie.assert_called_once_with("1")
         mock_client.get_movie_ratings.assert_not_called()

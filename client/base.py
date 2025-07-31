@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING, Any, cast
 import httpx
 from dotenv import load_dotenv
 
-from utils.api.errors import handle_api_errors
+from config.errors import INVALID_PARAMETER
+from utils.api.errors import InvalidParamsError, handle_api_errors
 
 if TYPE_CHECKING:
     from models.auth import TraktAuthToken
@@ -24,8 +25,10 @@ class BaseClient:
         self.client_secret = os.getenv("TRAKT_CLIENT_SECRET")
 
         if not self.client_id or not self.client_secret:
-            raise ValueError(
-                "Trakt API credentials not found. Please check your .env file."
+            raise InvalidParamsError(
+                INVALID_PARAMETER.format(
+                    parameter="Trakt API credentials", reason="not found in .env file"
+                )
             )
 
         self.headers = {

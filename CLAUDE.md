@@ -114,6 +114,12 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - Docstrings for public functions/classes
 - No comments explaining what code does - only why when needed
 
+### Language Guidelines
+- **Avoid AI-sounding words**: Never use comprehensive, critical, robust, enhanced, leveraging, optimized, seamless, cutting-edge
+- **Use simple, direct language**: "audit" not "comprehensive audit", "improve" not "enhance", "fix" not "resolve critical issues"
+- **Write like a human developer**: Natural, technical language without marketing buzzwords
+- **PR summaries**: Focus on specific changes made, not promotional language
+
 ### Security
 - Never hardcode secrets (use environment variables)
 - Validate all inputs with Pydantic models
@@ -128,16 +134,16 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - **Prompts** (`@mcp.prompt`) - Interactive conversation starters
 
 ### Error Handling
-- Use `@handle_api_errors` decorator from `utils.api.errors`
-- Return structured data or error strings
-- Authentication checks at tool/resource level
+- Client methods use `@handle_api_errors` decorator from `utils.api.errors`
+- Errors propagate as exceptions through client → server → FastMCP
+- Error responses follow MCP JSON-RPC 2.0 format
 
 ### Data Flow
 1. MCP tool/resource → server handler
 2. Server creates focused client → client method  
-3. HTTP request with error handling
-4. Pydantic model processing
-5. Domain-specific formatter → markdown response
+3. HTTP request with error handling (`@handle_api_errors`)
+4. Pydantic model processing (or exception propagation)
+5. Domain-specific formatter → markdown response (or MCP error)
 
 ### Authentication
 - OAuth device code flow

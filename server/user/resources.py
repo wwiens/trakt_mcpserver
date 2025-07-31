@@ -4,6 +4,7 @@
 from mcp.server.fastmcp import FastMCP
 
 from client.user import UserClient
+from config.errors import AUTH_REQUIRED_MARKDOWN
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.user import UserFormatters
 
@@ -18,7 +19,7 @@ async def get_user_watched_shows() -> str:
     client = UserClient()
 
     if not client.is_authenticated():
-        return "# Authentication Required\n\nYou need to authenticate with Trakt to view your watched shows.\nUse the `start_device_auth` tool to begin authentication."
+        return AUTH_REQUIRED_MARKDOWN
 
     shows = await client.get_user_watched_shows()
     return UserFormatters.format_user_watched_shows(shows)
@@ -34,7 +35,7 @@ async def get_user_watched_movies() -> str:
     client = UserClient()
 
     if not client.is_authenticated():
-        return "# Authentication Required\n\nYou need to authenticate with Trakt to view your watched movies.\nUse the `start_device_auth` tool to begin authentication."
+        return AUTH_REQUIRED_MARKDOWN
 
     movies = await client.get_user_watched_movies()
     return UserFormatters.format_user_watched_movies(movies)

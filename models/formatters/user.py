@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from config.errors import NO_WATCHED_MOVIES, NO_WATCHED_SHOWS
+
 
 class UserFormatters:
     """Helper class for formatting user-related data for MCP responses."""
@@ -12,10 +14,7 @@ class UserFormatters:
         result = "# Your Watched Shows on Trakt\n\n"
 
         if not shows:
-            return (
-                result
-                + "You haven't watched any shows yet, or you need to authenticate first."
-            )
+            return result + NO_WATCHED_SHOWS
 
         for item in shows:
             show = item.get("show", {})
@@ -43,10 +42,7 @@ class UserFormatters:
         result = "# Your Watched Movies on Trakt\n\n"
 
         if not movies:
-            return (
-                result
-                + "You haven't watched any movies yet, or you need to authenticate first."
-            )
+            return result + NO_WATCHED_MOVIES
 
         for item in movies:
             movie = item.get("movie", {})

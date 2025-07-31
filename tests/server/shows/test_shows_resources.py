@@ -6,6 +6,8 @@ from unittest.mock import patch
 
 import pytest
 
+from utils.api.errors import InvalidRequestError
+
 # Add the project root directory to Python path
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
@@ -228,6 +230,7 @@ async def test_get_show_ratings():
 
 @pytest.mark.asyncio
 async def test_get_show_ratings_error_handling():
+    """Test that exceptions propagate correctly from the shows resource."""
     with patch("server.shows.resources.ShowsClient") as mock_client_class:
         # Configure the mock to raise an exception
         mock_client = mock_client_class.return_value
@@ -237,11 +240,12 @@ async def test_get_show_ratings_error_handling():
         future.set_exception(Exception("API error"))
         mock_client.get_show.return_value = future
 
-        # Call the resource function
-        result = await get_show_ratings("1")
+        # Call the resource function - should raise exception
+        with pytest.raises(Exception) as exc_info:
+            await get_show_ratings("1")
 
-        # Verify the result contains an error message
-        assert "Error fetching ratings for show ID 1" in result
+        # Verify the exception message
+        assert "API error" in str(exc_info.value)
 
         # Verify the client methods were called
         mock_client.get_show.assert_called_once_with("1")
@@ -249,25 +253,22 @@ async def test_get_show_ratings_error_handling():
 
 
 @pytest.mark.asyncio
-async def test_get_show_ratings_string_error_handling():
+async def test_get_show_ratings_error_propagation():
+    """Test that show ratings resource errors propagate correctly."""
     with patch("server.shows.resources.ShowsClient") as mock_client_class:
-        # Configure the mock to return a string error
         mock_client = mock_client_class.return_value
 
-        # Create a future that returns a string error
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result("Error: The requested resource was not found.")
-        mock_client.get_show.return_value = future
+        # Mock client method to raise InvalidRequestError
+        async def async_raise_error(*args: Any, **kwargs: Any) -> None:
+            raise InvalidRequestError("The requested resource was not found.", -32600)
 
-        # Call the resource function
-        result = await get_show_ratings("1")
+        mock_client.get_show.side_effect = async_raise_error
 
-        # Verify the result contains the error message
-        assert (
-            "Error fetching ratings for show ID 1: Error: The requested resource was not found."
-            in result
-        )
+        # Server resource should let the MCP exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await get_show_ratings("1")
 
-        # Verify the client methods were called
+        assert exc_info.value.code == -32600
+        assert "The requested resource was not found." in str(exc_info.value)
         mock_client.get_show.assert_called_once_with("1")
         mock_client.get_show_ratings.assert_not_called()

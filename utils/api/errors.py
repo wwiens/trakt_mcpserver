@@ -1,11 +1,23 @@
 """Decorators and error handling for the Trakt MCP server."""
 
 import functools
+import json
 import logging
 from collections.abc import Callable, Coroutine
 from typing import Any, TypeVar
 
 import httpx
+
+from config.errors import (
+    ACCESS_FORBIDDEN,
+    API_UNAVAILABLE,
+    AUTH_REQUIRED,
+    BAD_REQUEST,
+    NETWORK_ERROR,
+    RATE_LIMITED,
+    RESOURCE_NOT_FOUND,
+    UNPROCESSABLE_ENTITY,
+)
 
 # Set up logging
 logging.basicConfig(
@@ -90,19 +102,36 @@ def handle_api_errors(func: AsyncFunc[T]) -> AsyncFunc[T]:
             status_code = e.response.status_code
 
             # Map HTTP status codes to MCP error types
-            if status_code == 401:
+            if status_code == 400:
                 raise InvalidRequestError(
-                    "Authentication required. Please check your Trakt API credentials.",
+                    BAD_REQUEST,
+                    data={"http_status": status_code},
+                ) from e
+            elif status_code == 401:
+                raise InvalidRequestError(
+                    AUTH_REQUIRED,
+                    data={"http_status": status_code},
+                ) from e
+            elif status_code == 403:
+                raise InvalidRequestError(
+                    ACCESS_FORBIDDEN,
                     data={"http_status": status_code},
                 ) from e
             elif status_code == 404:
                 raise InvalidRequestError(
-                    "The requested resource was not found.",
+                    RESOURCE_NOT_FOUND.format(
+                        resource_type="resource", identifier="requested"
+                    ),
+                    data={"http_status": status_code},
+                ) from e
+            elif status_code == 422:
+                raise InvalidRequestError(
+                    UNPROCESSABLE_ENTITY,
                     data={"http_status": status_code},
                 ) from e
             elif status_code == 429:
                 raise InvalidRequestError(
-                    "Rate limit exceeded. Please try again later.",
+                    RATE_LIMITED,
                     data={"http_status": status_code},
                 ) from e
             else:
@@ -113,8 +142,14 @@ def handle_api_errors(func: AsyncFunc[T]) -> AsyncFunc[T]:
         except httpx.RequestError as e:
             logger.error(f"Request error: {e!s}")
             raise InternalError(
-                "Unable to connect to Trakt API. Please check your internet connection.",
+                NETWORK_ERROR,
                 data={"error_type": "request_error", "details": str(e)},
+            ) from e
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {e!s}")
+            raise InternalError(
+                API_UNAVAILABLE,
+                data={"error_type": "json_decode_error", "details": str(e)},
             ) from e
         except MCPError:
             # Re-raise MCP errors as-is

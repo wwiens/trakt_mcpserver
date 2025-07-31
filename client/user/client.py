@@ -3,7 +3,8 @@
 from typing import Any
 
 from config.endpoints import TRAKT_ENDPOINTS
-from utils.api.errors import handle_api_errors
+from config.errors import AUTH_REQUIRED
+from utils.api.errors import InvalidParamsError, handle_api_errors
 
 from ..auth import AuthClient
 
@@ -19,7 +20,7 @@ class UserClient(AuthClient):
             List of shows watched by the user
         """
         if not self.is_authenticated():
-            return []
+            raise InvalidParamsError(AUTH_REQUIRED)
 
         return await self._make_list_request(TRAKT_ENDPOINTS["user_watched_shows"])
 
@@ -31,6 +32,6 @@ class UserClient(AuthClient):
             List of movies watched by the user
         """
         if not self.is_authenticated():
-            return []
+            raise InvalidParamsError(AUTH_REQUIRED)
 
         return await self._make_list_request(TRAKT_ENDPOINTS["user_watched_movies"])

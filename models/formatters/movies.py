@@ -12,7 +12,11 @@ class MovieFormatters:
         result = "# Trending Movies on Trakt\n\n"
 
         for item in movies:
+            if not item:
+                continue
             movie = item.get("movie", {})
+            if not movie:
+                continue
             watchers = item.get("watchers", 0)
 
             title = movie.get("title", "Unknown")
@@ -53,7 +57,11 @@ class MovieFormatters:
         result = "# Most Favorited Movies on Trakt\n\n"
 
         for item in movies:
+            if not item:
+                continue
             movie = item.get("movie", {})
+            if not movie:
+                continue
             # The correct field is user_count in the API response
             user_count = item.get("user_count", 0)
 
@@ -76,7 +84,11 @@ class MovieFormatters:
         result = "# Most Played Movies on Trakt\n\n"
 
         for item in movies:
+            if not item:
+                continue
             movie = item.get("movie", {})
+            if not movie:
+                continue
             watcher_count = item.get("watcher_count", 0)
             play_count = item.get("play_count", 0)
 
@@ -99,7 +111,11 @@ class MovieFormatters:
         result = "# Most Watched Movies on Trakt\n\n"
 
         for item in movies:
+            if not item:
+                continue
             movie = item.get("movie", {})
+            if not movie:
+                continue
             watcher_count = item.get("watcher_count", 0)
 
             title = movie.get("title", "Unknown")
@@ -198,7 +214,7 @@ class MovieFormatters:
         title = movie.get("title", "Unknown")
         year = movie.get("year", "")
         year_str = f" ({year})" if year else ""
-        status = movie.get("status", "unknown")
+        status = movie.get("status", "unknown") or "unknown"
         tagline = movie.get("tagline", "")
         overview = movie.get("overview", "No overview available.")
         ids = movie.get("ids", {})
@@ -243,8 +259,8 @@ class MovieFormatters:
         # Ratings & Engagement
         result += "\n### Ratings & Engagement\n"
 
-        rating = movie.get("rating", 0)
-        votes = movie.get("votes", 0)
+        rating = movie.get("rating", 0) or 0
+        votes = movie.get("votes", 0) or 0
         result += f"- Rating: {rating:.1f}/10 ({votes} votes)\n"
 
         if comment_count := movie.get("comment_count"):

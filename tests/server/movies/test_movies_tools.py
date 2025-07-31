@@ -6,12 +6,16 @@ from unittest.mock import patch
 
 import pytest
 
+from config.errors import AUTH_REQUIRED
+from utils.api.errors import InternalError, InvalidRequestError
+
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.comments.tools import fetch_movie_comments
 from server.movies.tools import (
     fetch_movie_ratings,
     fetch_movie_summary,
+    fetch_popular_movies,
     fetch_trending_movies,
 )
 
@@ -121,44 +125,49 @@ async def test_fetch_movie_ratings():
 
 
 @pytest.mark.asyncio
-async def test_fetch_movie_ratings_error():
+async def test_fetch_movie_ratings_error_propagation():
+    """Test that exceptions from client methods propagate through server tools."""
+    from utils.api.errors import InvalidRequestError
+
     with patch("server.movies.tools.MoviesClient") as mock_client_class:
         mock_client = mock_client_class.return_value
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("API error"))
-        mock_client.get_movie.return_value = future
+        # Mock client to raise MCP error
+        mock_client.get_movie.side_effect = InvalidRequestError(
+            AUTH_REQUIRED,
+            data={"http_status": 401},
+        )
 
-        result = await fetch_movie_ratings(movie_id="1")
+        # The server tool should let the exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_movie_ratings(movie_id="1")
 
-        assert "Error fetching ratings for movie ID 1" in result
+        assert "Authentication required" in exc_info.value.message
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 401
 
         mock_client.get_movie.assert_called_once_with("1")
         mock_client.get_movie_ratings.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_fetch_movie_comments_string_error_handling():
-    """Test fetching movie comments with a string error response."""
+async def test_fetch_movie_comments_error_propagation():
+    """Test that movie comments fetch errors propagate correctly."""
     with patch("server.comments.tools.CommentsClient") as mock_client_class:
-        # Configure the mock to return a string error
         mock_client = mock_client_class.return_value
 
-        # Create a future that returns a string error
-        comments_future: asyncio.Future[Any] = asyncio.Future()
-        comments_future.set_result("Error: The requested movie was not found.")
-        mock_client.get_movie_comments.return_value = comments_future
+        # Mock client method to raise InvalidRequestError
+        async def async_raise_error(*args: Any, **kwargs: Any) -> None:
+            raise InvalidRequestError("The requested movie was not found.", -32600)
 
-        # Call the tool function
-        result = await fetch_movie_comments(movie_id="1", limit=5)
+        mock_client.get_movie_comments.side_effect = async_raise_error
 
-        # Verify the result contains the error message
-        assert (
-            "Error fetching comments for Movie ID: 1: Error: The requested movie was not found."
-            in result
-        )
+        # Server tool should let the MCP exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_movie_comments(movie_id="1", limit=5)
 
-        # Verify the client methods were called
+        assert exc_info.value.code == -32600
+        assert "The requested movie was not found." in str(exc_info.value)
         mock_client.get_movie_comments.assert_called_once_with(
             "1", limit=5, sort="newest"
         )
@@ -242,70 +251,164 @@ async def test_fetch_movie_summary_basic():
 
 
 @pytest.mark.asyncio
-async def test_fetch_movie_summary_extended_error():
-    """Test fetching movie summary with extended mode error."""
+async def test_fetch_movie_summary_extended_error_propagation():
+    """Test that exceptions from client methods propagate through server tools."""
+    from utils.api.errors import InvalidRequestError
+
     with patch("server.movies.tools.MoviesClient") as mock_client_class:
         mock_client = mock_client_class.return_value
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("API error"))
-        mock_client.get_movie_extended.return_value = future
+        # Mock client to raise MCP error
+        mock_client.get_movie_extended.side_effect = InvalidRequestError(
+            "The requested resource was not found.", data={"http_status": 404}
+        )
 
-        result = await fetch_movie_summary(movie_id="12345")
+        # The server tool should let the exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_movie_summary(movie_id="12345")
 
-        assert "Error fetching movie summary for ID 12345" in result
+        assert "not found" in exc_info.value.message
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 404
+
         mock_client.get_movie_extended.assert_called_once_with("12345")
 
 
 @pytest.mark.asyncio
-async def test_fetch_movie_summary_basic_error():
-    """Test fetching movie summary with basic mode error."""
+async def test_fetch_movie_summary_basic_error_propagation():
+    """Test that exceptions from client methods propagate through server tools."""
+    from utils.api.errors import InternalError
+
     with patch("server.movies.tools.MoviesClient") as mock_client_class:
         mock_client = mock_client_class.return_value
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("API error"))
-        mock_client.get_movie.return_value = future
+        # Mock client to raise MCP error
+        mock_client.get_movie.side_effect = InternalError(
+            "HTTP 500 error occurred",
+            data={"http_status": 500, "response": "Internal Server Error"},
+        )
 
-        result = await fetch_movie_summary(movie_id="12345", extended=False)
+        # The server tool should let the exception propagate
+        with pytest.raises(InternalError) as exc_info:
+            await fetch_movie_summary(movie_id="12345", extended=False)
 
-        assert "Error fetching movie summary for ID 12345" in result
+        assert "HTTP 500 error occurred" in exc_info.value.message
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 500
+
         mock_client.get_movie.assert_called_once_with("12345")
 
 
-@pytest.mark.asyncio
-async def test_fetch_movie_summary_extended_string_error():
-    """Test fetching movie summary with extended mode string error response."""
-    with patch("server.movies.tools.MoviesClient") as mock_client_class:
-        mock_client = mock_client_class.return_value
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result("Error: Movie not found")
-        mock_client.get_movie_extended.return_value = future
-
-        result = await fetch_movie_summary(movie_id="12345")
-
-        assert (
-            "Error fetching movie summary for ID 12345: Error: Movie not found"
-            in result
-        )
-        mock_client.get_movie_extended.assert_called_once_with("12345")
+# New comprehensive error handling tests for Phase 3
 
 
 @pytest.mark.asyncio
-async def test_fetch_movie_summary_basic_string_error():
-    """Test fetching movie summary with basic mode string error response."""
+async def test_fetch_movie_ratings_second_api_call_error_propagation():
+    """Test error propagation from the second API call (get_movie_ratings)."""
     with patch("server.movies.tools.MoviesClient") as mock_client_class:
         mock_client = mock_client_class.return_value
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result("Error: Movie not found")
-        mock_client.get_movie.return_value = future
+        # First call succeeds
+        async def async_return_movie():
+            return {"title": "Test Movie", "year": 2023}
 
-        result = await fetch_movie_summary(movie_id="12345", extended=False)
+        mock_client.get_movie.return_value = async_return_movie()
 
-        assert (
-            "Error fetching movie summary for ID 12345: Error: Movie not found"
-            in result
+        # Second call raises exception
+        async def async_raise_error(*args: Any, **kwargs: Any) -> None:
+            raise InvalidRequestError("Ratings not available", -32600)
+
+        mock_client.get_movie_ratings.side_effect = async_raise_error
+
+        # Server tool should let the MCP exception propagate
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_movie_ratings(movie_id="123")
+
+        assert exc_info.value.code == -32600
+        assert "Ratings not available" in str(exc_info.value)
+        mock_client.get_movie.assert_called_once_with("123")
+        mock_client.get_movie_ratings.assert_called_once_with("123")
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_ratings_multiple_error_types():
+    """Test different MCP error types propagate correctly."""
+    test_cases = [
+        (
+            InvalidRequestError(
+                "Rate limit exceeded. Please try again later.",
+                data={"http_status": 429},
+            ),
+            429,
+        ),
+        (
+            InvalidRequestError(
+                "Access forbidden. You don't have permission.",
+                data={"http_status": 403},
+            ),
+            403,
+        ),
+        (
+            InternalError(
+                "Unable to connect to Trakt API.", data={"error_type": "request_error"}
+            ),
+            None,
+        ),
+    ]
+
+    for error, expected_status in test_cases:
+        with patch("server.movies.tools.MoviesClient") as mock_client_class:
+            mock_client = mock_client_class.return_value
+            mock_client.get_movie.side_effect = error
+
+            with pytest.raises(type(error)) as exc_info:
+                await fetch_movie_ratings(movie_id="123")
+
+            assert exc_info.value.message == error.message
+            if expected_status:
+                assert exc_info.value.data is not None
+                assert exc_info.value.data["http_status"] == expected_status
+
+
+@pytest.mark.asyncio
+async def test_fetch_trending_movies_error_propagation():
+    """Test that trending movies tool propagates MCP errors correctly."""
+    from utils.api.errors import InvalidRequestError
+
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        mock_client.get_trending_movies.side_effect = InvalidRequestError(
+            AUTH_REQUIRED,
+            data={"http_status": 401},
         )
-        mock_client.get_movie.assert_called_once_with("12345")
+
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await fetch_trending_movies(limit=10)
+
+        assert "Authentication required" in exc_info.value.message
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 401
+        mock_client.get_trending_movies.assert_called_once_with(limit=10)
+
+
+@pytest.mark.asyncio
+async def test_fetch_popular_movies_error_propagation():
+    """Test that popular movies tool propagates MCP errors correctly."""
+    from utils.api.errors import InternalError
+
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        mock_client.get_popular_movies.side_effect = InternalError(
+            "HTTP 500 error occurred",
+            data={"http_status": 500, "response": "Internal Server Error"},
+        )
+
+        with pytest.raises(InternalError) as exc_info:
+            await fetch_popular_movies(limit=5)
+
+        assert "HTTP 500 error occurred" in exc_info.value.message
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 500
+        mock_client.get_popular_movies.assert_called_once_with(limit=5)

@@ -1,17 +1,12 @@
 # pyright: reportUnusedFunction=none
 """Movie resources for the Trakt MCP server."""
 
-import json
-import logging
-
 from mcp.server.fastmcp import FastMCP
 
 from client.movies import MoviesClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.movies import MovieFormatters
-
-logger = logging.getLogger("trakt_mcp")
 
 
 async def get_trending_movies() -> str:
@@ -44,13 +39,6 @@ async def get_favorited_movies() -> str:
     """
     client = MoviesClient()
     movies = await client.get_favorited_movies(limit=DEFAULT_LIMIT)
-
-    # Log the first movie to see the structure
-    if movies and len(movies) > 0:
-        logger.info(
-            f"Favorited movies API response structure: {json.dumps(movies[0], indent=2)}"
-        )
-
     return MovieFormatters.format_favorited_movies(movies)
 
 
@@ -86,26 +74,13 @@ async def get_movie_ratings(movie_id: str) -> str:
         Formatted markdown text with movie ratings
     """
     client = MoviesClient()
+    movie = await client.get_movie(movie_id)
 
-    try:
-        movie = await client.get_movie(movie_id)
+    movie_title = movie.get("title", f"Movie ID: {movie_id}")
 
-        # Check if the API returned an error string
-        if isinstance(movie, str):
-            return f"Error fetching ratings for movie ID {movie_id}: {movie}"
+    ratings = await client.get_movie_ratings(movie_id)
 
-        movie_title = movie.get("title", f"Movie ID: {movie_id}")
-
-        ratings = await client.get_movie_ratings(movie_id)
-
-        # Check if the API returned an error string
-        if isinstance(ratings, str):
-            return f"Error fetching ratings for {movie_title}: {ratings}"
-
-        return MovieFormatters.format_movie_ratings(ratings, movie_title)
-    except Exception as e:
-        logger.error(f"Error fetching movie ratings: {e}")
-        return f"Error fetching ratings for movie ID {movie_id}: {e!s}"
+    return MovieFormatters.format_movie_ratings(ratings, movie_title)
 
 
 def register_movie_resources(mcp: FastMCP) -> None:

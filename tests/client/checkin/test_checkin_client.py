@@ -6,6 +6,7 @@ import pytest
 
 from client.checkin import CheckinClient
 from models.auth import TraktAuthToken
+from utils.api.errors import InvalidParamsError
 
 
 @pytest.mark.asyncio
@@ -131,12 +132,12 @@ async def test_checkin_to_show_not_authenticated():
         client = CheckinClient()
         # No authentication set
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(InvalidParamsError) as exc_info:
             await client.checkin_to_show(
                 show_id="1", episode_season=1, episode_number=1
             )
 
-        assert "You must be authenticated to check in to a show" in str(exc_info.value)
+        assert "Authentication required" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -160,7 +161,7 @@ async def test_checkin_to_show_missing_info():
         )
 
         # Missing both show_id and show_title
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(InvalidParamsError) as exc_info:
             await client.checkin_to_show(episode_season=1, episode_number=1)
 
-        assert "Either show_id or show_title must be provided" in str(exc_info.value)
+        assert "Missing required parameter: show_id or show_title" in str(exc_info.value)

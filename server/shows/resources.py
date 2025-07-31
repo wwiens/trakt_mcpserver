@@ -1,17 +1,12 @@
 # pyright: reportUnusedFunction=none
 """Show resources for the Trakt MCP server."""
 
-import json
-import logging
-
 from mcp.server.fastmcp import FastMCP
 
 from client.shows import ShowsClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.shows import ShowFormatters
-
-logger = logging.getLogger("trakt_mcp")
 
 
 async def get_trending_shows() -> str:
@@ -44,13 +39,6 @@ async def get_favorited_shows() -> str:
     """
     client = ShowsClient()
     shows = await client.get_favorited_shows(limit=DEFAULT_LIMIT)
-
-    # Log the first show to see the structure
-    if shows and len(shows) > 0:
-        logger.info(
-            f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
-        )
-
     return ShowFormatters.format_favorited_shows(shows)
 
 
@@ -87,24 +75,12 @@ async def get_show_ratings(show_id: str) -> str:
     """
     client = ShowsClient()
 
-    try:
-        show = await client.get_show(show_id)
+    show = await client.get_show(show_id)
 
-        # Check if the API returned an error string
-        if isinstance(show, str):
-            return f"Error fetching ratings for show ID {show_id}: {show}"
+    show_title = show.get("title", "Unknown Show")
+    ratings = await client.get_show_ratings(show_id)
 
-        show_title = show.get("title", "Unknown Show")
-        ratings = await client.get_show_ratings(show_id)
-
-        # Check if the API returned an error string
-        if isinstance(ratings, str):
-            return f"Error fetching ratings for {show_title}: {ratings}"
-
-        return ShowFormatters.format_show_ratings(ratings, show_title)
-    except Exception as e:
-        logger.error(f"Error fetching show ratings: {e}")
-        return f"Error fetching ratings for show ID {show_id}: {e!s}"
+    return ShowFormatters.format_show_ratings(ratings, show_title)
 
 
 def register_show_resources(mcp: FastMCP) -> None:

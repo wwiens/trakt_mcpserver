@@ -198,7 +198,7 @@ class ShowFormatters:
         title = show.get("title", "Unknown")
         year = show.get("year", "")
         year_str = f" ({year})" if year else ""
-        status = show.get("status", "unknown")
+        status = show.get("status", "unknown") or "unknown"
         tagline = show.get("tagline", "")
         overview = show.get("overview", "No overview available.")
         ids = show.get("ids", {})
@@ -263,8 +263,8 @@ class ShowFormatters:
         # Ratings & Engagement
         result += "\n### Ratings & Engagement\n"
 
-        rating = show.get("rating", 0)
-        votes = show.get("votes", 0)
+        rating = show.get("rating", 0) or 0
+        votes = show.get("votes", 0) or 0
         result += f"- Rating: {rating:.1f}/10 ({votes} votes)\n"
 
         if comment_count := show.get("comment_count"):

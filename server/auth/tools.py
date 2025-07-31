@@ -1,7 +1,6 @@
 # pyright: reportUnusedFunction=none
 """Authentication tools for the Trakt MCP server."""
 
-import logging
 import time
 from typing import Any
 
@@ -11,9 +10,7 @@ from client.auth import AuthClient
 from config.auth import AUTH_VERIFICATION_URL
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.auth import AuthFormatters
-
-# Set up logging
-logger = logging.getLogger("trakt_mcp")
+from utils.api.errors import InvalidRequestError
 
 # Authentication storage for active device code flows
 active_auth_flow: dict[str, Any] = {}
@@ -42,8 +39,6 @@ async def start_device_auth() -> str:
         "interval": device_code_response.interval,
         "last_poll": 0,
     }
-
-    logger.info(f"Started device auth flow: {active_auth_flow}")
 
     # Return instructions for the user
     instructions = AuthFormatters.format_device_auth_instructions(
@@ -95,8 +90,8 @@ If you want to log out at any point, you can use the `clear_auth` tool."""
     active_auth_flow["last_poll"] = current_time
 
     # Try to get token
-    token = await client.get_device_token(active_auth_flow["device_code"])
-    if token:
+    try:
+        await client.get_device_token(active_auth_flow["device_code"])
         # Authentication successful
         active_auth_flow = {}
         return """# Authentication Successful!
@@ -104,9 +99,11 @@ If you want to log out at any point, you can use the `clear_auth` tool."""
 You have successfully authorized the Trakt MCP application. You can now access your personal Trakt data using tools like `fetch_user_watched_shows` and `fetch_user_watched_movies`.
 
 If you want to log out at any point, you can use the `clear_auth` tool."""
-    else:
-        # Still waiting for user to authorize
-        return """# Authorization Pending
+    except InvalidRequestError as e:
+        # Check if this is a 400 error (user hasn't authorized yet)
+        if e.data and e.data.get("http_status") == 400:
+            # Still waiting for user to authorize
+            return """# Authorization Pending
 
 I don't see that you've completed the authorization yet. Please make sure to:
 
@@ -115,6 +112,9 @@ I don't see that you've completed the authorization yet. Please make sure to:
 3. Approve the authorization request
 
 If you've already done this and are still seeing this message, please wait a few seconds and try again by telling me "Please check my authorization status"."""
+        else:
+            # Re-raise other errors
+            raise
 
 
 async def clear_auth() -> str:
