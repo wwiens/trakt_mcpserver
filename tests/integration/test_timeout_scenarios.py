@@ -329,8 +329,5 @@ class TestTimeoutScenarios:
         ):
             await search_shows("logging test")
 
-        # Note: We can't easily test the actual log output in this test framework,
-        # but this verifies the error propagation path that includes logging
-        # The actual logging verification would need to be done with log capture
-
-        assert True  # Test passes if no exceptions during error handling
+        # Note: Actual logging verification would require log capture setup
+        # This test verifies the error propagation path executes without exceptions

@@ -97,7 +97,8 @@ def validate_year(value: int | None) -> None:
         InvalidParamsError: If the year is unreasonable
     """
     if value is not None:
-        current_year = 2025  # Update as needed
+        from datetime import datetime
+        current_year = datetime.now().year
         if value < 1800 or value > current_year + 10:
             raise InvalidParamsError(
                 INVALID_PARAMETER.format(

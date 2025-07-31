@@ -253,7 +253,7 @@ class TestPartialFailures:
     @pytest.mark.asyncio
     async def test_mixed_error_and_success_responses(self):
         """Test scenarios with mixed successful and error responses."""
-        # This simulates a case where the first call fails but retry succeeds
+        # This simulates a case where the API call fails with a rate limit error
         call_count = 0
 
         def mock_api_call(*args: Any, **kwargs: Any) -> dict[str, Any]:
