@@ -65,6 +65,8 @@ cleanup_container() {
 # Function to run the container
 run_container() {
     print_status "Starting container..."
+    # Source .env if it exists
+    if [ -f .env ]; then set -a; . .env; set +a; fi
     docker run -d \
         --name $CONTAINER_NAME \
         -p $PORT:8000 \

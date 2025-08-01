@@ -14,7 +14,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-def main():
+def main() -> None:
     """Main entry point for the Docker container."""
     try:
         # Get configuration from environment variables
