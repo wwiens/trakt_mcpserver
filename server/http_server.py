@@ -1,5 +1,6 @@
 """HTTP server for the Trakt MCP server."""
 
+import json
 import logging
 import os
 from pathlib import Path
@@ -201,8 +202,13 @@ async def list_resources() -> dict[str, Any]:
         resources_list = []
         for resource in resources:
             try:
+                # Convert AnyUrl objects to strings for JSON serialization
+                uri = getattr(resource, 'uri', 'unknown://')
+                if hasattr(uri, '__str__'):
+                    uri = str(uri)
+                
                 resources_list.append({
-                    "uri": getattr(resource, 'uri', 'unknown://'),
+                    "uri": uri,
                     "name": getattr(resource, 'name', 'Unknown'),
                     "description": getattr(resource, 'description', 'No description'),
                     "mimeType": getattr(resource, 'mime_type', 'text/plain')
@@ -249,6 +255,9 @@ async def mcp_endpoint(request: Request) -> JSONResponse:
             })
     except HTTPException:
         raise
+    except json.JSONDecodeError as e:
+        logger.error(f"Malformed JSON in MCP endpoint: {e}")
+        raise HTTPException(status_code=422, detail="Malformed JSON") from e
     except Exception as e:
         logger.error(f"Unexpected error in MCP endpoint: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
@@ -306,8 +315,13 @@ async def _handle_resources_list(id: Any) -> JSONResponse:
         resources_list = []
         for resource in resources:
             try:
+                # Convert AnyUrl objects to strings for JSON serialization
+                uri = getattr(resource, 'uri', 'unknown://')
+                if hasattr(uri, '__str__'):
+                    uri = str(uri)
+                
                 resources_list.append({
-                    "uri": getattr(resource, 'uri', 'unknown://'),
+                    "uri": uri,
                     "name": getattr(resource, 'name', 'Unknown'),
                     "description": getattr(resource, 'description', 'No description'),
                     "mimeType": getattr(resource, 'mime_type', 'text/plain')
