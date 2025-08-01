@@ -3,11 +3,12 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Callable, Awaitable
+from typing import Any
+from collections.abc import Callable, Awaitable
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 import uvicorn
 
 from .main import create_server
@@ -117,7 +118,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from fastapi.responses import Response
 
 @app.middleware("http")
 async def handle_malformed_requests(
@@ -373,7 +373,7 @@ async def _handle_resources_read(id: Any, params: dict[str, Any]) -> JSONRespons
             }
         })
 
-def run_server(host: str = None, port: int = 8000) -> None:
+def run_server(host: str | None = None, port: int = 8000) -> None:
     """Run the HTTP server."""
     if host is None:
         host = os.getenv("HOST", "127.0.0.1")

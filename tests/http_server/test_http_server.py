@@ -3,7 +3,7 @@
 
 import requests
 import sys
-from typing import Optional
+
 
 def test_server(base_url: str = "http://localhost:8000") -> bool:
     """Test the MCP server endpoints.
