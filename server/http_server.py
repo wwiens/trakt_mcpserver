@@ -191,7 +191,7 @@ async def list_tools() -> dict[str, Any]:
         return {"tools": tools_list}
     except Exception as e:
         logger.error(f"Error listing tools: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}") from e
 
 @app.get("/resources")
 async def list_resources() -> dict[str, Any]:
@@ -218,7 +218,7 @@ async def list_resources() -> dict[str, Any]:
         return {"resources": resources_list}
     except Exception as e:
         logger.error(f"Error listing resources: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}") from e
 
 @app.post("/mcp")
 async def mcp_endpoint(request: Request) -> JSONResponse:
@@ -251,7 +251,7 @@ async def mcp_endpoint(request: Request) -> JSONResponse:
         raise
     except Exception as e:
         logger.error(f"Unexpected error in MCP endpoint: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 async def _handle_initialize(id: Any) -> JSONResponse:
     return JSONResponse(content={
