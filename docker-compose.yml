@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  trakt-mcp-server:
+    build: .
+    container_name: trakt-mcp-server
+    ports:
+      - "8000:8000"
+    environment:
+      - TRAKT_CLIENT_ID=${TRAKT_CLIENT_ID}
+      - TRAKT_CLIENT_SECRET=${TRAKT_CLIENT_SECRET}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

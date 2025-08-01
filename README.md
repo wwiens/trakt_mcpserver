@@ -285,6 +285,8 @@ You can log out at any time using the `clear_auth` tool.
 
 ## 🚀 Setup
 
+### Option 1: Local Development
+
 1. **Clone this repository**
    ```bash
    git clone https://github.com/yourusername/mcp-trakt.git
@@ -298,7 +300,7 @@ You can log out at any time using the `clear_auth` tool.
 
 3. **Set up your environment**
    ```bash
-   cp .env.example .env
+   cp env.example .env
    ```
    Then edit `.env` to add your Trakt API credentials:
    ```
@@ -310,6 +312,60 @@ You can log out at any time using the `clear_auth` tool.
    ```bash
    python server.py
    ```
+
+### Option 2: Docker Deployment (Recommended for Production)
+
+#### Quick Start with Docker Compose
+```bash
+# Clone the repository
+git clone https://github.com/wwiens/trakt_mcpserver.git
+cd mcp-trakt
+
+# Build and run with Docker Compose
+docker-compose up -d
+
+# Check if the server is running
+curl http://localhost:8000/health
+```
+
+#### Manual Docker Deployment
+```bash
+# Build the Docker image
+docker build -t trakt-mcp-server .
+
+# Run the container
+docker run -d \
+  --name trakt-mcp-server \
+  -p 8000:8000 \
+  -e LOG_LEVEL=INFO \
+  trakt-mcp-server
+```
+
+#### Using the Deployment Script
+```bash
+# Make the script executable (Linux/Mac)
+chmod +x deploy.sh
+
+# Deploy with default settings
+./deploy.sh
+
+# Deploy on a different port
+./deploy.sh -p 9000
+
+# Test the server
+./deploy.sh -t
+```
+
+#### Server URLs
+Once deployed, the server will be available at:
+- **Health Check**: `http://your-server:8000/health`
+- **Server Info**: `http://your-server:8000/`
+- **Tools List**: `http://your-server:8000/tools`
+- **Resources List**: `http://your-server:8000/resources`
+- **MCP Endpoint**: `http://your-server:8000/mcp`
+
+For Claude Desktop, use: `http://your-server:8000/mcp`
+
 
 ## 🧪 Development & Testing
 
