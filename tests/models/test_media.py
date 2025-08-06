@@ -1,17 +1,19 @@
 """Tests for the models.media module."""
 
+from typing import TYPE_CHECKING
+
 import pytest
 from pydantic import ValidationError
 
-from models import (
-    TraktEpisode,
-    TraktMovie,
-    TraktPopularMovie,
-    TraktPopularShow,
-    TraktShow,
-    TraktTrendingMovie,
-    TraktTrendingShow,
-)
+from models.movies import TraktMovie, TraktPopularMovie, TraktTrendingMovie
+from models.shows import TraktEpisode, TraktPopularShow, TraktShow, TraktTrendingShow
+
+if TYPE_CHECKING:
+    from tests.models.test_data_types import (
+        EpisodeTestData,
+        MovieTestData,
+        ShowTestData,
+    )
 
 
 class TestTraktShow:
@@ -19,7 +21,7 @@ class TestTraktShow:
 
     def test_valid_show_creation(self):
         """Test creating a valid TraktShow instance."""
-        show_data = {
+        show_data: ShowTestData = {
             "title": "Breaking Bad",
             "year": 2008,
             "ids": {
@@ -32,7 +34,7 @@ class TestTraktShow:
             "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
         }
 
-        show = TraktShow(**show_data)  # type: ignore[arg-type]
+        show = TraktShow(**show_data)
 
         assert show.title == "Breaking Bad"
         assert show.year == 2008
@@ -44,12 +46,12 @@ class TestTraktShow:
 
     def test_show_minimal_data(self):
         """Test creating show with minimal required data."""
-        minimal_data = {
+        minimal_data: ShowTestData = {
             "title": "Test Show",
             "ids": {"trakt": "123"},
         }
 
-        show = TraktShow(**minimal_data)  # type: ignore[arg-type]
+        show = TraktShow(**minimal_data)
 
         assert show.title == "Test Show"
         assert show.year is None
@@ -59,7 +61,7 @@ class TestTraktShow:
     def test_show_missing_title(self):
         """Test that title is required."""
         with pytest.raises(ValidationError) as exc_info:
-            TraktShow(ids={"trakt": "123"})  # type: ignore[call-arg]
+            TraktShow(ids={"trakt": "123"})  # type: ignore[call-arg] # Testing: Missing required 'title' field
 
         errors = exc_info.value.errors()
         assert any(error["loc"] == ("title",) for error in errors)
@@ -67,7 +69,7 @@ class TestTraktShow:
     def test_show_missing_ids(self):
         """Test that ids field is required."""
         with pytest.raises(ValidationError) as exc_info:
-            TraktShow(title="Test Show")  # type: ignore[call-arg]
+            TraktShow(title="Test Show")  # type: ignore[call-arg] # Testing: Missing required 'ids' field
 
         errors = exc_info.value.errors()
         assert any(error["loc"] == ("ids",) for error in errors)
@@ -76,40 +78,40 @@ class TestTraktShow:
         """Test that fields have correct types."""
         # Test with clearly incompatible title type
         with pytest.raises(ValidationError):
-            TraktShow(title=["not", "a", "string"], ids={"trakt": "123"})  # type: ignore[arg-type]
+            TraktShow(title=["not", "a", "string"], ids={"trakt": "123"})  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
 
         # Test with clearly incompatible year type
         with pytest.raises(ValidationError):
-            TraktShow(title="Test", year=["not", "an", "int"], ids={"trakt": "123"})  # type: ignore[arg-type]
+            TraktShow(title="Test", year=["not", "an", "int"], ids={"trakt": "123"})  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
 
         # Test with wrong ids type
         with pytest.raises(ValidationError):
-            TraktShow(title="Test", ids="not_a_dict")  # type: ignore[arg-type]
+            TraktShow(title="Test", ids="not_a_dict")  # type: ignore[arg-type] # Testing: String where dict expected for 'ids'
 
     def test_show_serialization(self):
         """Test that TraktShow can be serialized."""
-        show_data = {
+        show_data: ShowTestData = {
             "title": "Breaking Bad",
             "year": 2008,
             "ids": {"trakt": "1", "slug": "breaking-bad"},
             "overview": "Great show",
         }
 
-        show = TraktShow(**show_data)  # type: ignore[arg-type]
+        show = TraktShow(**show_data)
         serialized = show.model_dump()
 
         assert serialized == show_data
 
     def test_show_with_none_values(self):
         """Test show with explicit None values."""
-        show_data = {
+        show_data: ShowTestData = {
             "title": "Test Show",
             "year": None,
             "ids": {"trakt": "123"},
             "overview": None,
         }
 
-        show = TraktShow(**show_data)  # type: ignore[arg-type]
+        show = TraktShow(**show_data)
 
         assert show.title == "Test Show"
         assert show.year is None
@@ -121,7 +123,7 @@ class TestTraktMovie:
 
     def test_valid_movie_creation(self):
         """Test creating a valid TraktMovie instance."""
-        movie_data = {
+        movie_data: MovieTestData = {
             "title": "Inception",
             "year": 2010,
             "ids": {
@@ -133,7 +135,7 @@ class TestTraktMovie:
             "overview": "A thief who steals corporate secrets through dream-sharing technology.",
         }
 
-        movie = TraktMovie(**movie_data)  # type: ignore[arg-type]
+        movie = TraktMovie(**movie_data)
 
         assert movie.title == "Inception"
         assert movie.year == 2010
@@ -145,12 +147,12 @@ class TestTraktMovie:
 
     def test_movie_minimal_data(self):
         """Test creating movie with minimal required data."""
-        minimal_data = {
+        minimal_data: MovieTestData = {
             "title": "Test Movie",
             "ids": {"trakt": "456"},
         }
 
-        movie = TraktMovie(**minimal_data)  # type: ignore[arg-type]
+        movie = TraktMovie(**minimal_data)
 
         assert movie.title == "Test Movie"
         assert movie.year is None
@@ -160,7 +162,7 @@ class TestTraktMovie:
     def test_movie_required_fields(self):
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
-            TraktMovie()  # type: ignore[call-arg]
+            TraktMovie()  # type: ignore[call-arg] # Testing: All required fields missing
 
         errors = exc_info.value.errors()
         required_fields = {error["loc"][0] for error in errors}
@@ -171,21 +173,21 @@ class TestTraktMovie:
         """Test that fields have correct types."""
         # Test with clearly incompatible types
         with pytest.raises(ValidationError):
-            TraktMovie(title=["not", "a", "string"], ids={"trakt": "123"})  # type: ignore[arg-type]
+            TraktMovie(title=["not", "a", "string"], ids={"trakt": "123"})  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
 
         with pytest.raises(ValidationError):
-            TraktMovie(title="Test", year=["not", "an", "int"], ids={"trakt": "123"})  # type: ignore[arg-type]
+            TraktMovie(title="Test", year=["not", "an", "int"], ids={"trakt": "123"})  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
 
     def test_movie_serialization(self):
         """Test that TraktMovie can be serialized."""
-        movie_data = {
+        movie_data: MovieTestData = {
             "title": "Inception",
             "year": 2010,
             "ids": {"trakt": "1"},
             "overview": "Great movie",
         }
 
-        movie = TraktMovie(**movie_data)  # type: ignore[arg-type]
+        movie = TraktMovie(**movie_data)
         serialized = movie.model_dump()
 
         assert serialized == movie_data
@@ -196,7 +198,7 @@ class TestTraktEpisode:
 
     def test_valid_episode_creation(self):
         """Test creating a valid TraktEpisode instance."""
-        episode_data = {
+        episode_data: EpisodeTestData = {
             "season": 1,
             "number": 1,
             "title": "Pilot",
@@ -204,7 +206,7 @@ class TestTraktEpisode:
             "last_watched_at": "2023-01-15T20:30:00Z",
         }
 
-        episode = TraktEpisode(**episode_data)  # type: ignore[arg-type]
+        episode = TraktEpisode(**episode_data)
 
         assert episode.season == 1
         assert episode.number == 1
@@ -219,7 +221,7 @@ class TestTraktEpisode:
             "number": 5,
         }
 
-        episode = TraktEpisode(**minimal_data)  # type: ignore[arg-type]
+        episode = TraktEpisode(**minimal_data)  # type: ignore[arg-type] # Testing: Minimal valid data without TypedDict
 
         assert episode.season == 2
         assert episode.number == 5
@@ -230,7 +232,7 @@ class TestTraktEpisode:
     def test_episode_required_fields(self):
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
-            TraktEpisode()  # type: ignore[call-arg]
+            TraktEpisode()  # type: ignore[call-arg] # Testing: All required fields missing
 
         errors = exc_info.value.errors()
         required_fields = {error["loc"][0] for error in errors}
@@ -241,10 +243,10 @@ class TestTraktEpisode:
         """Test that fields have correct types."""
         # Test with clearly incompatible types
         with pytest.raises(ValidationError):
-            TraktEpisode(season=["not", "an", "int"], number=1)  # type: ignore[arg-type]
+            TraktEpisode(season=["not", "an", "int"], number=1)  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
 
         with pytest.raises(ValidationError):
-            TraktEpisode(season=1, number=["not", "an", "int"])  # type: ignore[arg-type]
+            TraktEpisode(season=1, number=["not", "an", "int"])  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
 
     def test_episode_serialization(self):
         """Test that TraktEpisode can be serialized."""
@@ -256,7 +258,7 @@ class TestTraktEpisode:
             "last_watched_at": "2023-01-15T20:30:00Z",
         }
 
-        episode = TraktEpisode(**episode_data)  # type: ignore[arg-type]
+        episode = TraktEpisode(**episode_data)  # type: ignore[arg-type] # Testing: Valid episode data without TypedDict
         serialized = episode.model_dump()
 
         assert serialized == episode_data
@@ -277,7 +279,7 @@ class TestTraktTrendingShow:
             },
         }
 
-        trending_show = TraktTrendingShow(**trending_data)  # type: ignore[arg-type]
+        trending_show = TraktTrendingShow(**trending_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
 
         assert trending_show.watchers == 150
         assert trending_show.show.title == "Breaking Bad"
@@ -286,7 +288,7 @@ class TestTraktTrendingShow:
     def test_trending_show_required_fields(self):
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
-            TraktTrendingShow()  # type: ignore[call-arg]
+            TraktTrendingShow()  # type: ignore[call-arg] # Testing: All required fields missing
 
         errors = exc_info.value.errors()
         required_fields = {error["loc"][0] for error in errors}
@@ -297,9 +299,9 @@ class TestTraktTrendingShow:
         """Test that nested show validation works."""
         # Missing required show fields
         with pytest.raises(ValidationError):
-            TraktTrendingShow(  # type: ignore[arg-type]
+            TraktTrendingShow(  # type: ignore[arg-type] # Testing: Incomplete show data missing 'ids'
                 watchers=150,
-                show={"title": "Test"},  # type: ignore[arg-type]  # Missing ids
+                show={"title": "Test"},  # type: ignore[arg-type] # Testing: Incomplete show data missing 'ids'
             )
 
     def test_trending_show_serialization(self):
@@ -314,7 +316,7 @@ class TestTraktTrendingShow:
             },
         }
 
-        trending_show = TraktTrendingShow(**trending_data)  # type: ignore[arg-type]
+        trending_show = TraktTrendingShow(**trending_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
         serialized = trending_show.model_dump()
 
         assert serialized == trending_data
@@ -335,7 +337,7 @@ class TestTraktTrendingMovie:
             },
         }
 
-        trending_movie = TraktTrendingMovie(**trending_data)  # type: ignore[arg-type]
+        trending_movie = TraktTrendingMovie(**trending_data)  # type: ignore[arg-type] # Testing: Dict where TraktMovie expected
 
         assert trending_movie.watchers == 200
         assert trending_movie.movie.title == "Inception"
@@ -344,7 +346,7 @@ class TestTraktTrendingMovie:
     def test_trending_movie_required_fields(self):
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
-            TraktTrendingMovie()  # type: ignore[call-arg]
+            TraktTrendingMovie()  # type: ignore[call-arg] # Testing: All required fields missing
 
         errors = exc_info.value.errors()
         required_fields = {error["loc"][0] for error in errors}
@@ -355,9 +357,9 @@ class TestTraktTrendingMovie:
         """Test that nested movie validation works."""
         # Missing required movie fields
         with pytest.raises(ValidationError):
-            TraktTrendingMovie(  # type: ignore[arg-type]
+            TraktTrendingMovie(  # type: ignore[arg-type] # Testing: Incomplete movie data missing 'ids'
                 watchers=200,
-                movie={"title": "Test"},  # type: ignore[arg-type]  # Missing ids
+                movie={"title": "Test"},  # type: ignore[arg-type] # Testing: Incomplete movie data missing 'ids'
             )
 
 
@@ -375,7 +377,7 @@ class TestTraktPopularShow:
             }
         }
 
-        popular_show = TraktPopularShow(**popular_data)  # type: ignore[arg-type]
+        popular_show = TraktPopularShow(**popular_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
 
         assert popular_show.show.title == "Breaking Bad"
         assert popular_show.show.year == 2008
@@ -399,7 +401,7 @@ class TestTraktPopularShow:
     def test_popular_show_required_fields(self):
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
-            TraktPopularShow()  # type: ignore[call-arg]
+            TraktPopularShow()  # type: ignore[call-arg] # Testing: Missing required 'show' field
 
         errors = exc_info.value.errors()
         assert any(error["loc"] == ("show",) for error in errors)
@@ -415,7 +417,7 @@ class TestTraktPopularShow:
             }
         }
 
-        popular_show = TraktPopularShow(**popular_data)  # type: ignore[arg-type]
+        popular_show = TraktPopularShow(**popular_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
         serialized = popular_show.model_dump()
 
         assert serialized == popular_data
@@ -435,7 +437,7 @@ class TestTraktPopularMovie:
             }
         }
 
-        popular_movie = TraktPopularMovie(**popular_data)  # type: ignore[arg-type]
+        popular_movie = TraktPopularMovie(**popular_data)  # type: ignore[arg-type] # Testing: Dict where TraktMovie expected
 
         assert popular_movie.movie.title == "Inception"
         assert popular_movie.movie.year == 2010
@@ -459,7 +461,7 @@ class TestTraktPopularMovie:
     def test_popular_movie_required_fields(self):
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
-            TraktPopularMovie()  # type: ignore[call-arg]
+            TraktPopularMovie()  # type: ignore[call-arg] # Testing: Missing required 'movie' field
 
         errors = exc_info.value.errors()
         assert any(error["loc"] == ("movie",) for error in errors)
@@ -475,7 +477,7 @@ class TestTraktPopularMovie:
             }
         }
 
-        popular_movie = TraktPopularMovie(**popular_data)  # type: ignore[arg-type]
+        popular_movie = TraktPopularMovie(**popular_data)  # type: ignore[arg-type] # Testing: Dict where TraktMovie expected
         serialized = popular_movie.model_dump()
 
         assert serialized == popular_data
@@ -500,16 +502,16 @@ class TestMediaModelIntegration:
         }
 
         # Test direct show creation
-        show = TraktShow(**complex_show_data)  # type: ignore[arg-type]
+        show = TraktShow(**complex_show_data)  # type: ignore[arg-type] # Testing: Valid show data without TypedDict
         assert show.title == "Game of Thrones"
 
         # Test in trending context
-        trending_show = TraktTrendingShow(watchers=5000, show=complex_show_data)  # type: ignore[arg-type]
+        trending_show = TraktTrendingShow(watchers=5000, show=complex_show_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
         assert trending_show.watchers == 5000
         assert trending_show.show.title == "Game of Thrones"
 
         # Test in popular context
-        popular_show = TraktPopularShow(show=complex_show_data)  # type: ignore[arg-type]
+        popular_show = TraktPopularShow(show=complex_show_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
         assert popular_show.show.title == "Game of Thrones"
 
     def test_complex_movie_data_structure(self):
@@ -527,16 +529,16 @@ class TestMediaModelIntegration:
         }
 
         # Test direct movie creation
-        movie = TraktMovie(**complex_movie_data)  # type: ignore[arg-type]
+        movie = TraktMovie(**complex_movie_data)  # type: ignore[arg-type] # Testing: Valid movie data without TypedDict
         assert movie.title == "The Dark Knight"
 
         # Test in trending context
-        trending_movie = TraktTrendingMovie(watchers=3000, movie=complex_movie_data)  # type: ignore[arg-type]
+        trending_movie = TraktTrendingMovie(watchers=3000, movie=complex_movie_data)  # type: ignore[arg-type] # Testing: Dict where TraktMovie expected
         assert trending_movie.watchers == 3000
         assert trending_movie.movie.title == "The Dark Knight"
 
         # Test in popular context
-        popular_movie = TraktPopularMovie(movie=complex_movie_data)  # type: ignore[arg-type]
+        popular_movie = TraktPopularMovie(movie=complex_movie_data)  # type: ignore[arg-type] # Testing: Dict where TraktMovie expected
         assert popular_movie.movie.title == "The Dark Knight"
 
     def test_episode_integration(self):
@@ -554,7 +556,7 @@ class TestMediaModelIntegration:
             "last_watched_at": "2023-12-01T21:00:00Z",
         }
 
-        episode = TraktEpisode(**episode_data)  # type: ignore[arg-type]
+        episode = TraktEpisode(**episode_data)  # type: ignore[arg-type] # Testing: Valid episode data without TypedDict
 
         assert episode.season == 1
         assert episode.number == 1

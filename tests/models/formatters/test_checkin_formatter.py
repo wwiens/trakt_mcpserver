@@ -1,6 +1,11 @@
 """Tests for checkin formatter module."""
 
+from typing import TYPE_CHECKING, cast
+
 from models.formatters.checkin import CheckinFormatters
+
+if TYPE_CHECKING:
+    from models.types import CheckinResponse
 
 
 class TestCheckinFormatters:
@@ -27,7 +32,9 @@ class TestCheckinFormatters:
         """Test that formatter methods return strings."""
         # Test with sample data where methods exist
         if hasattr(CheckinFormatters, "format_checkin_response"):
-            sample_response = {"status": "success", "message": "Checked in"}
+            sample_response = cast(
+                "CheckinResponse", {"status": "success", "message": "Checked in"}
+            )
             result = CheckinFormatters.format_checkin_response(sample_response)
             assert isinstance(result, str)
 

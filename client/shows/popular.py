@@ -1,9 +1,8 @@
 """Popular shows functionality."""
 
-from typing import Any
-
 from config.api import DEFAULT_LIMIT
 from config.endpoints import TRAKT_ENDPOINTS
+from models.types import ShowResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
@@ -13,9 +12,7 @@ class PopularShowsClient(BaseClient):
     """Client for popular shows operations."""
 
     @handle_api_errors
-    async def get_popular_shows(
-        self, limit: int = DEFAULT_LIMIT
-    ) -> list[dict[str, Any]]:
+    async def get_popular_shows(self, limit: int = DEFAULT_LIMIT) -> list[ShowResponse]:
         """Get popular shows from Trakt.
 
         Args:
@@ -24,6 +21,8 @@ class PopularShowsClient(BaseClient):
         Returns:
             List of popular shows data
         """
-        return await self._make_list_request(
-            TRAKT_ENDPOINTS["shows_popular"], params={"limit": limit}
+        return await self._make_typed_list_request(
+            TRAKT_ENDPOINTS["shows_popular"],
+            response_type=ShowResponse,
+            params={"limit": limit},
         )

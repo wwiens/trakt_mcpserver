@@ -1,6 +1,6 @@
 """Comments formatting methods for the Trakt MCP server."""
 
-from typing import Any
+from models.types import CommentResponse
 
 
 class CommentsFormatters:
@@ -8,7 +8,7 @@ class CommentsFormatters:
 
     @staticmethod
     def format_comments(
-        comments: list[dict[str, Any]], title: str, show_spoilers: bool = False
+        comments: list[CommentResponse], title: str, show_spoilers: bool = False
     ) -> str:
         """Format comments for MCP resource."""
         result = f"# Comments for {title}\n\n"
@@ -63,9 +63,9 @@ class CommentsFormatters:
 
     @staticmethod
     def format_comment(
-        comment: dict[str, Any],
+        comment: CommentResponse,
         with_replies: bool = False,
-        replies: list[dict[str, Any]] | None = None,
+        replies: list[CommentResponse] | None = None,
         show_spoilers: bool = False,
     ) -> str:
         """Format a single comment with optional replies."""

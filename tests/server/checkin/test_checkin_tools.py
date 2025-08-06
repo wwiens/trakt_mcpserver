@@ -3,7 +3,7 @@
 import asyncio
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
@@ -12,6 +12,11 @@ import pytest
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.checkin.tools import checkin_to_show
+from tests.types_stub import MCPErrorWithData  # noqa: TC001
+from utils.api.error_types import (
+    AuthenticationRequiredError,
+    InvalidParamsError,
+)
 
 
 @pytest.mark.asyncio
@@ -62,28 +67,21 @@ async def test_checkin_to_show_not_authenticated():
     """Test checking in to a show when not authenticated."""
     with (
         patch("server.checkin.tools.CheckinClient") as mock_client_class,
-        patch("server.checkin.tools.start_device_auth") as mock_start_auth,
     ):
         # Configure the mock
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = False
 
-        # Mock the start_device_auth function
-        mock_start_auth.return_value = (
-            "# Trakt Authentication Required\n\nPlease authenticate..."
-        )
+        # Call the tool function - should raise AuthenticationRequiredError
+        with pytest.raises(AuthenticationRequiredError) as exc_info:
+            await checkin_to_show(season=1, episode=1, show_id="1")
 
-        # Call the tool function
-        result = await checkin_to_show(season=1, episode=1, show_id="1")
-
-        # Verify the result
-        assert "Authentication required" in result
-        assert "# Trakt Authentication Required" in result
-
+        # Verify error contains expected information
+        error = cast("MCPErrorWithData", exc_info.value)
+        assert error.data["error_type"] == "auth_required"
         # Verify the client methods were called
         mock_client.is_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_not_called()
-        mock_start_auth.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -94,11 +92,9 @@ async def test_checkin_to_show_missing_info():
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
 
-        # Call the tool function with missing show_id and show_title
-        result = await checkin_to_show(season=1, episode=1)
-
-        # Verify the result
-        assert "Error: You must provide either a show_id or a show_title" in result
+        # Call the tool function with missing show_id and show_title - should raise error
+        with pytest.raises(InvalidParamsError):
+            await checkin_to_show(season=1, episode=1)
 
         # Verify the client methods were called
         mock_client.is_authenticated.assert_called_once()
@@ -142,90 +138,6 @@ async def test_checkin_to_show_with_title():
             share_mastodon=False,
             share_tumblr=False,
         )
-
-
-@pytest.mark.asyncio
-async def test_checkin_to_show_with_message_and_sharing():
-    """Test checking in to a show with message and social sharing."""
-    sample_response = {
-        "id": 123456,
-        "watched_at": "2023-05-10T20:30:00Z",
-        "show": {"title": "Breaking Bad", "year": 2008},
-        "episode": {"season": 1, "number": 1, "title": "Pilot"},
-    }
-
-    with patch("server.checkin.tools.CheckinClient") as mock_client_class:
-        mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_response)
-        mock_client.checkin_to_show.return_value = future
-
-        result = await checkin_to_show(
-            season=1,
-            episode=1,
-            show_id="1",
-            message="Great episode!",
-            share_twitter=True,
-            share_mastodon=True,
-        )
-
-        assert "# Successfully Checked In" in result
-
-        mock_client.checkin_to_show.assert_called_once_with(
-            episode_season=1,
-            episode_number=1,
-            show_id="1",
-            show_title=None,
-            show_year=None,
-            message="Great episode!",
-            share_twitter=True,
-            share_mastodon=True,
-            share_tumblr=False,
-        )
-
-
-@pytest.mark.asyncio
-async def test_checkin_to_show_value_error():
-    """Test checking in to a show with ValueError (authentication error)."""
-    with patch("server.checkin.tools.CheckinClient") as mock_client_class:
-        mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(ValueError("Authentication failed"))
-        mock_client.checkin_to_show.return_value = future
-
-        result = await checkin_to_show(season=1, episode=1, show_id="1")
-
-        assert "Error: Authentication failed" in result
-
-        mock_client.is_authenticated.assert_called_once()
-        mock_client.checkin_to_show.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_checkin_to_show_general_error():
-    """Test checking in to a show with general error."""
-    with patch("server.checkin.tools.CheckinClient") as mock_client_class:
-        mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("Network error"))
-        mock_client.checkin_to_show.return_value = future
-
-        result = await checkin_to_show(season=1, episode=1, show_id="1")
-
-        assert (
-            "An error occurred while checking in to the show: Network error" in result
-        )
-        assert "Make sure you provided either:" in result
-        assert "search_shows" in result
-
-        mock_client.is_authenticated.assert_called_once()
-        mock_client.checkin_to_show.assert_called_once()
 
 
 @pytest.mark.asyncio

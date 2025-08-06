@@ -1,6 +1,11 @@
 """Tests for movies formatter module."""
 
+from typing import TYPE_CHECKING, cast
+
 from models.formatters.movies import MovieFormatters
+
+if TYPE_CHECKING:
+    from models.types import MovieResponse, TrendingWrapper
 
 
 class TestMovieFormatters:
@@ -22,9 +27,23 @@ class TestMovieFormatters:
 
     def test_format_trending_movies_with_data(self) -> None:
         """Test formatting movies with sample data."""
-        sample_movies = [
-            {"movie": {"title": "Test Movie 1", "year": 2023}, "watchers": 150},
-            {"movie": {"title": "Test Movie 2", "year": 2024}, "watchers": 250},
+        sample_movies: list[TrendingWrapper] = [
+            {
+                "watchers": 150,
+                "movie": {
+                    "title": "Test Movie 1",
+                    "year": 2023,
+                    "ids": {"trakt": 1, "slug": "test-movie-1"},
+                },
+            },
+            {
+                "watchers": 250,
+                "movie": {
+                    "title": "Test Movie 2",
+                    "year": 2024,
+                    "ids": {"trakt": 2, "slug": "test-movie-2"},
+                },
+            },
         ]
         result = MovieFormatters.format_trending_movies(sample_movies)
         assert isinstance(result, str)
@@ -62,11 +81,14 @@ class TestMovieFormatters:
 
     def test_format_movie_summary(self) -> None:
         """Test format_movie_summary with basic movie data."""
-        movie_data = {
-            "title": "The Matrix",
-            "year": 1999,
-            "ids": {"trakt": 12345},
-        }
+        movie_data = cast(
+            "MovieResponse",
+            {
+                "title": "The Matrix",
+                "year": 1999,
+                "ids": {"trakt": 12345},
+            },
+        )
         result = MovieFormatters.format_movie_summary(movie_data)
         assert isinstance(result, str)
         assert "## The Matrix (1999)" in result
@@ -74,37 +96,40 @@ class TestMovieFormatters:
 
     def test_format_movie_summary_with_missing_data(self) -> None:
         """Test format_movie_summary with missing fields."""
-        movie_data = {"title": "Test Movie"}
+        movie_data = cast("MovieResponse", {"title": "Test Movie"})
         result = MovieFormatters.format_movie_summary(movie_data)
         assert isinstance(result, str)
         assert "Test Movie" in result
 
     def test_format_movie_summary_empty_data(self) -> None:
         """Test format_movie_summary with empty data."""
-        result = MovieFormatters.format_movie_summary({})
+        result = MovieFormatters.format_movie_summary(cast("MovieResponse", {}))
         assert isinstance(result, str)
         assert "No movie data available." in result
 
     def test_format_movie_extended(self) -> None:
         """Test format_movie_extended with comprehensive movie data."""
-        movie_data = {
-            "title": "TRON: Legacy",
-            "year": 2010,
-            "ids": {"trakt": 1},
-            "tagline": "The Game Has Changed.",
-            "overview": "Sam Flynn investigates his father's disappearance.",
-            "released": "2010-12-16",
-            "runtime": 125,
-            "country": "us",
-            "status": "released",
-            "rating": 8.0,
-            "votes": 111,
-            "comment_count": 92,
-            "languages": ["en"],
-            "genres": ["action", "sci-fi"],
-            "certification": "PG-13",
-            "homepage": "http://disney.go.com/tron/",
-        }
+        movie_data = cast(
+            "MovieResponse",
+            {
+                "title": "TRON: Legacy",
+                "year": 2010,
+                "ids": {"trakt": 1},
+                "tagline": "The Game Has Changed.",
+                "overview": "Sam Flynn investigates his father's disappearance.",
+                "released": "2010-12-16",
+                "runtime": 125,
+                "country": "us",
+                "status": "released",
+                "rating": 8.0,
+                "votes": 111,
+                "comment_count": 92,
+                "languages": ["en"],
+                "genres": ["action", "sci-fi"],
+                "certification": "PG-13",
+                "homepage": "http://disney.go.com/tron/",
+            },
+        )
         result = MovieFormatters.format_movie_extended(movie_data)
         assert isinstance(result, str)
         assert "## TRON: Legacy (2010) - Released" in result
@@ -124,13 +149,16 @@ class TestMovieFormatters:
 
     def test_format_movie_extended_with_partial_data(self) -> None:
         """Test format_movie_extended with partial data."""
-        movie_data = {
-            "title": "Test Movie",
-            "year": 2023,
-            "status": "in_production",
-            "rating": 7.5,
-            "votes": 50,
-        }
+        movie_data = cast(
+            "MovieResponse",
+            {
+                "title": "Test Movie",
+                "year": 2023,
+                "status": "in_production",
+                "rating": 7.5,
+                "votes": 50,
+            },
+        )
         result = MovieFormatters.format_movie_extended(movie_data)
         assert isinstance(result, str)
         assert "## Test Movie (2023) - In Production" in result

@@ -1,16 +1,16 @@
-# pyright: reportUnusedFunction=none
 """Checkin tools for the Trakt MCP server."""
 
 import logging
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from client.checkin import CheckinClient
+from client.checkin.client import CheckinClient
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.checkin import CheckinFormatters
+from server.base import BaseToolErrorMixin
 
 # Import start_device_auth from auth module
-from ..auth.tools import start_device_auth
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -44,21 +44,30 @@ async def checkin_to_show(
 
     Returns:
         Confirmation of the checkin
+
+    Raises:
+        AuthenticationRequiredError: If user is not authenticated
+        InvalidParamsError: If required parameters are missing or invalid
+        InternalError: If an unexpected error occurs
     """
     client = CheckinClient()
 
+    # Check authentication
     if not client.is_authenticated():
-        # Start the auth flow automatically
-        auth_instructions = await start_device_auth()
-        return f"""Authentication required to check in to a show.
+        raise BaseToolErrorMixin.handle_authentication_required(
+            action="check in to a show episode",
+            show_id=show_id,
+            show_title=show_title,
+            season=season,
+            episode=episode,
+        )
 
-{auth_instructions}
-
-After you've completed the authorization process on the Trakt website, please tell me "I've completed the authorization" so I can check if it was successful and check you in to the show."""
-
-    # Validate that either show_id or show_title is provided
-    if not show_id and not show_title:
-        return "Error: You must provide either a show_id or a show_title. Use the search_shows tool to find the correct show ID."
+    # Validate parameters
+    BaseToolErrorMixin.validate_either_or_params(
+        param_sets=[("show_id",), ("show_title",)],
+        show_id=show_id,
+        show_title=show_title,
+    )
 
     try:
         # Attempt to check in to the show
@@ -76,26 +85,25 @@ After you've completed the authorization process on the Trakt website, please te
 
         # Format the response
         return CheckinFormatters.format_checkin_response(response)
-    except ValueError as e:
-        # Handle authentication errors
-        return f"Error: {e!s}"
     except Exception as e:
-        # Handle other errors
-        logger.error(f"Error checking in to show: {e}")
-        return f"""An error occurred while checking in to the show: {e!s}
-
-Make sure you provided either:
-1. A valid show ID (use search_shows to find it)
-   Example: `search_shows(query="Breaking Bad")`
-
-OR
-
-2. A show title (and optionally the year)
-   Example: `checkin_to_show(show_title="Breaking Bad", show_year=2008, season=1, episode=1)`"""
+        # Convert any unexpected errors to structured MCP errors
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            operation="check in to show episode",
+            error=e,
+            show_id=show_id,
+            show_title=show_title,
+            season=season,
+            episode=episode,
+            show_year=show_year,
+        ) from e
 
 
-def register_checkin_tools(mcp: FastMCP) -> None:
-    """Register checkin tools with the MCP server."""
+def register_checkin_tools(mcp: FastMCP) -> Any:
+    """Register checkin tools with the MCP server.
+
+    Returns:
+        Tool handler for type checker visibility
+    """
 
     @mcp.tool(
         name=TOOL_NAMES["checkin_to_show"],
@@ -123,3 +131,6 @@ def register_checkin_tools(mcp: FastMCP) -> None:
             share_mastodon,
             share_tumblr,
         )
+
+    # Return handler for type checker visibility
+    return checkin_to_show_tool

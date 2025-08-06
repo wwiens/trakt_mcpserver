@@ -1,8 +1,8 @@
-# pyright: reportUnusedFunction=none
 """Movie resources for the Trakt MCP server."""
 
 import json
 import logging
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -10,6 +10,8 @@ from client.movies import MoviesClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.movies import MovieFormatters
+from server.base import BaseToolErrorMixin
+from utils.api.errors import MCPError
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -84,32 +86,61 @@ async def get_movie_ratings(movie_id: str) -> str:
 
     Returns:
         Formatted markdown text with movie ratings
+
+    Raises:
+        InvalidParamsError: If movie_id is invalid
+        InternalError: If an error occurs fetching movie or ratings data
     """
+    # Validate required parameters
+    BaseToolErrorMixin.validate_required_params(movie_id=movie_id)
+
     client = MoviesClient()
 
     try:
         movie = await client.get_movie(movie_id)
 
-        # Check if the API returned an error string
+        # Handle transitional case where API returns error strings
         if isinstance(movie, str):
-            return f"Error fetching ratings for movie ID {movie_id}: {movie}"
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="movie",
+                resource_id=movie_id,
+                error_message=movie,
+                operation="fetch_movie_details",
+            )
 
         movie_title = movie.get("title", f"Movie ID: {movie_id}")
 
         ratings = await client.get_movie_ratings(movie_id)
 
-        # Check if the API returned an error string
+        # Handle transitional case where API returns error strings
         if isinstance(ratings, str):
-            return f"Error fetching ratings for {movie_title}: {ratings}"
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="movie_ratings",
+                resource_id=movie_id,
+                error_message=ratings,
+                operation="fetch_movie_ratings",
+                movie_title=movie_title,
+            )
 
         return MovieFormatters.format_movie_ratings(ratings, movie_title)
+
+    # Let MCP errors propagate (NEVER catch and return strings)
+    except MCPError:
+        raise
+
+    # Convert unexpected errors to structured MCP errors
     except Exception as e:
-        logger.error(f"Error fetching movie ratings: {e}")
-        return f"Error fetching ratings for movie ID {movie_id}: {e!s}"
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            operation="fetch movie ratings", error=e, movie_id=movie_id
+        ) from e
 
 
-def register_movie_resources(mcp: FastMCP) -> None:
-    """Register movie resources with the MCP server."""
+def register_movie_resources(mcp: FastMCP) -> tuple[Any, Any, Any, Any, Any]:
+    """Register movie resources with the MCP server.
+
+    Returns:
+        Tuple of resource handlers for type checker visibility
+    """
 
     @mcp.resource(
         uri=MCP_RESOURCES["movies_trending"],
@@ -157,3 +188,12 @@ def register_movie_resources(mcp: FastMCP) -> None:
         return await get_watched_movies()
 
     # Note: movie_ratings moved to tools.py as @mcp.tool since it requires parameters
+
+    # Return handlers for type checker visibility
+    return (
+        movies_trending_resource,
+        movies_popular_resource,
+        movies_favorited_resource,
+        movies_played_resource,
+        movies_watched_resource,
+    )

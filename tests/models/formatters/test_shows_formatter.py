@@ -1,6 +1,11 @@
 """Tests for shows formatter module."""
 
+from typing import TYPE_CHECKING, cast
+
 from models.formatters.shows import ShowFormatters
+
+if TYPE_CHECKING:
+    from models.types import ShowResponse, TrendingWrapper
 
 
 class TestShowFormatters:
@@ -22,9 +27,23 @@ class TestShowFormatters:
 
     def test_format_trending_shows_with_data(self) -> None:
         """Test formatting shows with sample data."""
-        sample_shows = [
-            {"show": {"title": "Test Show 1", "year": 2023}, "watchers": 100},
-            {"show": {"title": "Test Show 2", "year": 2024}, "watchers": 200},
+        sample_shows: list[TrendingWrapper] = [
+            {
+                "watchers": 100,
+                "show": {
+                    "title": "Test Show 1",
+                    "year": 2023,
+                    "ids": {"trakt": 1, "slug": "test-show-1"},
+                },
+            },
+            {
+                "watchers": 200,
+                "show": {
+                    "title": "Test Show 2",
+                    "year": 2024,
+                    "ids": {"trakt": 2, "slug": "test-show-2"},
+                },
+            },
         ]
         result = ShowFormatters.format_trending_shows(sample_shows)
         assert isinstance(result, str)
@@ -62,11 +81,14 @@ class TestShowFormatters:
 
     def test_format_show_summary(self) -> None:
         """Test format_show_summary with basic show data."""
-        show_data = {
-            "title": "Breaking Bad",
-            "year": 2008,
-            "ids": {"trakt": 54321},
-        }
+        show_data = cast(
+            "ShowResponse",
+            {
+                "title": "Breaking Bad",
+                "year": 2008,
+                "ids": {"trakt": 54321},
+            },
+        )
         result = ShowFormatters.format_show_summary(show_data)
         assert isinstance(result, str)
         assert "## Breaking Bad (2008)" in result
@@ -74,40 +96,47 @@ class TestShowFormatters:
 
     def test_format_show_summary_with_missing_data(self) -> None:
         """Test format_show_summary with missing fields."""
-        show_data = {"title": "Test Show"}
+        show_data = cast("ShowResponse", {"title": "Test Show"})
         result = ShowFormatters.format_show_summary(show_data)
         assert isinstance(result, str)
         assert "Test Show" in result
 
     def test_format_show_summary_empty_data(self) -> None:
         """Test format_show_summary with empty data."""
-        result = ShowFormatters.format_show_summary({})
+        result = ShowFormatters.format_show_summary(cast("ShowResponse", {}))
         assert isinstance(result, str)
         assert "No show data available." in result
 
     def test_format_show_extended(self) -> None:
         """Test format_show_extended with comprehensive show data."""
-        show_data = {
-            "title": "Game of Thrones",
-            "year": 2011,
-            "ids": {"trakt": 1},
-            "tagline": "Winter Is Coming",
-            "overview": "An epic fantasy drama series.",
-            "first_aired": "2011-04-18T01:00:00.000Z",
-            "airs": {"day": "Sunday", "time": "21:00", "timezone": "America/New_York"},
-            "runtime": 60,
-            "certification": "TV-MA",
-            "network": "HBO",
-            "country": "us",
-            "status": "returning_series",
-            "rating": 9.0,
-            "votes": 111,
-            "comment_count": 92,
-            "languages": ["en"],
-            "genres": ["drama", "fantasy"],
-            "aired_episodes": 50,
-            "homepage": "http://www.hbo.com/game-of-thrones/",
-        }
+        show_data = cast(
+            "ShowResponse",
+            {
+                "title": "Game of Thrones",
+                "year": 2011,
+                "ids": {"trakt": 1},
+                "tagline": "Winter Is Coming",
+                "overview": "An epic fantasy drama series.",
+                "first_aired": "2011-04-18T01:00:00.000Z",
+                "airs": {
+                    "day": "Sunday",
+                    "time": "21:00",
+                    "timezone": "America/New_York",
+                },
+                "runtime": 60,
+                "certification": "TV-MA",
+                "network": "HBO",
+                "country": "us",
+                "status": "returning_series",
+                "rating": 9.0,
+                "votes": 111,
+                "comment_count": 92,
+                "languages": ["en"],
+                "genres": ["drama", "fantasy"],
+                "aired_episodes": 50,
+                "homepage": "http://www.hbo.com/game-of-thrones/",
+            },
+        )
         result = ShowFormatters.format_show_extended(show_data)
         assert isinstance(result, str)
         assert "## Game of Thrones (2011) - Returning Series" in result
@@ -129,14 +158,17 @@ class TestShowFormatters:
 
     def test_format_show_extended_with_partial_data(self) -> None:
         """Test format_show_extended with partial data."""
-        show_data = {
-            "title": "Test Show",
-            "year": 2023,
-            "status": "pilot",
-            "rating": 7.5,
-            "votes": 50,
-            "airs": {"day": "Monday"},
-        }
+        show_data = cast(
+            "ShowResponse",
+            {
+                "title": "Test Show",
+                "year": 2023,
+                "status": "pilot",
+                "rating": 7.5,
+                "votes": 50,
+                "airs": {"day": "Monday"},
+            },
+        )
         result = ShowFormatters.format_show_extended(show_data)
         assert isinstance(result, str)
         assert "## Test Show (2023) - Pilot" in result
@@ -155,11 +187,14 @@ class TestShowFormatters:
 
     def test_format_show_extended_with_partial_airs(self) -> None:
         """Test format_show_extended with partial airs data."""
-        show_data = {
-            "title": "Test Show",
-            "year": 2023,
-            "airs": {"time": "20:00", "timezone": "UTC"},
-        }
+        show_data = cast(
+            "ShowResponse",
+            {
+                "title": "Test Show",
+                "year": 2023,
+                "airs": {"time": "20:00", "timezone": "UTC"},
+            },
+        )
         result = ShowFormatters.format_show_extended(show_data)
         assert isinstance(result, str)
         assert "- Air Time: at 20:00 (UTC)" in result

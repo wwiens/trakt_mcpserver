@@ -1,5 +1,6 @@
-# pyright: reportUnusedFunction=none
 """Authentication resources for the Trakt MCP server."""
+
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -20,8 +21,12 @@ async def get_auth_status() -> str:
     return AuthFormatters.format_auth_status(is_authenticated, expires_at)
 
 
-def register_auth_resources(mcp: FastMCP) -> None:
-    """Register authentication resources with the MCP server."""
+def register_auth_resources(mcp: FastMCP) -> Any:
+    """Register authentication resources with the MCP server.
+
+    Returns:
+        Resource handler for type checker visibility
+    """
 
     @mcp.resource(
         uri=MCP_RESOURCES["user_auth_status"],
@@ -31,3 +36,6 @@ def register_auth_resources(mcp: FastMCP) -> None:
     )
     async def auth_status_resource() -> str:
         return await get_auth_status()
+
+    # Return handler for type checker visibility
+    return auth_status_resource

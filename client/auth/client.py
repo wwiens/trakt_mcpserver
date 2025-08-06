@@ -6,7 +6,8 @@ import time
 
 from config.endpoints import TRAKT_ENDPOINTS
 from models.auth import TraktAuthToken, TraktDeviceCode
-from utils.api.errors import InternalError, handle_api_errors
+from models.types import DeviceCodeResponse
+from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
 
@@ -58,7 +59,7 @@ class AuthClient(BaseClient):
         return self.auth_token.created_at + self.auth_token.expires_in
 
     @handle_api_errors
-    async def get_device_code(self) -> TraktDeviceCode:
+    async def get_device_code(self) -> DeviceCodeResponse:
         """Get a device code for authentication.
 
         Returns:
@@ -68,17 +69,30 @@ class AuthClient(BaseClient):
             "client_id": self.client_id,
         }
         response = await self._post_request(TRAKT_ENDPOINTS["device_code"], data)
-        return TraktDeviceCode(**response)
+        # Validate with Pydantic model to ensure correct structure
+        validated = TraktDeviceCode.model_validate(response)
+        # Return as TypedDict for type safety
+        return DeviceCodeResponse(
+            device_code=validated.device_code,
+            user_code=validated.user_code,
+            verification_url=validated.verification_url,
+            expires_in=validated.expires_in,
+            interval=validated.interval,
+        )
 
     @handle_api_errors
-    async def get_device_token(self, device_code: str) -> TraktAuthToken | None:
+    async def get_device_token(self, device_code: str) -> TraktAuthToken:
         """Exchange device code for an access token.
 
         Args:
             device_code: The device code to exchange
 
         Returns:
-            Authentication token or None if not yet authorized
+            Authentication token
+
+        Raises:
+            AuthorizationPendingError: If user hasn't authorized yet
+            InternalError: If there's a server error
         """
         data = {
             "code": device_code,
@@ -86,21 +100,12 @@ class AuthClient(BaseClient):
             "client_secret": self.client_secret,
         }
 
-        try:
-            response = await self._post_request(TRAKT_ENDPOINTS["device_token"], data)
-            if isinstance(response, str):
-                # Error response, user hasn't authorized yet
-                return None
-            token = TraktAuthToken(**response)
-            self.auth_token = token
-            self._save_auth_token(token)
-            self._update_headers_with_token()
-            return token
-        except InternalError as e:
-            # Check if this is a 400 error (user hasn't authorized yet)
-            if e.data and e.data.get("http_status") == 400:
-                return None
-            raise
+        response = await self._post_request(TRAKT_ENDPOINTS["device_token"], data)
+        token = TraktAuthToken(**response)
+        self.auth_token = token
+        self._save_auth_token(token)
+        self._update_headers_with_token()
+        return token
 
     def clear_auth_token(self) -> bool:
         """Clear the stored authentication token.

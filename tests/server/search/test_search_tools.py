@@ -110,8 +110,11 @@ async def test_search_shows_error_handling():
         future.set_exception(Exception("API error"))
         mock_client.search_shows.return_value = future
 
-        with pytest.raises(Exception, match="API error"):
+        with pytest.raises(Exception) as exc_info:
             await search_shows(query="breaking bad")
+
+        # The function should raise an InternalError for unexpected exceptions
+        assert "An unexpected error occurred" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -205,8 +208,11 @@ async def test_search_movies_error_handling():
         future.set_exception(Exception("API error"))
         mock_client.search_movies.return_value = future
 
-        with pytest.raises(Exception, match="API error"):
+        with pytest.raises(Exception) as exc_info:
             await search_movies(query="inception")
+
+        # The function should raise an InternalError for unexpected exceptions
+        assert "An unexpected error occurred" in str(exc_info.value)
 
 
 @pytest.mark.asyncio

@@ -3,6 +3,7 @@
 from typing import Any
 
 from config.endpoints import TRAKT_ENDPOINTS
+from models.checkin import TraktCheckin
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -90,4 +91,5 @@ class CheckinClient(AuthClient):
             data["sharing"] = sharing_data
 
         # Make the checkin request
-        return await self._post_request(TRAKT_ENDPOINTS["checkin"], data)
+        response = await self._post_request(TRAKT_ENDPOINTS["checkin"], data)
+        return TraktCheckin.from_api_response(response).model_dump()

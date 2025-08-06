@@ -1,13 +1,20 @@
 """Movie formatting methods for the Trakt MCP server."""
 
-from typing import Any
+from models.types import (
+    FavoritedMovieWrapper,
+    MovieResponse,
+    PlayedMovieWrapper,
+    TraktRating,
+    TrendingWrapper,
+    WatchedMovieWrapper,
+)
 
 
 class MovieFormatters:
     """Helper class for formatting movie-related data for MCP responses."""
 
     @staticmethod
-    def format_trending_movies(movies: list[dict[str, Any]]) -> str:
+    def format_trending_movies(movies: list[TrendingWrapper]) -> str:
         """Format trending movies data for MCP resource."""
         result = "# Trending Movies on Trakt\n\n"
 
@@ -29,7 +36,7 @@ class MovieFormatters:
         return result
 
     @staticmethod
-    def format_popular_movies(movies: list[dict[str, Any]]) -> str:
+    def format_popular_movies(movies: list[MovieResponse]) -> str:
         """Format popular movies data for MCP resource."""
         result = "# Popular Movies on Trakt\n\n"
 
@@ -48,7 +55,7 @@ class MovieFormatters:
         return result
 
     @staticmethod
-    def format_favorited_movies(movies: list[dict[str, Any]]) -> str:
+    def format_favorited_movies(movies: list[FavoritedMovieWrapper]) -> str:
         """Format favorited movies data for MCP resource."""
         result = "# Most Favorited Movies on Trakt\n\n"
 
@@ -71,7 +78,7 @@ class MovieFormatters:
         return result
 
     @staticmethod
-    def format_played_movies(movies: list[dict[str, Any]]) -> str:
+    def format_played_movies(movies: list[PlayedMovieWrapper]) -> str:
         """Format played movies data for MCP resource."""
         result = "# Most Played Movies on Trakt\n\n"
 
@@ -94,7 +101,7 @@ class MovieFormatters:
         return result
 
     @staticmethod
-    def format_watched_movies(movies: list[dict[str, Any]]) -> str:
+    def format_watched_movies(movies: list[WatchedMovieWrapper]) -> str:
         """Format watched movies data for MCP resource."""
         result = "# Most Watched Movies on Trakt\n\n"
 
@@ -117,7 +124,7 @@ class MovieFormatters:
 
     @staticmethod
     def format_movie_ratings(
-        ratings: dict[str, Any], movie_title: str = "Unknown movie"
+        ratings: TraktRating, movie_title: str = "Unknown movie"
     ) -> str:
         """Format movie ratings data for MCP resource.
 
@@ -158,7 +165,7 @@ class MovieFormatters:
         return result
 
     @staticmethod
-    def format_movie_summary(movie: dict[str, Any]) -> str:
+    def format_movie_summary(movie: MovieResponse) -> str:
         """Format basic movie summary data.
 
         Args:
@@ -182,7 +189,7 @@ class MovieFormatters:
         return result
 
     @staticmethod
-    def format_movie_extended(movie: dict[str, Any]) -> str:
+    def format_movie_extended(movie: MovieResponse) -> str:
         """Format extended movie details data.
 
         Args:

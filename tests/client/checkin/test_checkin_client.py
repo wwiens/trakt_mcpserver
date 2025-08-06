@@ -12,7 +12,7 @@ from models.auth import TraktAuthToken
 async def test_checkin_to_show():
     mock_response = MagicMock()
     mock_response.json.return_value = {
-        "id": "12345",
+        "id": 12345,
         "watched_at": "2023-06-20T20:00:00.000Z",
         "sharing": {"twitter": True, "tumblr": False},
         "show": {
@@ -60,8 +60,13 @@ async def test_checkin_to_show():
         )
 
         assert isinstance(result, dict)
-        assert result["id"] == "12345"
+        assert result["id"] == 12345  # id is int in CheckinResponse
+
+        # Type-safe access to optional fields
+        assert "show" in result
         assert result["show"]["title"] == "Breaking Bad"
+
+        assert "episode" in result
         assert result["episode"]["title"] == "Pilot"
 
 
@@ -69,7 +74,7 @@ async def test_checkin_to_show():
 async def test_checkin_to_show_with_title():
     mock_response = MagicMock()
     mock_response.json.return_value = {
-        "id": "67890",
+        "id": 67890,
         "watched_at": "2023-06-20T21:00:00.000Z",
         "sharing": {"twitter": False, "tumblr": False},
         "show": {
@@ -114,8 +119,13 @@ async def test_checkin_to_show_with_title():
         )
 
         assert isinstance(result, dict)
-        assert result["id"] == "67890"
+        assert result["id"] == 67890  # id is int in CheckinResponse
+
+        # Type-safe access to optional fields
+        assert "show" in result
         assert result["show"]["title"] == "The Wire"
+
+        assert "episode" in result
         assert result["episode"]["title"] == "The Detail"
 
 

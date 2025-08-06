@@ -30,25 +30,26 @@ def create_server() -> FastMCP:
     # Create a named server with proper metadata for capability negotiation
     mcp = FastMCP(name="trakt-mcp-server")
 
-    # Register all modules
-    register_auth_resources(mcp)
-    register_auth_tools(mcp)
+    # Register all modules and capture handlers for type checker
+    _ = register_auth_resources(mcp)
+    _ = register_auth_tools(mcp)
 
-    register_show_resources(mcp)
-    register_show_tools(mcp)
+    _ = register_show_resources(mcp)
+    _ = register_show_tools(mcp)
 
-    register_movie_resources(mcp)
-    register_movie_tools(mcp)
+    _ = register_movie_resources(mcp)
+    _ = register_movie_tools(mcp)
 
-    register_comment_tools(mcp)
+    _ = register_comment_tools(mcp)
 
-    register_user_resources(mcp)
-    register_user_tools(mcp)
+    _ = register_user_resources(mcp)
+    _ = register_user_tools(mcp)
 
-    register_search_tools(mcp)
-    register_checkin_tools(mcp)
+    _ = register_search_tools(mcp)
+    _ = register_checkin_tools(mcp)
 
-    register_basic_prompts(mcp)
+    # Register prompts and capture handlers for type checker
+    _ = register_basic_prompts(mcp)
 
     logger.info("All Trakt MCP modules registered successfully")
     return mcp

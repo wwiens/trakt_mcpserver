@@ -6,7 +6,9 @@ import httpx
 import pytest
 
 from client.auth import AuthClient
-from models.auth import TraktAuthToken, TraktDeviceCode
+from models.auth import TraktAuthToken
+from utils.api.error_types import AuthorizationPendingError
+from utils.api.errors import InvalidParamsError
 
 
 @pytest.mark.asyncio
@@ -54,11 +56,11 @@ async def test_complete_device_auth_flow():
         client = AuthClient()
 
         device_code = await client.get_device_code()
-        assert isinstance(device_code, TraktDeviceCode)
-        assert device_code.device_code == "device_code_123"
-        assert device_code.user_code == "USER123"
+        assert isinstance(device_code, dict)
+        assert device_code["device_code"] == "device_code_123"
+        assert device_code["user_code"] == "USER123"
 
-        auth_token = await client.get_device_token(device_code.device_code)
+        auth_token = await client.get_device_token(device_code["device_code"])
         assert isinstance(auth_token, TraktAuthToken)
         assert auth_token.access_token == "access_token_123"
         assert auth_token.refresh_token == "refresh_token_123"
@@ -131,11 +133,15 @@ async def test_device_token_pending_authorization():
 
         client = AuthClient()
 
-        # Try to get a token, should return None because authorization is pending
-        token = await client.get_device_token("device_code_123")
+        # Try to get a token, should raise AuthorizationPendingError because authorization is pending
+        with pytest.raises(AuthorizationPendingError) as exc_info:
+            await client.get_device_token("device_code_123")
 
-        # Verify no token was returned
-        assert token is None
+        # Verify the error is of the correct type
+        assert (
+            exc_info.value.data
+            and exc_info.value.data.get("error_type") == "auth_pending"
+        )
 
         # Verify the client is not authenticated
         assert client.is_authenticated() is False
@@ -166,11 +172,12 @@ async def test_device_token_expired():
 
         client = AuthClient()
 
-        # Try to get a token, should return None because the code has expired
-        token = await client.get_device_token("device_code_123")
+        # Try to get a token, should raise InvalidParamsError because the code has expired
+        with pytest.raises(InvalidParamsError) as exc_info:
+            await client.get_device_token("device_code_123")
 
-        # Verify no token was returned
-        assert token is None
+        # Verify the error contains information about expired token
+        assert "expired_token" in str(exc_info.value.data)
 
         # Verify the client is not authenticated
         assert client.is_authenticated() is False

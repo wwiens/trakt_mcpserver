@@ -1,15 +1,19 @@
-# pyright: reportUnusedFunction=none
 """Show resources for the Trakt MCP server."""
 
 import json
 import logging
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from client.shows import ShowsClient
+from client.shows.details import ShowDetailsClient
+from client.shows.popular import PopularShowsClient
+from client.shows.stats import ShowStatsClient
+from client.shows.trending import TrendingShowsClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.shows import ShowFormatters
+from server.base import BaseToolErrorMixin
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -20,7 +24,8 @@ async def get_trending_shows() -> str:
     Returns:
         Formatted markdown text with trending shows
     """
-    client = ShowsClient()
+    # Note: pyright has analysis issues with @handle_api_errors decorator
+    client: TrendingShowsClient = TrendingShowsClient()
     shows = await client.get_trending_shows(limit=DEFAULT_LIMIT)
     return ShowFormatters.format_trending_shows(shows)
 
@@ -31,7 +36,8 @@ async def get_popular_shows() -> str:
     Returns:
         Formatted markdown text with popular shows
     """
-    client = ShowsClient()
+    # Note: pyright has analysis issues with @handle_api_errors decorator
+    client: PopularShowsClient = PopularShowsClient()
     shows = await client.get_popular_shows(limit=DEFAULT_LIMIT)
     return ShowFormatters.format_popular_shows(shows)
 
@@ -42,7 +48,8 @@ async def get_favorited_shows() -> str:
     Returns:
         Formatted markdown text with most favorited shows
     """
-    client = ShowsClient()
+    # Note: pyright has analysis issues with @handle_api_errors decorator
+    client: ShowStatsClient = ShowStatsClient()
     shows = await client.get_favorited_shows(limit=DEFAULT_LIMIT)
 
     # Log the first show to see the structure
@@ -60,7 +67,8 @@ async def get_played_shows() -> str:
     Returns:
         Formatted markdown text with most played shows
     """
-    client = ShowsClient()
+    # Note: pyright has analysis issues with @handle_api_errors decorator
+    client: ShowStatsClient = ShowStatsClient()
     shows = await client.get_played_shows(limit=DEFAULT_LIMIT)
     return ShowFormatters.format_played_shows(shows)
 
@@ -71,7 +79,8 @@ async def get_watched_shows() -> str:
     Returns:
         Formatted markdown text with most watched shows
     """
-    client = ShowsClient()
+    # Note: pyright has analysis issues with @handle_api_errors decorator
+    client: ShowStatsClient = ShowStatsClient()
     shows = await client.get_watched_shows(limit=DEFAULT_LIMIT)
     return ShowFormatters.format_watched_shows(shows)
 
@@ -84,31 +93,56 @@ async def get_show_ratings(show_id: str) -> str:
 
     Returns:
         Formatted markdown text with show ratings
+
+    Raises:
+        InvalidParamsError: If show_id is invalid
+        InternalError: If an error occurs fetching show or ratings data
     """
-    client = ShowsClient()
+    # Validate required parameters
+    BaseToolErrorMixin.validate_required_params(show_id=show_id)
+
+    # Note: pyright has analysis issues with @handle_api_errors decorator
+    client: ShowDetailsClient = ShowDetailsClient()
 
     try:
         show = await client.get_show(show_id)
 
-        # Check if the API returned an error string
+        # Handle transitional case where API returns error strings
         if isinstance(show, str):
-            return f"Error fetching ratings for show ID {show_id}: {show}"
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="show",
+                resource_id=show_id,
+                error_message=show,
+                operation="fetch_show_details",
+            )
 
         show_title = show.get("title", "Unknown Show")
         ratings = await client.get_show_ratings(show_id)
 
-        # Check if the API returned an error string
+        # Handle transitional case where API returns error strings
         if isinstance(ratings, str):
-            return f"Error fetching ratings for {show_title}: {ratings}"
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="show_ratings",
+                resource_id=show_id,
+                error_message=ratings,
+                operation="fetch_show_ratings",
+                show_title=show_title,
+            )
 
         return ShowFormatters.format_show_ratings(ratings, show_title)
     except Exception as e:
-        logger.error(f"Error fetching show ratings: {e}")
-        return f"Error fetching ratings for show ID {show_id}: {e!s}"
+        # Convert any unexpected errors to structured MCP errors
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            operation="fetch show ratings", error=e, show_id=show_id
+        ) from e
 
 
-def register_show_resources(mcp: FastMCP) -> None:
-    """Register show resources with the MCP server."""
+def register_show_resources(mcp: FastMCP) -> tuple[Any, Any, Any, Any, Any]:
+    """Register show resources with the MCP server.
+
+    Returns:
+        Tuple of resource handlers for type checker visibility
+    """
 
     @mcp.resource(
         uri=MCP_RESOURCES["shows_trending"],
@@ -156,3 +190,12 @@ def register_show_resources(mcp: FastMCP) -> None:
         return await get_watched_shows()
 
     # Note: show_ratings moved to tools.py as @mcp.tool since it requires parameters
+
+    # Return handlers for type checker visibility
+    return (
+        shows_trending_resource,
+        shows_popular_resource,
+        shows_favorited_resource,
+        shows_played_resource,
+        shows_watched_resource,
+    )
