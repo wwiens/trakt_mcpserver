@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import pytest_asyncio
 
+from models.auth import TraktDeviceCode
 from server.auth.tools import check_auth_status, start_device_auth
 from utils.api.error_types import AuthorizationPendingError
 
@@ -31,13 +32,13 @@ class TestAuthFlowThreadSafety:
 
         # Different device codes for each call
         device_responses = [
-            {
-                "device_code": f"device_{i}",
-                "user_code": f"USER{i:03d}",
-                "verification_url": "https://trakt.tv/activate",
-                "expires_in": 600,
-                "interval": 5,
-            }
+            TraktDeviceCode(
+                device_code=f"device_{i}",
+                user_code=f"USER{i:03d}",
+                verification_url="https://trakt.tv/activate",
+                expires_in=600,
+                interval=5,
+            )
             for i in range(10)
         ]
 

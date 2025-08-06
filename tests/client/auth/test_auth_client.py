@@ -154,10 +154,10 @@ async def test_auth_client_get_device_code():
         client = AuthClient()
         result = await client.get_device_code()
 
-        # Result is a dict (DeviceCodeResponse TypedDict)
-        assert isinstance(result, dict)
-        assert result["device_code"] == "device_code_123"
-        assert result["user_code"] == "USER123"
+        # Result is a TraktDeviceCode Pydantic model
+        assert hasattr(result, "device_code")
+        assert result.device_code == "device_code_123"
+        assert result.user_code == "USER123"
 
 
 @pytest.mark.asyncio

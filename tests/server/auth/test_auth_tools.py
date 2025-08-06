@@ -9,7 +9,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-from models.auth.auth import TraktAuthToken
+from models.auth.auth import TraktAuthToken, TraktDeviceCode
 from server.auth.tools import check_auth_status, clear_auth, start_device_auth
 from utils.api.error_types import AuthorizationPendingError
 
@@ -23,16 +23,16 @@ async def test_start_device_auth():
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = False
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(
-            {
-                "device_code": "device_code_123",
-                "user_code": "USER123",
-                "verification_url": "https://trakt.tv/activate",
-                "expires_in": 600,
-                "interval": 5,
-            }
+        device_code_model = TraktDeviceCode(
+            device_code="device_code_123",
+            user_code="USER123",
+            verification_url="https://trakt.tv/activate",
+            expires_in=600,
+            interval=5,
         )
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_result(device_code_model)
         mock_client.get_device_code.return_value = future
 
         result = await start_device_auth()

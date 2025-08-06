@@ -2,14 +2,14 @@
 
 from typing import Protocol, runtime_checkable
 
+from models.auth import TraktAuthToken, TraktDeviceCode
+
 from .api_responses import (
     CheckinResponse,
     CommentResponse,
-    DeviceCodeResponse,
     MovieResponse,
     SearchResult,
     ShowResponse,
-    TokenResponse,
     TraktRating,
     TrendingWrapper,
     UserWatchedMovie,
@@ -21,11 +21,11 @@ from .api_responses import (
 class AuthClientProtocol(Protocol):
     """Protocol for authentication clients."""
 
-    async def get_device_code(self) -> DeviceCodeResponse:
+    async def get_device_code(self) -> TraktDeviceCode:
         """Get OAuth device code."""
         ...
 
-    async def get_device_token(self, device_code: str) -> TokenResponse:
+    async def get_device_token(self, device_code: str) -> TraktAuthToken:
         """Poll for device token."""
         ...
 

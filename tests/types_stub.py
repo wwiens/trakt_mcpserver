@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Protocol
 
-from models.types import DeviceCodeResponse
+from models.auth import TraktAuthToken, TraktDeviceCode
 
 
 class LogRecordExtended(logging.LogRecord):
@@ -50,11 +50,11 @@ class MockClientProtocol(Protocol):
 class MockAuthClientProtocol(MockClientProtocol, Protocol):
     """Protocol for mock authentication clients in tests."""
 
-    async def get_device_code(self) -> DeviceCodeResponse:
+    async def get_device_code(self) -> TraktDeviceCode:
         """Get OAuth device code."""
         ...
 
-    async def get_device_token(self, device_code: str) -> dict[str, Any]:
+    async def get_device_token(self, device_code: str) -> TraktAuthToken:
         """Poll for device token."""
         ...
 

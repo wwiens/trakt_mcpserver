@@ -6,8 +6,9 @@ import time
 
 from config.endpoints import TRAKT_ENDPOINTS
 from models.auth import TraktAuthToken, TraktDeviceCode
-from models.types import DeviceCodeResponse
-from utils.api.errors import handle_api_errors
+from utils.api.errors import (  # pyright: ignore[reportUnusedImport] # Used by decorator
+    handle_api_errors,
+)
 
 from ..base import BaseClient
 
@@ -59,7 +60,7 @@ class AuthClient(BaseClient):
         return self.auth_token.created_at + self.auth_token.expires_in
 
     @handle_api_errors
-    async def get_device_code(self) -> DeviceCodeResponse:
+    async def get_device_code(self) -> TraktDeviceCode:
         """Get a device code for authentication.
 
         Returns:
@@ -69,16 +70,8 @@ class AuthClient(BaseClient):
             "client_id": self.client_id,
         }
         response = await self._post_request(TRAKT_ENDPOINTS["device_code"], data)
-        # Validate with Pydantic model to ensure correct structure
-        validated = TraktDeviceCode.model_validate(response)
-        # Return as TypedDict for type safety
-        return DeviceCodeResponse(
-            device_code=validated.device_code,
-            user_code=validated.user_code,
-            verification_url=validated.verification_url,
-            expires_in=validated.expires_in,
-            interval=validated.interval,
-        )
+        # Validate with Pydantic model and return directly
+        return TraktDeviceCode.model_validate(response)
 
     @handle_api_errors
     async def get_device_token(self, device_code: str) -> TraktAuthToken:

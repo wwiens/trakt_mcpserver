@@ -56,11 +56,11 @@ async def test_complete_device_auth_flow():
         client = AuthClient()
 
         device_code = await client.get_device_code()
-        assert isinstance(device_code, dict)
-        assert device_code["device_code"] == "device_code_123"
-        assert device_code["user_code"] == "USER123"
+        assert hasattr(device_code, "device_code")
+        assert device_code.device_code == "device_code_123"
+        assert device_code.user_code == "USER123"
 
-        auth_token = await client.get_device_token(device_code["device_code"])
+        auth_token = await client.get_device_token(device_code.device_code)
         assert isinstance(auth_token, TraktAuthToken)
         assert auth_token.access_token == "access_token_123"
         assert auth_token.refresh_token == "refresh_token_123"

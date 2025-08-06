@@ -5,6 +5,9 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any, TypedDict
 
+if TYPE_CHECKING:
+    from models.auth import TraktDeviceCode
+
 from mcp.server.fastmcp import FastMCP
 
 from client.auth import AuthClient
@@ -13,9 +16,6 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.auth import AuthFormatters
 from server.base.error_mixin import BaseToolErrorMixin
 from utils.api.error_types import AuthorizationPendingError
-
-if TYPE_CHECKING:
-    from models.types import DeviceCodeResponse
 
 # Set up logging
 logger = logging.getLogger("trakt_mcp")
@@ -49,7 +49,7 @@ async def start_device_auth() -> str:
         return "You are already authenticated with Trakt."
 
     # Get device code
-    device_code_response: DeviceCodeResponse = await client.get_device_code()
+    device_code_response: TraktDeviceCode = await client.get_device_code()
 
     # Handle transitional case where API returns error strings
     if isinstance(device_code_response, str):
@@ -63,9 +63,9 @@ async def start_device_auth() -> str:
     # Store active auth flow
     global active_auth_flow
     auth_state: AuthFlowState = {
-        "device_code": device_code_response["device_code"],
-        "expires_at": int(time.time()) + device_code_response["expires_in"],
-        "interval": device_code_response["interval"],
+        "device_code": device_code_response.device_code,
+        "expires_at": int(time.time()) + device_code_response.expires_in,
+        "interval": device_code_response.interval,
         "last_poll": 0,
     }
 
@@ -75,8 +75,8 @@ async def start_device_auth() -> str:
     logger.info(f"Started device auth flow: {auth_state}")
 
     # Return instructions for the user
-    user_code = device_code_response["user_code"]
-    expires_in = device_code_response["expires_in"]
+    user_code = device_code_response.user_code
+    expires_in = device_code_response.expires_in
     instructions = AuthFormatters.format_device_auth_instructions(
         user_code,
         AUTH_VERIFICATION_URL,
