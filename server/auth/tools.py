@@ -16,6 +16,7 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.auth import AuthFormatters
 from server.base.error_mixin import BaseToolErrorMixin
 from utils.api.error_types import AuthorizationPendingError
+from utils.api.errors import InternalError
 
 # Set up logging
 logger = logging.getLogger("trakt_mcp")
@@ -150,6 +151,14 @@ I don't see that you've completed the authorization yet. Please make sure to:
 3. Approve the authorization request
 
 If you've already done this and are still seeing this message, please wait a few seconds and try again by telling me "Please check my authorization status"."""
+    except InternalError as e:
+        # Handle server errors gracefully to avoid breaking the polling loop
+        logger.warning(f"Internal error during auth token retrieval: {e}")
+        return """# Authorization Check Failed
+
+Unable to check authorization status due to a server error. This sometimes happens during the authorization process. Please wait a moment and try again by telling me "Please check my authorization status".
+
+If this error persists, you may need to restart the authentication process."""
 
 
 async def clear_auth() -> str:

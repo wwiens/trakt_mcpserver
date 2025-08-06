@@ -208,6 +208,40 @@ async def test_check_auth_status_successful_authorization():
 
 
 @pytest.mark.asyncio
+async def test_check_auth_status_internal_error():
+    """Test check_auth_status handles InternalError gracefully during polling."""
+    active_flow = {
+        "device_code": "device_code_123",
+        "expires_at": int(time.time()) + 500,  # Expires in 500 seconds
+        "interval": 5,
+        "last_poll": int(time.time()) - 10,  # Last polled 10 seconds ago
+    }
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", active_flow),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+
+        # Mock get_device_token to raise InternalError
+        from utils.api.errors import InternalError
+
+        mock_client.get_device_token.side_effect = InternalError(
+            "Server error occurred"
+        )
+
+        result = await check_auth_status()
+
+        assert "Authorization Check Failed" in result
+        assert "Unable to check authorization status" in result
+        assert "server error" in result
+
+        mock_client.is_authenticated.assert_called_once()
+        mock_client.get_device_token.assert_called_once_with("device_code_123")
+
+
+@pytest.mark.asyncio
 async def test_clear_auth():
     with (
         patch("server.auth.tools.AuthClient") as mock_client_class,
