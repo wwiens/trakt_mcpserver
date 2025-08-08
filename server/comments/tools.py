@@ -13,9 +13,10 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.comments import CommentsFormatters
 from server.base import BaseToolErrorMixin
-from utils.api.errors import MCPError
+from utils.api.errors import handle_api_errors_func
 
 
+@handle_api_errors_func
 async def fetch_movie_comments(
     movie_id: str,
     limit: int = DEFAULT_LIMIT,
@@ -42,40 +43,26 @@ async def fetch_movie_comments(
 
     client: MovieCommentsClient = MovieCommentsClient()
 
-    try:
-        comments = await client.get_movie_comments(movie_id, limit=limit, sort=sort)
+    comments = await client.get_movie_comments(movie_id, limit=limit, sort=sort)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(comments, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="movie_comments",
-                resource_id=movie_id,
-                error_message=comments,
-                operation="fetch_movie_comments",
-            )
-
-        title = f"Movie ID: {movie_id}"
-        return CommentsFormatters.format_comments(
-            comments,
-            title,
-            show_spoilers=show_spoilers,
+    # Handle transitional case where API returns error strings
+    if isinstance(comments, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="movie_comments",
+            resource_id=movie_id,
+            error_message=comments,
+            operation="fetch_movie_comments",
         )
 
-    # Let MCP errors propagate (NEVER catch and return strings)
-    except MCPError:
-        raise
-
-    # Convert unexpected errors to structured MCP errors
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="fetch movie comments",
-            error=e,
-            movie_id=movie_id,
-            limit=limit,
-            sort=sort,
-        ) from e
+    title = f"Movie ID: {movie_id}"
+    return CommentsFormatters.format_comments(
+        comments,
+        title,
+        show_spoilers=show_spoilers,
+    )
 
 
+@handle_api_errors_func
 async def fetch_show_comments(
     show_id: str,
     limit: int = DEFAULT_LIMIT,
@@ -102,40 +89,26 @@ async def fetch_show_comments(
 
     client: ShowCommentsClient = ShowCommentsClient()
 
-    try:
-        comments = await client.get_show_comments(show_id, limit=limit, sort=sort)
+    comments = await client.get_show_comments(show_id, limit=limit, sort=sort)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(comments, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show_comments",
-                resource_id=show_id,
-                error_message=comments,
-                operation="fetch_show_comments",
-            )
-
-        title = f"Show ID: {show_id}"
-        return CommentsFormatters.format_comments(
-            comments,
-            title,
-            show_spoilers=show_spoilers,
+    # Handle transitional case where API returns error strings
+    if isinstance(comments, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="show_comments",
+            resource_id=show_id,
+            error_message=comments,
+            operation="fetch_show_comments",
         )
 
-    # Let MCP errors propagate (NEVER catch and return strings)
-    except MCPError:
-        raise
-
-    # Convert unexpected errors to structured MCP errors
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="fetch show comments",
-            error=e,
-            show_id=show_id,
-            limit=limit,
-            sort=sort,
-        ) from e
+    title = f"Show ID: {show_id}"
+    return CommentsFormatters.format_comments(
+        comments,
+        title,
+        show_spoilers=show_spoilers,
+    )
 
 
+@handle_api_errors_func
 async def fetch_season_comments(
     show_id: str,
     season: int,
@@ -164,43 +137,26 @@ async def fetch_season_comments(
 
     client: SeasonCommentsClient = SeasonCommentsClient()
 
-    try:
-        comments = await client.get_season_comments(
-            show_id, season, limit=limit, sort=sort
+    comments = await client.get_season_comments(show_id, season, limit=limit, sort=sort)
+
+    # Handle transitional case where API returns error strings
+    if isinstance(comments, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="season_comments",
+            resource_id=f"{show_id}-{season}",
+            error_message=comments,
+            operation="fetch_season_comments",
         )
 
-        # Handle transitional case where API returns error strings
-        if isinstance(comments, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="season_comments",
-                resource_id=f"{show_id}-{season}",
-                error_message=comments,
-                operation="fetch_season_comments",
-            )
-
-        title = f"Show ID: {show_id} - Season {season}"
-        return CommentsFormatters.format_comments(
-            comments,
-            title,
-            show_spoilers=show_spoilers,
-        )
-
-    # Let MCP errors propagate (NEVER catch and return strings)
-    except MCPError:
-        raise
-
-    # Convert unexpected errors to structured MCP errors
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="fetch season comments",
-            error=e,
-            show_id=show_id,
-            season=season,
-            limit=limit,
-            sort=sort,
-        ) from e
+    title = f"Show ID: {show_id} - Season {season}"
+    return CommentsFormatters.format_comments(
+        comments,
+        title,
+        show_spoilers=show_spoilers,
+    )
 
 
+@handle_api_errors_func
 async def fetch_episode_comments(
     show_id: str,
     season: int,
@@ -231,44 +187,28 @@ async def fetch_episode_comments(
 
     client: EpisodeCommentsClient = EpisodeCommentsClient()
 
-    try:
-        comments = await client.get_episode_comments(
-            show_id, season, episode, limit=limit, sort=sort
+    comments = await client.get_episode_comments(
+        show_id, season, episode, limit=limit, sort=sort
+    )
+
+    # Handle transitional case where API returns error strings
+    if isinstance(comments, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="episode_comments",
+            resource_id=f"{show_id}-{season}-{episode}",
+            error_message=comments,
+            operation="fetch_episode_comments",
         )
 
-        # Handle transitional case where API returns error strings
-        if isinstance(comments, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="episode_comments",
-                resource_id=f"{show_id}-{season}-{episode}",
-                error_message=comments,
-                operation="fetch_episode_comments",
-            )
-
-        title = f"Show ID: {show_id} - S{season:02d}E{episode:02d}"
-        return CommentsFormatters.format_comments(
-            comments,
-            title,
-            show_spoilers=show_spoilers,
-        )
-
-    # Let MCP errors propagate (NEVER catch and return strings)
-    except MCPError:
-        raise
-
-    # Convert unexpected errors to structured MCP errors
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="fetch episode comments",
-            error=e,
-            show_id=show_id,
-            season=season,
-            episode=episode,
-            limit=limit,
-            sort=sort,
-        ) from e
+    title = f"Show ID: {show_id} - S{season:02d}E{episode:02d}"
+    return CommentsFormatters.format_comments(
+        comments,
+        title,
+        show_spoilers=show_spoilers,
+    )
 
 
+@handle_api_errors_func
 async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
     """Fetch a specific comment from Trakt.
 
@@ -288,31 +228,21 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
 
     client: CommentDetailsClient = CommentDetailsClient()
 
-    try:
-        comment = await client.get_comment(comment_id)
+    comment = await client.get_comment(comment_id)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(comment, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="comment",
-                resource_id=comment_id,
-                error_message=comment,
-                operation="fetch_comment",
-            )
+    # Handle transitional case where API returns error strings
+    if isinstance(comment, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="comment",
+            resource_id=comment_id,
+            error_message=comment,
+            operation="fetch_comment",
+        )
 
-        return CommentsFormatters.format_comment(comment, show_spoilers=show_spoilers)
-
-    # Let MCP errors propagate (NEVER catch and return strings)
-    except MCPError:
-        raise
-
-    # Convert unexpected errors to structured MCP errors
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="fetch comment", error=e, comment_id=comment_id
-        ) from e
+    return CommentsFormatters.format_comment(comment, show_spoilers=show_spoilers)
 
 
+@handle_api_errors_func
 async def fetch_comment_replies(
     comment_id: str,
     limit: int = DEFAULT_LIMIT,
@@ -339,49 +269,34 @@ async def fetch_comment_replies(
 
     client: CommentDetailsClient = CommentDetailsClient()
 
-    try:
-        comment = await client.get_comment(comment_id)
+    comment = await client.get_comment(comment_id)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(comment, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="comment",
-                resource_id=comment_id,
-                error_message=comment,
-                operation="fetch_comment_replies",
-            )
-
-        replies = await client.get_comment_replies(comment_id, limit=limit, sort=sort)
-
-        # Handle transitional case where API returns error strings
-        if isinstance(replies, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="comment_replies",
-                resource_id=comment_id,
-                error_message=replies,
-                operation="fetch_comment_replies",
-            )
-
-        return CommentsFormatters.format_comment(
-            comment,
-            with_replies=True,
-            replies=replies,
-            show_spoilers=show_spoilers,
+    # Handle transitional case where API returns error strings
+    if isinstance(comment, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="comment",
+            resource_id=comment_id,
+            error_message=comment,
+            operation="fetch_comment_replies",
         )
 
-    # Let MCP errors propagate (NEVER catch and return strings)
-    except MCPError:
-        raise
+    replies = await client.get_comment_replies(comment_id, limit=limit, sort=sort)
 
-    # Convert unexpected errors to structured MCP errors
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="fetch comment replies",
-            error=e,
-            comment_id=comment_id,
-            limit=limit,
-            sort=sort,
-        ) from e
+    # Handle transitional case where API returns error strings
+    if isinstance(replies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="comment_replies",
+            resource_id=comment_id,
+            error_message=replies,
+            operation="fetch_comment_replies",
+        )
+
+    return CommentsFormatters.format_comment(
+        comment,
+        with_replies=True,
+        replies=replies,
+        show_spoilers=show_spoilers,
+    )
 
 
 def register_comment_tools(mcp: FastMCP) -> tuple[Any, Any, Any, Any, Any, Any]:

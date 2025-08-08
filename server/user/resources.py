@@ -1,6 +1,6 @@
 """User resources for the Trakt MCP server."""
 
-from typing import Any
+from typing import Any, Callable, Coroutine
 
 from mcp.server.fastmcp import FastMCP
 
@@ -41,7 +41,12 @@ async def get_user_watched_movies() -> str:
     return UserFormatters.format_user_watched_movies(movies)
 
 
-def register_user_resources(mcp: FastMCP) -> tuple[Any, Any]:
+def register_user_resources(
+    mcp: FastMCP,
+) -> tuple[
+    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Coroutine[Any, Any, str]],
+]:
     """Register user resources with the MCP server.
 
     Returns:

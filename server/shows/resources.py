@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import Any
+from typing import Any, Callable, Coroutine
 
 from mcp.server.fastmcp import FastMCP
 
@@ -137,7 +137,15 @@ async def get_show_ratings(show_id: str) -> str:
         ) from e
 
 
-def register_show_resources(mcp: FastMCP) -> tuple[Any, Any, Any, Any, Any]:
+def register_show_resources(
+    mcp: FastMCP,
+) -> tuple[
+    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Coroutine[Any, Any, str]],
+]:
     """Register show resources with the MCP server.
 
     Returns:

@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import Any
+from typing import Any, Callable, Coroutine
 
 from mcp.server.fastmcp import FastMCP
 
@@ -135,7 +135,15 @@ async def get_movie_ratings(movie_id: str) -> str:
         ) from e
 
 
-def register_movie_resources(mcp: FastMCP) -> tuple[Any, Any, Any, Any, Any]:
+def register_movie_resources(
+    mcp: FastMCP,
+) -> tuple[
+    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Coroutine[Any, Any, str]],
+]:
     """Register movie resources with the MCP server.
 
     Returns:
