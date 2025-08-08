@@ -1,12 +1,15 @@
-# pyright: reportUnusedFunction=none
 """Search tools for the Trakt MCP server."""
+
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from client.search import SearchClient
+from client.search.client import SearchClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.search import SearchFormatters
+from server.base import BaseToolErrorMixin
+from utils.api.errors import MCPError
 
 
 async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
@@ -18,14 +21,29 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
 
     Returns:
         Formatted search results
+
+    Raises:
+        InvalidParamsError: If query is invalid
+        InternalError: If an error occurs during search
     """
-    client = SearchClient()
+    # Validate required parameters
+    BaseToolErrorMixin.validate_required_params(query=query)
 
-    # Perform the search
-    results = await client.search_shows(query, limit)
+    client: SearchClient = SearchClient()
 
-    # Format and return the results
-    return SearchFormatters.format_show_search_results(results)
+    try:
+        # Perform the search
+        results = await client.search_shows(query, limit)
+
+        # Format and return the results
+        return SearchFormatters.format_show_search_results(results)
+    except MCPError:
+        raise
+    except Exception as e:
+        # Convert any unexpected errors to structured MCP errors
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            operation="search shows", error=e, query=query, limit=limit
+        ) from e
 
 
 async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
@@ -37,14 +55,34 @@ async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
 
     Returns:
         Formatted search results
+
+    Raises:
+        InvalidParamsError: If query is invalid
+        InternalError: If an error occurs during search
     """
-    client = SearchClient()
-    results = await client.search_movies(query, limit)
-    return SearchFormatters.format_movie_search_results(results)
+    # Validate required parameters
+    BaseToolErrorMixin.validate_required_params(query=query)
+
+    client: SearchClient = SearchClient()
+
+    try:
+        results = await client.search_movies(query, limit)
+        return SearchFormatters.format_movie_search_results(results)
+    except MCPError:
+        raise
+    except Exception as e:
+        # Convert any unexpected errors to structured MCP errors
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            operation="search movies", error=e, query=query, limit=limit
+        ) from e
 
 
-def register_search_tools(mcp: FastMCP) -> None:
-    """Register search tools with the MCP server."""
+def register_search_tools(mcp: FastMCP) -> tuple[Any, Any]:
+    """Register search tools with the MCP server.
+
+    Returns:
+        Tuple of tool handlers for type checker visibility
+    """
 
     @mcp.tool(
         name=TOOL_NAMES["search_shows"],
@@ -59,3 +97,6 @@ def register_search_tools(mcp: FastMCP) -> None:
     )
     async def search_movies_tool(query: str, limit: int = DEFAULT_LIMIT) -> str:
         return await search_movies(query, limit)
+
+    # Return handlers for type checker visibility
+    return (search_shows_tool, search_movies_tool)

@@ -1,15 +1,23 @@
-# pyright: reportUnusedFunction=none
 """Show tools for the Trakt MCP server."""
 
 import json
 import logging
+from typing import TYPE_CHECKING, Any
 
 from mcp.server.fastmcp import FastMCP
 
-from client.shows import ShowsClient
+from client.shows.details import ShowDetailsClient
+from client.shows.popular import PopularShowsClient
+from client.shows.stats import ShowStatsClient
+from client.shows.trending import TrendingShowsClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.shows import ShowFormatters
+from server.base import BaseToolErrorMixin
+
+if TYPE_CHECKING:
+    from models.types import ShowResponse, TraktRating, TrendingWrapper
+from utils.api.errors import MCPError
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -23,9 +31,20 @@ async def fetch_trending_shows(limit: int = DEFAULT_LIMIT) -> str:
     Returns:
         Information about trending shows
     """
-    client = ShowsClient()
-    shows = await client.get_trending_shows(limit=limit)
-    return ShowFormatters.format_trending_shows(shows)
+    # Validate parameters first
+    BaseToolErrorMixin.validate_required_params(limit=limit)
+
+    try:
+        client: TrendingShowsClient = TrendingShowsClient()
+        shows: list[TrendingWrapper] = await client.get_trending_shows(limit=limit)
+        return ShowFormatters.format_trending_shows(shows)
+
+    except MCPError:
+        raise
+    except Exception as e:
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            "fetch trending shows", e, limit=limit
+        ) from e
 
 
 async def fetch_popular_shows(limit: int = DEFAULT_LIMIT) -> str:
@@ -37,9 +56,20 @@ async def fetch_popular_shows(limit: int = DEFAULT_LIMIT) -> str:
     Returns:
         Information about popular shows
     """
-    client = ShowsClient()
-    shows = await client.get_popular_shows(limit=limit)
-    return ShowFormatters.format_popular_shows(shows)
+    # Validate parameters first
+    BaseToolErrorMixin.validate_required_params(limit=limit)
+
+    try:
+        client: PopularShowsClient = PopularShowsClient()
+        shows: list[ShowResponse] = await client.get_popular_shows(limit=limit)
+        return ShowFormatters.format_popular_shows(shows)
+
+    except MCPError:
+        raise
+    except Exception as e:
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            "fetch popular shows", e, limit=limit
+        ) from e
 
 
 async def fetch_favorited_shows(
@@ -54,7 +84,7 @@ async def fetch_favorited_shows(
     Returns:
         Information about most favorited shows
     """
-    client = ShowsClient()
+    client: ShowStatsClient = ShowStatsClient()
     shows = await client.get_favorited_shows(limit=limit, period=period)
 
     # Log the first show to see the structure
@@ -76,7 +106,7 @@ async def fetch_played_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly")
     Returns:
         Information about most played shows
     """
-    client = ShowsClient()
+    client: ShowStatsClient = ShowStatsClient()
     shows = await client.get_played_shows(limit=limit, period=period)
     return ShowFormatters.format_played_shows(shows)
 
@@ -93,7 +123,7 @@ async def fetch_watched_shows(
     Returns:
         Information about most watched shows
     """
-    client = ShowsClient()
+    client: ShowStatsClient = ShowStatsClient()
     shows = await client.get_watched_shows(limit=limit, period=period)
     return ShowFormatters.format_watched_shows(shows)
 
@@ -106,27 +136,50 @@ async def fetch_show_ratings(show_id: str) -> str:
 
     Returns:
         Information about show ratings including average and distribution
+
+    Raises:
+        InvalidParamsError: If show_id is invalid
+        InternalError: If an error occurs fetching show or ratings data
     """
-    client = ShowsClient()
+    # Validate required parameters
+    BaseToolErrorMixin.validate_required_params(show_id=show_id)
+
+    client: ShowDetailsClient = ShowDetailsClient()
 
     try:
-        show = await client.get_show(show_id)
+        show_data: ShowResponse = await client.get_show(show_id)
 
-        # Check if the API returned an error string
-        if isinstance(show, str):
-            return f"Error fetching show details: {show}"
+        # Handle transitional case where API returns error strings
+        if isinstance(show_data, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="show",
+                resource_id=show_id,
+                error_message=show_data,
+                operation="fetch_show_details",
+            )
 
+        show: ShowResponse = show_data
         show_title = show.get("title", "Unknown Show")
-        ratings = await client.get_show_ratings(show_id)
+        ratings: TraktRating = await client.get_show_ratings(show_id)
 
-        # Check if the API returned an error string
+        # Handle transitional case where API returns error strings
         if isinstance(ratings, str):
-            return f"Error fetching ratings for {show_title}: {ratings}"
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="show_ratings",
+                resource_id=show_id,
+                error_message=ratings,
+                operation="fetch_show_ratings",
+                show_title=show_title,
+            )
 
         return ShowFormatters.format_show_ratings(ratings, show_title)
+    except MCPError:
+        raise
     except Exception as e:
-        logger.error(f"Error fetching show ratings: {e}")
-        return f"Error fetching ratings for show ID {show_id}: {e!s}"
+        # Convert any unexpected errors to structured MCP errors
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            operation="fetch show ratings", error=e, show_id=show_id
+        ) from e
 
 
 async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
@@ -141,29 +194,54 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
         Show information formatted as markdown. Extended mode includes air times, production status,
         ratings, metadata, and detailed information. Basic mode includes title, year,
         and Trakt ID only.
+
+    Raises:
+        InvalidParamsError: If show_id is invalid
+        InternalError: If an error occurs fetching show data
     """
-    client = ShowsClient()
+    # Validate required parameters
+    BaseToolErrorMixin.validate_required_params(show_id=show_id)
+
+    client: ShowDetailsClient = ShowDetailsClient()
 
     try:
         if extended:
-            show = await client.get_show_extended(show_id)
-            # Check if the API returned an error string
-            if isinstance(show, str):
-                return f"Error fetching show summary for ID {show_id}: {show}"
-            return ShowFormatters.format_show_extended(show)
+            show_data: ShowResponse = await client.get_show_extended(show_id)
+            # Handle transitional case where API returns error strings
+            if isinstance(show_data, str):
+                raise BaseToolErrorMixin.handle_api_string_error(
+                    resource_type="show_extended",
+                    resource_id=show_id,
+                    error_message=show_data,
+                    operation="fetch_show_extended",
+                )
+            return ShowFormatters.format_show_extended(show_data)
         else:
-            show = await client.get_show(show_id)
-            # Check if the API returned an error string
-            if isinstance(show, str):
-                return f"Error fetching show summary for ID {show_id}: {show}"
-            return ShowFormatters.format_show_summary(show)
+            show_data: ShowResponse = await client.get_show(show_id)
+            # Handle transitional case where API returns error strings
+            if isinstance(show_data, str):
+                raise BaseToolErrorMixin.handle_api_string_error(
+                    resource_type="show",
+                    resource_id=show_id,
+                    error_message=show_data,
+                    operation="fetch_show_summary",
+                )
+            return ShowFormatters.format_show_summary(show_data)
+    except MCPError:
+        raise
     except Exception as e:
-        logger.error(f"Error fetching show summary: {e}")
-        return f"Error fetching show summary for ID {show_id}: {e!s}"
+        # Convert any unexpected errors to structured MCP errors
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            operation="fetch show summary", error=e, show_id=show_id, extended=extended
+        ) from e
 
 
-def register_show_tools(mcp: FastMCP) -> None:
-    """Register show tools with the MCP server."""
+def register_show_tools(mcp: FastMCP) -> tuple[Any, Any, Any, Any, Any, Any, Any]:
+    """Register show tools with the MCP server.
+
+    Returns:
+        Tuple of tool handlers for type checker visibility
+    """
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_trending_shows"],
@@ -219,3 +297,14 @@ def register_show_tools(mcp: FastMCP) -> None:
     )
     async def fetch_show_summary_tool(show_id: str, extended: bool = True) -> str:
         return await fetch_show_summary(show_id, extended)
+
+    # Return handlers for type checker visibility
+    return (
+        fetch_trending_shows_tool,
+        fetch_popular_shows_tool,
+        fetch_favorited_shows_tool,
+        fetch_played_shows_tool,
+        fetch_watched_shows_tool,
+        fetch_show_ratings_tool,
+        fetch_show_summary_tool,
+    )

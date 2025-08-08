@@ -1,18 +1,28 @@
 """Show formatting methods for the Trakt MCP server."""
 
-from typing import Any
+from models.types import (
+    FavoritedShowWrapper,
+    PlayedShowWrapper,
+    ShowResponse,
+    TraktRating,
+    TrendingWrapper,
+    WatchedShowWrapper,
+)
 
 
 class ShowFormatters:
     """Helper class for formatting show-related data for MCP responses."""
 
     @staticmethod
-    def format_trending_shows(shows: list[dict[str, Any]]) -> str:
+    def format_trending_shows(shows: list[TrendingWrapper]) -> str:
         """Format trending shows data for MCP resource."""
         result = "# Trending Shows on Trakt\n\n"
 
         for item in shows:
-            show = item.get("show", {})
+            show = item.get("show")
+            if not show:
+                continue
+
             watchers = item.get("watchers", 0)
 
             title = show.get("title", "Unknown")
@@ -29,7 +39,7 @@ class ShowFormatters:
         return result
 
     @staticmethod
-    def format_popular_shows(shows: list[dict[str, Any]]) -> str:
+    def format_popular_shows(shows: list[ShowResponse]) -> str:
         """Format popular shows data for MCP resource."""
         result = "# Popular Shows on Trakt\n\n"
 
@@ -48,7 +58,7 @@ class ShowFormatters:
         return result
 
     @staticmethod
-    def format_favorited_shows(shows: list[dict[str, Any]]) -> str:
+    def format_favorited_shows(shows: list[FavoritedShowWrapper]) -> str:
         """Format favorited shows data for MCP resource."""
         result = "# Most Favorited Shows on Trakt\n\n"
 
@@ -71,7 +81,7 @@ class ShowFormatters:
         return result
 
     @staticmethod
-    def format_played_shows(shows: list[dict[str, Any]]) -> str:
+    def format_played_shows(shows: list[PlayedShowWrapper]) -> str:
         """Format played shows data for MCP resource."""
         result = "# Most Played Shows on Trakt\n\n"
 
@@ -94,7 +104,7 @@ class ShowFormatters:
         return result
 
     @staticmethod
-    def format_watched_shows(shows: list[dict[str, Any]]) -> str:
+    def format_watched_shows(shows: list[WatchedShowWrapper]) -> str:
         """Format watched shows data for MCP resource."""
         result = "# Most Watched Shows on Trakt\n\n"
 
@@ -117,7 +127,7 @@ class ShowFormatters:
 
     @staticmethod
     def format_show_ratings(
-        ratings: dict[str, Any], show_title: str = "Unknown show"
+        ratings: TraktRating, show_title: str = "Unknown show"
     ) -> str:
         """Format show ratings data for MCP resource.
 
@@ -158,7 +168,7 @@ class ShowFormatters:
         return result
 
     @staticmethod
-    def format_show_summary(show: dict[str, Any]) -> str:
+    def format_show_summary(show: ShowResponse) -> str:
         """Format basic show summary data.
 
         Args:
@@ -182,7 +192,7 @@ class ShowFormatters:
         return result
 
     @staticmethod
-    def format_show_extended(show: dict[str, Any]) -> str:
+    def format_show_extended(show: ShowResponse) -> str:
         """Format extended show details data.
 
         Args:

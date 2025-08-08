@@ -48,8 +48,8 @@ async def test_search_shows():
         assert len(result) == 2
         assert result[0]["type"] == "show"
         assert result[0]["score"] == 100.0
-        assert result[0]["show"]["title"] == "Breaking Bad"
-        assert result[1]["show"]["title"] == "Better Call Saul"
+        assert result[0].get("show", {}).get("title") == "Breaking Bad"
+        assert result[1].get("show", {}).get("title") == "Better Call Saul"
 
 
 @pytest.mark.asyncio
@@ -94,5 +94,5 @@ async def test_search_movies():
         assert len(result) == 2
         assert result[0]["type"] == "movie"
         assert result[0]["score"] == 95.0
-        assert result[0]["movie"]["title"] == "The Shawshank Redemption"
-        assert result[1]["movie"]["title"] == "The Godfather"
+        assert result[0].get("movie", {}).get("title") == "The Shawshank Redemption"
+        assert result[1].get("movie", {}).get("title") == "The Godfather"

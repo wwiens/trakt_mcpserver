@@ -1,9 +1,8 @@
 """Comment details functionality."""
 
-from typing import Any
-
 from config.api import DEFAULT_LIMIT
 from config.endpoints import TRAKT_ENDPOINTS
+from models.types import CommentResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
@@ -13,7 +12,7 @@ class CommentDetailsClient(BaseClient):
     """Client for comment details operations."""
 
     @handle_api_errors
-    async def get_comment(self, comment_id: str) -> dict[str, Any]:
+    async def get_comment(self, comment_id: str) -> CommentResponse:
         """Get a specific comment.
 
         Args:
@@ -23,7 +22,7 @@ class CommentDetailsClient(BaseClient):
             Comment details data
         """
         endpoint = TRAKT_ENDPOINTS["comment"].replace(":id", comment_id)
-        return await self._make_dict_request(endpoint)
+        return await self._make_typed_request(endpoint, response_type=CommentResponse)
 
     @handle_api_errors
     async def get_comment_replies(
@@ -32,7 +31,7 @@ class CommentDetailsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         page: int = 1,
         sort: str = "newest",
-    ) -> list[dict[str, Any]]:
+    ) -> list[CommentResponse]:
         """Get replies for a comment.
 
         Args:
@@ -49,6 +48,8 @@ class CommentDetailsClient(BaseClient):
             .replace(":id", comment_id)
             .replace(":sort", sort)
         )
-        return await self._make_list_request(
-            endpoint, params={"limit": limit, "page": page}
+        return await self._make_typed_list_request(
+            endpoint,
+            response_type=CommentResponse,
+            params={"limit": limit, "page": page},
         )

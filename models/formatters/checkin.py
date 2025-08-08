@@ -1,13 +1,13 @@
 """Check-in formatting methods for the Trakt MCP server."""
 
-from typing import Any
+from models.types import CheckinResponse
 
 
 class CheckinFormatters:
     """Helper class for formatting check-in related data for MCP responses."""
 
     @staticmethod
-    def format_checkin_response(response: dict[str, Any]) -> str:
+    def format_checkin_response(response: CheckinResponse) -> str:
         """Format the checkin response from Trakt API.
 
         Args:
