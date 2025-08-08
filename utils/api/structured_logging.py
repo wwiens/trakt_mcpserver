@@ -47,7 +47,7 @@ class ContextFilter(logging.Filter):
             record.resource_type = context.resource_type
             record.resource_id = context.resource_id
             record.user_id = context.user_id
-            record.elapsed_time = context.elapsed_time
+            record.elapsed_time = context.elapsed_time()
         else:
             # Set defaults when no context is available
             record.correlation_id = None

@@ -131,7 +131,7 @@ def test_request_context_elapsed_time():
     # Small delay
     time.sleep(0.01)
 
-    elapsed = context.elapsed_time
+    elapsed = context.elapsed_time()
     assert elapsed > 0
     assert elapsed < 1  # Should be less than 1 second
 

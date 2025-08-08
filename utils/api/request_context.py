@@ -76,7 +76,6 @@ class RequestContext:
         """
         return replace(self, user_id=user_id)
 
-    @property
     def elapsed_time(self) -> float:
         """Get elapsed time since request started."""
         return time.time() - self.start_time
@@ -95,7 +94,7 @@ class RequestContext:
             "resource_id": self.resource_id,
             "user_id": self.user_id,
             "parameters": self.parameters,
-            "elapsed_time": self.elapsed_time,
+            "elapsed_time": self.elapsed_time(),
         }
 
 
