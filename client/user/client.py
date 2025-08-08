@@ -2,6 +2,7 @@
 
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import UserWatchedMovie, UserWatchedShow
+from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -18,7 +19,7 @@ class UserClient(AuthClient):
             List of shows watched by the user
         """
         if not self.is_authenticated():
-            return []
+            raise AuthenticationRequiredError("get user watched shows")
 
         return await self._make_typed_list_request(
             TRAKT_ENDPOINTS["user_watched_shows"], response_type=UserWatchedShow
@@ -32,7 +33,7 @@ class UserClient(AuthClient):
             List of movies watched by the user
         """
         if not self.is_authenticated():
-            return []
+            raise AuthenticationRequiredError("get user watched movies")
 
         return await self._make_typed_list_request(
             TRAKT_ENDPOINTS["user_watched_movies"], response_type=UserWatchedMovie
