@@ -118,15 +118,15 @@ class CheckinClientProtocol(Protocol):
 
     async def checkin_to_show(
         self,
+        episode_season: int,
+        episode_number: int,
         show_id: str | None = None,
         show_title: str | None = None,
         show_year: int | None = None,
-        season: int | None = None,
-        episode: int | None = None,
         message: str = "",
         share_twitter: bool = False,
-        share_tumblr: bool = False,
         share_mastodon: bool = False,
+        share_tumblr: bool = False,
     ) -> CheckinResponse:
         """Check in to a show."""
         ...
