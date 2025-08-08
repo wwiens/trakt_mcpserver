@@ -3,7 +3,7 @@
 import contextlib
 import logging
 import uuid
-from typing import Any
+from typing import Any, Callable
 
 import httpx
 
@@ -91,7 +91,7 @@ class TraktAPIErrorHandler:
         )
 
     @classmethod
-    def get_status_code_handler(cls, status_code: int) -> Any:
+    def get_status_code_handler(cls, status_code: int) -> Callable[..., MCPError]:
         """Get the appropriate handler method for a status code."""
         handlers = {
             400: cls.handle_bad_request,
