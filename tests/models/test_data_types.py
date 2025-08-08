@@ -7,7 +7,7 @@ class ShowTestData(TypedDict):
     """Type definition for show test data."""
 
     title: str
-    year: NotRequired[int | None]
+    year: int
     ids: dict[str, str]
     overview: NotRequired[str | None]
 
@@ -16,7 +16,7 @@ class MovieTestData(TypedDict):
     """Type definition for movie test data."""
 
     title: str
-    year: NotRequired[int | None]
+    year: int
     ids: dict[str, str]
     overview: NotRequired[str | None]
 

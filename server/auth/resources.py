@@ -1,6 +1,7 @@
 """Authentication resources for the Trakt MCP server."""
 
-from typing import Callable, Coroutine, Any
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 

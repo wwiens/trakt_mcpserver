@@ -335,6 +335,7 @@ class TestTraktUserShow:
         """Test user show with empty seasons list."""
         show_data: ShowTestData = {
             "title": "New Show",
+            "year": 2023,
             "ids": {"trakt": "999"},
         }
 
@@ -415,6 +416,7 @@ class TestTraktUserShow:
         """Test plays field validation."""
         show_data: ShowTestData = {
             "title": "Test Show",
+            "year": 2022,
             "ids": {"trakt": "1"},
         }
 
@@ -440,6 +442,7 @@ class TestTraktUserShow:
         """Test various timestamp formats."""
         show_data: ShowTestData = {
             "title": "Test Show",
+            "year": 2022,
             "ids": {"trakt": "1"},
         }
 

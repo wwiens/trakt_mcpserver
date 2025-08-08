@@ -48,13 +48,14 @@ class TestTraktShow:
         """Test creating show with minimal required data."""
         minimal_data: ShowTestData = {
             "title": "Test Show",
+            "year": 2020,
             "ids": {"trakt": "123"},
         }
 
         show = TraktShow(**minimal_data)
 
         assert show.title == "Test Show"
-        assert show.year is None
+        assert show.year == 2020
         assert show.ids == {"trakt": "123"}
         assert show.overview is None
 
@@ -106,7 +107,7 @@ class TestTraktShow:
         """Test show with explicit None values."""
         show_data: ShowTestData = {
             "title": "Test Show",
-            "year": None,
+            "year": 2021,
             "ids": {"trakt": "123"},
             "overview": None,
         }
@@ -114,7 +115,7 @@ class TestTraktShow:
         show = TraktShow(**show_data)
 
         assert show.title == "Test Show"
-        assert show.year is None
+        assert show.year == 2021
         assert show.overview is None
 
 
@@ -149,13 +150,14 @@ class TestTraktMovie:
         """Test creating movie with minimal required data."""
         minimal_data: MovieTestData = {
             "title": "Test Movie",
+            "year": 2019,
             "ids": {"trakt": "456"},
         }
 
         movie = TraktMovie(**minimal_data)
 
         assert movie.title == "Test Movie"
-        assert movie.year is None
+        assert movie.year == 2019
         assert movie.ids == {"trakt": "456"}
         assert movie.overview is None
 

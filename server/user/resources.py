@@ -1,6 +1,7 @@
 """User resources for the Trakt MCP server."""
 
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 

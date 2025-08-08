@@ -8,7 +8,7 @@ from utils.api.structured_logging import LogRecordExtended as BaseLogRecordExten
 
 class LogRecordExtended(BaseLogRecordExtended):
     """Extended LogRecord with additional test-specific attributes.
-    
+
     Extends the base LogRecordExtended from structured_logging
     with additional attributes used in tests.
     """
