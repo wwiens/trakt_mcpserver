@@ -7,7 +7,7 @@ endpoint information, and request parameters for enhanced debugging.
 import time
 import uuid
 from contextvars import ContextVar
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 
@@ -38,16 +38,7 @@ class RequestContext:
         Returns:
             New RequestContext with endpoint information
         """
-        return RequestContext(
-            correlation_id=self.correlation_id,
-            endpoint=endpoint,
-            method=method,
-            resource_type=self.resource_type,
-            resource_id=self.resource_id,
-            user_id=self.user_id,
-            parameters=self.parameters.copy(),
-            start_time=self.start_time,
-        )
+        return replace(self, endpoint=endpoint, method=method)
 
     def with_resource(self, resource_type: str, resource_id: str) -> "RequestContext":
         """Create a new context with resource information.
@@ -59,16 +50,7 @@ class RequestContext:
         Returns:
             New RequestContext with resource information
         """
-        return RequestContext(
-            correlation_id=self.correlation_id,
-            endpoint=self.endpoint,
-            method=self.method,
-            resource_type=resource_type,
-            resource_id=resource_id,
-            user_id=self.user_id,
-            parameters=self.parameters.copy(),
-            start_time=self.start_time,
-        )
+        return replace(self, resource_type=resource_type, resource_id=resource_id)
 
     def with_parameters(self, **params: Any) -> "RequestContext":
         """Create a new context with additional parameters.
@@ -81,17 +63,7 @@ class RequestContext:
         """
         new_params = self.parameters.copy()
         new_params.update(params)
-
-        return RequestContext(
-            correlation_id=self.correlation_id,
-            endpoint=self.endpoint,
-            method=self.method,
-            resource_type=self.resource_type,
-            resource_id=self.resource_id,
-            user_id=self.user_id,
-            parameters=new_params,
-            start_time=self.start_time,
-        )
+        return replace(self, parameters=new_params)
 
     def with_user(self, user_id: str) -> "RequestContext":
         """Create a new context with user information.
@@ -102,16 +74,7 @@ class RequestContext:
         Returns:
             New RequestContext with user information
         """
-        return RequestContext(
-            correlation_id=self.correlation_id,
-            endpoint=self.endpoint,
-            method=self.method,
-            resource_type=self.resource_type,
-            resource_id=self.resource_id,
-            user_id=user_id,
-            parameters=self.parameters.copy(),
-            start_time=self.start_time,
-        )
+        return replace(self, user_id=user_id)
 
     @property
     def elapsed_time(self) -> float:
