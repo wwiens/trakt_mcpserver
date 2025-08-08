@@ -219,8 +219,6 @@ def test_type_compatibility():
 
 def test_protocol_method_signatures():
     """Test that protocol method signatures are correctly typed."""
-    from typing import get_type_hints
-
     # Test AuthClientProtocol method signatures
     auth_hints = get_type_hints(AuthClientProtocol.get_device_code)
     shows_hints = get_type_hints(ShowsClientProtocol.get_trending_shows)

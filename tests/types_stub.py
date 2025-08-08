@@ -1,26 +1,17 @@
 """Type stubs for test utilities."""
 
-import logging
 from typing import Any, Protocol
 
 from models.auth import TraktAuthToken, TraktDeviceCode
+from utils.api.structured_logging import LogRecordExtended as BaseLogRecordExtended
 
 
-class LogRecordExtended(logging.LogRecord):
-    """Extended LogRecord with custom attributes for structured logging.
-
-    This extends the standard LogRecord to include custom attributes
-    that are dynamically added by our ContextFilter and test code.
+class LogRecordExtended(BaseLogRecordExtended):
+    """Extended LogRecord with additional test-specific attributes.
+    
+    Extends the base LogRecordExtended from structured_logging
+    with additional attributes used in tests.
     """
-
-    correlation_id: str | None
-    request_context: dict[str, Any] | None
-    endpoint: str | None
-    method: str | None
-    resource_type: str | None
-    resource_id: str | None
-    user_id: str | None
-    elapsed_time: float | None
 
     # Additional attributes used in tests
     custom_field: str | None
