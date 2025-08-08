@@ -33,7 +33,11 @@ class TestCheckinFormatters:
         # Test with sample data where methods exist
         if hasattr(CheckinFormatters, "format_checkin_response"):
             sample_response = cast(
-                "CheckinResponse", {"status": "success", "message": "Checked in"}
+                "CheckinResponse", {
+                    "id": 1,
+                    "watched_at": "2025-01-01T00:00:00.000Z",
+                    "sharing": {"twitter": False, "mastodon": False, "tumblr": False}
+                }
             )
             result = CheckinFormatters.format_checkin_response(sample_response)
             assert isinstance(result, str)
