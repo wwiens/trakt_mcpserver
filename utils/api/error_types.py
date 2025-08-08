@@ -213,7 +213,9 @@ class TraktRateLimitError(TraktAPIError):
             else:
                 message = "Rate limit exceeded. Please try again later."
 
-        data = {"retry_after": retry_after}
+        data: dict[str, int] = {}
+        if retry_after is not None:
+            data["retry_after"] = retry_after
 
         super().__init__(
             code=-32600,  # Invalid request

@@ -106,6 +106,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - Type hints required for all functions/methods/attributes
 - Use specific types: `list[str]` not `list`
 - Return type annotations including `None`
+- **Prefer precise typing**: Use most specific types possible - avoid `Any` when concrete types are known
 
 ### Code Standards
 - PEP 8 compliance
