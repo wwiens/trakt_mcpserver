@@ -236,7 +236,7 @@ class TestStatusCodeHandlers:
 
         assert isinstance(result, TraktRateLimitError)
         result = cast("MCPErrorWithData", result)
-        assert result.data["retry_after"] is None
+        assert "retry_after" not in result.data
         assert result.data["endpoint"] == "/shows/trending"
         assert result.data["correlation_id"] == "test-rate-limit"
 
@@ -267,7 +267,7 @@ class TestStatusCodeHandlers:
 
         assert isinstance(result, TraktRateLimitError)
         result = cast("MCPErrorWithData", result)
-        assert result.data["retry_after"] is None
+        assert "retry_after" not in result.data
 
     def test_handle_server_error(self) -> None:
         """Test 500 Internal Server Error handling."""

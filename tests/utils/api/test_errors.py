@@ -127,7 +127,7 @@ class TestHandleApiErrorsDecorator:
         error = cast("MCPErrorWithData", exc_info.value)
         assert error.message == "Rate limit exceeded. Please try again later."
         assert error.data["http_status"] == 429
-        assert error.data["retry_after"] is None
+        assert "retry_after" not in error.data
 
     @pytest.mark.asyncio
     async def test_http_unknown_status_error(self, mock_async_func: AsyncMock) -> None:
