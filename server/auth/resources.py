@@ -1,7 +1,6 @@
 """Authentication resources for the Trakt MCP server."""
 
 from collections.abc import Callable, Coroutine
-from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -22,7 +21,7 @@ async def get_auth_status() -> str:
     return AuthFormatters.format_auth_status(is_authenticated, expires_at)
 
 
-def register_auth_resources(mcp: FastMCP) -> Callable[[], Coroutine[Any, Any, str]]:
+def register_auth_resources(mcp: FastMCP) -> Callable[[], Coroutine[None, None, str]]:
     """Register authentication resources with the MCP server.
 
     Returns:
