@@ -1,9 +1,10 @@
 """Check-in functionality for Trakt."""
 
-from typing import Any
+from typing import Any, cast
 
 from config.endpoints import TRAKT_ENDPOINTS
 from models.checkin import TraktCheckin
+from models.types import CheckinResponse
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -24,7 +25,7 @@ class CheckinClient(AuthClient):
         share_twitter: bool = False,
         share_mastodon: bool = False,
         share_tumblr: bool = False,
-    ) -> TraktCheckin:
+    ) -> CheckinResponse:
         """Check in to a show episode the user is currently watching.
 
         Args:
@@ -92,4 +93,6 @@ class CheckinClient(AuthClient):
 
         # Make the checkin request
         response = await self._post_request(TRAKT_ENDPOINTS["checkin"], data)
-        return TraktCheckin.from_api_response(response)
+        return cast(
+            "CheckinResponse", TraktCheckin.from_api_response(response).model_dump()
+        )

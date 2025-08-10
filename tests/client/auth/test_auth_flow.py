@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from client.auth import AuthClient
-from models.auth import TraktAuthToken
+from models.auth import TraktAuthToken, TraktDeviceCode
 from utils.api.error_types import AuthorizationPendingError
 from utils.api.errors import InvalidParamsError
 
@@ -56,7 +56,7 @@ async def test_complete_device_auth_flow():
         client = AuthClient()
 
         device_code = await client.get_device_code()
-        assert hasattr(device_code, "device_code")
+        assert isinstance(device_code, TraktDeviceCode)
         assert device_code.device_code == "device_code_123"
         assert device_code.user_code == "USER123"
 

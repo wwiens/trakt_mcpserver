@@ -224,13 +224,51 @@ def test_add_context_to_error_data_with_context():
     assert enhanced_data["error_type"] == "test_error"
     assert enhanced_data["message"] == "Test message"
 
-    # Context data should be added
-    assert enhanced_data["correlation_id"] == context.correlation_id
-    assert enhanced_data["endpoint"] == "/shows/trending"
-    assert enhanced_data["method"] == "GET"
-    assert enhanced_data["resource_type"] == "show"
-    assert enhanced_data["resource_id"] == "test-show"
-    assert enhanced_data["parameters"] == {"limit": 10}
+    # Context data should be added under nested structure
+    assert "request_context" in enhanced_data
+    context_data = enhanced_data["request_context"]
+    assert context_data["correlation_id"] == context.correlation_id
+    assert context_data["endpoint"] == "/shows/trending"
+    assert context_data["method"] == "GET"
+    assert context_data["resource_type"] == "show"
+    assert context_data["resource_id"] == "test-show"
+    assert context_data["parameters"] == {"limit": 10}
+
+
+def test_add_context_to_error_data_prevents_key_collisions():
+    """Test that context data doesn't overwrite existing error data keys."""
+    # Set up context with data that might collide
+    context = (
+        RequestContext()
+        .with_endpoint("/test/endpoint", "POST")
+        .with_resource("movie", "12345")
+    )
+    set_current_context(context)
+
+    # Error data with potentially colliding keys
+    error_data = {
+        "error_type": "test_error",
+        "endpoint": "original_endpoint",
+        "method": "original_method",
+        "correlation_id": "original_correlation_id",
+    }
+
+    enhanced_data = add_context_to_error_data(error_data)
+
+    # Original data should be preserved (no overwrites)
+    assert enhanced_data["error_type"] == "test_error"
+    assert enhanced_data["endpoint"] == "original_endpoint"
+    assert enhanced_data["method"] == "original_method"
+    assert enhanced_data["correlation_id"] == "original_correlation_id"
+
+    # Context data should be in nested structure
+    assert "request_context" in enhanced_data
+    context_data = enhanced_data["request_context"]
+    assert context_data["endpoint"] == "/test/endpoint"
+    assert context_data["method"] == "POST"
+    assert context_data["correlation_id"] == context.correlation_id
+    assert context_data["resource_type"] == "movie"
+    assert context_data["resource_id"] == "12345"
 
 
 def test_add_context_to_error_data_without_context():

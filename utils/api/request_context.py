@@ -160,6 +160,7 @@ def add_context_to_error_data(error_data: dict[str, Any]) -> dict[str, Any]:
     enhanced_data = error_data.copy()
 
     if context:
-        enhanced_data.update(context.to_dict())
+        # Use nested structure to avoid key collisions
+        enhanced_data["request_context"] = context.to_dict()
 
     return enhanced_data

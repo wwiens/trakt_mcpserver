@@ -17,6 +17,7 @@ from server.movies.tools import (
 from utils.api.error_types import (
     TraktResourceNotFoundError,
 )
+from utils.api.errors import InternalError
 
 
 @pytest.mark.asyncio
@@ -132,7 +133,7 @@ async def test_fetch_movie_ratings_error():
         future.set_exception(Exception("API error"))
         mock_client.get_movie.return_value = future
 
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(InternalError) as exc_info:
             await fetch_movie_ratings(movie_id="1")
 
         # The function should raise an InternalError for unexpected exceptions
@@ -255,7 +256,7 @@ async def test_fetch_movie_summary_extended_error():
         future.set_exception(Exception("API error"))
         mock_client.get_movie_extended.return_value = future
 
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(InternalError) as exc_info:
             await fetch_movie_summary(movie_id="12345")
 
         # The function should raise an InternalError for unexpected exceptions
@@ -273,7 +274,7 @@ async def test_fetch_movie_summary_basic_error():
         future.set_exception(Exception("API error"))
         mock_client.get_movie.return_value = future
 
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(InternalError) as exc_info:
             await fetch_movie_summary(movie_id="12345", extended=False)
 
         # The function should raise an InternalError for unexpected exceptions

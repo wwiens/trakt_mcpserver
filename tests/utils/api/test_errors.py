@@ -233,8 +233,8 @@ class TestHandleApiErrorsDecorator:
 class TestDecoratorTypes:
     """Test decorator type annotations and type safety."""
 
-    def test_universal_decorator_works(self) -> None:
-        """Test that the universal decorator is working properly."""
+    def test_decorator_is_callable_and_available(self) -> None:
+        """Test that the decorator function is properly imported and callable."""
         # The decorator should work with both methods and functions
         assert handle_api_errors_func is not None
         assert callable(handle_api_errors_func)

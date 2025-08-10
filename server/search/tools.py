@@ -29,7 +29,7 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
     # Validate required parameters
     BaseToolErrorMixin.validate_required_params(query=query)
 
-    client: SearchClient = SearchClient()
+    client = SearchClient()
 
     try:
         # Perform the search
@@ -63,7 +63,7 @@ async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
     # Validate required parameters
     BaseToolErrorMixin.validate_required_params(query=query)
 
-    client: SearchClient = SearchClient()
+    client = SearchClient()
 
     try:
         results = await client.search_movies(query, limit)

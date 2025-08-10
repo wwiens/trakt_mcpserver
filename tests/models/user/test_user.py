@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import pytest
 from pydantic import ValidationError
 
-from models.shows import TraktShow
+from models.shows.show import TraktShow
 from models.user import TraktUserShow
 
 if TYPE_CHECKING:
