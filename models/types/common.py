@@ -27,10 +27,13 @@ class ErrorResponse(TypedDict):
 
 
 # Headers type
-class TraktHeaders(TypedDict, total=False):
-    """Trakt API headers."""
-
-    Authorization: str
-    trakt_api_version: str
-    trakt_api_key: str
-    Content_Type: str
+TraktHeaders = TypedDict(
+    "TraktHeaders",
+    {
+        "Authorization": str,
+        "trakt_api_version": str,
+        "trakt_api_key": str,
+        "Content-Type": str,
+    },
+    total=False,
+)
