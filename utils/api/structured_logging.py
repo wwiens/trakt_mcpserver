@@ -7,6 +7,7 @@ correlation IDs, and performance metrics.
 import json
 import logging
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
@@ -216,7 +217,9 @@ def get_structured_logger(name: str) -> logging.Logger:
 
 
 @contextmanager
-def performance_timer(operation: str, logger: logging.Logger | None = None):
+def performance_timer(
+    operation: str, logger: logging.Logger | None = None
+) -> Generator[None, None, None]:
     """Context manager for timing operations with structured logging.
 
     Args:

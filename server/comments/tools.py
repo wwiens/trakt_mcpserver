@@ -133,7 +133,7 @@ async def fetch_season_comments(
         InternalError: If an error occurs fetching comments
     """
     # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(show_id=show_id)
+    BaseToolErrorMixin.validate_required_params(show_id=show_id, season=season)
 
     client: SeasonCommentsClient = SeasonCommentsClient()
 
@@ -179,11 +179,13 @@ async def fetch_episode_comments(
         Information about episode comments
 
     Raises:
-        InvalidParamsError: If show_id is invalid
+        InvalidParamsError: If show_id, season, or episode is invalid
         InternalError: If an error occurs fetching comments
     """
     # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(show_id=show_id)
+    BaseToolErrorMixin.validate_required_params(
+        show_id=show_id, season=season, episode=episode
+    )
 
     client: EpisodeCommentsClient = EpisodeCommentsClient()
 

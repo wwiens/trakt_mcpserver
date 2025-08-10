@@ -2,8 +2,7 @@
 
 import json
 import logging
-from collections.abc import Callable, Coroutine
-from typing import Any
+from collections.abc import Awaitable, Callable
 
 from mcp.server.fastmcp import FastMCP
 
@@ -15,41 +14,42 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.shows import ShowFormatters
 from server.base import BaseToolErrorMixin
+from utils.api.errors import handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
 
 
+@handle_api_errors_func
 async def get_trending_shows() -> str:
     """Returns the most watched shows over the last 24 hours from Trakt. Shows with the most watchers are returned first.
 
     Returns:
         Formatted markdown text with trending shows
     """
-    # Note: pyright has analysis issues with @handle_api_errors decorator
     client: TrendingShowsClient = TrendingShowsClient()
     shows = await client.get_trending_shows(limit=DEFAULT_LIMIT)
     return ShowFormatters.format_trending_shows(shows)
 
 
+@handle_api_errors_func
 async def get_popular_shows() -> str:
     """Returns the most popular shows from Trakt. Popularity is calculated using the rating percentage and the number of ratings.
 
     Returns:
         Formatted markdown text with popular shows
     """
-    # Note: pyright has analysis issues with @handle_api_errors decorator
     client: PopularShowsClient = PopularShowsClient()
     shows = await client.get_popular_shows(limit=DEFAULT_LIMIT)
     return ShowFormatters.format_popular_shows(shows)
 
 
+@handle_api_errors_func
 async def get_favorited_shows() -> str:
     """Returns the most favorited shows from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most favorited shows
     """
-    # Note: pyright has analysis issues with @handle_api_errors decorator
     client: ShowStatsClient = ShowStatsClient()
     shows = await client.get_favorited_shows(limit=DEFAULT_LIMIT)
 
@@ -62,30 +62,31 @@ async def get_favorited_shows() -> str:
     return ShowFormatters.format_favorited_shows(shows)
 
 
+@handle_api_errors_func
 async def get_played_shows() -> str:
     """Returns the most played (a single user can watch multiple episodes multiple times) shows from Traktin the specified time period, defaulting to weekly. All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most played shows
     """
-    # Note: pyright has analysis issues with @handle_api_errors decorator
     client: ShowStatsClient = ShowStatsClient()
     shows = await client.get_played_shows(limit=DEFAULT_LIMIT)
     return ShowFormatters.format_played_shows(shows)
 
 
+@handle_api_errors_func
 async def get_watched_shows() -> str:
     """Returns the most watched (unique users) shows from Traktin the specified time period, defaulting to weekly. All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most watched shows
     """
-    # Note: pyright has analysis issues with @handle_api_errors decorator
     client: ShowStatsClient = ShowStatsClient()
     shows = await client.get_watched_shows(limit=DEFAULT_LIMIT)
     return ShowFormatters.format_watched_shows(shows)
 
 
+@handle_api_errors_func
 async def get_show_ratings(show_id: str) -> str:
     """Returns ratings for a specific show from Trakt.
 
@@ -101,8 +102,6 @@ async def get_show_ratings(show_id: str) -> str:
     """
     # Validate required parameters
     BaseToolErrorMixin.validate_required_params(show_id=show_id)
-
-    # Note: pyright has analysis issues with @handle_api_errors decorator
     client: ShowDetailsClient = ShowDetailsClient()
 
     try:
@@ -141,11 +140,11 @@ async def get_show_ratings(show_id: str) -> str:
 def register_show_resources(
     mcp: FastMCP,
 ) -> tuple[
-    Callable[[], Coroutine[Any, Any, str]],
-    Callable[[], Coroutine[Any, Any, str]],
-    Callable[[], Coroutine[Any, Any, str]],
-    Callable[[], Coroutine[Any, Any, str]],
-    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Awaitable[str]],
+    Callable[[], Awaitable[str]],
+    Callable[[], Awaitable[str]],
+    Callable[[], Awaitable[str]],
+    Callable[[], Awaitable[str]],
 ]:
     """Register show resources with the MCP server.
 
