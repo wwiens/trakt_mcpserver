@@ -1,6 +1,6 @@
 """TypedDict definitions for test data to ensure type safety in model tests."""
 
-from typing import Any, NotRequired, TypedDict
+from typing import NotRequired, TypedDict
 
 
 class ShowTestData(TypedDict):
@@ -104,9 +104,3 @@ class UserShowTestData(TypedDict):
     last_updated_at: str
     plays: int
     seasons: NotRequired[list[SeasonData] | None]
-
-
-# Helper function to convert test data to proper format
-def to_dict(data: Any) -> dict[str, Any]:
-    """Convert TypedDict to regular dict for Pydantic model initialization."""
-    return dict(data)

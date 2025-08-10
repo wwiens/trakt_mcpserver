@@ -94,7 +94,7 @@ class TestErrorPropagationThroughStack:
         with patch("server.search.tools.SearchClient") as mock_search_client:
             # Configure search client async method to raise error
             search_client_instance = mock_search_client.return_value
-            search_client_instance.search_shows = MagicMock(side_effect=error_400)
+            search_client_instance.search_shows = AsyncMock(side_effect=error_400)
 
             from server.search.tools import search_shows
 

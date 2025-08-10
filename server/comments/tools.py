@@ -1,6 +1,6 @@
 """Comment tools for the Trakt MCP server."""
 
-from typing import Any
+from collections.abc import Awaitable, Callable
 
 from mcp.server.fastmcp import FastMCP
 
@@ -14,6 +14,14 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.comments import CommentsFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
+
+# Type aliases for tool functions
+MovieCommentsToolType = Callable[[str, int, bool, str], Awaitable[str]]
+ShowCommentsToolType = Callable[[str, int, bool, str], Awaitable[str]]  
+SeasonCommentsToolType = Callable[[str, int, int, bool, str], Awaitable[str]]
+EpisodeCommentsToolType = Callable[[str, int, int, int, bool, str], Awaitable[str]]
+CommentToolType = Callable[[str, bool], Awaitable[str]]
+CommentRepliesToolType = Callable[[str, int, bool, str], Awaitable[str]]
 
 
 @handle_api_errors_func
@@ -41,7 +49,7 @@ async def fetch_movie_comments(
     # Validate required parameters
     BaseToolErrorMixin.validate_required_params(movie_id=movie_id)
 
-    client: MovieCommentsClient = MovieCommentsClient()
+    client = MovieCommentsClient()
 
     comments = await client.get_movie_comments(movie_id, limit=limit, sort=sort)
 
@@ -87,7 +95,7 @@ async def fetch_show_comments(
     # Validate required parameters
     BaseToolErrorMixin.validate_required_params(show_id=show_id)
 
-    client: ShowCommentsClient = ShowCommentsClient()
+    client = ShowCommentsClient()
 
     comments = await client.get_show_comments(show_id, limit=limit, sort=sort)
 
@@ -135,7 +143,7 @@ async def fetch_season_comments(
     # Validate required parameters
     BaseToolErrorMixin.validate_required_params(show_id=show_id, season=season)
 
-    client: SeasonCommentsClient = SeasonCommentsClient()
+    client = SeasonCommentsClient()
 
     comments = await client.get_season_comments(show_id, season, limit=limit, sort=sort)
 
@@ -187,7 +195,7 @@ async def fetch_episode_comments(
         show_id=show_id, season=season, episode=episode
     )
 
-    client: EpisodeCommentsClient = EpisodeCommentsClient()
+    client = EpisodeCommentsClient()
 
     comments = await client.get_episode_comments(
         show_id, season, episode, limit=limit, sort=sort
@@ -228,7 +236,7 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
     # Validate required parameters
     BaseToolErrorMixin.validate_required_params(comment_id=comment_id)
 
-    client: CommentDetailsClient = CommentDetailsClient()
+    client = CommentDetailsClient()
 
     comment = await client.get_comment(comment_id)
 
@@ -269,7 +277,7 @@ async def fetch_comment_replies(
     # Validate required parameters
     BaseToolErrorMixin.validate_required_params(comment_id=comment_id)
 
-    client: CommentDetailsClient = CommentDetailsClient()
+    client = CommentDetailsClient()
 
     comment = await client.get_comment(comment_id)
 
@@ -301,7 +309,14 @@ async def fetch_comment_replies(
     )
 
 
-def register_comment_tools(mcp: FastMCP) -> tuple[Any, Any, Any, Any, Any, Any]:
+def register_comment_tools(mcp: FastMCP) -> tuple[
+    MovieCommentsToolType,
+    ShowCommentsToolType, 
+    SeasonCommentsToolType,
+    EpisodeCommentsToolType,
+    CommentToolType,
+    CommentRepliesToolType,
+]:
     """Register comment tools with the MCP server.
 
     Returns:
