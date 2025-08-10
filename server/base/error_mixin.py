@@ -13,6 +13,142 @@ logger = get_structured_logger("trakt_mcp.server.tools")
 
 T = TypeVar("T")
 
+# Sensitive parameter patterns that should be redacted in error logs
+SENSITIVE_PARAM_PATTERNS = {
+    "access_token",
+    "refresh_token",
+    "token",
+    "password",
+    "secret",
+    "client_secret",
+    "api_key",
+    "device_code",
+    "authorization",
+    "auth",
+    "credential",
+    "key",
+}
+
+
+def is_sensitive_key(key: str) -> bool:
+    """Check if a parameter name contains sensitive patterns.
+
+    Args:
+        key: The parameter name to check
+
+    Returns:
+        True if the key contains sensitive patterns
+    """
+    key_lower = key.lower()
+    return any(pattern in key_lower for pattern in SENSITIVE_PARAM_PATTERNS)
+
+
+def sanitize_value(value: Any, key: str | None = None) -> Any:
+    """Sanitize a value, redacting if sensitive.
+
+    Args:
+        value: The value to sanitize
+        key: Optional key name for context
+
+    Returns:
+        Sanitized value or "[REDACTED]" if sensitive
+    """
+    # Check if key indicates sensitive data
+    if key and is_sensitive_key(key):
+        return "[REDACTED]"
+
+    # Check string values for sensitive patterns
+    if isinstance(value, str):
+        value_lower = value.lower()
+        # Check if the string itself looks like a token/secret
+        if any(
+            pattern in value_lower
+            for pattern in ["bearer ", "token:", "secret:", "password:"]
+        ):
+            return "[REDACTED]"
+        # Check if string contains sensitive words
+        if (
+            any(
+                word in value_lower
+                for word in ["secret", "token", "password", "auth", "key"]
+            )
+            and len(value) > 10
+            and (
+                value.replace("-", "").replace("_", "").isalnum()
+                or "_" in value
+                or "-" in value
+            )
+        ):
+            return "[REDACTED]"
+        # Long random strings might be tokens
+        if (
+            len(value) > 20
+            and value.replace("-", "").replace("_", "").isalnum()
+            and key
+            and any(word in key.lower() for word in ["token", "code", "auth", "key"])
+        ):
+            return "[REDACTED]"
+
+    # Recursively sanitize dictionaries
+    if isinstance(value, dict):
+        result: dict[Any, Any] = {}
+        for k, v in value.items():  # type: ignore[misc]
+            result[k] = sanitize_value(v, str(k) if k else None)  # type: ignore[misc]
+        return result
+
+    # Recursively sanitize lists
+    if isinstance(value, list | tuple):
+        sanitized: list[Any] = [sanitize_value(item) for item in value]  # type: ignore[misc]
+        if isinstance(value, tuple):
+            return tuple(sanitized)
+        return sanitized
+
+    return value
+
+
+def sanitize_args(args: tuple[Any, ...]) -> str:
+    """Sanitize positional arguments for logging.
+
+    Args:
+        args: Tuple of positional arguments
+
+    Returns:
+        String representation with sensitive data redacted
+    """
+    if not args:
+        return ""
+
+    sanitized: list[Any] = []
+    for arg in args:
+        # For positional args, we don't have parameter names
+        # so we need to be more careful
+        sanitized_arg = sanitize_value(arg)
+        sanitized.append(sanitized_arg)
+
+    return str(tuple(sanitized))
+
+
+def sanitize_kwargs(kwargs: dict[str, Any]) -> str:
+    """Sanitize keyword arguments for logging.
+
+    Args:
+        kwargs: Dictionary of keyword arguments
+
+    Returns:
+        String representation with sensitive data redacted
+    """
+    if not kwargs:
+        return ""
+
+    sanitized: dict[str, Any] = {}
+    for key, value in kwargs.items():
+        if is_sensitive_key(key):
+            sanitized[key] = "[REDACTED]"
+        else:
+            sanitized[key] = sanitize_value(value, key)
+
+    return str(sanitized)
+
 
 class BaseToolErrorMixin:
     """Mixin providing standardized error handling for MCP tools.
@@ -158,8 +294,8 @@ class BaseToolErrorMixin:
                         operation=operation,
                         error=e,
                         function=func.__name__,
-                        args=str(args) if args else None,
-                        kwargs=str(kwargs) if kwargs else None,
+                        args=sanitize_args(args) if args else None,
+                        kwargs=sanitize_kwargs(kwargs) if kwargs else None,
                         **operation_context,
                     ) from e
 

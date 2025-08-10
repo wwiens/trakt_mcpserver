@@ -1,6 +1,5 @@
 """Show resources for the Trakt MCP server."""
 
-import json
 import logging
 from collections.abc import Awaitable, Callable
 
@@ -53,10 +52,10 @@ async def get_favorited_shows() -> str:
     client: ShowStatsClient = ShowStatsClient()
     shows = await client.get_favorited_shows(limit=DEFAULT_LIMIT)
 
-    # Log the first show to see the structure
+    # Debug log for API response structure analysis
     if shows and len(shows) > 0:
-        logger.info(
-            f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
+        logger.debug(
+            f"Favorited shows API response - first show keys: {list(shows[0].keys())}"
         )
 
     return ShowFormatters.format_favorited_shows(shows)
