@@ -17,7 +17,7 @@ from utils.api.errors import handle_api_errors_func
 
 # Type aliases for tool functions
 MovieCommentsToolType = Callable[[str, int, bool, str], Awaitable[str]]
-ShowCommentsToolType = Callable[[str, int, bool, str], Awaitable[str]]  
+ShowCommentsToolType = Callable[[str, int, bool, str], Awaitable[str]]
 SeasonCommentsToolType = Callable[[str, int, int, bool, str], Awaitable[str]]
 EpisodeCommentsToolType = Callable[[str, int, int, int, bool, str], Awaitable[str]]
 CommentToolType = Callable[[str, bool], Awaitable[str]]
@@ -309,9 +309,11 @@ async def fetch_comment_replies(
     )
 
 
-def register_comment_tools(mcp: FastMCP) -> tuple[
+def register_comment_tools(
+    mcp: FastMCP,
+) -> tuple[
     MovieCommentsToolType,
-    ShowCommentsToolType, 
+    ShowCommentsToolType,
     SeasonCommentsToolType,
     EpisodeCommentsToolType,
     CommentToolType,

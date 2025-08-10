@@ -119,7 +119,7 @@ class StructuredFormatter(logging.Formatter):
 
         # Add extra fields
         if hasattr(record, "extra_fields"):
-            extra_fields = getattr(record, "extra_fields")
+            extra_fields = record.extra_fields
             if extra_fields:
                 log_entry.update(extra_fields)
 
