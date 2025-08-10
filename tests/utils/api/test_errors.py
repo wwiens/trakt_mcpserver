@@ -1,6 +1,5 @@
 """Tests for utils.api.errors module."""
 
-import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import AsyncMock, MagicMock
@@ -19,8 +18,8 @@ from utils.api.error_types import (
 from utils.api.errors import (
     InternalError,
     InvalidParamsError,
+    handle_api_errors,
     handle_api_errors_func,
-    logger,
 )
 
 
@@ -251,32 +250,69 @@ class TestDecoratorTypes:
         assert callable(test_func)
 
 
-class TestLoggerConfiguration:
-    """Test logger configuration and setup."""
+class TestHandleApiErrorsMethodDecorator:
+    """Test handle_api_errors decorator functionality for class methods."""
 
-    def test_logger_exists(self) -> None:
-        """Test logger is properly configured."""
-        assert logger is not None
-        assert isinstance(logger, logging.Logger)
-        assert logger.name == "trakt_mcp"
+    class MockService:
+        """Mock service class for testing method decorators."""
 
-    def test_logger_level(self) -> None:
-        """Test logger has appropriate level."""
-        # Logger should have a reasonable level (INFO or WARNING are both acceptable)
-        effective_level = logger.getEffectiveLevel()
-        assert effective_level in [logging.INFO, logging.WARNING, logging.DEBUG]
+        @handle_api_errors
+        async def test_method(self, x: int) -> str:
+            """Test method that returns a string."""
+            return str(x)
 
-    def test_logging_configuration_exists(self) -> None:
-        """Test that logging configuration is properly set up."""
-        # Test that the logger has handlers or that basicConfig was called
-        # by checking if the logger can actually log messages
+        @handle_api_errors
+        async def method_that_raises_http_error(self) -> str:
+            """Test method that raises an HTTP error."""
+            mock_response = MagicMock()
+            mock_response.status_code = 401
+            mock_response.text = "Unauthorized"
 
-        # The logger should be properly configured for our module
-        assert logger.name == "trakt_mcp"
+            raise httpx.HTTPStatusError(
+                message="401 Unauthorized", request=MagicMock(), response=mock_response
+            )
 
-        # Should have at least the root logger configuration
-        root_logger = logging.getLogger()
-        assert len(root_logger.handlers) > 0 or logger.handlers
+        @handle_api_errors
+        async def method_that_raises_request_error(self) -> str:
+            """Test method that raises a request error."""
+            raise httpx.RequestError("Connection failed")
+
+    @pytest.mark.asyncio
+    async def test_method_decorator_successful_call(self) -> None:
+        """Test decorator works correctly on class methods for successful calls."""
+        service = self.MockService()
+        result = await service.test_method(42)
+        assert result == "42"
+
+    @pytest.mark.asyncio
+    async def test_method_decorator_http_error_handling(self) -> None:
+        """Test decorator handles HTTP errors correctly on class methods."""
+        service = self.MockService()
+
+        with pytest.raises(AuthenticationRequiredError) as exc_info:
+            await service.method_that_raises_http_error()
+
+        error = cast("MCPErrorWithData", exc_info.value)
+        assert (
+            error.message
+            == "Authentication required. Please check your Trakt API credentials."
+        )
+        assert error.data["error_type"] == "auth_required"
+
+    @pytest.mark.asyncio
+    async def test_method_decorator_request_error_handling(self) -> None:
+        """Test decorator handles request errors correctly on class methods."""
+        service = self.MockService()
+
+        with pytest.raises(InternalError) as exc_info:
+            await service.method_that_raises_request_error()
+
+        error = cast("MCPErrorWithData", exc_info.value)
+        assert (
+            error.message
+            == "Unable to connect to Trakt API. Please check your internet connection."
+        )
+        assert error.data["error_type"] == "request_error"
 
 
 class TestDecoratorIntegration:

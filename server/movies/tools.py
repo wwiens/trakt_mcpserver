@@ -79,16 +79,25 @@ async def fetch_favorited_movies(
     Returns:
         Information about most favorited movies
     """
-    client = MovieStatsClient()
-    movies = await client.get_favorited_movies(limit=limit, period=period)
+    # Validate parameters first
+    BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
 
-    # Log the first movie to see the structure
-    if movies and len(movies) > 0:
-        logger.info(
-            f"Favorited movies API response structure: {json.dumps(movies[0], indent=2)}"
-        )
+    try:
+        client = MovieStatsClient()
+        movies = await client.get_favorited_movies(limit=limit, period=period)
 
-    return MovieFormatters.format_favorited_movies(movies)
+        # Log the first movie to see the structure
+        if movies and len(movies) > 0:
+            logger.info(
+                f"Favorited movies API response structure: {json.dumps(movies[0], indent=2)}"
+            )
+
+        return MovieFormatters.format_favorited_movies(movies)
+
+    except Exception as e:
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            "fetch favorited movies", e, limit=limit, period=period
+        ) from e
 
 
 async def fetch_played_movies(
@@ -103,9 +112,18 @@ async def fetch_played_movies(
     Returns:
         Information about most played movies
     """
-    client = MovieStatsClient()
-    movies = await client.get_played_movies(limit=limit, period=period)
-    return MovieFormatters.format_played_movies(movies)
+    # Validate parameters first
+    BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
+
+    try:
+        client = MovieStatsClient()
+        movies = await client.get_played_movies(limit=limit, period=period)
+        return MovieFormatters.format_played_movies(movies)
+
+    except Exception as e:
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            "fetch played movies", e, limit=limit, period=period
+        ) from e
 
 
 async def fetch_watched_movies(
@@ -120,9 +138,18 @@ async def fetch_watched_movies(
     Returns:
         Information about most watched movies
     """
-    client = MovieStatsClient()
-    movies = await client.get_watched_movies(limit=limit, period=period)
-    return MovieFormatters.format_watched_movies(movies)
+    # Validate parameters first
+    BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
+
+    try:
+        client = MovieStatsClient()
+        movies = await client.get_watched_movies(limit=limit, period=period)
+        return MovieFormatters.format_watched_movies(movies)
+
+    except Exception as e:
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            "fetch watched movies", e, limit=limit, period=period
+        ) from e
 
 
 async def fetch_movie_ratings(movie_id: str) -> str:

@@ -63,7 +63,7 @@ async def get_favorited_shows() -> str:
 
 @handle_api_errors_func
 async def get_played_shows() -> str:
-    """Returns the most played (a single user can watch multiple episodes multiple times) shows from Traktin the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most played (a single user can watch multiple episodes multiple times) shows from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most played shows

@@ -16,7 +16,10 @@ class UserClient(AuthClient):
         """Get shows watched by the authenticated user.
 
         Returns:
-            List of shows watched by the user
+            list[UserWatchedShow]: Watched shows.
+
+        Raises:
+            AuthenticationRequiredError: If the client is not authenticated.
         """
         if not self.is_authenticated():
             raise AuthenticationRequiredError("get user watched shows")
@@ -30,7 +33,10 @@ class UserClient(AuthClient):
         """Get movies watched by the authenticated user.
 
         Returns:
-            List of movies watched by the user
+            list[UserWatchedMovie]: Watched movies.
+
+        Raises:
+            AuthenticationRequiredError: If the client is not authenticated.
         """
         if not self.is_authenticated():
             raise AuthenticationRequiredError("get user watched movies")

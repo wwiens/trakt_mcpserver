@@ -84,16 +84,27 @@ async def fetch_favorited_shows(
     Returns:
         Information about most favorited shows
     """
-    client: ShowStatsClient = ShowStatsClient()
-    shows = await client.get_favorited_shows(limit=limit, period=period)
+    # Validate parameters first
+    BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
 
-    # Log the first show to see the structure
-    if shows and len(shows) > 0:
-        logger.info(
-            f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
-        )
+    try:
+        client: ShowStatsClient = ShowStatsClient()
+        shows = await client.get_favorited_shows(limit=limit, period=period)
 
-    return ShowFormatters.format_favorited_shows(shows)
+        # Log the first show to see the structure
+        if shows and len(shows) > 0:
+            logger.info(
+                f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
+            )
+
+        return ShowFormatters.format_favorited_shows(shows)
+
+    except MCPError:
+        raise
+    except Exception as e:
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            "fetch favorited shows", e, limit=limit, period=period
+        ) from e
 
 
 async def fetch_played_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly") -> str:
@@ -106,9 +117,20 @@ async def fetch_played_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly")
     Returns:
         Information about most played shows
     """
-    client: ShowStatsClient = ShowStatsClient()
-    shows = await client.get_played_shows(limit=limit, period=period)
-    return ShowFormatters.format_played_shows(shows)
+    # Validate parameters first
+    BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
+
+    try:
+        client: ShowStatsClient = ShowStatsClient()
+        shows = await client.get_played_shows(limit=limit, period=period)
+        return ShowFormatters.format_played_shows(shows)
+
+    except MCPError:
+        raise
+    except Exception as e:
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            "fetch played shows", e, limit=limit, period=period
+        ) from e
 
 
 async def fetch_watched_shows(
@@ -123,9 +145,20 @@ async def fetch_watched_shows(
     Returns:
         Information about most watched shows
     """
-    client: ShowStatsClient = ShowStatsClient()
-    shows = await client.get_watched_shows(limit=limit, period=period)
-    return ShowFormatters.format_watched_shows(shows)
+    # Validate parameters first
+    BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
+
+    try:
+        client: ShowStatsClient = ShowStatsClient()
+        shows = await client.get_watched_shows(limit=limit, period=period)
+        return ShowFormatters.format_watched_shows(shows)
+
+    except MCPError:
+        raise
+    except Exception as e:
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            "fetch watched shows", e, limit=limit, period=period
+        ) from e
 
 
 async def fetch_show_ratings(show_id: str) -> str:

@@ -528,3 +528,57 @@ class TestIntegration:
 
         # Check logging was called
         mock_logger.error.assert_called_once()
+
+    @patch("utils.api.error_handler.logger")
+    def test_handle_http_error_end_to_end_401(self, mock_logger: Any) -> None:
+        """Test complete 401 unauthorized error handling flow."""
+        mock_response = MagicMock()
+        mock_response.status_code = 401
+        mock_response.text = "Unauthorized"
+
+        http_error = httpx.HTTPStatusError(
+            message="401 Unauthorized", request=MagicMock(), response=mock_response
+        )
+
+        result = TraktAPIErrorHandler.handle_http_error(
+            error=http_error,
+            endpoint="/user/profile",
+            resource_type="user",
+            correlation_id="integration-test-401",
+        )
+        result = cast("MCPErrorWithData", result)
+        # Check error type and properties
+        assert isinstance(result, AuthenticationRequiredError)
+        assert result.data["error_type"] == "auth_required"
+        assert result.data["action"] == "access user"
+        assert "auth_url" in result.data
+
+        # Check logging was called
+        mock_logger.error.assert_called_once()
+
+    @patch("utils.api.error_handler.logger")
+    def test_handle_http_error_end_to_end_403(self, mock_logger: Any) -> None:
+        """Test complete 403 forbidden error handling flow."""
+        mock_response = MagicMock()
+        mock_response.status_code = 403
+        mock_response.text = "Forbidden access"
+
+        http_error = httpx.HTTPStatusError(
+            message="403 Forbidden", request=MagicMock(), response=mock_response
+        )
+
+        result = TraktAPIErrorHandler.handle_http_error(
+            error=http_error,
+            endpoint="/admin/settings",
+            correlation_id="integration-test-403",
+        )
+        result = cast("MCPErrorWithData", result)
+        # Check error type and properties
+        assert isinstance(result, InvalidRequestError)
+        assert result.data["http_status"] == 403
+        assert result.data["details"] == "Forbidden access"
+        assert result.data["endpoint"] == "/admin/settings"
+        assert result.data["correlation_id"] == "integration-test-403"
+
+        # Check logging was called
+        mock_logger.error.assert_called_once()
