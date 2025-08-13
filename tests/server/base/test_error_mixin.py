@@ -17,7 +17,7 @@ from utils.api.errors import InternalError
 class TestSanitizationFunctions:
     """Test the parameter sanitization functions."""
 
-    def test_is_sensitive_key(self):
+    def test_is_sensitive_key(self) -> None:
         """Test detection of sensitive parameter names."""
         # Sensitive keys
         assert is_sensitive_key("access_token") is True
@@ -44,14 +44,14 @@ class TestSanitizationFunctions:
         assert is_sensitive_key("show_id") is False
         assert is_sensitive_key("client_id") is False  # client_id is public
 
-    def testsanitize_value_with_sensitive_key(self):
+    def testsanitize_value_with_sensitive_key(self) -> None:
         """Test value sanitization when key indicates sensitivity."""
         # Sensitive keys always redact values
         assert sanitize_value("my-secret-value", "access_token") == "[REDACTED]"
         assert sanitize_value("12345", "password") == "[REDACTED]"
         assert sanitize_value({"nested": "data"}, "api_key") == "[REDACTED]"
 
-    def testsanitize_value_string_patterns(self):
+    def testsanitize_value_string_patterns(self) -> None:
         """Test sanitization of string values with sensitive patterns."""
         # Bearer tokens
         assert sanitize_value("Bearer abc123") == "[REDACTED]"
@@ -66,7 +66,7 @@ class TestSanitizationFunctions:
         assert sanitize_value("Hello world") == "Hello world"
         assert sanitize_value("user@example.com") == "user@example.com"
 
-    def testsanitize_value_long_random_strings(self):
+    def testsanitize_value_long_random_strings(self) -> None:
         """Test sanitization of long random strings that might be tokens."""
         # Long random string with token-like key
         long_token = "abcdef1234567890abcdef1234567890"
@@ -81,7 +81,7 @@ class TestSanitizationFunctions:
         assert sanitize_value("abc123", "token") == "[REDACTED]"  # But key is sensitive
         assert sanitize_value("abc123", "name") == "abc123"
 
-    def testsanitize_value_nested_structures(self):
+    def testsanitize_value_nested_structures(self) -> None:
         """Test sanitization of nested dictionaries and lists."""
         # Dictionary with sensitive keys
         data = {
@@ -102,7 +102,7 @@ class TestSanitizationFunctions:
         assert result[1] == "[REDACTED]"
         assert result[2]["password"] == "[REDACTED]"
 
-    def testsanitize_args(self):
+    def testsanitize_args(self) -> None:
         """Test sanitization of positional arguments."""
         # Empty args
         assert sanitize_args(()) == ""
@@ -120,7 +120,7 @@ class TestSanitizationFunctions:
         assert "normal_value" in result
         assert "secret:password" not in result
 
-    def testsanitize_kwargs(self):
+    def testsanitize_kwargs(self) -> None:
         """Test sanitization of keyword arguments."""
         # Empty kwargs
         assert sanitize_kwargs({}) == ""
@@ -153,11 +153,11 @@ class TestSanitizationFunctions:
 class TestErrorHandlingDecorator:
     """Test the error handling decorator with sanitization."""
 
-    async def test_with_error_handling_sanitizes_sensitive_args(self):
+    async def test_with_error_handling_sanitizes_sensitive_args(self) -> None:
         """Test that sensitive args are sanitized in error data."""
 
         @BaseToolErrorMixin.with_error_handling("test_operation")
-        async def failing_function(token: str, user_id: str):
+        async def failing_function(token: str, user_id: str) -> None:
             raise ValueError("Test error")
 
         with pytest.raises(InternalError) as exc_info:
@@ -173,11 +173,11 @@ class TestErrorHandlingDecorator:
         assert "secret_token_123" not in error_data["args"]
         assert "user456" in error_data["args"]  # Non-sensitive value preserved
 
-    async def test_with_error_handling_sanitizes_sensitive_kwargs(self):
+    async def test_with_error_handling_sanitizes_sensitive_kwargs(self) -> None:
         """Test that sensitive kwargs are sanitized in error data."""
 
         @BaseToolErrorMixin.with_error_handling("test_operation")
-        async def failing_function(**kwargs: Any):
+        async def failing_function(**kwargs: Any) -> None:
             raise ValueError("Test error")
 
         with pytest.raises(InternalError) as exc_info:
@@ -202,11 +202,11 @@ class TestErrorHandlingDecorator:
         assert "my_secret_token" not in kwargs_str
         assert "super_secret" not in kwargs_str
 
-    async def test_with_error_handling_preserves_non_sensitive_data(self):
+    async def test_with_error_handling_preserves_non_sensitive_data(self) -> None:
         """Test that non-sensitive data is preserved in error data."""
 
         @BaseToolErrorMixin.with_error_handling("test_operation")
-        async def failing_function(show_id: str, season: int, **kwargs: Any):
+        async def failing_function(show_id: str, season: int, **kwargs: Any) -> None:
             raise ValueError("Test error")
 
         with pytest.raises(InternalError) as exc_info:

@@ -36,7 +36,7 @@ class TraktAPIError(MCPError):
             correlation_id: Request correlation ID for tracing
             http_status: HTTP status code from API response
         """
-        enhanced_data = data or {}
+        enhanced_data = data.copy() if data else {}
 
         # Add context information
         if endpoint is not None:
@@ -208,7 +208,7 @@ class TraktRateLimitError(TraktAPIError):
             **context: Additional context information
         """
         if message is None:
-            if retry_after:
+            if retry_after is not None:
                 message = f"Rate limit exceeded. Please retry in {retry_after} seconds."
             else:
                 message = "Rate limit exceeded. Please try again later."

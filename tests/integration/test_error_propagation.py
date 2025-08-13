@@ -265,7 +265,9 @@ class TestErrorPropagationThroughStack:
             mock_instance.get.side_effect = error_503
 
             movies_client_instance = mock_movies_client.return_value
-            movies_client_instance._make_request.side_effect = error_503
+            movies_client_instance.get_trending_movies = AsyncMock(
+                side_effect=error_503
+            )
 
             from server.movies.tools import fetch_trending_movies
 
@@ -546,7 +548,7 @@ class TestEdgeCasesAndErrorScenarios:
                 await fetch_trending_shows()
 
             error = exc_info.value
-            assert "unexpected error occurred" in str(error).lower()
+            assert "unable to connect to trakt api" in str(error).lower()
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -572,8 +574,8 @@ class TestEdgeCasesAndErrorScenarios:
             mock_instance.get.return_value = mock_response
 
             movies_client_instance = mock_movies_client.return_value
-            movies_client_instance._make_request.side_effect = json.JSONDecodeError(
-                "Invalid JSON", "", 0
+            movies_client_instance.get_movie_extended = AsyncMock(
+                side_effect=json.JSONDecodeError("Invalid JSON", "", 0)
             )
 
             from server.movies.tools import fetch_movie_summary
@@ -654,7 +656,7 @@ class TestEdgeCasesAndErrorScenarios:
         set_current_context(context)
 
         # Create an unexpected error (not HTTP-related)
-        unexpected_error = ValueError("Something went wrong in the code")
+        unexpected_error = RuntimeError("Something went wrong in the code")
 
         with (
             patch("httpx.AsyncClient") as mock_client,

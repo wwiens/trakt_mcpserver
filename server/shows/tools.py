@@ -2,9 +2,11 @@
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING
 
 from mcp.server.fastmcp import FastMCP
+from pydantic import BaseModel, PositiveInt
 
 from client.shows.details import ShowDetailsClient
 from client.shows.popular import PopularShowsClient
@@ -14,14 +16,36 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.shows import ShowFormatters
 from server.base import BaseToolErrorMixin
+from utils.api.errors import handle_api_errors_func
 
 if TYPE_CHECKING:
     from models.types import ShowResponse, TraktRating, TrendingWrapper
-from utils.api.errors import MCPError
 
 logger = logging.getLogger("trakt_mcp")
 
+# Type alias for tool handlers
+ToolHandler = Callable[..., Awaitable[str]]
 
+
+# Pydantic models for parameter validation
+class LimitOnly(BaseModel):
+    limit: PositiveInt = DEFAULT_LIMIT
+
+
+class PeriodParams(BaseModel):
+    limit: PositiveInt = DEFAULT_LIMIT
+    period: str = "weekly"
+
+
+class ShowIdParam(BaseModel):
+    show_id: str
+
+
+class ShowSummaryParams(ShowIdParam):
+    extended: bool = True
+
+
+@handle_api_errors_func
 async def fetch_trending_shows(limit: int = DEFAULT_LIMIT) -> str:
     """Fetch trending shows from Trakt.
 
@@ -34,19 +58,12 @@ async def fetch_trending_shows(limit: int = DEFAULT_LIMIT) -> str:
     # Validate parameters first
     BaseToolErrorMixin.validate_required_params(limit=limit)
 
-    try:
-        client: TrendingShowsClient = TrendingShowsClient()
-        shows: list[TrendingWrapper] = await client.get_trending_shows(limit=limit)
-        return ShowFormatters.format_trending_shows(shows)
-
-    except MCPError:
-        raise
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            "fetch trending shows", e, limit=limit
-        ) from e
+    client: TrendingShowsClient = TrendingShowsClient()
+    shows: list[TrendingWrapper] = await client.get_trending_shows(limit=limit)
+    return ShowFormatters.format_trending_shows(shows)
 
 
+@handle_api_errors_func
 async def fetch_popular_shows(limit: int = DEFAULT_LIMIT) -> str:
     """Fetch popular shows from Trakt.
 
@@ -59,19 +76,12 @@ async def fetch_popular_shows(limit: int = DEFAULT_LIMIT) -> str:
     # Validate parameters first
     BaseToolErrorMixin.validate_required_params(limit=limit)
 
-    try:
-        client: PopularShowsClient = PopularShowsClient()
-        shows: list[ShowResponse] = await client.get_popular_shows(limit=limit)
-        return ShowFormatters.format_popular_shows(shows)
-
-    except MCPError:
-        raise
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            "fetch popular shows", e, limit=limit
-        ) from e
+    client: PopularShowsClient = PopularShowsClient()
+    shows: list[ShowResponse] = await client.get_popular_shows(limit=limit)
+    return ShowFormatters.format_popular_shows(shows)
 
 
+@handle_api_errors_func
 async def fetch_favorited_shows(
     limit: int = DEFAULT_LIMIT, period: str = "weekly"
 ) -> str:
@@ -87,26 +97,19 @@ async def fetch_favorited_shows(
     # Validate parameters first
     BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
 
-    try:
-        client: ShowStatsClient = ShowStatsClient()
-        shows = await client.get_favorited_shows(limit=limit, period=period)
+    client: ShowStatsClient = ShowStatsClient()
+    shows = await client.get_favorited_shows(limit=limit, period=period)
 
-        # Log the first show to see the structure
-        if shows and len(shows) > 0:
-            logger.info(
-                f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
-            )
+    # Log the first show to see the structure
+    if shows and len(shows) > 0:
+        logger.info(
+            f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
+        )
 
-        return ShowFormatters.format_favorited_shows(shows)
-
-    except MCPError:
-        raise
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            "fetch favorited shows", e, limit=limit, period=period
-        ) from e
+    return ShowFormatters.format_favorited_shows(shows)
 
 
+@handle_api_errors_func
 async def fetch_played_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly") -> str:
     """Fetch most played shows from Trakt.
 
@@ -120,19 +123,12 @@ async def fetch_played_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly")
     # Validate parameters first
     BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
 
-    try:
-        client: ShowStatsClient = ShowStatsClient()
-        shows = await client.get_played_shows(limit=limit, period=period)
-        return ShowFormatters.format_played_shows(shows)
-
-    except MCPError:
-        raise
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            "fetch played shows", e, limit=limit, period=period
-        ) from e
+    client: ShowStatsClient = ShowStatsClient()
+    shows = await client.get_played_shows(limit=limit, period=period)
+    return ShowFormatters.format_played_shows(shows)
 
 
+@handle_api_errors_func
 async def fetch_watched_shows(
     limit: int = DEFAULT_LIMIT, period: str = "weekly"
 ) -> str:
@@ -148,19 +144,12 @@ async def fetch_watched_shows(
     # Validate parameters first
     BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
 
-    try:
-        client: ShowStatsClient = ShowStatsClient()
-        shows = await client.get_watched_shows(limit=limit, period=period)
-        return ShowFormatters.format_watched_shows(shows)
-
-    except MCPError:
-        raise
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            "fetch watched shows", e, limit=limit, period=period
-        ) from e
+    client: ShowStatsClient = ShowStatsClient()
+    shows = await client.get_watched_shows(limit=limit, period=period)
+    return ShowFormatters.format_watched_shows(shows)
 
 
+@handle_api_errors_func
 async def fetch_show_ratings(show_id: str) -> str:
     """Fetch ratings for a show from Trakt.
 
@@ -177,9 +166,8 @@ async def fetch_show_ratings(show_id: str) -> str:
     # Validate required parameters
     BaseToolErrorMixin.validate_required_params(show_id=show_id)
 
-    client: ShowDetailsClient = ShowDetailsClient()
-
     try:
+        client: ShowDetailsClient = ShowDetailsClient()
         show_data: ShowResponse = await client.get_show(show_id)
 
         # Handle transitional case where API returns error strings
@@ -206,15 +194,12 @@ async def fetch_show_ratings(show_id: str) -> str:
             )
 
         return ShowFormatters.format_show_ratings(ratings, show_title)
-    except MCPError:
+    except Exception:
+        # Re-raise all exceptions to let the decorator handle them
         raise
-    except Exception as e:
-        # Convert any unexpected errors to structured MCP errors
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="fetch show ratings", error=e, show_id=show_id
-        ) from e
 
 
+@handle_api_errors_func
 async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
     """Fetch show summary from Trakt.
 
@@ -235,9 +220,9 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
     # Validate required parameters
     BaseToolErrorMixin.validate_required_params(show_id=show_id)
 
-    client: ShowDetailsClient = ShowDetailsClient()
-
     try:
+        client: ShowDetailsClient = ShowDetailsClient()
+
         if extended:
             show_data: ShowResponse = await client.get_show_extended(show_id)
             # Handle transitional case where API returns error strings
@@ -260,16 +245,12 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
                     operation="fetch_show_summary",
                 )
             return ShowFormatters.format_show_summary(show_data)
-    except MCPError:
+    except Exception:
+        # Re-raise all exceptions to let the decorator handle them
         raise
-    except Exception as e:
-        # Convert any unexpected errors to structured MCP errors
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="fetch show summary", error=e, show_id=show_id, extended=extended
-        ) from e
 
 
-def register_show_tools(mcp: FastMCP) -> tuple[Any, Any, Any, Any, Any, Any, Any]:
+def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """Register show tools with the MCP server.
 
     Returns:
@@ -280,56 +261,77 @@ def register_show_tools(mcp: FastMCP) -> tuple[Any, Any, Any, Any, Any, Any, Any
         name=TOOL_NAMES["fetch_trending_shows"],
         description="Fetch trending TV shows from Trakt",
     )
+    @handle_api_errors_func
     async def fetch_trending_shows_tool(limit: int = DEFAULT_LIMIT) -> str:
-        return await fetch_trending_shows(limit)
+        # Validate parameters with Pydantic
+        params = LimitOnly(limit=limit)
+        return await fetch_trending_shows(params.limit)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_popular_shows"],
         description="Fetch popular TV shows from Trakt",
     )
+    @handle_api_errors_func
     async def fetch_popular_shows_tool(limit: int = DEFAULT_LIMIT) -> str:
-        return await fetch_popular_shows(limit)
+        # Validate parameters with Pydantic
+        params = LimitOnly(limit=limit)
+        return await fetch_popular_shows(params.limit)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_favorited_shows"],
         description="Fetch most favorited TV shows from Trakt",
     )
+    @handle_api_errors_func
     async def fetch_favorited_shows_tool(
         limit: int = DEFAULT_LIMIT, period: str = "weekly"
     ) -> str:
-        return await fetch_favorited_shows(limit, period)
+        # Validate parameters with Pydantic
+        params = PeriodParams(limit=limit, period=period)
+        return await fetch_favorited_shows(params.limit, params.period)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_played_shows"],
         description="Fetch most played TV shows from Trakt",
     )
+    @handle_api_errors_func
     async def fetch_played_shows_tool(
         limit: int = DEFAULT_LIMIT, period: str = "weekly"
     ) -> str:
-        return await fetch_played_shows(limit, period)
+        # Validate parameters with Pydantic
+        params = PeriodParams(limit=limit, period=period)
+        return await fetch_played_shows(params.limit, params.period)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_watched_shows"],
         description="Fetch most watched TV shows from Trakt",
     )
+    @handle_api_errors_func
     async def fetch_watched_shows_tool(
         limit: int = DEFAULT_LIMIT, period: str = "weekly"
     ) -> str:
-        return await fetch_watched_shows(limit, period)
+        # Validate parameters with Pydantic
+        params = PeriodParams(limit=limit, period=period)
+        return await fetch_watched_shows(params.limit, params.period)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_ratings"],
         description="Fetch ratings and voting statistics for a specific TV show",
     )
+    @handle_api_errors_func
     async def fetch_show_ratings_tool(show_id: str) -> str:
-        return await fetch_show_ratings(show_id)
+        # Validate parameters with Pydantic
+        params = ShowIdParam(show_id=show_id)
+        return await fetch_show_ratings(params.show_id)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_summary"],
         description="Get TV show summary from Trakt. Default behavior (extended=true): Returns comprehensive data including air times, production status, ratings, genres, runtime, network, and metadata. Basic mode (extended=false): Returns only title, year, and Trakt ID.",
     )
+    @handle_api_errors_func
     async def fetch_show_summary_tool(show_id: str, extended: bool = True) -> str:
-        return await fetch_show_summary(show_id, extended)
+        # Validate parameters with Pydantic
+        params = ShowSummaryParams(show_id=show_id, extended=extended)
+        return await fetch_show_summary(params.show_id, params.extended)
 
     # Return handlers for type checker visibility
     return (

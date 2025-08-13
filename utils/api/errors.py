@@ -1,6 +1,7 @@
 """Split decorator implementation for perfect type inference."""
 
 import functools
+import json
 from collections.abc import Awaitable, Callable
 from typing import Any, Concatenate, ParamSpec, TypeVar
 
@@ -132,6 +133,26 @@ def handle_api_errors(
         except MCPError:
             # Re-raise MCP errors as-is
             raise
+        except json.JSONDecodeError as e:
+            # Treat JSON decode errors as internal errors
+            error_data = {
+                "error_type": "json_decode_error",
+                "details": str(e),
+            }
+            if context:
+                error_data = add_context_to_error_data(error_data)
+            else:
+                if correlation_id is not None:
+                    error_data["correlation_id"] = correlation_id
+
+            logger.error(
+                f"JSON decode error: {e!s}",
+                extra=error_data,
+            )
+            raise InternalError(
+                f"Invalid response format from API: {e!s}",
+                data=error_data,
+            ) from e
         except (ValueError, TypeError, KeyError, AttributeError):
             # Re-raise business logic errors as-is
             raise
@@ -221,6 +242,26 @@ def handle_api_errors_func(
         except MCPError:
             # Re-raise MCP errors as-is
             raise
+        except json.JSONDecodeError as e:
+            # Treat JSON decode errors as internal errors
+            error_data = {
+                "error_type": "json_decode_error",
+                "details": str(e),
+            }
+            if context:
+                error_data = add_context_to_error_data(error_data)
+            else:
+                if correlation_id is not None:
+                    error_data["correlation_id"] = correlation_id
+
+            logger.error(
+                f"JSON decode error: {e!s}",
+                extra=error_data,
+            )
+            raise InternalError(
+                f"Invalid response format from API: {e!s}",
+                data=error_data,
+            ) from e
         except (ValueError, TypeError, KeyError, AttributeError):
             # Re-raise business logic errors as-is
             raise

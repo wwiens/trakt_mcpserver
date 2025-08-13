@@ -13,6 +13,9 @@ from typing import Any
 
 from .request_context import get_current_context
 
+# Type for JSON-serializable values in log fields
+JSONValue = str | int | float | bool | None | dict[str, "JSONValue"] | list["JSONValue"]
+
 
 class LogRecordExtended(logging.LogRecord):
     """Extended LogRecord with custom attributes for structured logging."""
@@ -25,6 +28,7 @@ class LogRecordExtended(logging.LogRecord):
     resource_id: str | None
     user_id: str | None
     elapsed_time: float | None
+    extra_fields: dict[str, JSONValue] | None
 
 
 class ContextFilter(logging.Filter):
@@ -118,10 +122,9 @@ class StructuredFormatter(logging.Formatter):
             log_entry["exception"] = self.formatException(record.exc_info)
 
         # Add extra fields
-        if hasattr(record, "extra_fields"):
-            extra_fields = record.extra_fields
-            if extra_fields:
-                log_entry.update(extra_fields)
+        extra_fields = getattr(record, "extra_fields", None)
+        if extra_fields:
+            log_entry.update(extra_fields)
 
         # Add fields from LoggerAdapter's extra
         if hasattr(record, "__dict__"):
@@ -270,7 +273,7 @@ def log_api_request(
     if logger is None:
         logger = get_structured_logger("trakt_mcp.api")
 
-    extra_fields: dict[str, Any] = {
+    extra_fields: dict[str, JSONValue] = {
         "event": "api_request",
         "endpoint": endpoint,
         "method": method,
@@ -299,7 +302,7 @@ def log_api_response(
     if logger is None:
         logger = get_structured_logger("trakt_mcp.api")
 
-    extra_fields: dict[str, Any] = {"event": "api_response", "endpoint": endpoint}
+    extra_fields: dict[str, JSONValue] = {"event": "api_response", "endpoint": endpoint}
 
     if status_code is not None:
         extra_fields["status_code"] = status_code
@@ -326,7 +329,7 @@ def log_error_with_context(
     if logger is None:
         logger = get_structured_logger("trakt_mcp.error")
 
-    extra_fields = {
+    extra_fields: dict[str, JSONValue] = {
         "event": "error",
         "error_type": type(error).__name__,
         "error_message": str(error),
