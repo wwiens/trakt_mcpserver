@@ -1,9 +1,11 @@
-# pyright: reportUnusedFunction=none
 """User resources for the Trakt MCP server."""
+
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from client.user import UserClient
+from client.user.client import UserClient
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.user import UserFormatters
 
@@ -15,7 +17,7 @@ async def get_user_watched_shows() -> str:
     Returns:
         Formatted markdown text with user's watched shows
     """
-    client = UserClient()
+    client: UserClient = UserClient()
 
     if not client.is_authenticated():
         return "# Authentication Required\n\nYou need to authenticate with Trakt to view your watched shows.\nUse the `start_device_auth` tool to begin authentication."
@@ -31,7 +33,7 @@ async def get_user_watched_movies() -> str:
     Returns:
         Formatted markdown text with user's watched movies
     """
-    client = UserClient()
+    client: UserClient = UserClient()
 
     if not client.is_authenticated():
         return "# Authentication Required\n\nYou need to authenticate with Trakt to view your watched movies.\nUse the `start_device_auth` tool to begin authentication."
@@ -40,8 +42,17 @@ async def get_user_watched_movies() -> str:
     return UserFormatters.format_user_watched_movies(movies)
 
 
-def register_user_resources(mcp: FastMCP) -> None:
-    """Register user resources with the MCP server."""
+def register_user_resources(
+    mcp: FastMCP,
+) -> tuple[
+    Callable[[], Coroutine[Any, Any, str]],
+    Callable[[], Coroutine[Any, Any, str]],
+]:
+    """Register user resources with the MCP server.
+
+    Returns:
+        Tuple of resource handlers for type checker visibility
+    """
 
     @mcp.resource(
         uri=MCP_RESOURCES["user_watched_shows"],
@@ -60,3 +71,6 @@ def register_user_resources(mcp: FastMCP) -> None:
     )
     async def user_watched_movies_resource() -> str:
         return await get_user_watched_movies()
+
+    # Return handlers for type checker visibility
+    return (user_watched_shows_resource, user_watched_movies_resource)

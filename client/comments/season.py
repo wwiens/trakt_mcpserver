@@ -1,9 +1,8 @@
 """Season comments functionality."""
 
-from typing import Any
-
 from config.api import DEFAULT_LIMIT
 from config.endpoints import TRAKT_ENDPOINTS
+from models.types import CommentResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
@@ -20,7 +19,7 @@ class SeasonCommentsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         page: int = 1,
         sort: str = "newest",
-    ) -> list[dict[str, Any]]:
+    ) -> list[CommentResponse]:
         """Get comments for a season.
 
         Args:
@@ -39,6 +38,8 @@ class SeasonCommentsClient(BaseClient):
             .replace(":season", str(season))
             .replace(":sort", sort)
         )
-        return await self._make_list_request(
-            endpoint, params={"limit": limit, "page": page}
+        return await self._make_typed_list_request(
+            endpoint,
+            response_type=CommentResponse,
+            params={"limit": limit, "page": page},
         )

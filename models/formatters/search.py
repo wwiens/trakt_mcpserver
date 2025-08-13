@@ -1,13 +1,13 @@
 """Search formatting methods for the Trakt MCP server."""
 
-from typing import Any
+from models.types import SearchResult
 
 
 class SearchFormatters:
     """Helper class for formatting search-related data for MCP responses."""
 
     @staticmethod
-    def format_show_search_results(results: list[dict[str, Any]]) -> str:
+    def format_show_search_results(results: list[SearchResult]) -> str:
         """Format show search results from Trakt API.
 
         Args:
@@ -53,7 +53,7 @@ class SearchFormatters:
         return message
 
     @staticmethod
-    def format_movie_search_results(results: list[dict[str, Any]]) -> str:
+    def format_movie_search_results(results: list[SearchResult]) -> str:
         """Format movie search results from Trakt API."""
         if not results:
             return "# Movie Search Results\n\nNo movies found matching your query."

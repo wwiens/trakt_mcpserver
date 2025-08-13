@@ -1,9 +1,8 @@
 """Show statistics functionality (favorited, played, watched)."""
 
-from typing import Any
-
 from config.api import DEFAULT_LIMIT
 from config.endpoints import TRAKT_ENDPOINTS
+from models.types import FavoritedShowWrapper, PlayedShowWrapper, WatchedShowWrapper
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
@@ -15,7 +14,7 @@ class ShowStatsClient(BaseClient):
     @handle_api_errors
     async def get_favorited_shows(
         self, limit: int = DEFAULT_LIMIT, period: str = "weekly"
-    ) -> list[dict[str, Any]]:
+    ) -> list[FavoritedShowWrapper]:
         """Get favorited shows from Trakt.
 
         Args:
@@ -25,15 +24,16 @@ class ShowStatsClient(BaseClient):
         Returns:
             List of favorited shows data
         """
-        return await self._make_list_request(
+        return await self._make_typed_list_request(
             TRAKT_ENDPOINTS["shows_favorited"],
+            response_type=FavoritedShowWrapper,
             params={"limit": limit, "period": period},
         )
 
     @handle_api_errors
     async def get_played_shows(
         self, limit: int = DEFAULT_LIMIT, period: str = "weekly"
-    ) -> list[dict[str, Any]]:
+    ) -> list[PlayedShowWrapper]:
         """Get played shows from Trakt.
 
         Args:
@@ -43,14 +43,16 @@ class ShowStatsClient(BaseClient):
         Returns:
             List of played shows data
         """
-        return await self._make_list_request(
-            TRAKT_ENDPOINTS["shows_played"], params={"limit": limit, "period": period}
+        return await self._make_typed_list_request(
+            TRAKT_ENDPOINTS["shows_played"],
+            response_type=PlayedShowWrapper,
+            params={"limit": limit, "period": period},
         )
 
     @handle_api_errors
     async def get_watched_shows(
         self, limit: int = DEFAULT_LIMIT, period: str = "weekly"
-    ) -> list[dict[str, Any]]:
+    ) -> list[WatchedShowWrapper]:
         """Get watched shows from Trakt.
 
         Args:
@@ -60,6 +62,8 @@ class ShowStatsClient(BaseClient):
         Returns:
             List of watched shows data
         """
-        return await self._make_list_request(
-            TRAKT_ENDPOINTS["shows_watched"], params={"limit": limit, "period": period}
+        return await self._make_typed_list_request(
+            TRAKT_ENDPOINTS["shows_watched"],
+            response_type=WatchedShowWrapper,
+            params={"limit": limit, "period": period},
         )

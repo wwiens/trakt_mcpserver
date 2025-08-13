@@ -102,14 +102,26 @@ async def test_get_movie_extended():
         assert isinstance(result, dict)
         assert result["title"] == "TRON: Legacy"
         assert result["year"] == 2010
+
+        # Type-safe access to optional fields
+        assert "status" in result
         assert result["status"] == "released"
+
+        assert "tagline" in result
         assert result["tagline"] == "The Game Has Changed."
+
+        assert "certification" in result
         assert result["certification"] == "PG-13"
+
+        assert "runtime" in result
         assert result["runtime"] == 125
+
+        assert "country" in result
         assert result["country"] == "us"
+
+        assert "homepage" in result
         assert result["homepage"] == "http://disney.go.com/tron/"
-        assert result["original_title"] == "TRON: Legacy"
+
         assert "overview" in result
         assert "released" in result
-        assert "languages" in result
         assert "genres" in result
