@@ -1,6 +1,7 @@
 """Base error handling mixin for MCP tools."""
 
 from collections.abc import Awaitable, Callable
+from functools import wraps
 from typing import Any, TypeVar
 
 from config.auth import AUTH_VERIFICATION_URL
@@ -282,6 +283,7 @@ class BaseToolErrorMixin:
         """
 
         def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+            @wraps(func)
             async def wrapper(*args: Any, **kwargs: Any) -> T:
                 try:
                     return await func(*args, **kwargs)
