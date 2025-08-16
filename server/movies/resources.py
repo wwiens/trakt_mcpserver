@@ -12,6 +12,7 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.movies import MovieFormatters
 from server.base import BaseToolErrorMixin
+from server.movies.tools import MovieIdParam
 from utils.api.errors import MCPError
 
 logger = logging.getLogger("trakt_mcp")
@@ -92,8 +93,9 @@ async def get_movie_ratings(movie_id: str) -> str:
         InvalidParamsError: If movie_id is invalid
         InternalError: If an error occurs fetching movie or ratings data
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(movie_id=movie_id)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = MovieIdParam(movie_id=movie_id)
+    movie_id = params.movie_id
 
     client = MoviesClient()
 

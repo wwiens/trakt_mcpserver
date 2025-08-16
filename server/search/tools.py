@@ -3,6 +3,7 @@
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from pydantic import BaseModel, Field
 
 from client.search.client import SearchClient
 from config.api import DEFAULT_LIMIT
@@ -10,6 +11,12 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.search import SearchFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import MCPError
+
+
+class QueryParam(BaseModel):
+    """Parameters for tools that require a search query."""
+
+    query: str = Field(..., min_length=1, description="Non-empty search query")
 
 
 async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
@@ -26,8 +33,9 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
         InvalidParamsError: If query is invalid
         InternalError: If an error occurs during search
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(query=query)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = QueryParam(query=query)
+    query = params.query
 
     client = SearchClient()
 
@@ -60,8 +68,9 @@ async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
         InvalidParamsError: If query is invalid
         InternalError: If an error occurs during search
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(query=query)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = QueryParam(query=query)
+    query = params.query
 
     client = SearchClient()
 

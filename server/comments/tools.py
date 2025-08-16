@@ -3,6 +3,7 @@
 from collections.abc import Awaitable, Callable
 
 from mcp.server.fastmcp import FastMCP
+from pydantic import BaseModel, Field, PositiveInt
 
 from client.comments.details import CommentDetailsClient
 from client.comments.episode import EpisodeCommentsClient
@@ -13,7 +14,31 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.comments import CommentsFormatters
 from server.base import BaseToolErrorMixin
+from server.movies.tools import MovieIdParam
+from server.shows.tools import ShowIdParam
 from utils.api.errors import handle_api_errors_func
+
+
+class CommentIdParam(BaseModel):
+    """Parameters for tools that require a comment ID."""
+
+    comment_id: str = Field(..., min_length=1, description="Non-empty Trakt comment ID")
+
+
+class SeasonParam(BaseModel):
+    """Parameters for tools that require show ID and season."""
+
+    show_id: str = Field(..., min_length=1, description="Non-empty Trakt show ID")
+    season: PositiveInt = Field(..., description="Season number (positive integer)")
+
+
+class EpisodeParam(BaseModel):
+    """Parameters for tools that require show ID, season, and episode."""
+
+    show_id: str = Field(..., min_length=1, description="Non-empty Trakt show ID")
+    season: PositiveInt = Field(..., description="Season number (positive integer)")
+    episode: PositiveInt = Field(..., description="Episode number (positive integer)")
+
 
 # Type aliases for tool functions
 MovieCommentsToolType = Callable[[str, int, bool, str], Awaitable[str]]
@@ -46,8 +71,9 @@ async def fetch_movie_comments(
         InvalidParamsError: If movie_id is invalid
         InternalError: If an error occurs fetching comments
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(movie_id=movie_id)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = MovieIdParam(movie_id=movie_id)
+    movie_id = params.movie_id
 
     client = MovieCommentsClient()
 
@@ -92,8 +118,9 @@ async def fetch_show_comments(
         InvalidParamsError: If show_id is invalid
         InternalError: If an error occurs fetching comments
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(show_id=show_id)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = ShowIdParam(show_id=show_id)
+    show_id = params.show_id
 
     client = ShowCommentsClient()
 
@@ -140,8 +167,9 @@ async def fetch_season_comments(
         InvalidParamsError: If show_id or season is invalid
         InternalError: If an error occurs fetching comments
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(show_id=show_id, season=season)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = SeasonParam(show_id=show_id, season=season)
+    show_id, season = params.show_id, params.season
 
     client = SeasonCommentsClient()
 
@@ -190,10 +218,9 @@ async def fetch_episode_comments(
         InvalidParamsError: If show_id, season, or episode is invalid
         InternalError: If an error occurs fetching comments
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(
-        show_id=show_id, season=season, episode=episode
-    )
+    # Validate parameters with Pydantic for normalization and constraints
+    params = EpisodeParam(show_id=show_id, season=season, episode=episode)
+    show_id, season, episode = params.show_id, params.season, params.episode
 
     client = EpisodeCommentsClient()
 
@@ -233,8 +260,9 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
         InvalidParamsError: If comment_id is invalid
         InternalError: If an error occurs fetching comment
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(comment_id=comment_id)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = CommentIdParam(comment_id=comment_id)
+    comment_id = params.comment_id
 
     client = CommentDetailsClient()
 
@@ -274,8 +302,9 @@ async def fetch_comment_replies(
         InvalidParamsError: If comment_id is invalid
         InternalError: If an error occurs fetching comment replies
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(comment_id=comment_id)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = CommentIdParam(comment_id=comment_id)
+    comment_id = params.comment_id
 
     client = CommentDetailsClient()
 

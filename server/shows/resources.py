@@ -13,6 +13,7 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.shows import ShowFormatters
 from server.base import BaseToolErrorMixin
+from server.shows.tools import ShowIdParam
 from utils.api.errors import handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
@@ -99,8 +100,9 @@ async def get_show_ratings(show_id: str) -> str:
         InvalidParamsError: If show_id is invalid
         InternalError: If an error occurs fetching show or ratings data
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(show_id=show_id)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = ShowIdParam(show_id=show_id)
+    show_id = params.show_id
     client: ShowDetailsClient = ShowDetailsClient()
 
     try:
