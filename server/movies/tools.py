@@ -3,10 +3,10 @@
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel, Field, PositiveInt
 
 from client.movies.details import MovieDetailsClient
 from client.movies.popular import PopularMoviesClient
@@ -29,19 +29,29 @@ ToolHandler = Callable[..., Awaitable[str]]
 
 # Pydantic models for parameter validation
 class LimitOnly(BaseModel):
+    """Parameters for tools that only require a limit."""
     limit: PositiveInt = DEFAULT_LIMIT
 
 
 class PeriodParams(BaseModel):
+    """Parameters for tools that accept limit and time period."""
     limit: PositiveInt = DEFAULT_LIMIT
-    period: str = "weekly"
+    period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly"
 
 
 class MovieIdParam(BaseModel):
-    movie_id: str
+    """Parameters for tools that require a movie ID."""
+    movie_id: str = Field(..., min_length=1, description="Non-empty Trakt movie ID")
+
+    def __init__(self, **data: str | int | float | bool | None) -> None:
+        # Strip whitespace from movie_id before validation
+        if "movie_id" in data and isinstance(data["movie_id"], str):
+            data["movie_id"] = data["movie_id"].strip()
+        super().__init__(**data)
 
 
 class MovieSummaryParams(MovieIdParam):
+    """Parameters for movie summary tools with extended option."""
     extended: bool = True
 
 
@@ -95,7 +105,8 @@ async def fetch_popular_movies(limit: int = DEFAULT_LIMIT) -> str:
 
 @handle_api_errors_func
 async def fetch_favorited_movies(
-    limit: int = DEFAULT_LIMIT, period: str = "weekly"
+    limit: int = DEFAULT_LIMIT,
+    period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
 ) -> str:
     """Fetch most favorited movies from Trakt.
 
@@ -129,7 +140,8 @@ async def fetch_favorited_movies(
 
 @handle_api_errors_func
 async def fetch_played_movies(
-    limit: int = DEFAULT_LIMIT, period: str = "weekly"
+    limit: int = DEFAULT_LIMIT,
+    period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
 ) -> str:
     """Fetch most played movies from Trakt.
 
@@ -156,7 +168,8 @@ async def fetch_played_movies(
 
 @handle_api_errors_func
 async def fetch_watched_movies(
-    limit: int = DEFAULT_LIMIT, period: str = "weekly"
+    limit: int = DEFAULT_LIMIT,
+    period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
 ) -> str:
     """Fetch most watched movies from Trakt.
 
@@ -318,7 +331,8 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_favorited_movies_tool(
-        limit: int = DEFAULT_LIMIT, period: str = "weekly"
+        limit: int = DEFAULT_LIMIT,
+        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
     ) -> str:
         # Validate parameters with Pydantic
         params = PeriodParams(limit=limit, period=period)
@@ -330,7 +344,8 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_played_movies_tool(
-        limit: int = DEFAULT_LIMIT, period: str = "weekly"
+        limit: int = DEFAULT_LIMIT,
+        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
     ) -> str:
         # Validate parameters with Pydantic
         params = PeriodParams(limit=limit, period=period)
@@ -342,7 +357,8 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_watched_movies_tool(
-        limit: int = DEFAULT_LIMIT, period: str = "weekly"
+        limit: int = DEFAULT_LIMIT,
+        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
     ) -> str:
         # Validate parameters with Pydantic
         params = PeriodParams(limit=limit, period=period)

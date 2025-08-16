@@ -3,10 +3,10 @@
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel, Field, PositiveInt
 
 from client.shows.details import ShowDetailsClient
 from client.shows.popular import PopularShowsClient
@@ -29,19 +29,33 @@ ToolHandler = Callable[..., Awaitable[str]]
 
 # Pydantic models for parameter validation
 class LimitOnly(BaseModel):
+    """Parameters for tools that only require a limit."""
+
     limit: PositiveInt = DEFAULT_LIMIT
 
 
 class PeriodParams(BaseModel):
+    """Parameters for tools that accept limit and time period."""
+
     limit: PositiveInt = DEFAULT_LIMIT
-    period: str = "weekly"
+    period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly"
 
 
 class ShowIdParam(BaseModel):
-    show_id: str
+    """Parameters for tools that require a show ID."""
+
+    show_id: str = Field(..., min_length=1, description="Non-empty Trakt show ID")
+
+    def __init__(self, **data: str | int | float | bool | None) -> None:
+        # Strip whitespace from show_id before validation
+        if "show_id" in data and isinstance(data["show_id"], str):
+            data["show_id"] = data["show_id"].strip()
+        super().__init__(**data)
 
 
 class ShowSummaryParams(ShowIdParam):
+    """Parameters for show summary tools with extended option."""
+
     extended: bool = True
 
 
@@ -95,7 +109,8 @@ async def fetch_popular_shows(limit: int = DEFAULT_LIMIT) -> str:
 
 @handle_api_errors_func
 async def fetch_favorited_shows(
-    limit: int = DEFAULT_LIMIT, period: str = "weekly"
+    limit: int = DEFAULT_LIMIT,
+    period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
 ) -> str:
     """Fetch most favorited shows from Trakt.
 
@@ -128,7 +143,10 @@ async def fetch_favorited_shows(
 
 
 @handle_api_errors_func
-async def fetch_played_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly") -> str:
+async def fetch_played_shows(
+    limit: int = DEFAULT_LIMIT,
+    period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+) -> str:
     """Fetch most played shows from Trakt.
 
     Args:
@@ -154,7 +172,8 @@ async def fetch_played_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly")
 
 @handle_api_errors_func
 async def fetch_watched_shows(
-    limit: int = DEFAULT_LIMIT, period: str = "weekly"
+    limit: int = DEFAULT_LIMIT,
+    period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
 ) -> str:
     """Fetch most watched shows from Trakt.
 
@@ -317,7 +336,8 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_favorited_shows_tool(
-        limit: int = DEFAULT_LIMIT, period: str = "weekly"
+        limit: int = DEFAULT_LIMIT,
+        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
     ) -> str:
         # Validate parameters with Pydantic
         params = PeriodParams(limit=limit, period=period)
@@ -329,7 +349,8 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_played_shows_tool(
-        limit: int = DEFAULT_LIMIT, period: str = "weekly"
+        limit: int = DEFAULT_LIMIT,
+        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
     ) -> str:
         # Validate parameters with Pydantic
         params = PeriodParams(limit=limit, period=period)
@@ -341,7 +362,8 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_watched_shows_tool(
-        limit: int = DEFAULT_LIMIT, period: str = "weekly"
+        limit: int = DEFAULT_LIMIT,
+        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
     ) -> str:
         # Validate parameters with Pydantic
         params = PeriodParams(limit=limit, period=period)
