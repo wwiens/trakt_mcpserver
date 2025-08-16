@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, PositiveInt
+from pydantic import BaseModel, Field, PositiveInt, field_validator
 
 from client.shows.details import ShowDetailsClient
 from client.shows.popular import PopularShowsClient
@@ -46,11 +46,10 @@ class ShowIdParam(BaseModel):
 
     show_id: str = Field(..., min_length=1, description="Non-empty Trakt show ID")
 
-    def __init__(self, **data: str | int | float | bool | None) -> None:
-        # Strip whitespace from show_id before validation
-        if "show_id" in data and isinstance(data["show_id"], str):
-            data["show_id"] = data["show_id"].strip()
-        super().__init__(**data)
+    @field_validator("show_id", mode="before")
+    @classmethod
+    def _strip_show_id(cls, v: object) -> object:
+        return v.strip() if isinstance(v, str) else v
 
 
 class ShowSummaryParams(ShowIdParam):
@@ -69,17 +68,15 @@ async def fetch_trending_shows(limit: int = DEFAULT_LIMIT) -> str:
     Returns:
         Information about trending shows
     """
-    # Validate parameters first
-    BaseToolErrorMixin.validate_required_params(limit=limit)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = LimitOnly(limit=limit)
+    limit = params.limit
 
     try:
         client: TrendingShowsClient = TrendingShowsClient()
         shows: list[TrendingWrapper] = await client.get_trending_shows(limit=limit)
         return ShowFormatters.format_trending_shows(shows)
     except MCPError:
-        raise
-    except Exception:
-        # Re-raise all exceptions to let the decorator handle them
         raise
 
 
@@ -93,17 +90,15 @@ async def fetch_popular_shows(limit: int = DEFAULT_LIMIT) -> str:
     Returns:
         Information about popular shows
     """
-    # Validate parameters first
-    BaseToolErrorMixin.validate_required_params(limit=limit)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = LimitOnly(limit=limit)
+    limit = params.limit
 
     try:
         client: PopularShowsClient = PopularShowsClient()
         shows: list[ShowResponse] = await client.get_popular_shows(limit=limit)
         return ShowFormatters.format_popular_shows(shows)
     except MCPError:
-        raise
-    except Exception:
-        # Re-raise all exceptions to let the decorator handle them
         raise
 
 
@@ -121,24 +116,23 @@ async def fetch_favorited_shows(
     Returns:
         Information about most favorited shows
     """
-    # Validate parameters first
-    BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = PeriodParams(limit=limit, period=period)
+    limit, period = params.limit, params.period
 
     try:
         client: ShowStatsClient = ShowStatsClient()
         shows = await client.get_favorited_shows(limit=limit, period=period)
 
-        # Log the first show to see the structure
-        if shows and len(shows) > 0:
-            logger.info(
-                f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
+        # Trace structure in debug only
+        if shows:
+            logger.debug(
+                "Favorited shows API response structure: %s",
+                json.dumps(shows[0], indent=2),
             )
 
         return ShowFormatters.format_favorited_shows(shows)
     except MCPError:
-        raise
-    except Exception:
-        # Re-raise all exceptions to let the decorator handle them
         raise
 
 
@@ -156,17 +150,15 @@ async def fetch_played_shows(
     Returns:
         Information about most played shows
     """
-    # Validate parameters first
-    BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = PeriodParams(limit=limit, period=period)
+    limit, period = params.limit, params.period
 
     try:
         client: ShowStatsClient = ShowStatsClient()
         shows = await client.get_played_shows(limit=limit, period=period)
         return ShowFormatters.format_played_shows(shows)
     except MCPError:
-        raise
-    except Exception:
-        # Re-raise all exceptions to let the decorator handle them
         raise
 
 
@@ -184,17 +176,15 @@ async def fetch_watched_shows(
     Returns:
         Information about most watched shows
     """
-    # Validate parameters first
-    BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
+    # Validate parameters with Pydantic for normalization and constraints
+    params = PeriodParams(limit=limit, period=period)
+    limit, period = params.limit, params.period
 
     try:
         client: ShowStatsClient = ShowStatsClient()
         shows = await client.get_watched_shows(limit=limit, period=period)
         return ShowFormatters.format_watched_shows(shows)
     except MCPError:
-        raise
-    except Exception:
-        # Re-raise all exceptions to let the decorator handle them
         raise
 
 
@@ -212,8 +202,9 @@ async def fetch_show_ratings(show_id: str) -> str:
         InvalidParamsError: If show_id is invalid
         InternalError: If an error occurs fetching show or ratings data
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(show_id=show_id)
+    # Validate required parameters via Pydantic
+    params = ShowIdParam(show_id=show_id)
+    show_id = params.show_id
 
     try:
         client: ShowDetailsClient = ShowDetailsClient()
@@ -245,9 +236,6 @@ async def fetch_show_ratings(show_id: str) -> str:
         return ShowFormatters.format_show_ratings(ratings, show_title)
     except MCPError:
         raise
-    except Exception:
-        # Re-raise all exceptions to let the decorator handle them
-        raise
 
 
 @handle_api_errors_func
@@ -268,8 +256,9 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
         InvalidParamsError: If show_id is invalid
         InternalError: If an error occurs fetching show data
     """
-    # Validate required parameters
-    BaseToolErrorMixin.validate_required_params(show_id=show_id)
+    # Validate required parameters via Pydantic
+    params = ShowSummaryParams(show_id=show_id, extended=extended)
+    show_id, extended = params.show_id, params.extended
 
     try:
         client: ShowDetailsClient = ShowDetailsClient()
@@ -297,9 +286,6 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
                 )
             return ShowFormatters.format_show_summary(show_data)
     except MCPError:
-        raise
-    except Exception:
-        # Re-raise all exceptions to let the decorator handle them
         raise
 
 
