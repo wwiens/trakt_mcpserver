@@ -30,17 +30,20 @@ ToolHandler = Callable[..., Awaitable[str]]
 # Pydantic models for parameter validation
 class LimitOnly(BaseModel):
     """Parameters for tools that only require a limit."""
+
     limit: PositiveInt = DEFAULT_LIMIT
 
 
 class PeriodParams(BaseModel):
     """Parameters for tools that accept limit and time period."""
+
     limit: PositiveInt = DEFAULT_LIMIT
     period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly"
 
 
 class MovieIdParam(BaseModel):
     """Parameters for tools that require a movie ID."""
+
     movie_id: str = Field(..., min_length=1, description="Non-empty Trakt movie ID")
 
     @field_validator("movie_id", mode="before")
@@ -51,6 +54,7 @@ class MovieIdParam(BaseModel):
 
 class MovieSummaryParams(MovieIdParam):
     """Parameters for movie summary tools with extended option."""
+
     extended: bool = True
 
 
