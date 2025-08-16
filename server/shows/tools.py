@@ -16,7 +16,7 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.shows import ShowFormatters
 from server.base import BaseToolErrorMixin
-from utils.api.errors import handle_api_errors_func
+from utils.api.errors import MCPError, handle_api_errors_func
 
 if TYPE_CHECKING:
     from models.types import ShowResponse, TraktRating, TrendingWrapper
@@ -58,9 +58,15 @@ async def fetch_trending_shows(limit: int = DEFAULT_LIMIT) -> str:
     # Validate parameters first
     BaseToolErrorMixin.validate_required_params(limit=limit)
 
-    client: TrendingShowsClient = TrendingShowsClient()
-    shows: list[TrendingWrapper] = await client.get_trending_shows(limit=limit)
-    return ShowFormatters.format_trending_shows(shows)
+    try:
+        client: TrendingShowsClient = TrendingShowsClient()
+        shows: list[TrendingWrapper] = await client.get_trending_shows(limit=limit)
+        return ShowFormatters.format_trending_shows(shows)
+    except MCPError:
+        raise
+    except Exception:
+        # Re-raise all exceptions to let the decorator handle them
+        raise
 
 
 @handle_api_errors_func
@@ -76,9 +82,15 @@ async def fetch_popular_shows(limit: int = DEFAULT_LIMIT) -> str:
     # Validate parameters first
     BaseToolErrorMixin.validate_required_params(limit=limit)
 
-    client: PopularShowsClient = PopularShowsClient()
-    shows: list[ShowResponse] = await client.get_popular_shows(limit=limit)
-    return ShowFormatters.format_popular_shows(shows)
+    try:
+        client: PopularShowsClient = PopularShowsClient()
+        shows: list[ShowResponse] = await client.get_popular_shows(limit=limit)
+        return ShowFormatters.format_popular_shows(shows)
+    except MCPError:
+        raise
+    except Exception:
+        # Re-raise all exceptions to let the decorator handle them
+        raise
 
 
 @handle_api_errors_func
@@ -97,16 +109,22 @@ async def fetch_favorited_shows(
     # Validate parameters first
     BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
 
-    client: ShowStatsClient = ShowStatsClient()
-    shows = await client.get_favorited_shows(limit=limit, period=period)
+    try:
+        client: ShowStatsClient = ShowStatsClient()
+        shows = await client.get_favorited_shows(limit=limit, period=period)
 
-    # Log the first show to see the structure
-    if shows and len(shows) > 0:
-        logger.info(
-            f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
-        )
+        # Log the first show to see the structure
+        if shows and len(shows) > 0:
+            logger.info(
+                f"Favorited shows API response structure: {json.dumps(shows[0], indent=2)}"
+            )
 
-    return ShowFormatters.format_favorited_shows(shows)
+        return ShowFormatters.format_favorited_shows(shows)
+    except MCPError:
+        raise
+    except Exception:
+        # Re-raise all exceptions to let the decorator handle them
+        raise
 
 
 @handle_api_errors_func
@@ -123,9 +141,15 @@ async def fetch_played_shows(limit: int = DEFAULT_LIMIT, period: str = "weekly")
     # Validate parameters first
     BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
 
-    client: ShowStatsClient = ShowStatsClient()
-    shows = await client.get_played_shows(limit=limit, period=period)
-    return ShowFormatters.format_played_shows(shows)
+    try:
+        client: ShowStatsClient = ShowStatsClient()
+        shows = await client.get_played_shows(limit=limit, period=period)
+        return ShowFormatters.format_played_shows(shows)
+    except MCPError:
+        raise
+    except Exception:
+        # Re-raise all exceptions to let the decorator handle them
+        raise
 
 
 @handle_api_errors_func
@@ -144,9 +168,15 @@ async def fetch_watched_shows(
     # Validate parameters first
     BaseToolErrorMixin.validate_required_params(limit=limit, period=period)
 
-    client: ShowStatsClient = ShowStatsClient()
-    shows = await client.get_watched_shows(limit=limit, period=period)
-    return ShowFormatters.format_watched_shows(shows)
+    try:
+        client: ShowStatsClient = ShowStatsClient()
+        shows = await client.get_watched_shows(limit=limit, period=period)
+        return ShowFormatters.format_watched_shows(shows)
+    except MCPError:
+        raise
+    except Exception:
+        # Re-raise all exceptions to let the decorator handle them
+        raise
 
 
 @handle_api_errors_func
@@ -194,6 +224,8 @@ async def fetch_show_ratings(show_id: str) -> str:
             )
 
         return ShowFormatters.format_show_ratings(ratings, show_title)
+    except MCPError:
+        raise
     except Exception:
         # Re-raise all exceptions to let the decorator handle them
         raise
@@ -245,6 +277,8 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
                     operation="fetch_show_summary",
                 )
             return ShowFormatters.format_show_summary(show_data)
+    except MCPError:
+        raise
     except Exception:
         # Re-raise all exceptions to let the decorator handle them
         raise

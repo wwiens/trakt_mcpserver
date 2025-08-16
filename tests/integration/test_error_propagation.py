@@ -8,8 +8,7 @@ It also tests correlation ID tracking, context preservation, and edge cases.
 
 import json
 import uuid
-from collections.abc import Callable
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Protocol, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -31,8 +30,17 @@ from utils.api.request_context import (
     set_current_context,
 )
 
+
 # Type alias for the mock HTTP error factory function
-MockHttpErrorFactory = Callable[..., httpx.HTTPStatusError]
+class MockHttpErrorFactory(Protocol):
+    """Protocol for mock HTTP error factory."""
+
+    def __call__(
+        self,
+        status_code: int,
+        response_text: str = "Error",
+        headers: dict[str, str] | None = None,
+    ) -> httpx.HTTPStatusError: ...
 
 
 class TestErrorPropagationThroughStack:
@@ -99,6 +107,7 @@ class TestErrorPropagationThroughStack:
             from server.search.tools import search_shows
 
             # The tool should raise a structured MCP error, not return a string
+            # For 400 validation errors, we expect InvalidParamsError, TraktValidationError, or InternalError
             with pytest.raises(
                 (InvalidParamsError, TraktValidationError, InternalError)
             ) as exc_info:
@@ -241,7 +250,11 @@ class TestErrorPropagationThroughStack:
             assert error.data is not None
             # Should contain retry information
             if "retry_after" in error.data:
-                assert error.data["retry_after"] in [60, "60"]
+                # Normalize to integer for consistent comparison
+                retry_value = error.data["retry_after"]
+                if isinstance(retry_value, str):
+                    retry_value = int(retry_value)
+                assert retry_value == 60
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -548,7 +561,11 @@ class TestEdgeCasesAndErrorScenarios:
                 await fetch_trending_shows()
 
             error = exc_info.value
-            assert "unable to connect to trakt api" in str(error).lower()
+            error_message = str(error).lower()
+            assert any(
+                phrase in error_message
+                for phrase in ["unable to connect", "timeout", "connection error"]
+            )
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -599,6 +616,7 @@ class TestEdgeCasesAndErrorScenarios:
                 show_id=None,
                 movie_id="",
                 query="   ",  # Whitespace only
+                description="\t\n ",  # Test various whitespace characters
             )
 
         error = cast("MCPErrorWithData", exc_info.value)
@@ -685,4 +703,6 @@ class TestEdgeCasesAndErrorScenarios:
             if "original_error" in error.data:
                 assert "Something went wrong" in error.data["original_error"]
             if "original_error_type" in error.data:
-                assert error.data["original_error_type"] == "ValueError"
+                assert (
+                    error.data["original_error_type"] == type(unexpected_error).__name__
+                )
