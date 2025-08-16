@@ -1,6 +1,6 @@
 """Search tools for the Trakt MCP server."""
 
-from typing import Any
+from collections.abc import Awaitable, Callable
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field
@@ -16,7 +16,9 @@ from utils.api.errors import MCPError
 class QueryParam(BaseModel):
     """Parameters for tools that require a search query."""
 
-    query: str = Field(..., min_length=1, description="Non-empty search query")
+    query: str = Field(
+        ..., min_length=1, max_length=200, description="Non-empty search query"
+    )
 
 
 async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
@@ -86,7 +88,9 @@ async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
         ) from e
 
 
-def register_search_tools(mcp: FastMCP) -> tuple[Any, Any]:
+def register_search_tools(
+    mcp: FastMCP,
+) -> tuple[Callable[..., Awaitable[str]], Callable[..., Awaitable[str]]]:
     """Register search tools with the MCP server.
 
     Returns:

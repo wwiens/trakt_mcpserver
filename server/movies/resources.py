@@ -2,8 +2,8 @@
 
 import json
 import logging
-from collections.abc import Callable, Coroutine
-from typing import Any
+from collections.abc import Awaitable, Callable
+from typing import TypeAlias
 
 from mcp.server.fastmcp import FastMCP
 
@@ -16,6 +16,9 @@ from server.movies.tools import MovieIdParam
 from utils.api.errors import MCPError
 
 logger = logging.getLogger("trakt_mcp")
+
+# Type alias for resource handler functions
+ResourceHandler: TypeAlias = Callable[[], Awaitable[str]]
 
 
 async def get_trending_movies() -> str:
@@ -103,6 +106,7 @@ async def get_movie_ratings(movie_id: str) -> str:
         movie = await client.get_movie(movie_id)
 
         # Handle transitional case where API returns error strings
+        # TODO: Remove once API returns structured errors consistently
         if isinstance(movie, str):
             raise BaseToolErrorMixin.handle_api_string_error(
                 resource_type="movie",
@@ -116,6 +120,7 @@ async def get_movie_ratings(movie_id: str) -> str:
         ratings = await client.get_movie_ratings(movie_id)
 
         # Handle transitional case where API returns error strings
+        # TODO: Remove once API returns structured errors consistently
         if isinstance(ratings, str):
             raise BaseToolErrorMixin.handle_api_string_error(
                 resource_type="movie_ratings",
@@ -141,11 +146,7 @@ async def get_movie_ratings(movie_id: str) -> str:
 def register_movie_resources(
     mcp: FastMCP,
 ) -> tuple[
-    Callable[[], Coroutine[Any, Any, str]],
-    Callable[[], Coroutine[Any, Any, str]],
-    Callable[[], Coroutine[Any, Any, str]],
-    Callable[[], Coroutine[Any, Any, str]],
-    Callable[[], Coroutine[Any, Any, str]],
+    ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler
 ]:
     """Register movie resources with the MCP server.
 

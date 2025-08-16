@@ -2,6 +2,7 @@
 
 import logging
 from collections.abc import Awaitable, Callable
+from typing import TypeAlias
 
 from mcp.server.fastmcp import FastMCP
 
@@ -17,6 +18,9 @@ from server.shows.tools import ShowIdParam
 from utils.api.errors import handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
+
+# Type alias for resource handler functions
+ResourceHandler: TypeAlias = Callable[[], Awaitable[str]]
 
 
 @handle_api_errors_func
@@ -76,7 +80,7 @@ async def get_played_shows() -> str:
 
 @handle_api_errors_func
 async def get_watched_shows() -> str:
-    """Returns the most watched (unique users) shows from Traktin the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most watched (unique users) shows from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most watched shows
@@ -109,6 +113,7 @@ async def get_show_ratings(show_id: str) -> str:
         show = await client.get_show(show_id)
 
         # Handle transitional case where API returns error strings
+        # TODO: Remove once API returns structured errors consistently
         if isinstance(show, str):
             raise BaseToolErrorMixin.handle_api_string_error(
                 resource_type="show",
@@ -121,6 +126,7 @@ async def get_show_ratings(show_id: str) -> str:
         ratings = await client.get_show_ratings(show_id)
 
         # Handle transitional case where API returns error strings
+        # TODO: Remove once API returns structured errors consistently
         if isinstance(ratings, str):
             raise BaseToolErrorMixin.handle_api_string_error(
                 resource_type="show_ratings",
@@ -141,11 +147,7 @@ async def get_show_ratings(show_id: str) -> str:
 def register_show_resources(
     mcp: FastMCP,
 ) -> tuple[
-    Callable[[], Awaitable[str]],
-    Callable[[], Awaitable[str]],
-    Callable[[], Awaitable[str]],
-    Callable[[], Awaitable[str]],
-    Callable[[], Awaitable[str]],
+    ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler
 ]:
     """Register show resources with the MCP server.
 
