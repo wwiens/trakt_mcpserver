@@ -3,14 +3,25 @@
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from pydantic import BaseModel, Field, ValidationError
 
 from client.user import UserClient
 from config.auth import AUTH_VERIFICATION_URL
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.user import UserFormatters
+from server.base import BaseToolErrorMixin
 from utils.api.error_types import AuthenticationRequiredError
 
-# Import start_device_auth from auth module
+
+class UserLimitParam(BaseModel):
+    """Parameters for user data tools that support optional limiting."""
+
+    limit: int = Field(
+        0,
+        ge=0,
+        le=1000,
+        description="Maximum number of items to return (0 for all)",
+    )
 
 
 async def fetch_user_watched_shows(limit: int = 0) -> str:
@@ -22,6 +33,37 @@ async def fetch_user_watched_shows(limit: int = 0) -> str:
     Returns:
         Information about user's watched shows
     """
+    # Validate parameters with Pydantic for normalization and constraints
+    try:
+        params = UserLimitParam(limit=limit)
+        limit = params.limit
+    except ValidationError as e:
+        # Extract structured validation details for the error mixin
+        validation_errors: list[dict[str, Any]] = [
+            {
+                "field": str(error.get("loc", ["limit"])[-1]),
+                "message": str(error.get("msg", "Invalid value")),
+                "type": str(error.get("type", "validation_error")),
+                "input": error.get("input"),
+            }
+            for error in e.errors()
+        ]
+
+        # Create summary message for human readability
+        field_messages = [
+            f"{err['field']}: {err['message']}" for err in validation_errors
+        ]
+        summary_message = (
+            f"Invalid parameters for user watched shows: {'; '.join(field_messages)}"
+        )
+
+        # Use project's error mixin to attach structured details and request context
+        raise BaseToolErrorMixin.handle_validation_error(
+            summary_message,
+            validation_errors=validation_errors,
+            operation="fetch_user_watched_shows_validation",
+        ) from e
+
     client = UserClient()
 
     if not client.is_authenticated():
@@ -49,6 +91,37 @@ async def fetch_user_watched_movies(limit: int = 0) -> str:
     Returns:
         Information about user's watched movies
     """
+    # Validate parameters with Pydantic for normalization and constraints
+    try:
+        params = UserLimitParam(limit=limit)
+        limit = params.limit
+    except ValidationError as e:
+        # Extract structured validation details for the error mixin
+        validation_errors: list[dict[str, Any]] = [
+            {
+                "field": str(error.get("loc", ["limit"])[-1]),
+                "message": str(error.get("msg", "Invalid value")),
+                "type": str(error.get("type", "validation_error")),
+                "input": error.get("input"),
+            }
+            for error in e.errors()
+        ]
+
+        # Create summary message for human readability
+        field_messages = [
+            f"{err['field']}: {err['message']}" for err in validation_errors
+        ]
+        summary_message = (
+            f"Invalid parameters for user watched movies: {'; '.join(field_messages)}"
+        )
+
+        # Use project's error mixin to attach structured details and request context
+        raise BaseToolErrorMixin.handle_validation_error(
+            summary_message,
+            validation_errors=validation_errors,
+            operation="fetch_user_watched_movies_validation",
+        ) from e
+
     client = UserClient()
 
     if not client.is_authenticated():

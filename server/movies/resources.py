@@ -1,9 +1,11 @@
 """Movie resources for the Trakt MCP server."""
 
-import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
+
+if TYPE_CHECKING:
+    from models.types import MovieResponse
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import ValidationError
@@ -15,7 +17,7 @@ from models.formatters.movies import MovieFormatters
 from server.base import BaseToolErrorMixin
 from server.movies.tools import MovieIdParam
 from utils.api.error_types import TraktValidationError
-from utils.api.errors import handle_api_errors_func
+from utils.api.errors import MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -57,10 +59,15 @@ async def get_favorited_movies() -> str:
     client = MoviesClient()
     movies = await client.get_favorited_movies(limit=DEFAULT_LIMIT)
 
-    # Log the first movie to see the structure
+    # Debug log for API response structure analysis
     if movies and len(movies) > 0:
-        logger.info(
-            f"Favorited movies API response structure: {json.dumps(movies[0], indent=2)}"
+        logger.debug(
+            "Favorited movies API response structure",
+            extra={
+                "first_movie_keys": list(movies[0].keys()),
+                "movie_count": len(movies),
+                "first_movie_type": type(movies[0]).__name__,
+            },
         )
 
     return MovieFormatters.format_favorited_movies(movies)
@@ -118,10 +125,14 @@ async def get_movie_ratings(movie_id: str) -> str:
             validation_details=error_details,
         ) from e
 
-    movie = await client.get_movie(movie_id)
+    # Wrap get_movie call to handle MCPError propagation explicitly
+    try:
+        movie = await client.get_movie(movie_id)
+    except MCPError:
+        # Re-raise MCPErrors to be handled by the function-level decorator
+        raise
 
     # Handle transitional case where API returns error strings
-    # TODO: Remove once API returns structured errors consistently
     if isinstance(movie, str):
         raise BaseToolErrorMixin.handle_api_string_error(
             resource_type="movie",
@@ -130,12 +141,18 @@ async def get_movie_ratings(movie_id: str) -> str:
             operation="fetch_movie_details",
         )
 
-    movie_title = movie.get("title", f"Movie ID: {movie_id}")
+    # Type narrowing: movie is guaranteed to be MovieResponse after string check
+    movie_data: MovieResponse = movie
+    movie_title = movie_data["title"]
 
-    ratings = await client.get_movie_ratings(movie_id)
+    # Wrap get_movie_ratings call to handle MCPError propagation explicitly
+    try:
+        ratings = await client.get_movie_ratings(movie_id)
+    except MCPError:
+        # Re-raise MCPErrors to be handled by the function-level decorator
+        raise
 
     # Handle transitional case where API returns error strings
-    # TODO: Remove once API returns structured errors consistently
     if isinstance(ratings, str):
         raise BaseToolErrorMixin.handle_api_string_error(
             resource_type="movie_ratings",

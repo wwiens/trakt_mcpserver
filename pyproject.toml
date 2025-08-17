@@ -61,7 +61,7 @@ exclude = [
     "**/.venv/**",
     "**/venv/**"
 ]
-pythonVersion = "3.11"
+pythonVersion = "3.12"
 typeCheckingMode = "strict"
 reportMissingTypeStubs = "error"
 reportUnknownMemberType = "error"

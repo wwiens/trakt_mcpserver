@@ -2,7 +2,10 @@
 
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
+
+if TYPE_CHECKING:
+    from models.types import ShowResponse
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import ValidationError
@@ -62,7 +65,12 @@ async def get_favorited_shows() -> str:
     # Debug log for API response structure analysis
     if shows and len(shows) > 0:
         logger.debug(
-            f"Favorited shows API response - first show keys: {list(shows[0].keys())}"
+            "Favorited shows API response structure",
+            extra={
+                "first_show_keys": list(shows[0].keys()),
+                "show_count": len(shows),
+                "first_show_type": type(shows[0]).__name__,
+            },
         )
 
     return ShowFormatters.format_favorited_shows(shows)
@@ -123,7 +131,6 @@ async def get_show_ratings(show_id: str) -> str:
     show = await client.get_show(show_id)
 
     # Handle transitional case where API returns error strings
-    # TODO: Remove once API returns structured errors consistently
     if isinstance(show, str):
         raise BaseToolErrorMixin.handle_api_string_error(
             resource_type="show",
@@ -132,11 +139,12 @@ async def get_show_ratings(show_id: str) -> str:
             operation="fetch_show_details",
         )
 
-    show_title = show.get("title", "Unknown Show")
+    # Type narrowing: show is guaranteed to be ShowResponse after string check
+    show_data: ShowResponse = show
+    show_title = show_data["title"]
     ratings = await client.get_show_ratings(show_id)
 
     # Handle transitional case where API returns error strings
-    # TODO: Remove once API returns structured errors consistently
     if isinstance(ratings, str):
         raise BaseToolErrorMixin.handle_api_string_error(
             resource_type="show_ratings",

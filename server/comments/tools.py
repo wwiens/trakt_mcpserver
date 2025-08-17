@@ -1,7 +1,7 @@
 """Comment tools for the Trakt MCP server."""
 
 from collections.abc import Awaitable, Callable
-from typing import Literal
+from typing import Literal, NoReturn
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, PositiveInt, ValidationError, field_validator
@@ -30,7 +30,6 @@ class CommentIdParam(BaseModel):
     comment_id: str = Field(..., min_length=1, description="Non-empty Trakt comment ID")
 
     @field_validator("comment_id", mode="before")
-    @classmethod
     def _strip_comment_id(cls, v: object) -> object:
         return v.strip() if isinstance(v, str) else v
 
@@ -42,7 +41,6 @@ class SeasonParam(BaseModel):
     season: PositiveInt = Field(..., description="Season number (positive integer)")
 
     @field_validator("show_id", mode="before")
-    @classmethod
     def _strip_show_id(cls, v: object) -> object:
         return v.strip() if isinstance(v, str) else v
 
@@ -55,9 +53,38 @@ class EpisodeParam(BaseModel):
     episode: PositiveInt = Field(..., description="Episode number (positive integer)")
 
     @field_validator("show_id", mode="before")
-    @classmethod
     def _strip_show_id(cls, v: object) -> object:
         return v.strip() if isinstance(v, str) else v
+
+
+class CommentsListOptionsParam(BaseModel):
+    """Parameters for comment listing tools with validation constraints."""
+
+    limit: PositiveInt = Field(
+        DEFAULT_LIMIT,
+        le=200,
+        description="Maximum number of comments to return (1-200)",
+    )
+    sort: CommentSort = Field("newest", description="Sort order for comments")
+    show_spoilers: bool = Field(False, description="Whether to show spoiler content")
+
+
+def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
+    """Handle validation errors with consistent formatting.
+
+    Args:
+        e: The ValidationError to handle
+        context: Context string for the error message
+
+    Raises:
+        TraktValidationError: Formatted validation error
+    """
+    error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
+    raise TraktValidationError(
+        f"Invalid parameters for {context}: {', '.join(error_details.keys())}",
+        invalid_params=list(error_details.keys()),
+        validation_details=error_details,
+    ) from e
 
 
 # Type aliases for tool functions
@@ -95,19 +122,19 @@ async def fetch_movie_comments(
     """
     # Validate parameters with Pydantic for normalization and constraints
     try:
-        params = MovieIdParam(movie_id=movie_id)
-        movie_id = params.movie_id
+        id_params = MovieIdParam(movie_id=movie_id)
+        options = CommentsListOptionsParam(
+            limit=limit, sort=sort, show_spoilers=show_spoilers
+        )
+        movie_id = id_params.movie_id
     except ValidationError as e:
-        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
-        raise TraktValidationError(
-            f"Invalid parameters for movie comments: {', '.join(error_details.keys())}",
-            invalid_params=list(error_details.keys()),
-            validation_details=error_details,
-        ) from e
+        _handle_validation_error(e, "movie comments")
 
     client = MovieCommentsClient()
 
-    comments = await client.get_movie_comments(movie_id, limit=limit, sort=sort)
+    comments = await client.get_movie_comments(
+        movie_id, limit=options.limit, sort=options.sort
+    )
 
     # Handle transitional case where API returns error strings
     if isinstance(comments, str):
@@ -122,7 +149,7 @@ async def fetch_movie_comments(
     return CommentsFormatters.format_comments(
         comments,
         title,
-        show_spoilers=show_spoilers,
+        show_spoilers=options.show_spoilers,
     )
 
 
@@ -150,19 +177,19 @@ async def fetch_show_comments(
     """
     # Validate parameters with Pydantic for normalization and constraints
     try:
-        params = ShowIdParam(show_id=show_id)
-        show_id = params.show_id
+        id_params = ShowIdParam(show_id=show_id)
+        options = CommentsListOptionsParam(
+            limit=limit, sort=sort, show_spoilers=show_spoilers
+        )
+        show_id = id_params.show_id
     except ValidationError as e:
-        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
-        raise TraktValidationError(
-            f"Invalid parameters for show comments: {', '.join(error_details.keys())}",
-            invalid_params=list(error_details.keys()),
-            validation_details=error_details,
-        ) from e
+        _handle_validation_error(e, "show comments")
 
     client = ShowCommentsClient()
 
-    comments = await client.get_show_comments(show_id, limit=limit, sort=sort)
+    comments = await client.get_show_comments(
+        show_id, limit=options.limit, sort=options.sort
+    )
 
     # Handle transitional case where API returns error strings
     if isinstance(comments, str):
@@ -177,7 +204,7 @@ async def fetch_show_comments(
     return CommentsFormatters.format_comments(
         comments,
         title,
-        show_spoilers=show_spoilers,
+        show_spoilers=options.show_spoilers,
     )
 
 
@@ -207,19 +234,19 @@ async def fetch_season_comments(
     """
     # Validate parameters with Pydantic for normalization and constraints
     try:
-        params = SeasonParam(show_id=show_id, season=season)
-        show_id, season = params.show_id, params.season
+        id_params = SeasonParam(show_id=show_id, season=season)
+        options = CommentsListOptionsParam(
+            limit=limit, sort=sort, show_spoilers=show_spoilers
+        )
+        show_id, season = id_params.show_id, id_params.season
     except ValidationError as e:
-        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
-        raise TraktValidationError(
-            f"Invalid parameters for season comments: {', '.join(error_details.keys())}",
-            invalid_params=list(error_details.keys()),
-            validation_details=error_details,
-        ) from e
+        _handle_validation_error(e, "season comments")
 
     client = SeasonCommentsClient()
 
-    comments = await client.get_season_comments(show_id, season, limit=limit, sort=sort)
+    comments = await client.get_season_comments(
+        show_id, season, limit=options.limit, sort=options.sort
+    )
 
     # Handle transitional case where API returns error strings
     if isinstance(comments, str):
@@ -234,7 +261,7 @@ async def fetch_season_comments(
     return CommentsFormatters.format_comments(
         comments,
         title,
-        show_spoilers=show_spoilers,
+        show_spoilers=options.show_spoilers,
     )
 
 
@@ -266,20 +293,22 @@ async def fetch_episode_comments(
     """
     # Validate parameters with Pydantic for normalization and constraints
     try:
-        params = EpisodeParam(show_id=show_id, season=season, episode=episode)
-        show_id, season, episode = params.show_id, params.season, params.episode
+        id_params = EpisodeParam(show_id=show_id, season=season, episode=episode)
+        options = CommentsListOptionsParam(
+            limit=limit, sort=sort, show_spoilers=show_spoilers
+        )
+        show_id, season, episode = (
+            id_params.show_id,
+            id_params.season,
+            id_params.episode,
+        )
     except ValidationError as e:
-        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
-        raise TraktValidationError(
-            f"Invalid parameters for episode comments: {', '.join(error_details.keys())}",
-            invalid_params=list(error_details.keys()),
-            validation_details=error_details,
-        ) from e
+        _handle_validation_error(e, "episode comments")
 
     client = EpisodeCommentsClient()
 
     comments = await client.get_episode_comments(
-        show_id, season, episode, limit=limit, sort=sort
+        show_id, season, episode, limit=options.limit, sort=options.sort
     )
 
     # Handle transitional case where API returns error strings
@@ -295,7 +324,7 @@ async def fetch_episode_comments(
     return CommentsFormatters.format_comments(
         comments,
         title,
-        show_spoilers=show_spoilers,
+        show_spoilers=options.show_spoilers,
     )
 
 
@@ -319,12 +348,7 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
         params = CommentIdParam(comment_id=comment_id)
         comment_id = params.comment_id
     except ValidationError as e:
-        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
-        raise TraktValidationError(
-            f"Invalid parameters for comment: {', '.join(error_details.keys())}",
-            invalid_params=list(error_details.keys()),
-            validation_details=error_details,
-        ) from e
+        _handle_validation_error(e, "comment")
 
     client = CommentDetailsClient()
 
@@ -366,15 +390,13 @@ async def fetch_comment_replies(
     """
     # Validate parameters with Pydantic for normalization and constraints
     try:
-        params = CommentIdParam(comment_id=comment_id)
-        comment_id = params.comment_id
+        id_params = CommentIdParam(comment_id=comment_id)
+        options = CommentsListOptionsParam(
+            limit=limit, sort=sort, show_spoilers=show_spoilers
+        )
+        comment_id = id_params.comment_id
     except ValidationError as e:
-        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
-        raise TraktValidationError(
-            f"Invalid parameters for comment replies: {', '.join(error_details.keys())}",
-            invalid_params=list(error_details.keys()),
-            validation_details=error_details,
-        ) from e
+        _handle_validation_error(e, "comment replies")
 
     client = CommentDetailsClient()
 
@@ -389,7 +411,9 @@ async def fetch_comment_replies(
             operation="fetch_comment_replies",
         )
 
-    replies = await client.get_comment_replies(comment_id, limit=limit, sort=sort)
+    replies = await client.get_comment_replies(
+        comment_id, limit=options.limit, sort=options.sort
+    )
 
     # Handle transitional case where API returns error strings
     if isinstance(replies, str):
@@ -404,7 +428,7 @@ async def fetch_comment_replies(
         comment,
         with_replies=True,
         replies=replies,
-        show_spoilers=show_spoilers,
+        show_spoilers=options.show_spoilers,
     )
 
 
