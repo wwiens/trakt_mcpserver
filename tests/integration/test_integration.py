@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.asyncio
-async def test_auth_flow_integration():
+async def test_auth_flow_integration() -> None:
     device_code_response: DeviceCodeResponse = {
         "device_code": "device_code_123",
         "user_code": "USER123",
@@ -98,7 +98,7 @@ async def test_auth_flow_integration():
 
 
 @pytest.mark.asyncio
-async def test_search_and_checkin_integration():
+async def test_search_and_checkin_integration() -> None:
     # Mock search results
     search_results: list[SearchResult] = [
         {
@@ -191,7 +191,7 @@ async def test_search_and_checkin_integration():
 
 
 @pytest.mark.asyncio
-async def test_trending_shows_integration():
+async def test_trending_shows_integration() -> None:
     # Mock trending shows response
     trending_shows: list[TrendingWrapper] = [
         {
@@ -267,7 +267,7 @@ async def test_trending_shows_integration():
 
 
 @pytest.mark.asyncio
-async def test_show_ratings_integration():
+async def test_show_ratings_integration() -> None:
     # Mock show data
     show_data: ShowResponse = {
         "title": "Breaking Bad",
@@ -352,7 +352,7 @@ async def test_show_ratings_integration():
 
 
 @pytest.mark.asyncio
-async def test_error_handling_integration():
+async def test_error_handling_integration() -> None:
     # Set up mock responses for the focused clients that will trigger errors
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -398,7 +398,7 @@ async def test_error_handling_integration():
 
 
 @pytest.mark.asyncio
-async def test_token_refresh_integration():
+async def test_token_refresh_integration() -> None:
     # Since refresh_token method doesn't exist, we'll test authentication status instead
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -446,7 +446,7 @@ async def test_token_refresh_integration():
 
 
 @pytest.mark.asyncio
-async def test_comments_integration():
+async def test_comments_integration() -> None:
     # Mock comments data
     sample_comments: list[CommentResponse] = [
         {

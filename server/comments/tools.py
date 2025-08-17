@@ -14,6 +14,7 @@ from client.comments.show import ShowCommentsClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.comments import CommentsFormatters
+from models.types import CommentResponse
 from server.base import BaseToolErrorMixin
 from server.movies.tools import MovieIdParam
 from server.shows.tools import ShowIdParam
@@ -130,6 +131,70 @@ def _ensure_not_error_string(
         )
 
 
+async def _fetch_and_format_comments(
+    *,
+    resource_type: str,
+    resource_id: str,
+    fetch_fn: Callable[[], Awaitable[list[CommentResponse]]],
+    title: str,
+    show_spoilers: bool,
+) -> str:
+    """Helper to reduce duplication in comment fetching functions.
+
+    Args:
+        resource_type: Type of resource for error context (e.g., "movie_comments")
+        resource_id: ID of the resource for error context
+        fetch_fn: Zero-argument callable that performs the client API call
+        title: Title to use in formatted output
+        show_spoilers: Whether to show spoiler content
+
+    Returns:
+        Formatted comments as markdown string
+
+    Raises:
+        BaseToolErrorMixin error: If API response is an error string
+    """
+    data = await fetch_fn()
+    _ensure_not_error_string(
+        data,
+        resource_type=resource_type,
+        resource_id=resource_id,
+        operation=f"fetch_{resource_type}",
+    )
+    return CommentsFormatters.format_comments(data, title, show_spoilers=show_spoilers)
+
+
+async def _fetch_and_format_comment(
+    *,
+    resource_type: str,
+    resource_id: str,
+    fetch_fn: Callable[[], Awaitable[CommentResponse]],
+    show_spoilers: bool,
+) -> str:
+    """Helper to reduce duplication in single comment fetching functions.
+
+    Args:
+        resource_type: Type of resource for error context (e.g., "comment")
+        resource_id: ID of the resource for error context
+        fetch_fn: Zero-argument callable that performs the client API call
+        show_spoilers: Whether to show spoiler content
+
+    Returns:
+        Formatted comment as markdown string
+
+    Raises:
+        BaseToolErrorMixin error: If API response is an error string
+    """
+    data = await fetch_fn()
+    _ensure_not_error_string(
+        data,
+        resource_type=resource_type,
+        resource_id=resource_id,
+        operation=f"fetch_{resource_type}",
+    )
+    return CommentsFormatters.format_comment(data, show_spoilers=show_spoilers)
+
+
 # Type aliases for tool functions
 MovieCommentsToolType = Callable[[str, int, bool, CommentSort], Awaitable[str]]
 ShowCommentsToolType = Callable[[str, int, bool, CommentSort], Awaitable[str]]
@@ -174,22 +239,13 @@ async def fetch_movie_comments(
 
     client = MovieCommentsClient()
 
-    comments = await client.get_movie_comments(
-        movie_id, limit=options.limit, sort=options.sort
-    )
-
-    # Handle transitional case where API returns error strings
-    _ensure_not_error_string(
-        comments,
+    return await _fetch_and_format_comments(
         resource_type="movie_comments",
         resource_id=movie_id,
-        operation="fetch_movie_comments",
-    )
-
-    title = f"Movie ID: {movie_id}"
-    return CommentsFormatters.format_comments(
-        comments,
-        title,
+        fetch_fn=lambda: client.get_movie_comments(
+            movie_id, limit=options.limit, sort=options.sort
+        ),
+        title=f"Movie ID: {movie_id}",
         show_spoilers=options.show_spoilers,
     )
 
@@ -227,22 +283,13 @@ async def fetch_show_comments(
 
     client = ShowCommentsClient()
 
-    comments = await client.get_show_comments(
-        show_id, limit=options.limit, sort=options.sort
-    )
-
-    # Handle transitional case where API returns error strings
-    _ensure_not_error_string(
-        comments,
+    return await _fetch_and_format_comments(
         resource_type="show_comments",
         resource_id=show_id,
-        operation="fetch_show_comments",
-    )
-
-    title = f"Show ID: {show_id}"
-    return CommentsFormatters.format_comments(
-        comments,
-        title,
+        fetch_fn=lambda: client.get_show_comments(
+            show_id, limit=options.limit, sort=options.sort
+        ),
+        title=f"Show ID: {show_id}",
         show_spoilers=options.show_spoilers,
     )
 
@@ -282,22 +329,13 @@ async def fetch_season_comments(
 
     client = SeasonCommentsClient()
 
-    comments = await client.get_season_comments(
-        show_id, season, limit=options.limit, sort=options.sort
-    )
-
-    # Handle transitional case where API returns error strings
-    _ensure_not_error_string(
-        comments,
+    return await _fetch_and_format_comments(
         resource_type="season_comments",
         resource_id=f"{show_id}-{season}",
-        operation="fetch_season_comments",
-    )
-
-    title = f"Show ID: {show_id} - Season {season}"
-    return CommentsFormatters.format_comments(
-        comments,
-        title,
+        fetch_fn=lambda: client.get_season_comments(
+            show_id, season, limit=options.limit, sort=options.sort
+        ),
+        title=f"Show ID: {show_id} - Season {season}",
         show_spoilers=options.show_spoilers,
     )
 
@@ -343,22 +381,13 @@ async def fetch_episode_comments(
 
     client = EpisodeCommentsClient()
 
-    comments = await client.get_episode_comments(
-        show_id, season, episode, limit=options.limit, sort=options.sort
-    )
-
-    # Handle transitional case where API returns error strings
-    _ensure_not_error_string(
-        comments,
+    return await _fetch_and_format_comments(
         resource_type="episode_comments",
         resource_id=f"{show_id}-{season}-{episode}",
-        operation="fetch_episode_comments",
-    )
-
-    title = f"Show ID: {show_id} - S{season:02d}E{episode:02d}"
-    return CommentsFormatters.format_comments(
-        comments,
-        title,
+        fetch_fn=lambda: client.get_episode_comments(
+            show_id, season, episode, limit=options.limit, sort=options.sort
+        ),
+        title=f"Show ID: {show_id} - S{season:02d}E{episode:02d}",
         show_spoilers=options.show_spoilers,
     )
 
@@ -386,17 +415,12 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
 
     client = CommentDetailsClient()
 
-    comment = await client.get_comment(comment_id)
-
-    # Handle transitional case where API returns error strings
-    _ensure_not_error_string(
-        comment,
+    return await _fetch_and_format_comment(
         resource_type="comment",
         resource_id=comment_id,
-        operation="fetch_comment",
+        fetch_fn=lambda: client.get_comment(comment_id),
+        show_spoilers=show_spoilers,
     )
-
-    return CommentsFormatters.format_comment(comment, show_spoilers=show_spoilers)
 
 
 @handle_api_errors_func
@@ -432,9 +456,8 @@ async def fetch_comment_replies(
 
     client = CommentDetailsClient()
 
+    # Fetch comment data
     comment = await client.get_comment(comment_id)
-
-    # Handle transitional case where API returns error strings
     _ensure_not_error_string(
         comment,
         resource_type="comment",
@@ -442,11 +465,10 @@ async def fetch_comment_replies(
         operation="fetch_comment_replies",
     )
 
+    # Fetch replies data
     replies = await client.get_comment_replies(
         comment_id, limit=options.limit, sort=options.sort
     )
-
-    # Handle transitional case where API returns error strings
     _ensure_not_error_string(
         replies,
         resource_type="comment_replies",

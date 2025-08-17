@@ -107,7 +107,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - Type hints required for all functions/methods/attributes
 - Use specific types: `list[str]` not `list`
 - Return type annotations including `None`
-- **Prefer precise typing**: Use most specific types possible - avoid `Any` when concrete types are known
+- **CRITICAL: Prefer precise typing**: Use most specific types possible - NEVER use `Any` when concrete types are known
 
 ### Code Standards
 - PEP 8 compliance
@@ -154,5 +154,5 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - **Run tests after any changes** - `pytest`
 - **Run type checking** - `pyright` 
 - **Run code quality checks** - `ruff check --fix` and `ruff format`
-- **Run MCP validation** - `npx @modelcontextprotocol/inspector --cli python server.py --method tools/list`
+- **Run MCP validation** - run all checks
 - **Focused testing** - `pytest tests/specific/module/ -v`
