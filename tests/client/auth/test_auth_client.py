@@ -8,7 +8,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 from client.auth import AuthClient
-from models.auth import TraktAuthToken
+from models.auth import TraktAuthToken, TraktDeviceCode
 from utils.api.error_types import TraktResourceNotFoundError
 from utils.api.errors import handle_api_errors_func
 
@@ -156,7 +156,7 @@ async def test_auth_client_get_device_code():
         result = await client.get_device_code()
 
         # Result is a TraktDeviceCode Pydantic model
-        assert hasattr(result, "device_code")
+        assert isinstance(result, TraktDeviceCode)
         assert result.device_code == "device_code_123"
         assert result.user_code == "USER123"
 
@@ -177,7 +177,6 @@ async def test_auth_client_get_device_token_success():
     with (
         patch("httpx.AsyncClient") as mock_client,
         patch("dotenv.load_dotenv"),
-        patch("builtins.open", mock_open()) as mock_file,
         patch("os.open") as mock_os_open,
         patch("os.fdopen") as mock_fdopen,
         patch("os.replace") as mock_replace,
@@ -193,7 +192,9 @@ async def test_auth_client_get_device_token_success():
         # Set up the os.open and os.fdopen mocks
         mock_fd = 3
         mock_os_open.return_value = mock_fd
-        mock_fdopen.return_value.__enter__ = mock_file
+        mock_file_obj = MagicMock()
+        mock_fdopen.return_value = mock_file_obj
+        mock_fdopen.return_value.__enter__ = mock_file_obj
         mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
 
         client = AuthClient()
@@ -211,7 +212,9 @@ async def test_auth_client_get_device_token_success():
         # Verify atomic replace was called
         mock_replace.assert_called_once_with("auth_token.json.tmp", "auth_token.json")
         # Verify that file write was called
-        assert mock_file.called
+        assert mock_fdopen.return_value.write.called
+        # Optionally assert that JSON was written at least once
+        mock_fdopen.return_value.write.assert_called()
 
 
 def test_clear_auth_token():
@@ -233,11 +236,14 @@ def test_clear_auth_token():
             scope="public",
             token_type="bearer",
         )
+        # Ensure Authorization header is present before clearing
+        client.headers["Authorization"] = f"Bearer {client.auth_token.access_token}"
 
         result = client.clear_auth_token()
 
         assert result is True
         assert client.auth_token is None
+        assert "Authorization" not in client.headers
         mock_remove.assert_called_once_with("auth_token.json")
 
 
@@ -319,3 +325,6 @@ async def test_handle_api_errors_decorator():
         await test_func()
 
     assert "The requested resource 'unknown' was not found" in exc_info.value.message
+    assert exc_info.value.data is not None
+    assert exc_info.value.data.get("http_status") == 404
+    assert exc_info.value.code == -32600
