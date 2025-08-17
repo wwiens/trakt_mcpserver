@@ -1,19 +1,22 @@
 """User tools for the Trakt MCP server."""
 
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, TypeVar
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, ValidationError
 
-from client.user import UserClient
+from client.user.client import UserClient
 from config.auth import AUTH_VERIFICATION_URL
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.user import UserFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.error_types import AuthenticationRequiredError
 
-# Type alias for user tool handlers
+# Type aliases for user tools
+T = TypeVar("T")
+Fetcher = Callable[[], Awaitable[list[T]]]
+Formatter = Callable[[list[T]], str]
 ToolHandler = Callable[[int | None], Awaitable[str]]
 
 
@@ -49,6 +52,42 @@ def _validate_and_normalize_limit(value: int | None, *, operation: str) -> int:
         ) from e
 
 
+async def _fetch_user_items(
+    *,
+    limit: int | None,
+    operation: str,
+    on_auth_action: str,
+    fetcher: Fetcher[T],
+    formatter: Formatter[T],
+) -> str:
+    """Common helper for fetching and formatting user data with auth checks.
+
+    Args:
+        limit: Maximum number of items to return (0 for all)
+        operation: Operation name for validation errors
+        on_auth_action: Human-readable action for auth error messages
+        fetcher: Async function that fetches the data
+        formatter: Function that formats the data to string
+
+    Returns:
+        Formatted string of user data
+
+    Raises:
+        AuthenticationRequiredError: If user is not authenticated
+        BaseToolError: If validation fails
+    """
+    limit = _validate_and_normalize_limit(limit, operation=operation)
+    client = UserClient()
+    if not client.is_authenticated():
+        raise AuthenticationRequiredError(
+            action=on_auth_action,
+            auth_url=AUTH_VERIFICATION_URL,
+            message=f"Authentication required to {on_auth_action} from Trakt",
+        )
+    items = await fetcher()
+    return formatter(items[:limit] if limit > 0 else items)
+
+
 class UserLimitParam(BaseModel):
     """Parameters for user data tools that support optional limiting."""
 
@@ -69,24 +108,13 @@ async def fetch_user_watched_shows(limit: int | None = 0) -> str:
     Returns:
         Information about user's watched shows
     """
-    limit = _validate_and_normalize_limit(limit, operation="fetch_user_watched_shows")
-
-    client = UserClient()
-
-    if not client.is_authenticated():
-        raise AuthenticationRequiredError(
-            action="access your watched shows",
-            auth_url=AUTH_VERIFICATION_URL,
-            message="Authentication required to access your watched shows from Trakt",
-        )
-
-    shows = await client.get_user_watched_shows()
-
-    # Apply limit if requested
-    if limit > 0:
-        shows = shows[:limit]
-
-    return UserFormatters.format_user_watched_shows(shows)
+    return await _fetch_user_items(
+        limit=limit,
+        operation="fetch_user_watched_shows",
+        on_auth_action="access your watched shows",
+        fetcher=UserClient().get_user_watched_shows,
+        formatter=UserFormatters.format_user_watched_shows,
+    )
 
 
 async def fetch_user_watched_movies(limit: int | None = 0) -> str:
@@ -98,24 +126,13 @@ async def fetch_user_watched_movies(limit: int | None = 0) -> str:
     Returns:
         Information about user's watched movies
     """
-    limit = _validate_and_normalize_limit(limit, operation="fetch_user_watched_movies")
-
-    client = UserClient()
-
-    if not client.is_authenticated():
-        raise AuthenticationRequiredError(
-            action="access your watched movies",
-            auth_url=AUTH_VERIFICATION_URL,
-            message="Authentication required to access your watched movies from Trakt",
-        )
-
-    movies = await client.get_user_watched_movies()
-
-    # Apply limit if requested
-    if limit > 0:
-        movies = movies[:limit]
-
-    return UserFormatters.format_user_watched_movies(movies)
+    return await _fetch_user_items(
+        limit=limit,
+        operation="fetch_user_watched_movies",
+        on_auth_action="access your watched movies",
+        fetcher=UserClient().get_user_watched_movies,
+        formatter=UserFormatters.format_user_watched_movies,
+    )
 
 
 def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:

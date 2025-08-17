@@ -298,7 +298,8 @@ def test_clear_auth_token_remove_error(caplog: LogCaptureFixture) -> None:
         # Token should remain unchanged on error
         assert client.auth_token is not None
         # Check that the error message was logged
-        assert "Error clearing auth token: Permission denied" in caplog.text
+        assert "Error clearing auth token" in caplog.text
+        assert "Permission denied" in caplog.text
 
 
 @pytest.mark.asyncio

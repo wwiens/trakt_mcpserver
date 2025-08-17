@@ -7,7 +7,7 @@ import os
 import time
 
 from config.endpoints import TRAKT_ENDPOINTS
-from models.auth import TraktAuthToken, TraktDeviceCode
+from models.auth import DeviceTokenRequest, TraktAuthToken, TraktDeviceCode
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
@@ -25,7 +25,7 @@ class AuthClient(BaseClient):
         """Initialize the authentication client."""
         super().__init__()
         # Try to load auth token if exists
-        self.auth_token = self._load_auth_token()
+        self.auth_token: TraktAuthToken | None = self._load_auth_token()
         if self.auth_token:
             self._update_headers_with_token()
 
@@ -36,8 +36,8 @@ class AuthClient(BaseClient):
                 with open(AUTH_TOKEN_FILE) as f:
                     token_data = json.load(f)
                     return TraktAuthToken.model_validate(token_data)
-            except Exception as e:
-                logger.error("Error loading auth token: %s", e)
+            except Exception:
+                logger.exception("Error loading auth token")
         return None
 
     def _save_auth_token(self, token: TraktAuthToken) -> None:
@@ -45,9 +45,13 @@ class AuthClient(BaseClient):
         # Create file with secure permissions (user read/write only)
         fd = os.open(AUTH_TOKEN_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
         try:
-            file_obj = os.fdopen(fd, "w")
+            file_obj = os.fdopen(fd, "w", encoding="utf-8")
             with file_obj:
                 file_obj.write(token.model_dump_json())
+                file_obj.flush()
+                # fsync may not be available on all file objects or platforms
+                with contextlib.suppress(OSError, AttributeError, TypeError):
+                    os.fsync(file_obj.fileno())
         except Exception:
             # If fdopen failed, ensure we close the raw FD without masking the original error.
             with contextlib.suppress(OSError):
@@ -80,8 +84,9 @@ class AuthClient(BaseClient):
         data = {
             "client_id": self.client_id,
         }
-        response = await self._post_request(TRAKT_ENDPOINTS["device_code"], data)
-        return TraktDeviceCode.model_validate(response)
+        return await self._post_typed_request(
+            TRAKT_ENDPOINTS["device_code"], data, response_type=TraktDeviceCode
+        )
 
     @handle_api_errors
     async def get_device_token(self, device_code: str) -> TraktAuthToken:
@@ -98,14 +103,17 @@ class AuthClient(BaseClient):
             NetworkError: Connectivity or timeout issues.
             InternalError: Unexpected server or parsing failures.
         """
+        # Validate input with Pydantic
+        payload = DeviceTokenRequest.model_validate({"code": device_code})
         data = {
-            "code": device_code,
+            "code": payload.code,
             "client_id": self.client_id,
             "client_secret": self.client_secret,
         }
 
-        response = await self._post_request(TRAKT_ENDPOINTS["device_token"], data)
-        token = TraktAuthToken.model_validate(response)
+        token = await self._post_typed_request(
+            TRAKT_ENDPOINTS["device_token"], data, response_type=TraktAuthToken
+        )
         self.auth_token = token
         self._save_auth_token(token)
         self._update_headers_with_token()
@@ -125,7 +133,7 @@ class AuthClient(BaseClient):
                 if "Authorization" in self.headers:
                     del self.headers["Authorization"]
                 return True
-            except Exception as e:
-                logger.error("Error clearing auth token: %s", e)
+            except Exception:
+                logger.exception("Error clearing auth token")
                 return False
         return False

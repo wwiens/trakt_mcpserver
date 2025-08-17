@@ -5,7 +5,7 @@ from typing import TypeAlias
 
 from mcp.server.fastmcp import FastMCP
 
-from client.user.client import UserClient
+from client.user import UserClient
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.user import UserFormatters
 from utils.api.errors import handle_api_errors_func
