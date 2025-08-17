@@ -1,6 +1,6 @@
 import os
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -10,7 +10,7 @@ from models.auth import TraktAuthToken
 
 @pytest.mark.asyncio
 async def test_checkin_to_show():
-    mock_response = MagicMock()
+    mock_response = Mock()
     mock_response.json.return_value = {
         "id": 12345,
         "watched_at": "2023-06-20T20:00:00.000Z",
@@ -27,7 +27,7 @@ async def test_checkin_to_show():
             "ids": {"trakt": "73640"},
         },
     }
-    mock_response.raise_for_status = MagicMock()
+    mock_response.raise_for_status = Mock()
 
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -72,7 +72,7 @@ async def test_checkin_to_show():
 
 @pytest.mark.asyncio
 async def test_checkin_to_show_with_title():
-    mock_response = MagicMock()
+    mock_response = Mock()
     mock_response.json.return_value = {
         "id": 67890,
         "watched_at": "2023-06-20T21:00:00.000Z",
@@ -89,7 +89,7 @@ async def test_checkin_to_show_with_title():
             "ids": {"trakt": "73641"},
         },
     }
-    mock_response.raise_for_status = MagicMock()
+    mock_response.raise_for_status = Mock()
 
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -139,7 +139,8 @@ async def test_checkin_to_show_not_authenticated():
         ),
     ):
         client = CheckinClient()
-        # No authentication set
+        # Mock authentication to return False
+        client.is_authenticated = Mock(return_value=False)
 
         with pytest.raises(ValueError) as exc_info:
             await client.checkin_to_show(

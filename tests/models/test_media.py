@@ -1,4 +1,6 @@
-"""Tests for the models.media module."""
+"""Tests for the models.movies and models.shows models."""
+
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -9,11 +11,35 @@ from models.movies import TraktMovie, TraktPopularMovie, TraktTrendingMovie
 from models.shows import TraktEpisode, TraktPopularShow, TraktShow, TraktTrendingShow
 
 if TYPE_CHECKING:
+    from typing import TypedDict
+
     from tests.models.test_data_types import (
         EpisodeTestData,
         MovieTestData,
         ShowTestData,
     )
+
+    class TrendingShowPayload(TypedDict):
+        """Test payload for TraktTrendingShow."""
+
+        watchers: int
+        show: ShowTestData
+
+    class PopularShowPayload(TypedDict):
+        """Test payload for TraktPopularShow."""
+
+        show: ShowTestData
+
+    class TrendingMoviePayload(TypedDict):
+        """Test payload for TraktTrendingMovie."""
+
+        watchers: int
+        movie: MovieTestData
+
+    class PopularMoviePayload(TypedDict):
+        """Test payload for TraktPopularMovie."""
+
+        movie: MovieTestData
 
 
 class TestTraktShow:
@@ -271,7 +297,7 @@ class TestTraktTrendingShow:
 
     def test_valid_trending_show_creation(self):
         """Test creating a valid TraktTrendingShow instance."""
-        trending_data = {
+        trending_data: TrendingShowPayload = {
             "watchers": 150,
             "show": {
                 "title": "Breaking Bad",
@@ -281,7 +307,7 @@ class TestTraktTrendingShow:
             },
         }
 
-        trending_show = TraktTrendingShow(**trending_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
+        trending_show = TraktTrendingShow(**trending_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
 
         assert trending_show.watchers == 150
         assert trending_show.show.title == "Breaking Bad"
@@ -308,7 +334,7 @@ class TestTraktTrendingShow:
 
     def test_trending_show_serialization(self):
         """Test that TraktTrendingShow can be serialized."""
-        trending_data = {
+        trending_data: TrendingShowPayload = {
             "watchers": 150,
             "show": {
                 "title": "Breaking Bad",
@@ -318,7 +344,7 @@ class TestTraktTrendingShow:
             },
         }
 
-        trending_show = TraktTrendingShow(**trending_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
+        trending_show = TraktTrendingShow(**trending_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         serialized = trending_show.model_dump()
 
         assert serialized == trending_data
@@ -329,7 +355,7 @@ class TestTraktTrendingMovie:
 
     def test_valid_trending_movie_creation(self):
         """Test creating a valid TraktTrendingMovie instance."""
-        trending_data = {
+        trending_data: TrendingMoviePayload = {
             "watchers": 200,
             "movie": {
                 "title": "Inception",
@@ -339,7 +365,7 @@ class TestTraktTrendingMovie:
             },
         }
 
-        trending_movie = TraktTrendingMovie(**trending_data)  # type: ignore[arg-type] # Testing: Dict where TraktMovie expected
+        trending_movie = TraktTrendingMovie(**trending_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
 
         assert trending_movie.watchers == 200
         assert trending_movie.movie.title == "Inception"
@@ -370,7 +396,7 @@ class TestTraktPopularShow:
 
     def test_valid_popular_show_creation(self):
         """Test creating a valid TraktPopularShow instance."""
-        popular_data = {
+        popular_data: PopularShowPayload = {
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
@@ -379,7 +405,7 @@ class TestTraktPopularShow:
             }
         }
 
-        popular_show = TraktPopularShow(**popular_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
+        popular_show = TraktPopularShow(**popular_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
 
         assert popular_show.show.title == "Breaking Bad"
         assert popular_show.show.year == 2008
@@ -410,7 +436,7 @@ class TestTraktPopularShow:
 
     def test_popular_show_serialization(self):
         """Test that TraktPopularShow can be serialized."""
-        popular_data = {
+        popular_data: PopularShowPayload = {
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
@@ -419,7 +445,7 @@ class TestTraktPopularShow:
             }
         }
 
-        popular_show = TraktPopularShow(**popular_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
+        popular_show = TraktPopularShow(**popular_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         serialized = popular_show.model_dump()
 
         assert serialized == popular_data
@@ -430,7 +456,7 @@ class TestTraktPopularMovie:
 
     def test_valid_popular_movie_creation(self):
         """Test creating a valid TraktPopularMovie instance."""
-        popular_data = {
+        popular_data: PopularMoviePayload = {
             "movie": {
                 "title": "Inception",
                 "year": 2010,
@@ -439,7 +465,7 @@ class TestTraktPopularMovie:
             }
         }
 
-        popular_movie = TraktPopularMovie(**popular_data)  # type: ignore[arg-type] # Testing: Dict where TraktMovie expected
+        popular_movie = TraktPopularMovie(**popular_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
 
         assert popular_movie.movie.title == "Inception"
         assert popular_movie.movie.year == 2010
@@ -470,7 +496,7 @@ class TestTraktPopularMovie:
 
     def test_popular_movie_serialization(self):
         """Test that TraktPopularMovie can be serialized."""
-        popular_data = {
+        popular_data: PopularMoviePayload = {
             "movie": {
                 "title": "Inception",
                 "year": 2010,
@@ -479,7 +505,7 @@ class TestTraktPopularMovie:
             }
         }
 
-        popular_movie = TraktPopularMovie(**popular_data)  # type: ignore[arg-type] # Testing: Dict where TraktMovie expected
+        popular_movie = TraktPopularMovie(**popular_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         serialized = popular_movie.model_dump()
 
         assert serialized == popular_data
@@ -508,12 +534,12 @@ class TestMediaModelIntegration:
         assert show.title == "Game of Thrones"
 
         # Test in trending context
-        trending_show = TraktTrendingShow(watchers=5000, show=complex_show_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
+        trending_show = TraktTrendingShow(watchers=5000, show=complex_show_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         assert trending_show.watchers == 5000
         assert trending_show.show.title == "Game of Thrones"
 
         # Test in popular context
-        popular_show = TraktPopularShow(show=complex_show_data)  # type: ignore[arg-type] # Testing: Dict where TraktShow expected
+        popular_show = TraktPopularShow(show=complex_show_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         assert popular_show.show.title == "Game of Thrones"
 
     def test_complex_movie_data_structure(self):
@@ -535,12 +561,12 @@ class TestMediaModelIntegration:
         assert movie.title == "The Dark Knight"
 
         # Test in trending context
-        trending_movie = TraktTrendingMovie(watchers=3000, movie=complex_movie_data)  # type: ignore[arg-type] # Testing: Dict where TraktMovie expected
+        trending_movie = TraktTrendingMovie(watchers=3000, movie=complex_movie_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         assert trending_movie.watchers == 3000
         assert trending_movie.movie.title == "The Dark Knight"
 
         # Test in popular context
-        popular_movie = TraktPopularMovie(movie=complex_movie_data)  # type: ignore[arg-type] # Testing: Dict where TraktMovie expected
+        popular_movie = TraktPopularMovie(movie=complex_movie_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         assert popular_movie.movie.title == "The Dark Knight"
 
     def test_episode_integration(self):

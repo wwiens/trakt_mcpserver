@@ -238,7 +238,7 @@ class TestTraktUserShow:
         }
 
         user_show = TraktUserShow(**user_show_data)  # type: ignore[arg-type] # Testing: Type validation
-        serialized = user_show.model_dump()
+        serialized = user_show.model_dump(exclude_none=False)
 
         assert serialized == user_show_data
 
@@ -259,7 +259,7 @@ class TestTraktUserShow:
         }
 
         user_show = TraktUserShow(**user_show_data)  # type: ignore[arg-type] # Testing: Type validation
-        json_str = user_show.model_dump_json()
+        json_str = user_show.model_dump_json(exclude_none=False)
 
         # Should be valid JSON
         import json
@@ -455,9 +455,9 @@ class TestTraktUserShow:
             show=show_data,  # type: ignore[arg-type] # Testing: Type validation
             last_watched_at="2023-01-15T20:30:00Z",
             last_updated_at="2023-01-16T10:00:00Z",
-            plays=0,  # Zero plays should be valid
+            plays=-1,  # Negative plays should be valid as it's just an int
         )
-        assert user_show.plays == 0
+        assert user_show.plays == -1
 
         # Test large number of plays
         user_show = TraktUserShow(
@@ -468,7 +468,16 @@ class TestTraktUserShow:
         )
         assert user_show.plays == 999999
 
-    def test_user_show_timestamp_formats(self):
+    @pytest.mark.parametrize(
+        "last_watched,last_updated",
+        [
+            ("2023-01-15T20:30:00.123Z", "2023-01-16T10:00:00.456Z"),
+            ("2023-01-15T20:30:00Z", "2023-01-16T10:00:00Z"),
+        ],
+    )
+    def test_user_show_timestamp_formats_param(
+        self, last_watched: str, last_updated: str
+    ):
         """Test various timestamp formats."""
         show_data: ShowTestData = {
             "title": "Test Show",
@@ -476,22 +485,11 @@ class TestTraktUserShow:
             "ids": {"trakt": "1"},
         }
 
-        # Test with milliseconds
         user_show = TraktUserShow(
             show=show_data,  # type: ignore[arg-type] # Testing: Type validation
-            last_watched_at="2023-01-15T20:30:00.123Z",
-            last_updated_at="2023-01-16T10:00:00.456Z",
+            last_watched_at=last_watched,
+            last_updated_at=last_updated,
             plays=1,
         )
-        assert user_show.last_watched_at == "2023-01-15T20:30:00.123Z"
-        assert user_show.last_updated_at == "2023-01-16T10:00:00.456Z"
-
-        # Test without milliseconds
-        user_show = TraktUserShow(
-            show=show_data,  # type: ignore[arg-type] # Testing: Type validation
-            last_watched_at="2023-01-15T20:30:00Z",
-            last_updated_at="2023-01-16T10:00:00Z",
-            plays=1,
-        )
-        assert user_show.last_watched_at == "2023-01-15T20:30:00Z"
-        assert user_show.last_updated_at == "2023-01-16T10:00:00Z"
+        assert user_show.last_watched_at == last_watched
+        assert user_show.last_updated_at == last_updated

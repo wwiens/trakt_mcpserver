@@ -15,7 +15,8 @@ logger = get_structured_logger("trakt_mcp.server.tools")
 T = TypeVar("T")
 
 # Sensitive parameter patterns that should be redacted in error logs
-SENSITIVE_PARAM_PATTERNS = {
+# Keep specific names; avoid overly generic substrings like "key"
+SENSITIVE_PARAM_PATTERNS: set[str] = {
     "access_token",
     "refresh_token",
     "token",
@@ -25,9 +26,8 @@ SENSITIVE_PARAM_PATTERNS = {
     "api_key",
     "device_code",
     "authorization",
-    "auth",
-    "credential",
-    "key",
+    "auth",  # Keep for legitimate auth headers/fields
+    "credentials",
 }
 
 
@@ -41,7 +41,14 @@ def is_sensitive_key(key: str) -> bool:
         True if the key contains sensitive patterns
     """
     key_lower = key.lower()
-    return any(pattern in key_lower for pattern in SENSITIVE_PARAM_PATTERNS)
+    # Normalize separators and split into segments
+    segments = set(key_lower.replace("-", "_").replace(".", "_").split("_"))
+    if segments & SENSITIVE_PARAM_PATTERNS:
+        return True
+    # Also allow exact or suffix matches like "user_access_token"
+    return any(
+        key_lower == p or key_lower.endswith(f"_{p}") for p in SENSITIVE_PARAM_PATTERNS
+    )
 
 
 def _is_dict_type(value: Any) -> TypeGuard[dict[Any, Any]]:
@@ -114,7 +121,10 @@ def sanitize_value(value: Any, key: str | None = None) -> Any:
             return tuple(sanitized)
         return sanitized
 
-    return value
+    # Preserve safe primitives; redact complex objects to avoid leaking reprs
+    if isinstance(value, str | int | float | bool) or value is None:
+        return value
+    return f"<{type(value).__name__}>"
 
 
 def sanitize_args(args: tuple[Any, ...]) -> str:
@@ -203,11 +213,15 @@ class BaseToolErrorMixin:
         Returns:
             AuthenticationRequiredError with structured data
         """
-        return AuthenticationRequiredError(
+        error = AuthenticationRequiredError(
             action=action,
             auth_url=AUTH_VERIFICATION_URL,
             message=f"Authentication required to {action}",
         )
+        # Enrich with request context and any additional context
+        base_data: dict[str, Any] = error.data if isinstance(error.data, dict) else {}  # type: ignore[assignment] # Error data can be dict[str, Any]
+        error.data = add_context_to_error_data({**base_data, **context})
+        return error
 
     @staticmethod
     def handle_unexpected_error(
@@ -363,5 +377,7 @@ class BaseToolErrorMixin:
         raise cls.handle_validation_error(
             f"Must provide one of: {' OR '.join(param_descriptions)}",
             required_parameter_sets=param_sets,
-            provided_parameters={k: v for k, v in params.items() if v is not None},
+            provided_parameters={
+                k: sanitize_value(v, k) for k, v in params.items() if v is not None
+            },
         )

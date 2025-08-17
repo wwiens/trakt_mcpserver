@@ -177,7 +177,8 @@ async def test_auth_client_get_device_token_success():
         patch("httpx.AsyncClient") as mock_client,
         patch("dotenv.load_dotenv"),
         patch("builtins.open", mock_open()) as mock_file,
-        patch("json.dumps", return_value="{}") as mock_json_dumps,
+        patch("os.open") as mock_os_open,
+        patch("os.fdopen") as mock_fdopen,
         patch.dict(
             os.environ,
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
@@ -187,6 +188,12 @@ async def test_auth_client_get_device_token_success():
             mock_response
         )
 
+        # Set up the os.open and os.fdopen mocks
+        mock_fd = 3
+        mock_os_open.return_value = mock_fd
+        mock_fdopen.return_value.__enter__ = mock_file
+        mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
+
         client = AuthClient()
         result = await client.get_device_token("device_code_123")
 
@@ -195,11 +202,12 @@ async def test_auth_client_get_device_token_success():
         assert result.access_token == "access_token_123"
         assert result.refresh_token == "refresh_token_123"
 
+        # Verify that os.open was called with secure permissions
+        mock_os_open.assert_called_once_with(
+            "auth_token.json", os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600
+        )
+        # Verify that file write was called
         assert mock_file.called
-        # Verify that json.dumps was called with the auth token data (should be the last call)
-        calls = mock_json_dumps.call_args_list
-        auth_token_call = calls[-1]
-        assert "access_token" in str(auth_token_call)
 
 
 def test_clear_auth_token():

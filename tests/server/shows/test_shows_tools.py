@@ -1,8 +1,7 @@
-import asyncio
 import sys
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -25,6 +24,7 @@ from server.shows.tools import (
 from utils.api.error_types import (
     TraktResourceNotFoundError,
 )
+from utils.api.errors import InternalError
 
 
 @pytest.mark.asyncio
@@ -42,10 +42,7 @@ async def test_fetch_trending_shows():
 
     with patch("server.shows.tools.TrendingShowsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_shows)
-        mock_client.get_trending_shows.return_value = future
+        mock_client.get_trending_shows = AsyncMock(return_value=sample_shows)
 
         result = await fetch_trending_shows(limit=5)
 
@@ -68,10 +65,7 @@ async def test_fetch_popular_shows():
 
     with patch("server.shows.tools.PopularShowsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_shows)
-        mock_client.get_popular_shows.return_value = future
+        mock_client.get_popular_shows = AsyncMock(return_value=sample_shows)
 
         result = await fetch_popular_shows(limit=5)
 
@@ -95,10 +89,7 @@ async def test_fetch_favorited_shows():
 
     with patch("server.shows.tools.ShowStatsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_shows)
-        mock_client.get_favorited_shows.return_value = future
+        mock_client.get_favorited_shows = AsyncMock(return_value=sample_shows)
 
         result = await fetch_favorited_shows(limit=5, period="weekly")
 
@@ -124,10 +115,7 @@ async def test_fetch_played_shows():
 
     with patch("server.shows.tools.ShowStatsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_shows)
-        mock_client.get_played_shows.return_value = future
+        mock_client.get_played_shows = AsyncMock(return_value=sample_shows)
 
         result = await fetch_played_shows(limit=5, period="weekly")
 
@@ -151,10 +139,7 @@ async def test_fetch_watched_shows():
 
     with patch("server.shows.tools.ShowStatsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_shows)
-        mock_client.get_watched_shows.return_value = future
+        mock_client.get_watched_shows = AsyncMock(return_value=sample_shows)
 
         result = await fetch_watched_shows(limit=5, period="weekly")
 
@@ -183,10 +168,7 @@ async def test_fetch_show_comments():
         patch("server.comments.tools.ShowCommentsClient") as mock_comments_client_class,
     ):
         mock_client = mock_comments_client_class.return_value
-
-        comments_future: asyncio.Future[Any] = asyncio.Future()
-        comments_future.set_result(sample_comments)
-        mock_client.get_show_comments.return_value = comments_future
+        mock_client.get_show_comments = AsyncMock(return_value=sample_comments)
 
         result = await fetch_show_comments(show_id="1", limit=5)
 
@@ -222,14 +204,8 @@ async def test_fetch_show_ratings():
 
     with patch("server.shows.tools.ShowDetailsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-
-        show_future: asyncio.Future[Any] = asyncio.Future()
-        show_future.set_result(sample_show)
-        mock_client.get_show.return_value = show_future
-
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_result(sample_ratings)
-        mock_client.get_show_ratings.return_value = ratings_future
+        mock_client.get_show = AsyncMock(return_value=sample_show)
+        mock_client.get_show_ratings = AsyncMock(return_value=sample_ratings)
 
         result = await fetch_show_ratings(show_id="1")
 
@@ -245,16 +221,10 @@ async def test_fetch_show_ratings():
 async def test_fetch_show_ratings_error():
     with patch("server.shows.tools.ShowDetailsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
+        mock_client.get_show = AsyncMock(side_effect=Exception("API error"))
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("API error"))
-        mock_client.get_show.return_value = future
-
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(InternalError):
             await fetch_show_ratings(show_id="1")
-
-        # The function should raise an InternalError for unexpected exceptions
-        assert "An unexpected error occurred" in str(exc_info.value)
 
         mock_client.get_show.assert_called_once_with("1")
         mock_client.get_show_ratings.assert_not_called()
@@ -268,13 +238,11 @@ async def test_fetch_show_comments_string_error_handling():
     ):
         # Configure the mock to return a string error
         mock_client = mock_comments_client_class.return_value
-
-        # Create a future that returns a string error
-        comments_future: asyncio.Future[Any] = asyncio.Future()
-        comments_future.set_exception(
-            TraktResourceNotFoundError("show", "1", "The requested show was not found.")
+        mock_client.get_show_comments = AsyncMock(
+            side_effect=TraktResourceNotFoundError(
+                "show", "1", "The requested show was not found."
+            )
         )
-        mock_client.get_show_comments.return_value = comments_future
 
         # Verify the result contains the error message
         with pytest.raises(TraktResourceNotFoundError):
@@ -296,13 +264,11 @@ async def test_fetch_season_comments_string_error_handling():
     ):
         # Configure the mock to return a string error
         mock_client = mock_comments_client_class.return_value
-
-        # Create a future that returns a string error
-        comments_future: asyncio.Future[Any] = asyncio.Future()
-        comments_future.set_exception(
-            TraktResourceNotFoundError("show", "1", "The requested show was not found.")
+        mock_client.get_season_comments = AsyncMock(
+            side_effect=TraktResourceNotFoundError(
+                "show", "1", "The requested show was not found."
+            )
         )
-        mock_client.get_season_comments.return_value = comments_future
 
         # Verify the result contains the error message
         with pytest.raises(TraktResourceNotFoundError):
@@ -375,10 +341,7 @@ async def test_fetch_show_summary_extended():
 
     with patch("server.shows.tools.ShowDetailsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-
-        show_future: asyncio.Future[Any] = asyncio.Future()
-        show_future.set_result(sample_show)
-        mock_client.get_show_extended.return_value = show_future
+        mock_client.get_show_extended = AsyncMock(return_value=sample_show)
 
         result = await fetch_show_summary(show_id="54321")
 
@@ -413,10 +376,7 @@ async def test_fetch_show_summary_basic():
 
     with patch("server.shows.tools.ShowDetailsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-
-        show_future: asyncio.Future[Any] = asyncio.Future()
-        show_future.set_result(sample_show)
-        mock_client.get_show.return_value = show_future
+        mock_client.get_show = AsyncMock(return_value=sample_show)
 
         result = await fetch_show_summary(show_id="54321", extended=False)
 
@@ -436,12 +396,9 @@ async def test_fetch_show_summary_extended_error():
     """Test fetching show summary with extended mode error."""
     with patch("server.shows.tools.ShowDetailsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
+        mock_client.get_show_extended = AsyncMock(side_effect=Exception("API error"))
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("API error"))
-        mock_client.get_show_extended.return_value = future
-
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(InternalError) as exc_info:
             await fetch_show_summary(show_id="54321")
 
         # The function should raise an InternalError for unexpected exceptions
@@ -454,12 +411,9 @@ async def test_fetch_show_summary_basic_error():
     """Test fetching show summary with basic mode error."""
     with patch("server.shows.tools.ShowDetailsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
+        mock_client.get_show = AsyncMock(side_effect=Exception("API error"))
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("API error"))
-        mock_client.get_show.return_value = future
-
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(InternalError) as exc_info:
             await fetch_show_summary(show_id="54321", extended=False)
 
         # The function should raise an InternalError for unexpected exceptions
@@ -473,18 +427,11 @@ async def test_fetch_show_summary_extended_string_error():
     with patch("server.shows.tools.ShowDetailsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result("Error: Show not found")
-        mock_client.get_show_extended.return_value = future
+        mock_client.get_show_extended = AsyncMock(return_value="Error: Show not found")
 
         # handle_api_string_error returns InternalError for string errors
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(InternalError):
             await fetch_show_summary(show_id="54321")
-
-        # Check that it's an InternalError with the right message
-        assert "Error accessing show_extended" in str(
-            exc_info.value
-        ) or "An unexpected error occurred" in str(exc_info.value)
 
         mock_client.get_show_extended.assert_called_once_with("54321")
 
@@ -494,13 +441,10 @@ async def test_fetch_show_summary_basic_string_error():
     """Test fetching show summary with basic mode string error response."""
     with patch("server.shows.tools.ShowDetailsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result("Error: Show not found")
-        mock_client.get_show.return_value = future
+        mock_client.get_show = AsyncMock(return_value="Error: Show not found")
 
         # handle_api_string_error returns InternalError for string errors
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(InternalError) as exc_info:
             await fetch_show_summary(show_id="54321", extended=False)
 
         # Check that it's an InternalError with the right message

@@ -21,13 +21,14 @@ from utils.api.errors import (
 )
 
 
+@pytest.fixture
+def mock_async_func() -> AsyncMock:
+    """Create a mock async function for testing."""
+    return AsyncMock()
+
+
 class TestHandleApiErrorsDecorator:
     """Test handle_api_errors decorator functionality."""
-
-    @pytest.fixture
-    def mock_async_func(self) -> AsyncMock:
-        """Create a mock async function for testing."""
-        return AsyncMock()
 
     def test_decorator_preserves_function_metadata(
         self, mock_async_func: AsyncMock

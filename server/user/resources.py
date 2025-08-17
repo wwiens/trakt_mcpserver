@@ -8,8 +8,10 @@ from mcp.server.fastmcp import FastMCP
 from client.user.client import UserClient
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.user import UserFormatters
+from utils.api.errors import handle_api_errors_func
 
 
+@handle_api_errors_func
 async def get_user_watched_shows() -> str:
     """Returns shows that the authenticated user has watched.
     Requires authentication with Trakt.
@@ -26,6 +28,7 @@ async def get_user_watched_shows() -> str:
     return UserFormatters.format_user_watched_shows(shows)
 
 
+@handle_api_errors_func
 async def get_user_watched_movies() -> str:
     """Returns movies that the authenticated user has watched.
     Requires authentication with Trakt.

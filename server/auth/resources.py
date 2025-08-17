@@ -7,8 +7,10 @@ from mcp.server.fastmcp import FastMCP
 from client.auth import AuthClient
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.auth import AuthFormatters
+from utils.api.errors import handle_api_errors_func
 
 
+@handle_api_errors_func
 async def get_auth_status() -> str:
     """Returns the current authentication status with Trakt.
 

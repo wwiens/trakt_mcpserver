@@ -1,15 +1,8 @@
 """Tests for checkin tools."""
 
-import asyncio
-import sys
-from pathlib import Path
-from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-
-# Add the project root directory to Python path
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.checkin.tools import checkin_to_show
 from utils.api.error_types import (
@@ -33,10 +26,8 @@ async def test_checkin_to_show_authenticated():
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
 
-        # Create awaitable result
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_response)
-        mock_client.checkin_to_show.return_value = future
+        # Async response
+        mock_client.checkin_to_show = AsyncMock(return_value=sample_response)
 
         # Call the tool function
         result = await checkin_to_show(season=1, episode=1, show_id="1")
@@ -78,6 +69,7 @@ async def test_checkin_to_show_not_authenticated():
         # Verify error contains expected information
         assert exc_info.value.data is not None
         assert exc_info.value.data["error_type"] == "auth_required"
+        assert exc_info.value.data.get("auth_url")
         # Verify the client methods were called
         mock_client.is_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_not_called()
@@ -92,8 +84,9 @@ async def test_checkin_to_show_missing_info():
         mock_client.is_authenticated.return_value = True
 
         # Call the tool function with missing show_id and show_title - should raise error
-        with pytest.raises(InvalidParamsError):
+        with pytest.raises(InvalidParamsError) as exc_info:
             await checkin_to_show(season=1, episode=1)
+        assert "Must provide one of" in str(exc_info.value)
 
         # Verify the client methods were called
         mock_client.is_authenticated.assert_called_once()
@@ -114,9 +107,7 @@ async def test_checkin_to_show_with_title():
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_response)
-        mock_client.checkin_to_show.return_value = future
+        mock_client.checkin_to_show = AsyncMock(return_value=sample_response)
 
         result = await checkin_to_show(
             season=1, episode=1, show_title="Breaking Bad", show_year=2008
@@ -153,9 +144,7 @@ async def test_checkin_to_show_with_all_parameters():
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_response)
-        mock_client.checkin_to_show.return_value = future
+        mock_client.checkin_to_show = AsyncMock(return_value=sample_response)
 
         result = await checkin_to_show(
             season=2,
@@ -204,9 +193,7 @@ async def test_checkin_to_show_title_only():
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_response)
-        mock_client.checkin_to_show.return_value = future
+        mock_client.checkin_to_show = AsyncMock(return_value=sample_response)
 
         result = await checkin_to_show(season=1, episode=1, show_title="Friends")
 

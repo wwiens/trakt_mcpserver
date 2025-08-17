@@ -36,10 +36,16 @@ class AuthClient(BaseClient):
                 print(f"Error loading auth token: {e}")
         return None
 
-    def _save_auth_token(self, token: TraktAuthToken):
+    def _save_auth_token(self, token: TraktAuthToken) -> None:
         """Save authentication token to storage."""
-        with open(AUTH_TOKEN_FILE, "w") as f:
-            f.write(json.dumps(token.model_dump()))
+        # Create file with secure permissions (user read/write only)
+        fd = os.open(AUTH_TOKEN_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+        try:
+            with os.fdopen(fd, "w") as f:
+                f.write(token.model_dump_json())
+        except Exception:
+            os.close(fd)
+            raise
 
     def is_authenticated(self) -> bool:
         """Check if the client is authenticated."""
@@ -68,7 +74,6 @@ class AuthClient(BaseClient):
             "client_id": self.client_id,
         }
         response = await self._post_request(TRAKT_ENDPOINTS["device_code"], data)
-        # Validate with Pydantic model and return directly
         return TraktDeviceCode.model_validate(response)
 
     @handle_api_errors
@@ -82,8 +87,9 @@ class AuthClient(BaseClient):
             Authentication token
 
         Raises:
-            AuthorizationPendingError: If user hasn't authorized yet
-            InternalError: If there's a server error
+            AuthenticationError: Authorization pending or denied.
+            NetworkError: Connectivity or timeout issues.
+            InternalError: Unexpected server or parsing failures.
         """
         data = {
             "code": device_code,
@@ -92,7 +98,7 @@ class AuthClient(BaseClient):
         }
 
         response = await self._post_request(TRAKT_ENDPOINTS["device_token"], data)
-        token = TraktAuthToken(**response)
+        token = TraktAuthToken.model_validate(response)
         self.auth_token = token
         self._save_auth_token(token)
         self._update_headers_with_token()

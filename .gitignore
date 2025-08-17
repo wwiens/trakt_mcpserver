@@ -101,3 +101,6 @@ pip-delete-this-directory.txt
 
 # Claude Code local settings
 .claude/
+
+# Trakt authentication tokens (contains OAuth secrets)
+auth_token.json
