@@ -1,6 +1,7 @@
 """User resources for the Trakt MCP server."""
 
 from collections.abc import Awaitable, Callable
+from typing import TypeAlias
 
 from mcp.server.fastmcp import FastMCP
 
@@ -10,7 +11,7 @@ from models.formatters.user import UserFormatters
 from utils.api.errors import handle_api_errors_func
 
 # Type alias for resource handlers
-ResourceHandler = Callable[[], Awaitable[str]]
+ResourceHandler: TypeAlias = Callable[[], Awaitable[str]]
 
 
 @handle_api_errors_func

@@ -1,5 +1,6 @@
 """Authentication client for Trakt API."""
 
+import contextlib
 import json
 import logging
 import os
@@ -44,10 +45,13 @@ class AuthClient(BaseClient):
         # Create file with secure permissions (user read/write only)
         fd = os.open(AUTH_TOKEN_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
         try:
-            with os.fdopen(fd, "w") as f:
-                f.write(token.model_dump_json())
+            file_obj = os.fdopen(fd, "w")
+            with file_obj:
+                file_obj.write(token.model_dump_json())
         except Exception:
-            os.close(fd)
+            # If fdopen failed, ensure we close the raw FD without masking the original error.
+            with contextlib.suppress(OSError):
+                os.close(fd)
             raise
 
     def is_authenticated(self) -> bool:

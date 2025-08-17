@@ -14,10 +14,14 @@ from server.base import BaseToolErrorMixin
 from utils.api.error_types import AuthenticationRequiredError
 
 # Type alias for user tool handlers
-ToolHandler = Callable[[int], Awaitable[str]]
+ToolHandler = Callable[[int | None], Awaitable[str]]
 
 
-def _validate_and_normalize_limit(value: int, *, operation: str) -> int:
+def _validate_and_normalize_limit(value: int | None, *, operation: str) -> int:
+    # Handle None as 0 (return all items) for MCP bridge compatibility
+    if value is None:
+        value = 0
+
     try:
         params = UserLimitParam(limit=value)
         return params.limit
@@ -56,7 +60,7 @@ class UserLimitParam(BaseModel):
     )
 
 
-async def fetch_user_watched_shows(limit: int = 0) -> str:
+async def fetch_user_watched_shows(limit: int | None = 0) -> str:
     """Fetch shows watched by the authenticated user from Trakt.
 
     Args:
@@ -85,7 +89,7 @@ async def fetch_user_watched_shows(limit: int = 0) -> str:
     return UserFormatters.format_user_watched_shows(shows)
 
 
-async def fetch_user_watched_movies(limit: int = 0) -> str:
+async def fetch_user_watched_movies(limit: int | None = 0) -> str:
     """Fetch movies watched by the authenticated user from Trakt.
 
     Args:
@@ -129,7 +133,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
         operation="fetch_user_watched_shows_tool",
         tool=TOOL_NAMES["fetch_user_watched_shows"],
     )
-    async def fetch_user_watched_shows_tool(limit: int = 0) -> str:
+    async def fetch_user_watched_shows_tool(limit: int | None = 0) -> str:
         return await fetch_user_watched_shows(limit)
 
     @mcp.tool(
@@ -140,7 +144,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
         operation="fetch_user_watched_movies_tool",
         tool=TOOL_NAMES["fetch_user_watched_movies"],
     )
-    async def fetch_user_watched_movies_tool(limit: int = 0) -> str:
+    async def fetch_user_watched_movies_tool(limit: int | None = 0) -> str:
         return await fetch_user_watched_movies(limit)
 
     # Return handlers for type checker visibility
