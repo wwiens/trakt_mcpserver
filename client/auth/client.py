@@ -1,6 +1,7 @@
 """Authentication client for Trakt API."""
 
 import json
+import logging
 import os
 import time
 
@@ -9,6 +10,8 @@ from models.auth import TraktAuthToken, TraktDeviceCode
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
+
+logger = logging.getLogger(__name__)
 
 # User authentication token storage path
 AUTH_TOKEN_FILE = "auth_token.json"  # noqa: S105 # File path, not a password
@@ -31,9 +34,9 @@ class AuthClient(BaseClient):
             try:
                 with open(AUTH_TOKEN_FILE) as f:
                     token_data = json.load(f)
-                    return TraktAuthToken(**token_data)
+                    return TraktAuthToken.model_validate(token_data)
             except Exception as e:
-                print(f"Error loading auth token: {e}")
+                logger.error("Error loading auth token: %s", e)
         return None
 
     def _save_auth_token(self, token: TraktAuthToken) -> None:
@@ -119,6 +122,6 @@ class AuthClient(BaseClient):
                     del self.headers["Authorization"]
                 return True
             except Exception as e:
-                print(f"Error clearing auth token: {e}")
+                logger.error("Error clearing auth token: %s", e)
                 return False
         return False

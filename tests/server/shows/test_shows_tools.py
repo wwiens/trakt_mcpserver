@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -72,7 +71,9 @@ async def test_fetch_popular_shows():
         assert "# Popular Shows on Trakt" in result
         assert "Breaking Bad (2008)" in result
 
-        mock_client.get_popular_shows.assert_called_once_with(limit=5)
+        mock_client.get_popular_shows.assert_called_once()
+        _, kwargs = mock_client.get_popular_shows.call_args
+        assert kwargs.get("limit") == 5
 
 
 @pytest.mark.asyncio
@@ -231,12 +232,12 @@ async def test_fetch_show_ratings_error():
 
 
 @pytest.mark.asyncio
-async def test_fetch_show_comments_string_error_handling():
-    """Test fetching show comments with a string error response."""
+async def test_fetch_show_comments_not_found_propagation():
+    """Test fetching show comments with TraktResourceNotFoundError propagation."""
     with (
         patch("server.comments.tools.ShowCommentsClient") as mock_comments_client_class,
     ):
-        # Configure the mock to return a string error
+        # Configure the mock to raise a TraktResourceNotFoundError
         mock_client = mock_comments_client_class.return_value
         mock_client.get_show_comments = AsyncMock(
             side_effect=TraktResourceNotFoundError(
@@ -255,14 +256,14 @@ async def test_fetch_show_comments_string_error_handling():
 
 
 @pytest.mark.asyncio
-async def test_fetch_season_comments_string_error_handling():
-    """Test fetching season comments with a string error response."""
+async def test_fetch_season_comments_not_found_propagation():
+    """Test fetching season comments with TraktResourceNotFoundError propagation."""
     with (
         patch(
             "server.comments.tools.SeasonCommentsClient"
         ) as mock_comments_client_class,
     ):
-        # Configure the mock to return a string error
+        # Configure the mock to raise a TraktResourceNotFoundError
         mock_client = mock_comments_client_class.return_value
         mock_client.get_season_comments = AsyncMock(
             side_effect=TraktResourceNotFoundError(
@@ -281,23 +282,20 @@ async def test_fetch_season_comments_string_error_handling():
 
 
 @pytest.mark.asyncio
-async def test_fetch_episode_comments_string_error_handling():
-    """Test fetching episode comments with a string error response."""
+async def test_fetch_episode_comments_not_found_propagation():
+    """Test fetching episode comments with TraktResourceNotFoundError propagation."""
     with (
         patch(
             "server.comments.tools.EpisodeCommentsClient"
         ) as mock_comments_client_class,
     ):
-        # Configure the mock to return a string error
+        # Configure the mock to raise a TraktResourceNotFoundError
         mock_client = mock_comments_client_class.return_value
-
-        # Create a future that raises the exception when awaited
-        async def raise_error(*args: Any, **kwargs: Any) -> Any:
-            raise TraktResourceNotFoundError(
+        mock_client.get_episode_comments = AsyncMock(
+            side_effect=TraktResourceNotFoundError(
                 "show", "1", "The requested show was not found."
             )
-
-        mock_client.get_episode_comments.side_effect = raise_error
+        )
 
         # With proper MCP error propagation, we expect an exception
         with pytest.raises(TraktResourceNotFoundError) as exc_info:

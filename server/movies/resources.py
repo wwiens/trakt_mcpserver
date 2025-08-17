@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -24,7 +24,7 @@ from utils.api.errors import handle_api_errors_func
 logger: logging.Logger = logging.getLogger("trakt_mcp")
 
 # Type alias for resource handler functions
-type ResourceHandler = Callable[[], Awaitable[str]]
+ResourceHandler: TypeAlias = Callable[[], Awaitable[str]]
 
 
 @handle_api_errors_func

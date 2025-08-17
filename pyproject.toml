@@ -1,9 +1,9 @@
 [project]
 name = "trakt-mcp-server"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py311"
 line-length = 88
 exclude = [
     ".git",
@@ -30,6 +30,7 @@ select = [
 ]
 ignore = [
     "E501", # line too long (handled by formatter)
+    "UP040", # Type alias uses TypeAlias annotation (Python 3.12+ feature)
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -65,7 +66,7 @@ exclude = [
     "**/.venv/**",
     "**/venv/**"
 ]
-pythonVersion = "3.12"
+pythonVersion = "3.11"
 typeCheckingMode = "strict"
 useLibraryCodeForTypes = true
 reportMissingTypeStubs = "error"

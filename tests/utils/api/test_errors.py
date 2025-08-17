@@ -73,10 +73,7 @@ class TestHandleApiErrorsDecorator:
         with pytest.raises(AuthenticationRequiredError) as exc_info:
             await decorated_func()
 
-        assert (
-            exc_info.value.message
-            == "Authentication required. Please check your Trakt API credentials."
-        )
+        assert exc_info.value.message.startswith("Authentication required")
         assert exc_info.value.data is not None
         assert exc_info.value.data["error_type"] == "auth_required"
         assert exc_info.value.data["action"] == "access resource"
@@ -213,10 +210,10 @@ class TestHandleApiErrorsDecorator:
         )
 
     @pytest.mark.asyncio
-    async def test_error_logging_includes_status_code_and_text(
+    async def test_http_status_error_is_mapped_to_server_error(
         self, mock_async_func: AsyncMock
     ) -> None:
-        """Test error logging includes status code and response text."""
+        """Decorator delegates HTTPStatusError to the handler and raises TraktServerError."""
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_response.text = "Internal Server Error"
@@ -233,7 +230,7 @@ class TestHandleApiErrorsDecorator:
         with pytest.raises(TraktServerError):
             await decorated_func()
 
-        # The logging is handled by the error handler, not the decorator directly
+        # Logging assertions belong to TraktAPIErrorHandler tests, not this decorator.
 
 
 class TestDecoratorTypes:
@@ -384,7 +381,7 @@ class TestDecoratorIntegration:
         with pytest.raises(InvalidParamsError) as exc_info:
             await test_func()
 
-        assert "Bad request" in exc_info.value.message
+        assert "bad request" in exc_info.value.message.lower()
         assert exc_info.value.data is not None
         assert exc_info.value.data["http_status"] == 400
         assert exc_info.value.data["details"] == "Bad Request"

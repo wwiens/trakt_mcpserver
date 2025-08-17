@@ -1,7 +1,6 @@
 """User resources for the Trakt MCP server."""
 
-from collections.abc import Callable, Coroutine
-from typing import Any
+from collections.abc import Awaitable, Callable
 
 from mcp.server.fastmcp import FastMCP
 
@@ -9,6 +8,9 @@ from client.user.client import UserClient
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.user import UserFormatters
 from utils.api.errors import handle_api_errors_func
+
+# Type alias for resource handlers
+ResourceHandler = Callable[[], Awaitable[str]]
 
 
 @handle_api_errors_func
@@ -45,12 +47,7 @@ async def get_user_watched_movies() -> str:
     return UserFormatters.format_user_watched_movies(movies)
 
 
-def register_user_resources(
-    mcp: FastMCP,
-) -> tuple[
-    Callable[[], Coroutine[Any, Any, str]],
-    Callable[[], Coroutine[Any, Any, str]],
-]:
+def register_user_resources(mcp: FastMCP) -> tuple[ResourceHandler, ResourceHandler]:
     """Register user resources with the MCP server.
 
     Returns:

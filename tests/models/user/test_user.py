@@ -1,5 +1,8 @@
 """Tests for the models.user module."""
 
+from __future__ import annotations
+
+import json
 from typing import TYPE_CHECKING
 
 import pytest
@@ -9,27 +12,8 @@ from models.shows.show import TraktShow
 from models.user import TraktUserShow
 
 if TYPE_CHECKING:
-    from typing import TypedDict
-
+    from models.types.api_responses import UserWatchedShow
     from tests.models.test_data_types import SeasonData, ShowTestData, UserShowTestData
-
-    class ApiShowResponse(TypedDict):
-        """API response for show data with mixed types."""
-
-        title: str
-        year: int
-        ids: dict[str, int | str]
-        overview: str
-
-    class ApiUserWatchedShowResponse(TypedDict):
-        """Raw API response structure for user watched shows."""
-
-        last_watched_at: str
-        last_updated_at: str
-        plays: int
-        reset_at: None
-        show: ApiShowResponse
-        seasons: list[dict[str, object]]
 
 
 class TestTraktUserShow:
@@ -141,6 +125,7 @@ class TestTraktUserShow:
         """Test that timestamp fields are required."""
         show_data = {
             "title": "Breaking Bad",
+            "year": 2008,
             "ids": {"trakt": "1"},
         }
 
@@ -156,6 +141,7 @@ class TestTraktUserShow:
         """Test that plays field is required."""
         show_data = {
             "title": "Breaking Bad",
+            "year": 2008,
             "ids": {"trakt": "1"},
         }
 
@@ -173,6 +159,7 @@ class TestTraktUserShow:
         """Test that fields have correct types."""
         show_data = {
             "title": "Breaking Bad",
+            "year": 2008,
             "ids": {"trakt": "1"},
         }
 
@@ -262,8 +249,6 @@ class TestTraktUserShow:
         json_str = user_show.model_dump_json(exclude_none=False)
 
         # Should be valid JSON
-        import json
-
         parsed = json.loads(json_str)
 
         expected = {
@@ -375,11 +360,10 @@ class TestTraktUserShow:
     def test_user_show_from_api_response(self):
         """Test creating user show from typical API response."""
         # Simulate typical API response from Trakt
-        api_response: ApiUserWatchedShowResponse = {
+        api_response: UserWatchedShow = {
             "last_watched_at": "2023-12-01T21:00:00.000Z",
             "last_updated_at": "2023-12-01T21:05:00.000Z",
             "plays": 62,
-            "reset_at": None,
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
@@ -390,7 +374,12 @@ class TestTraktUserShow:
                     "imdb": "tt0903747",
                     "tmdb": 1396,
                 },
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine in order to secure his family's future before he dies.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed with inoperable "
+                    "lung cancer turns to manufacturing and selling "
+                    "methamphetamine in order to secure his family's future "
+                    "before he dies."
+                ),
             },
             "seasons": [
                 {
@@ -414,7 +403,7 @@ class TestTraktUserShow:
                 "ids": {
                     k: str(v) for k, v in api_response["show"]["ids"].items()
                 },  # Convert to strings
-                "overview": api_response["show"]["overview"],
+                "overview": api_response["show"].get("overview", ""),
             },
             "last_watched_at": api_response["last_watched_at"],
             "last_updated_at": api_response["last_updated_at"],
@@ -450,12 +439,13 @@ class TestTraktUserShow:
             "ids": {"trakt": "1"},
         }
 
-        # Test negative plays (should be allowed as it's just an int)
+        # Test negative plays (currently allowed - model uses plain int, not constrained)
+        # Note: If domain requires non-negative counts, consider using conint(ge=0)
         user_show = TraktUserShow(
             show=show_data,  # type: ignore[arg-type] # Testing: Type validation
             last_watched_at="2023-01-15T20:30:00Z",
             last_updated_at="2023-01-16T10:00:00Z",
-            plays=-1,  # Negative plays should be valid as it's just an int
+            plays=-1,  # Negative plays currently allowed as it's just an int
         )
         assert user_show.plays == -1
 
@@ -473,6 +463,7 @@ class TestTraktUserShow:
         [
             ("2023-01-15T20:30:00.123Z", "2023-01-16T10:00:00.456Z"),
             ("2023-01-15T20:30:00Z", "2023-01-16T10:00:00Z"),
+            ("2023-01-15T20:30:00+00:00", "2023-01-16T10:00:00-05:00"),
         ],
     )
     def test_user_show_timestamp_formats_param(

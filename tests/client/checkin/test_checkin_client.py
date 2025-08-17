@@ -1,6 +1,6 @@
 import os
 import time
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -37,8 +37,8 @@ async def test_checkin_to_show():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.post.return_value = (
-            mock_response
+        mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+            return_value=mock_response
         )
 
         client = CheckinClient()
@@ -99,8 +99,8 @@ async def test_checkin_to_show_with_title():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.post.return_value = (
-            mock_response
+        mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+            return_value=mock_response
         )
 
         client = CheckinClient()

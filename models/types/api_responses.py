@@ -101,6 +101,7 @@ class MovieResponse(TypedDict):
     updated_at: NotRequired[str]
     language: NotRequired[str]
     available_translations: NotRequired[list[str]]
+    languages: NotRequired[list[str]]
     genres: NotRequired[list[str]]
     certification: NotRequired[str]
 

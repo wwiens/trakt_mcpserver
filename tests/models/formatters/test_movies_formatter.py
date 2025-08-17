@@ -1,5 +1,7 @@
 """Tests for movies formatter module."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, cast
 
 from models.formatters.movies import MovieFormatters
@@ -15,7 +17,7 @@ def make_movie_response(
     trakt: int = 0,
     slug: str = "unknown",
     **overrides: Any,
-) -> "MovieResponse":
+) -> MovieResponse:
     """Factory helper for creating MovieResponse test data."""
     base: MovieResponse = {
         "title": title,
@@ -34,7 +36,7 @@ def make_trending_item(
     slug: str,
     watchers: int,
     **movie_overrides: Any,
-) -> "TrendingWrapper":
+) -> TrendingWrapper:
     """Factory helper for creating TrendingWrapper test data."""
     return {
         "watchers": watchers,
@@ -147,7 +149,8 @@ class TestMovieFormatters:
         placeholder_movie_data: MovieResponse = make_movie_response()  # Uses defaults
         result = MovieFormatters.format_movie_summary(placeholder_movie_data)
         assert isinstance(result, str)
-        assert "Unknown" in result
+        assert "## Unknown" in result
+        assert "Trakt ID: 0" in result
 
     def test_format_movie_extended(self) -> None:
         """Test format_movie_extended with comprehensive movie data."""

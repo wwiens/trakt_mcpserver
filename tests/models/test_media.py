@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 class TestTraktShow:
     """Tests for the TraktShow model."""
 
-    def test_valid_show_creation(self):
+    def test_valid_show_creation(self) -> None:
         """Test creating a valid TraktShow instance."""
         show_data: ShowTestData = {
             "title": "Breaking Bad",
@@ -70,7 +70,7 @@ class TestTraktShow:
             == "A high school chemistry teacher diagnosed with inoperable lung cancer."
         )
 
-    def test_show_minimal_data(self):
+    def test_show_minimal_data(self) -> None:
         """Test creating show with minimal required data."""
         minimal_data: ShowTestData = {
             "title": "Test Show",
@@ -85,7 +85,7 @@ class TestTraktShow:
         assert show.ids == {"trakt": "123"}
         assert show.overview is None
 
-    def test_show_missing_title(self):
+    def test_show_missing_title(self) -> None:
         """Test that title is required."""
         with pytest.raises(ValidationError) as exc_info:
             TraktShow(ids={"trakt": "123"})  # type: ignore[call-arg] # Testing: Missing required 'title' field
@@ -93,7 +93,7 @@ class TestTraktShow:
         errors = exc_info.value.errors()
         assert any(error["loc"] == ("title",) for error in errors)
 
-    def test_show_missing_ids(self):
+    def test_show_missing_ids(self) -> None:
         """Test that ids field is required."""
         with pytest.raises(ValidationError) as exc_info:
             TraktShow(title="Test Show")  # type: ignore[call-arg] # Testing: Missing required 'ids' field
@@ -101,7 +101,7 @@ class TestTraktShow:
         errors = exc_info.value.errors()
         assert any(error["loc"] == ("ids",) for error in errors)
 
-    def test_show_field_types(self):
+    def test_show_field_types(self) -> None:
         """Test that fields have correct types."""
         # Test with clearly incompatible title type
         with pytest.raises(ValidationError):
@@ -115,7 +115,7 @@ class TestTraktShow:
         with pytest.raises(ValidationError):
             TraktShow(title="Test", ids="not_a_dict")  # type: ignore[arg-type] # Testing: String where dict expected for 'ids'
 
-    def test_show_serialization(self):
+    def test_show_serialization(self) -> None:
         """Test that TraktShow can be serialized."""
         show_data: ShowTestData = {
             "title": "Breaking Bad",
@@ -129,7 +129,7 @@ class TestTraktShow:
 
         assert serialized == show_data
 
-    def test_show_with_none_values(self):
+    def test_show_with_none_values(self) -> None:
         """Test show with explicit None values."""
         show_data: ShowTestData = {
             "title": "Test Show",
@@ -148,7 +148,7 @@ class TestTraktShow:
 class TestTraktMovie:
     """Tests for the TraktMovie model."""
 
-    def test_valid_movie_creation(self):
+    def test_valid_movie_creation(self) -> None:
         """Test creating a valid TraktMovie instance."""
         movie_data: MovieTestData = {
             "title": "Inception",
@@ -172,7 +172,7 @@ class TestTraktMovie:
             == "A thief who steals corporate secrets through dream-sharing technology."
         )
 
-    def test_movie_minimal_data(self):
+    def test_movie_minimal_data(self) -> None:
         """Test creating movie with minimal required data."""
         minimal_data: MovieTestData = {
             "title": "Test Movie",
@@ -187,7 +187,7 @@ class TestTraktMovie:
         assert movie.ids == {"trakt": "456"}
         assert movie.overview is None
 
-    def test_movie_required_fields(self):
+    def test_movie_required_fields(self) -> None:
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
             TraktMovie()  # type: ignore[call-arg] # Testing: All required fields missing
@@ -197,7 +197,7 @@ class TestTraktMovie:
         assert "title" in required_fields
         assert "ids" in required_fields
 
-    def test_movie_field_types(self):
+    def test_movie_field_types(self) -> None:
         """Test that fields have correct types."""
         # Test with clearly incompatible types
         with pytest.raises(ValidationError):
@@ -206,7 +206,7 @@ class TestTraktMovie:
         with pytest.raises(ValidationError):
             TraktMovie(title="Test", year=["not", "an", "int"], ids={"trakt": "123"})  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
 
-    def test_movie_serialization(self):
+    def test_movie_serialization(self) -> None:
         """Test that TraktMovie can be serialized."""
         movie_data: MovieTestData = {
             "title": "Inception",
@@ -224,7 +224,7 @@ class TestTraktMovie:
 class TestTraktEpisode:
     """Tests for the TraktEpisode model."""
 
-    def test_valid_episode_creation(self):
+    def test_valid_episode_creation(self) -> None:
         """Test creating a valid TraktEpisode instance."""
         episode_data: EpisodeTestData = {
             "season": 1,
@@ -242,7 +242,7 @@ class TestTraktEpisode:
         assert episode.ids == {"trakt": "123", "tvdb": "456"}
         assert episode.last_watched_at == "2023-01-15T20:30:00Z"
 
-    def test_episode_minimal_data(self):
+    def test_episode_minimal_data(self) -> None:
         """Test creating episode with minimal required data."""
         minimal_data: EpisodeTestData = {
             "season": 2,
@@ -257,7 +257,7 @@ class TestTraktEpisode:
         assert episode.ids is None
         assert episode.last_watched_at is None
 
-    def test_episode_required_fields(self):
+    def test_episode_required_fields(self) -> None:
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
             TraktEpisode()  # type: ignore[call-arg] # Testing: All required fields missing
@@ -267,7 +267,7 @@ class TestTraktEpisode:
         assert "season" in required_fields
         assert "number" in required_fields
 
-    def test_episode_field_types(self):
+    def test_episode_field_types(self) -> None:
         """Test that fields have correct types."""
         # Test with clearly incompatible types
         with pytest.raises(ValidationError):
@@ -276,7 +276,7 @@ class TestTraktEpisode:
         with pytest.raises(ValidationError):
             TraktEpisode(season=1, number=["not", "an", "int"])  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
 
-    def test_episode_serialization(self):
+    def test_episode_serialization(self) -> None:
         """Test that TraktEpisode can be serialized."""
         episode_data: EpisodeTestData = {
             "season": 1,
@@ -295,7 +295,7 @@ class TestTraktEpisode:
 class TestTraktTrendingShow:
     """Tests for the TraktTrendingShow model."""
 
-    def test_valid_trending_show_creation(self):
+    def test_valid_trending_show_creation(self) -> None:
         """Test creating a valid TraktTrendingShow instance."""
         trending_data: TrendingShowPayload = {
             "watchers": 150,
@@ -313,7 +313,7 @@ class TestTraktTrendingShow:
         assert trending_show.show.title == "Breaking Bad"
         assert trending_show.show.year == 2008
 
-    def test_trending_show_required_fields(self):
+    def test_trending_show_required_fields(self) -> None:
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
             TraktTrendingShow()  # type: ignore[call-arg] # Testing: All required fields missing
@@ -323,7 +323,7 @@ class TestTraktTrendingShow:
         assert "watchers" in required_fields
         assert "show" in required_fields
 
-    def test_trending_show_nested_validation(self):
+    def test_trending_show_nested_validation(self) -> None:
         """Test that nested show validation works."""
         # Missing required show fields
         with pytest.raises(ValidationError):
@@ -332,7 +332,7 @@ class TestTraktTrendingShow:
                 show={"title": "Test"},  # type: ignore[arg-type] # Testing: Incomplete show data missing 'ids'
             )
 
-    def test_trending_show_serialization(self):
+    def test_trending_show_serialization(self) -> None:
         """Test that TraktTrendingShow can be serialized."""
         trending_data: TrendingShowPayload = {
             "watchers": 150,
@@ -353,7 +353,7 @@ class TestTraktTrendingShow:
 class TestTraktTrendingMovie:
     """Tests for the TraktTrendingMovie model."""
 
-    def test_valid_trending_movie_creation(self):
+    def test_valid_trending_movie_creation(self) -> None:
         """Test creating a valid TraktTrendingMovie instance."""
         trending_data: TrendingMoviePayload = {
             "watchers": 200,
@@ -371,7 +371,7 @@ class TestTraktTrendingMovie:
         assert trending_movie.movie.title == "Inception"
         assert trending_movie.movie.year == 2010
 
-    def test_trending_movie_required_fields(self):
+    def test_trending_movie_required_fields(self) -> None:
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
             TraktTrendingMovie()  # type: ignore[call-arg] # Testing: All required fields missing
@@ -381,7 +381,7 @@ class TestTraktTrendingMovie:
         assert "watchers" in required_fields
         assert "movie" in required_fields
 
-    def test_trending_movie_nested_validation(self):
+    def test_trending_movie_nested_validation(self) -> None:
         """Test that nested movie validation works."""
         # Missing required movie fields
         with pytest.raises(ValidationError):
@@ -394,7 +394,7 @@ class TestTraktTrendingMovie:
 class TestTraktPopularShow:
     """Tests for the TraktPopularShow model."""
 
-    def test_valid_popular_show_creation(self):
+    def test_valid_popular_show_creation(self) -> None:
         """Test creating a valid TraktPopularShow instance."""
         popular_data: PopularShowPayload = {
             "show": {
@@ -410,7 +410,7 @@ class TestTraktPopularShow:
         assert popular_show.show.title == "Breaking Bad"
         assert popular_show.show.year == 2008
 
-    def test_popular_show_from_api_response(self):
+    def test_popular_show_from_api_response(self) -> None:
         """Test creating popular show from API response format."""
         # Simulate API response format where show data is at root level
         api_data = {
@@ -426,7 +426,7 @@ class TestTraktPopularShow:
         assert popular_show.show.year == 2008
         assert popular_show.show.ids == {"trakt": "1"}
 
-    def test_popular_show_required_fields(self):
+    def test_popular_show_required_fields(self) -> None:
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
             TraktPopularShow()  # type: ignore[call-arg] # Testing: Missing required 'show' field
@@ -434,7 +434,7 @@ class TestTraktPopularShow:
         errors = exc_info.value.errors()
         assert any(error["loc"] == ("show",) for error in errors)
 
-    def test_popular_show_serialization(self):
+    def test_popular_show_serialization(self) -> None:
         """Test that TraktPopularShow can be serialized."""
         popular_data: PopularShowPayload = {
             "show": {
@@ -454,7 +454,7 @@ class TestTraktPopularShow:
 class TestTraktPopularMovie:
     """Tests for the TraktPopularMovie model."""
 
-    def test_valid_popular_movie_creation(self):
+    def test_valid_popular_movie_creation(self) -> None:
         """Test creating a valid TraktPopularMovie instance."""
         popular_data: PopularMoviePayload = {
             "movie": {
@@ -470,7 +470,7 @@ class TestTraktPopularMovie:
         assert popular_movie.movie.title == "Inception"
         assert popular_movie.movie.year == 2010
 
-    def test_popular_movie_from_api_response(self):
+    def test_popular_movie_from_api_response(self) -> None:
         """Test creating popular movie from API response format."""
         # Simulate API response format where movie data is at root level
         api_data = {
@@ -486,7 +486,7 @@ class TestTraktPopularMovie:
         assert popular_movie.movie.year == 2010
         assert popular_movie.movie.ids == {"trakt": "1"}
 
-    def test_popular_movie_required_fields(self):
+    def test_popular_movie_required_fields(self) -> None:
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
             TraktPopularMovie()  # type: ignore[call-arg] # Testing: Missing required 'movie' field
@@ -494,7 +494,7 @@ class TestTraktPopularMovie:
         errors = exc_info.value.errors()
         assert any(error["loc"] == ("movie",) for error in errors)
 
-    def test_popular_movie_serialization(self):
+    def test_popular_movie_serialization(self) -> None:
         """Test that TraktPopularMovie can be serialized."""
         popular_data: PopularMoviePayload = {
             "movie": {
@@ -514,7 +514,7 @@ class TestTraktPopularMovie:
 class TestMediaModelIntegration:
     """Integration tests for media models working together."""
 
-    def test_complex_show_data_structure(self):
+    def test_complex_show_data_structure(self) -> None:
         """Test complex show data structure with all fields."""
         complex_show_data: ShowTestData = {
             "title": "Game of Thrones",
@@ -542,7 +542,7 @@ class TestMediaModelIntegration:
         popular_show = TraktPopularShow(show=complex_show_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         assert popular_show.show.title == "Game of Thrones"
 
-    def test_complex_movie_data_structure(self):
+    def test_complex_movie_data_structure(self) -> None:
         """Test complex movie data structure with all fields."""
         complex_movie_data: MovieTestData = {
             "title": "The Dark Knight",
@@ -569,7 +569,7 @@ class TestMediaModelIntegration:
         popular_movie = TraktPopularMovie(movie=complex_movie_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         assert popular_movie.movie.title == "The Dark Knight"
 
-    def test_episode_integration(self):
+    def test_episode_integration(self) -> None:
         """Test episode model integration scenarios."""
         episode_data: EpisodeTestData = {
             "season": 1,

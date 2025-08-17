@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import httpx
 import pytest
+from _pytest.logging import LogCaptureFixture
 
 from client.auth import AuthClient
 from models.auth import TraktAuthToken
@@ -257,7 +258,7 @@ def test_clear_auth_token_no_file():
         assert client.auth_token is None
 
 
-def test_clear_auth_token_remove_error():
+def test_clear_auth_token_remove_error(caplog: LogCaptureFixture) -> None:
     # Use a list to track call count (mutable in closure)
     call_count = [0]
 
@@ -280,7 +281,6 @@ def test_clear_auth_token_remove_error():
         ),
         patch("os.path.exists", side_effect=path_exists_side_effect),
         patch("os.remove", side_effect=OSError("Permission denied")),
-        patch("builtins.print") as mock_print,
     ):
         client = AuthClient()
         client.auth_token = TraktAuthToken(
@@ -297,12 +297,8 @@ def test_clear_auth_token_remove_error():
         assert result is False
         # Token should remain unchanged on error
         assert client.auth_token is not None
-        # Check that the error message was printed
-        print_calls = [str(call) for call in mock_print.call_args_list]
-        assert any(
-            "Error clearing auth token: Permission denied" in call
-            for call in print_calls
-        )
+        # Check that the error message was logged
+        assert "Error clearing auth token: Permission denied" in caplog.text
 
 
 @pytest.mark.asyncio
