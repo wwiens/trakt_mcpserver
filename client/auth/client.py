@@ -37,25 +37,36 @@ class AuthClient(BaseClient):
                     token_data = json.load(f)
                     return TraktAuthToken.model_validate(token_data)
             except Exception:
-                logger.exception("Error loading auth token")
+                logger.exception("Error loading auth token from %s", AUTH_TOKEN_FILE)
         return None
 
     def _save_auth_token(self, token: TraktAuthToken) -> None:
         """Save authentication token to storage."""
-        # Create file with secure permissions (user read/write only)
-        fd = os.open(AUTH_TOKEN_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+        # Create file with secure permissions (user read/write only) using
+        # an atomic write-then-replace to avoid partial files.
+        # Ensure parent directory exists if there is one
+        parent_dir = os.path.dirname(AUTH_TOKEN_FILE)
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+        tmp_path = f"{AUTH_TOKEN_FILE}.tmp"
+        fd = os.open(tmp_path, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
         try:
-            file_obj = os.fdopen(fd, "w", encoding="utf-8")
+            try:
+                file_obj = os.fdopen(fd, "w", encoding="utf-8")
+            except Exception:
+                with contextlib.suppress(OSError):
+                    os.close(fd)
+                raise
             with file_obj:
                 file_obj.write(token.model_dump_json())
                 file_obj.flush()
                 # fsync may not be available on all file objects or platforms
                 with contextlib.suppress(OSError, AttributeError, TypeError):
                     os.fsync(file_obj.fileno())
+            os.replace(tmp_path, AUTH_TOKEN_FILE)
         except Exception:
-            # If fdopen failed, ensure we close the raw FD without masking the original error.
             with contextlib.suppress(OSError):
-                os.close(fd)
+                os.remove(tmp_path)
             raise
 
     def is_authenticated(self) -> bool:
@@ -64,9 +75,8 @@ class AuthClient(BaseClient):
             return False
 
         # Check if token is expired
-        current_time = int(time.time())
-        token_expiry = self.auth_token.created_at + self.auth_token.expires_in
-        return current_time < token_expiry
+        expiry = self.get_token_expiry()
+        return expiry is not None and int(time.time()) < expiry
 
     def get_token_expiry(self) -> int | None:
         """Get the expiry timestamp of the current token."""
@@ -99,9 +109,8 @@ class AuthClient(BaseClient):
             Authentication token
 
         Raises:
-            AuthenticationError: Authorization pending or denied.
-            NetworkError: Connectivity or timeout issues.
-            InternalError: Unexpected server or parsing failures.
+            AppError: AuthenticationError | NetworkError | InternalError raised
+                by the handle_api_errors decorator when the exchange fails.
         """
         # Validate input with Pydantic
         payload = DeviceTokenRequest.model_validate({"code": device_code})
@@ -133,7 +142,9 @@ class AuthClient(BaseClient):
                 if "Authorization" in self.headers:
                     del self.headers["Authorization"]
                 return True
-            except Exception:
-                logger.exception("Error clearing auth token")
+            except OSError:
+                logger.exception(
+                    "OS error clearing auth token file %s", AUTH_TOKEN_FILE
+                )
                 return False
         return False

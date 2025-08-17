@@ -180,6 +180,7 @@ async def test_auth_client_get_device_token_success():
         patch("builtins.open", mock_open()) as mock_file,
         patch("os.open") as mock_os_open,
         patch("os.fdopen") as mock_fdopen,
+        patch("os.replace") as mock_replace,
         patch.dict(
             os.environ,
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
@@ -203,10 +204,12 @@ async def test_auth_client_get_device_token_success():
         assert result.access_token == "access_token_123"
         assert result.refresh_token == "refresh_token_123"
 
-        # Verify that os.open was called with secure permissions
+        # Verify that os.open was called with secure permissions on temp file
         mock_os_open.assert_called_once_with(
-            "auth_token.json", os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600
+            "auth_token.json.tmp", os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600
         )
+        # Verify atomic replace was called
+        mock_replace.assert_called_once_with("auth_token.json.tmp", "auth_token.json")
         # Verify that file write was called
         assert mock_file.called
 
@@ -298,7 +301,7 @@ def test_clear_auth_token_remove_error(caplog: LogCaptureFixture) -> None:
         # Token should remain unchanged on error
         assert client.auth_token is not None
         # Check that the error message was logged
-        assert "Error clearing auth token" in caplog.text
+        assert "OS error clearing auth token file" in caplog.text
         assert "Permission denied" in caplog.text
 
 
