@@ -1,0 +1,16 @@
+services:
+  trakt_mcpserver:
+    build: .
+    container_name: trakt_mcpserver
+    ports:
+      - 8080:8080
+    environment:
+      - TRAKT_CLIENT_ID=${TRAKT_CLIENT_ID:-""}
+      - TRAKT_CLIENT_SECRET=${TRAKT_CLIENT_SECRET:-""}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
