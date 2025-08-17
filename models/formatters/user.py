@@ -1,13 +1,13 @@
 """User formatting methods for the Trakt MCP server."""
 
-from typing import Any
+from ..types import UserWatchedMovie, UserWatchedShow
 
 
 class UserFormatters:
     """Helper class for formatting user-related data for MCP responses."""
 
     @staticmethod
-    def format_user_watched_shows(shows: list[dict[str, Any]]) -> str:
+    def format_user_watched_shows(shows: list[UserWatchedShow]) -> str:
         """Format user watched shows data for MCP resource."""
         result = "# Your Watched Shows on Trakt\n\n"
 
@@ -38,7 +38,7 @@ class UserFormatters:
         return result
 
     @staticmethod
-    def format_user_watched_movies(movies: list[dict[str, Any]]) -> str:
+    def format_user_watched_movies(movies: list[UserWatchedMovie]) -> str:
         """Format user watched movies data for MCP resource."""
         result = "# Your Watched Movies on Trakt\n\n"
 

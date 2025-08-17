@@ -1,6 +1,6 @@
 """Authentication-related models for the Trakt MCP server."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TraktDeviceCode(BaseModel):
@@ -22,3 +22,9 @@ class TraktAuthToken(BaseModel):
     created_at: int
     scope: str = "public"
     token_type: str = "bearer"  # noqa: S105 # OAuth token type, not a password
+
+
+class DeviceTokenRequest(BaseModel):
+    """Request model for device token exchange."""
+
+    code: str = Field(min_length=1, description="Device code from Trakt")

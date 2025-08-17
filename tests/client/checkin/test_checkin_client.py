@@ -1,6 +1,6 @@
 import os
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -10,9 +10,9 @@ from models.auth import TraktAuthToken
 
 @pytest.mark.asyncio
 async def test_checkin_to_show():
-    mock_response = MagicMock()
+    mock_response = Mock()
     mock_response.json.return_value = {
-        "id": "12345",
+        "id": 12345,
         "watched_at": "2023-06-20T20:00:00.000Z",
         "sharing": {"twitter": True, "tumblr": False},
         "show": {
@@ -27,7 +27,7 @@ async def test_checkin_to_show():
             "ids": {"trakt": "73640"},
         },
     }
-    mock_response.raise_for_status = MagicMock()
+    mock_response.raise_for_status = Mock()
 
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -37,8 +37,8 @@ async def test_checkin_to_show():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.post.return_value = (
-            mock_response
+        mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+            return_value=mock_response
         )
 
         client = CheckinClient()
@@ -60,16 +60,21 @@ async def test_checkin_to_show():
         )
 
         assert isinstance(result, dict)
-        assert result["id"] == "12345"
+        assert result["id"] == 12345  # id is int in CheckinResponse
+
+        # Type-safe access to optional fields
+        assert "show" in result
         assert result["show"]["title"] == "Breaking Bad"
+
+        assert "episode" in result
         assert result["episode"]["title"] == "Pilot"
 
 
 @pytest.mark.asyncio
 async def test_checkin_to_show_with_title():
-    mock_response = MagicMock()
+    mock_response = Mock()
     mock_response.json.return_value = {
-        "id": "67890",
+        "id": 67890,
         "watched_at": "2023-06-20T21:00:00.000Z",
         "sharing": {"twitter": False, "tumblr": False},
         "show": {
@@ -84,7 +89,7 @@ async def test_checkin_to_show_with_title():
             "ids": {"trakt": "73641"},
         },
     }
-    mock_response.raise_for_status = MagicMock()
+    mock_response.raise_for_status = Mock()
 
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -94,8 +99,8 @@ async def test_checkin_to_show_with_title():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.post.return_value = (
-            mock_response
+        mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+            return_value=mock_response
         )
 
         client = CheckinClient()
@@ -114,8 +119,13 @@ async def test_checkin_to_show_with_title():
         )
 
         assert isinstance(result, dict)
-        assert result["id"] == "67890"
+        assert result["id"] == 67890  # id is int in CheckinResponse
+
+        # Type-safe access to optional fields
+        assert "show" in result
         assert result["show"]["title"] == "The Wire"
+
+        assert "episode" in result
         assert result["episode"]["title"] == "The Detail"
 
 
@@ -129,7 +139,8 @@ async def test_checkin_to_show_not_authenticated():
         ),
     ):
         client = CheckinClient()
-        # No authentication set
+        # Mock authentication to return False
+        client.is_authenticated = Mock(return_value=False)
 
         with pytest.raises(ValueError) as exc_info:
             await client.checkin_to_show(

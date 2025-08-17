@@ -1,30 +1,34 @@
 """Tests for utils.api.errors module."""
 
-import logging
 from collections.abc import Callable
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
 
-from utils.api.errors import (
-    AsyncFunc,
-    InternalError,
-    InvalidRequestError,
-    T,
-    handle_api_errors,
-    logger,
+from utils.api.error_types import (
+    AuthenticationRequiredError,
+    TraktRateLimitError,
+    TraktResourceNotFoundError,
+    TraktServerError,
 )
+from utils.api.errors import (
+    InternalError,
+    InvalidParamsError,
+    handle_api_errors,
+    handle_api_errors_func,
+)
+
+
+@pytest.fixture
+def mock_async_func() -> AsyncMock:
+    """Create a mock async function for testing."""
+    return AsyncMock()
 
 
 class TestHandleApiErrorsDecorator:
     """Test handle_api_errors decorator functionality."""
-
-    @pytest.fixture
-    def mock_async_func(self) -> AsyncMock:
-        """Create a mock async function for testing."""
-        return AsyncMock()
 
     def test_decorator_preserves_function_metadata(
         self, mock_async_func: AsyncMock
@@ -33,7 +37,7 @@ class TestHandleApiErrorsDecorator:
         mock_async_func.__name__ = "test_function"
         mock_async_func.__doc__ = "Test docstring"
 
-        decorated_func = handle_api_errors(mock_async_func)
+        decorated_func = handle_api_errors_func(mock_async_func)
 
         assert decorated_func.__name__ == "test_function"
         assert decorated_func.__doc__ == "Test docstring"
@@ -44,7 +48,7 @@ class TestHandleApiErrorsDecorator:
         expected_result = {"success": True, "data": "test_data"}
         mock_async_func.return_value = expected_result
 
-        decorated_func = handle_api_errors(mock_async_func)
+        decorated_func = handle_api_errors_func(mock_async_func)
         result = await decorated_func("arg1", kwarg1="value1")
 
         assert result == expected_result
@@ -64,20 +68,15 @@ class TestHandleApiErrorsDecorator:
         )
         mock_async_func.side_effect = http_error
 
-        decorated_func = handle_api_errors(mock_async_func)
+        decorated_func = handle_api_errors_func(mock_async_func)
 
-        with (
-            patch.object(logger, "error") as mock_logger,
-            pytest.raises(InvalidRequestError) as exc_info,
-        ):
+        with pytest.raises(AuthenticationRequiredError) as exc_info:
             await decorated_func()
 
-        assert (
-            exc_info.value.message
-            == "Authentication required. Please check your Trakt API credentials."
-        )
-        assert exc_info.value.data == {"http_status": 401}
-        mock_logger.assert_called_once()
+        assert exc_info.value.message.startswith("Authentication required")
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "auth_required"
+        assert exc_info.value.data["action"] == "access resource"
 
     @pytest.mark.asyncio
     async def test_http_404_not_found_error(self, mock_async_func: AsyncMock) -> None:
@@ -91,17 +90,18 @@ class TestHandleApiErrorsDecorator:
         )
         mock_async_func.side_effect = http_error
 
-        decorated_func = handle_api_errors(mock_async_func)
+        decorated_func = handle_api_errors_func(mock_async_func)
 
-        with (
-            patch.object(logger, "error") as mock_logger,
-            pytest.raises(InvalidRequestError) as exc_info,
-        ):
+        with pytest.raises(TraktResourceNotFoundError) as exc_info:
             await decorated_func()
 
-        assert exc_info.value.message == "The requested resource was not found."
-        assert exc_info.value.data == {"http_status": 404}
-        mock_logger.assert_called_once()
+        assert (
+            "The requested resource 'unknown' was not found" in exc_info.value.message
+        )
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 404
+        assert exc_info.value.data["resource_type"] == "resource"
+        assert exc_info.value.data["resource_id"] == "unknown"
 
     @pytest.mark.asyncio
     async def test_http_429_rate_limit_error(self, mock_async_func: AsyncMock) -> None:
@@ -109,23 +109,22 @@ class TestHandleApiErrorsDecorator:
         mock_response = MagicMock()
         mock_response.status_code = 429
         mock_response.text = "Too Many Requests"
+        mock_response.headers = {}
 
         http_error = httpx.HTTPStatusError(
             message="429 Too Many Requests", request=MagicMock(), response=mock_response
         )
         mock_async_func.side_effect = http_error
 
-        decorated_func = handle_api_errors(mock_async_func)
+        decorated_func = handle_api_errors_func(mock_async_func)
 
-        with (
-            patch.object(logger, "error") as mock_logger,
-            pytest.raises(InvalidRequestError) as exc_info,
-        ):
+        with pytest.raises(TraktRateLimitError) as exc_info:
             await decorated_func()
 
         assert exc_info.value.message == "Rate limit exceeded. Please try again later."
-        assert exc_info.value.data == {"http_status": 429}
-        mock_logger.assert_called_once()
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 429
+        assert "retry_after" not in exc_info.value.data
 
     @pytest.mark.asyncio
     async def test_http_unknown_status_error(self, mock_async_func: AsyncMock) -> None:
@@ -141,20 +140,18 @@ class TestHandleApiErrorsDecorator:
         )
         mock_async_func.side_effect = http_error
 
-        decorated_func = handle_api_errors(mock_async_func)
+        decorated_func = handle_api_errors_func(mock_async_func)
 
-        with (
-            patch.object(logger, "error") as mock_logger,
-            pytest.raises(InternalError) as exc_info,
-        ):
+        with pytest.raises(TraktServerError) as exc_info:
             await decorated_func()
 
-        assert exc_info.value.message == "HTTP 503 error occurred"
-        assert exc_info.value.data == {
-            "http_status": 503,
-            "response": "Service Unavailable",
-        }
-        mock_logger.assert_called_once()
+        assert (
+            exc_info.value.message
+            == "Service unavailable. Please try again in 30 seconds."
+        )
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 503
+        assert exc_info.value.data["is_temporary"] is True
 
     @pytest.mark.asyncio
     async def test_request_error_handling(self, mock_async_func: AsyncMock) -> None:
@@ -162,23 +159,18 @@ class TestHandleApiErrorsDecorator:
         request_error = httpx.RequestError("Connection failed")
         mock_async_func.side_effect = request_error
 
-        decorated_func = handle_api_errors(mock_async_func)
+        decorated_func = handle_api_errors_func(mock_async_func)
 
-        with (
-            patch.object(logger, "error") as mock_logger,
-            pytest.raises(InternalError) as exc_info,
-        ):
+        with pytest.raises(InternalError) as exc_info:
             await decorated_func()
 
         assert (
             exc_info.value.message
             == "Unable to connect to Trakt API. Please check your internet connection."
         )
-        assert exc_info.value.data == {
-            "error_type": "request_error",
-            "details": "Connection failed",
-        }
-        mock_logger.assert_called_once_with("Request error: Connection failed")
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "request_error"
+        assert exc_info.value.data["details"] == "Connection failed"
 
     @pytest.mark.asyncio
     async def test_unexpected_error_handling(self, mock_async_func: AsyncMock) -> None:
@@ -191,19 +183,16 @@ class TestHandleApiErrorsDecorator:
         unexpected_error = UnexpectedException("Unexpected error")
         mock_async_func.side_effect = unexpected_error
 
-        decorated_func = handle_api_errors(mock_async_func)
+        decorated_func = handle_api_errors_func(mock_async_func)
 
-        with (
-            patch.object(logger, "exception") as mock_logger,
-            pytest.raises(InternalError) as exc_info,
-        ):
+        with pytest.raises(InternalError) as exc_info:
             await decorated_func()
 
         assert (
             exc_info.value.message == "An unexpected error occurred: Unexpected error"
         )
-        assert exc_info.value.data == {"error_type": "unexpected_error"}
-        mock_logger.assert_called_once_with("Unexpected error")
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "unexpected_error"
 
     @pytest.mark.asyncio
     async def test_decorator_with_args_and_kwargs(
@@ -212,7 +201,7 @@ class TestHandleApiErrorsDecorator:
         """Test decorator properly passes args and kwargs."""
         mock_async_func.return_value = "success"
 
-        decorated_func = handle_api_errors(mock_async_func)
+        decorated_func = handle_api_errors_func(mock_async_func)
         result = await decorated_func("arg1", "arg2", key1="value1", key2="value2")
 
         assert result == "success"
@@ -221,10 +210,10 @@ class TestHandleApiErrorsDecorator:
         )
 
     @pytest.mark.asyncio
-    async def test_error_logging_includes_status_code_and_text(
+    async def test_http_status_error_is_mapped_to_server_error(
         self, mock_async_func: AsyncMock
     ) -> None:
-        """Test error logging includes status code and response text."""
+        """Decorator delegates HTTPStatusError to the handler and raises TraktServerError."""
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_response.text = "Internal Server Error"
@@ -236,35 +225,27 @@ class TestHandleApiErrorsDecorator:
         )
         mock_async_func.side_effect = http_error
 
-        decorated_func = handle_api_errors(mock_async_func)
+        decorated_func = handle_api_errors_func(mock_async_func)
 
-        with patch.object(logger, "error") as mock_logger, pytest.raises(InternalError):
+        with pytest.raises(TraktServerError):
             await decorated_func()
 
-        # Check that the log message includes status code and response text
-        mock_logger.assert_called_once()
-        log_message = mock_logger.call_args[0][0]
-        assert "500" in log_message
-        assert "Internal Server Error" in log_message
+        # Logging assertions belong to TraktAPIErrorHandler tests, not this decorator.
 
 
 class TestDecoratorTypes:
     """Test decorator type annotations and type safety."""
 
-    def test_async_func_type_alias(self) -> None:
-        """Test AsyncFunc type alias is properly defined."""
-        # AsyncFunc should be a type alias for async functions
-        assert hasattr(AsyncFunc, "__origin__")  # Should be a generic type
-
-    def test_type_var_t(self) -> None:
-        """Test TypeVar T is properly defined."""
-        assert isinstance(T, type(T))  # Should be a TypeVar
-        assert T.__name__ == "T"
+    def test_decorator_is_callable_and_available(self) -> None:
+        """Test that the decorator function is properly imported and callable."""
+        # The decorator should work with both methods and functions
+        assert handle_api_errors_func is not None
+        assert callable(handle_api_errors_func)
 
     def test_decorator_type_hints(self) -> None:
         """Test decorator maintains proper type hints."""
 
-        @handle_api_errors
+        @handle_api_errors_func
         async def test_func(x: int) -> str:
             return str(x)
 
@@ -272,32 +253,69 @@ class TestDecoratorTypes:
         assert callable(test_func)
 
 
-class TestLoggerConfiguration:
-    """Test logger configuration and setup."""
+class TestHandleApiErrorsMethodDecorator:
+    """Test handle_api_errors decorator functionality for class methods."""
 
-    def test_logger_exists(self) -> None:
-        """Test logger is properly configured."""
-        assert logger is not None
-        assert isinstance(logger, logging.Logger)
-        assert logger.name == "trakt_mcp"
+    class MockService:
+        """Mock service class for testing method decorators."""
 
-    def test_logger_level(self) -> None:
-        """Test logger has appropriate level."""
-        # Logger should have a reasonable level (INFO or WARNING are both acceptable)
-        effective_level = logger.getEffectiveLevel()
-        assert effective_level in [logging.INFO, logging.WARNING, logging.DEBUG]
+        @handle_api_errors
+        async def test_method(self, x: int) -> str:
+            """Test method that returns a string."""
+            return str(x)
 
-    def test_logging_configuration_exists(self) -> None:
-        """Test that logging configuration is properly set up."""
-        # Test that the logger has handlers or that basicConfig was called
-        # by checking if the logger can actually log messages
+        @handle_api_errors
+        async def method_that_raises_http_error(self) -> str:
+            """Test method that raises an HTTP error."""
+            mock_response = MagicMock()
+            mock_response.status_code = 401
+            mock_response.text = "Unauthorized"
 
-        # The logger should be properly configured for our module
-        assert logger.name == "trakt_mcp"
+            raise httpx.HTTPStatusError(
+                message="401 Unauthorized", request=MagicMock(), response=mock_response
+            )
 
-        # Should have at least the root logger configuration
-        root_logger = logging.getLogger()
-        assert len(root_logger.handlers) > 0 or logger.handlers
+        @handle_api_errors
+        async def method_that_raises_request_error(self) -> str:
+            """Test method that raises a request error."""
+            raise httpx.RequestError("Connection failed")
+
+    @pytest.mark.asyncio
+    async def test_method_decorator_successful_call(self) -> None:
+        """Test decorator works correctly on class methods for successful calls."""
+        service = self.MockService()
+        result = await service.test_method(42)
+        assert result == "42"
+
+    @pytest.mark.asyncio
+    async def test_method_decorator_http_error_handling(self) -> None:
+        """Test decorator handles HTTP errors correctly on class methods."""
+        service = self.MockService()
+
+        with pytest.raises(AuthenticationRequiredError) as exc_info:
+            await service.method_that_raises_http_error()
+
+        assert (
+            exc_info.value.message
+            == "Authentication required. Please check your Trakt API credentials."
+        )
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "auth_required"
+
+    @pytest.mark.asyncio
+    async def test_method_decorator_request_error_handling(self) -> None:
+        """Test decorator handles request errors correctly on class methods."""
+        service = self.MockService()
+
+        with pytest.raises(InternalError) as exc_info:
+            await service.method_that_raises_request_error()
+
+        assert (
+            exc_info.value.message
+            == "Unable to connect to Trakt API. Please check your internet connection."
+        )
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "request_error"
 
 
 class TestDecoratorIntegration:
@@ -318,7 +336,7 @@ class TestDecoratorIntegration:
             return wrapper
 
         @outer_decorator
-        @handle_api_errors
+        @handle_api_errors_func
         async def test_func() -> str:
             call_order.append("inner")
             return "success"
@@ -332,7 +350,7 @@ class TestDecoratorIntegration:
     async def test_decorator_with_none_return(self) -> None:
         """Test decorator handles functions that return None."""
 
-        @handle_api_errors
+        @handle_api_errors_func
         async def test_func() -> None:
             return None
 
@@ -355,13 +373,15 @@ class TestDecoratorIntegration:
 
             return wrapper
 
-        @handle_api_errors
+        @handle_api_errors_func
         @inner_decorator
         async def test_func() -> str:
             return "should not reach here"
 
-        with patch.object(logger, "error"), pytest.raises(InternalError) as exc_info:
+        with pytest.raises(InvalidParamsError) as exc_info:
             await test_func()
 
-        assert exc_info.value.message == "HTTP 400 error occurred"
-        assert exc_info.value.data == {"http_status": 400, "response": "Bad Request"}
+        assert "bad request" in exc_info.value.message.lower()
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 400
+        assert exc_info.value.data["details"] == "Bad Request"

@@ -89,7 +89,7 @@ async def test_get_movie_comments():
         assert result[0]["id"] == "456"
         assert result[0]["comment"] == "Incredible movie with amazing cinematography!"
         assert result[0]["user"]["username"] == "cinephile"
-        assert result[0]["likes"] == 45
+        assert result[0].get("likes") == 45
 
 
 @pytest.mark.asyncio

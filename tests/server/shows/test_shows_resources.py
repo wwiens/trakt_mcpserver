@@ -17,6 +17,7 @@ from server.shows.resources import (
     get_trending_shows,
     get_watched_shows,
 )
+from utils.api.errors import InternalError
 
 
 @pytest.mark.asyncio
@@ -237,11 +238,12 @@ async def test_get_show_ratings_error_handling():
         future.set_exception(Exception("API error"))
         mock_client.get_show.return_value = future
 
-        # Call the resource function
-        result = await get_show_ratings("1")
+        # Call the resource function - should raise exception
+        with pytest.raises(InternalError) as exc_info:
+            await get_show_ratings("1")
 
-        # Verify the result contains an error message
-        assert "Error fetching ratings for show ID 1" in result
+        # Verify it's an InternalError for unexpected exceptions
+        assert "An unexpected error occurred" in str(exc_info.value)
 
         # Verify the client methods were called
         mock_client.get_show.assert_called_once_with("1")
@@ -259,14 +261,14 @@ async def test_get_show_ratings_string_error_handling():
         future.set_result("Error: The requested resource was not found.")
         mock_client.get_show.return_value = future
 
-        # Call the resource function
-        result = await get_show_ratings("1")
+        # handle_api_string_error returns InternalError for string errors
+        with pytest.raises(InternalError) as exc_info:
+            await get_show_ratings("1")
 
-        # Verify the result contains the error message
-        assert (
-            "Error fetching ratings for show ID 1: Error: The requested resource was not found."
-            in result
-        )
+        # Check that it's an InternalError
+        assert "Error accessing show" in str(
+            exc_info.value
+        ) or "An unexpected error occurred" in str(exc_info.value)
 
         # Verify the client methods were called
         mock_client.get_show.assert_called_once_with("1")
