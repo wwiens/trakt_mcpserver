@@ -33,7 +33,7 @@ class AuthClient(BaseClient):
         """Load authentication token from storage."""
         if os.path.exists(AUTH_TOKEN_FILE):
             try:
-                with open(AUTH_TOKEN_FILE) as f:
+                with open(AUTH_TOKEN_FILE, encoding="utf-8") as f:
                     token_data = json.load(f)
                     return TraktAuthToken.model_validate(token_data)
             except Exception:

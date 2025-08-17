@@ -57,6 +57,7 @@ async def _fetch_user_items(
     limit: int | None,
     operation: str,
     on_auth_action: str,
+    client: UserClient,
     fetcher: Fetcher[T],
     formatter: Formatter[T],
 ) -> str:
@@ -66,6 +67,7 @@ async def _fetch_user_items(
         limit: Maximum number of items to return (0 for all)
         operation: Operation name for validation errors
         on_auth_action: Human-readable action for auth error messages
+        client: UserClient instance for auth check and data fetching
         fetcher: Async function that fetches the data
         formatter: Function that formats the data to string
 
@@ -74,15 +76,13 @@ async def _fetch_user_items(
 
     Raises:
         AuthenticationRequiredError: If user is not authenticated
-        BaseToolError: If validation fails
+        InvalidParamsError: If validation fails
     """
     limit = _validate_and_normalize_limit(limit, operation=operation)
-    client = UserClient()
     if not client.is_authenticated():
         raise AuthenticationRequiredError(
             action=on_auth_action,
             auth_url=AUTH_VERIFICATION_URL,
-            message=f"Authentication required to {on_auth_action} from Trakt",
         )
     items = await fetcher()
     return formatter(items[:limit] if limit > 0 else items)
@@ -108,11 +108,13 @@ async def fetch_user_watched_shows(limit: int | None = 0) -> str:
     Returns:
         Information about user's watched shows
     """
+    client = UserClient()
     return await _fetch_user_items(
         limit=limit,
         operation="fetch_user_watched_shows",
         on_auth_action="access your watched shows",
-        fetcher=UserClient().get_user_watched_shows,
+        client=client,
+        fetcher=client.get_user_watched_shows,
         formatter=UserFormatters.format_user_watched_shows,
     )
 
@@ -126,11 +128,13 @@ async def fetch_user_watched_movies(limit: int | None = 0) -> str:
     Returns:
         Information about user's watched movies
     """
+    client = UserClient()
     return await _fetch_user_items(
         limit=limit,
         operation="fetch_user_watched_movies",
         on_auth_action="access your watched movies",
-        fetcher=UserClient().get_user_watched_movies,
+        client=client,
+        fetcher=client.get_user_watched_movies,
         formatter=UserFormatters.format_user_watched_movies,
     )
 
@@ -151,6 +155,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
         tool=TOOL_NAMES["fetch_user_watched_shows"],
     )
     async def fetch_user_watched_shows_tool(limit: int | None = 0) -> str:
+        """MCP tool: fetch TV shows watched by the authenticated user."""
         return await fetch_user_watched_shows(limit)
 
     @mcp.tool(
@@ -162,6 +167,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
         tool=TOOL_NAMES["fetch_user_watched_movies"],
     )
     async def fetch_user_watched_movies_tool(limit: int | None = 0) -> str:
+        """MCP tool: fetch movies watched by the authenticated user."""
         return await fetch_user_watched_movies(limit)
 
     # Return handlers for type checker visibility
