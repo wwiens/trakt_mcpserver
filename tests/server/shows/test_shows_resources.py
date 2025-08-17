@@ -32,7 +32,7 @@ async def test_get_trending_shows():
         }
     ]
 
-    with patch("server.shows.resources.TrendingShowsClient") as mock_client_class:
+    with patch("server.shows.resources.ShowsClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
 
@@ -63,7 +63,7 @@ async def test_get_popular_shows():
         }
     ]
 
-    with patch("server.shows.resources.PopularShowsClient") as mock_client_class:
+    with patch("server.shows.resources.ShowsClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
 
@@ -95,7 +95,7 @@ async def test_get_favorited_shows():
         }
     ]
 
-    with patch("server.shows.resources.ShowStatsClient") as mock_client_class:
+    with patch("server.shows.resources.ShowsClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
 
@@ -127,7 +127,7 @@ async def test_get_played_shows():
         }
     ]
 
-    with patch("server.shows.resources.ShowStatsClient") as mock_client_class:
+    with patch("server.shows.resources.ShowsClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
 
@@ -159,7 +159,7 @@ async def test_get_watched_shows():
         }
     ]
 
-    with patch("server.shows.resources.ShowStatsClient") as mock_client_class:
+    with patch("server.shows.resources.ShowsClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
 
@@ -200,7 +200,7 @@ async def test_get_show_ratings():
         },
     }
 
-    with patch("server.shows.resources.ShowDetailsClient") as mock_client_class:
+    with patch("server.shows.resources.ShowsClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
 
@@ -228,7 +228,7 @@ async def test_get_show_ratings():
 
 @pytest.mark.asyncio
 async def test_get_show_ratings_error_handling():
-    with patch("server.shows.resources.ShowDetailsClient") as mock_client_class:
+    with patch("server.shows.resources.ShowsClient") as mock_client_class:
         # Configure the mock to raise an exception
         mock_client = mock_client_class.return_value
 
@@ -251,7 +251,7 @@ async def test_get_show_ratings_error_handling():
 
 @pytest.mark.asyncio
 async def test_get_show_ratings_string_error_handling():
-    with patch("server.shows.resources.ShowDetailsClient") as mock_client_class:
+    with patch("server.shows.resources.ShowsClient") as mock_client_class:
         # Configure the mock to return a string error
         mock_client = mock_client_class.return_value
 

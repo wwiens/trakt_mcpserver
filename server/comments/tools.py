@@ -29,7 +29,7 @@ class ValidationErrorDetail(TypedDict):
     field: str
     message: str
     type: str
-    input: str | int | bool | None
+    input: object | None
 
 
 class CommentIdParam(BaseModel):

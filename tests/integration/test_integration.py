@@ -230,9 +230,7 @@ async def test_trending_shows_integration():
 
         mock_instance.get.return_value = trending_mock
 
-        with patch(
-            "server.shows.resources.TrendingShowsClient"
-        ) as mock_trending_client:
+        with patch("server.shows.resources.ShowsClient") as mock_trending_client:
             mock_client_instance = mock_trending_client.return_value
             mock_client_instance.get_trending_shows = AsyncMock(
                 return_value=trending_shows
@@ -322,7 +320,7 @@ async def test_show_ratings_integration():
             ratings_mock,
         ]
 
-        with patch("server.shows.resources.ShowDetailsClient") as mock_details_client:
+        with patch("server.shows.resources.ShowsClient") as mock_details_client:
             mock_client_instance = mock_details_client.return_value
             mock_client_instance.get_show = AsyncMock(return_value=show_data)
             mock_client_instance.get_show_ratings = AsyncMock(return_value=ratings_data)
@@ -366,7 +364,7 @@ async def test_error_handling_integration():
         mock_instance.get.side_effect = Exception("API error")
 
         # Test error handling in a resource function directly
-        with patch("server.shows.resources.ShowDetailsClient") as mock_details_client:
+        with patch("server.shows.resources.ShowsClient") as mock_details_client:
             mock_client_instance = mock_details_client.return_value
             mock_client_instance.get_show = AsyncMock(
                 side_effect=Exception("API error")
