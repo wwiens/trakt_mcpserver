@@ -6,9 +6,7 @@ import time
 
 from config.endpoints import TRAKT_ENDPOINTS
 from models.auth import TraktAuthToken, TraktDeviceCode
-from utils.api.errors import (  # pyright: ignore[reportUnusedImport] # Used by decorator
-    handle_api_errors,
-)
+from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
 
