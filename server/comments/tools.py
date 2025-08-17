@@ -1,7 +1,7 @@
 """Comment tools for the Trakt MCP server."""
 
 from collections.abc import Awaitable, Callable
-from typing import Literal, NoReturn
+from typing import Literal, NoReturn, TypedDict
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, PositiveInt, ValidationError, field_validator
@@ -23,12 +23,22 @@ from utils.api.errors import handle_api_errors_func
 CommentSort = Literal["newest", "oldest", "likes", "replies"]
 
 
+class ValidationErrorDetail(TypedDict):
+    """Typed structure for validation error details."""
+
+    field: str
+    message: str
+    type: str
+    input: str | int | bool | None
+
+
 class CommentIdParam(BaseModel):
     """Parameters for tools that require a comment ID."""
 
     comment_id: str = Field(..., min_length=1, description="Non-empty Trakt comment ID")
 
     @field_validator("comment_id", mode="before")
+    @classmethod
     def _strip_comment_id(cls, v: object) -> object:
         return v.strip() if isinstance(v, str) else v
 
@@ -40,6 +50,7 @@ class SeasonParam(BaseModel):
     season: PositiveInt = Field(..., description="Season number (positive integer)")
 
     @field_validator("show_id", mode="before")
+    @classmethod
     def _strip_show_id(cls, v: object) -> object:
         return v.strip() if isinstance(v, str) else v
 
@@ -52,6 +63,7 @@ class EpisodeParam(BaseModel):
     episode: PositiveInt = Field(..., description="Episode number (positive integer)")
 
     @field_validator("show_id", mode="before")
+    @classmethod
     def _strip_show_id(cls, v: object) -> object:
         return v.strip() if isinstance(v, str) else v
 
@@ -78,13 +90,13 @@ def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
     Raises:
         BaseToolErrorMixin error: Formatted validation error via mixin
     """
-    validation_errors = [
-        {
-            "field": str(error.get("loc", [context])[-1]),
-            "message": str(error.get("msg", "Invalid value")),
-            "type": str(error.get("type", "validation_error")),
-            "input": error.get("input"),
-        }
+    validation_errors: list[ValidationErrorDetail] = [
+        ValidationErrorDetail(
+            field=str(error.get("loc", [context])[-1]),
+            message=str(error.get("msg", "Invalid value")),
+            type=str(error.get("type", "validation_error")),
+            input=error.get("input"),
+        )
         for error in e.errors()
     ]
 
@@ -128,7 +140,6 @@ async def fetch_movie_comments(
         InvalidParamsError: If movie_id is invalid
         InternalError: If an error occurs fetching comments
     """
-    # Validate parameters with Pydantic for normalization and constraints
     try:
         id_params = MovieIdParam(movie_id=movie_id)
         options = CommentsListOptionsParam(
@@ -183,7 +194,6 @@ async def fetch_show_comments(
         InvalidParamsError: If show_id is invalid
         InternalError: If an error occurs fetching comments
     """
-    # Validate parameters with Pydantic for normalization and constraints
     try:
         id_params = ShowIdParam(show_id=show_id)
         options = CommentsListOptionsParam(
@@ -240,7 +250,6 @@ async def fetch_season_comments(
         InvalidParamsError: If show_id or season is invalid
         InternalError: If an error occurs fetching comments
     """
-    # Validate parameters with Pydantic for normalization and constraints
     try:
         id_params = SeasonParam(show_id=show_id, season=season)
         options = CommentsListOptionsParam(
@@ -299,7 +308,6 @@ async def fetch_episode_comments(
         InvalidParamsError: If show_id, season, or episode is invalid
         InternalError: If an error occurs fetching comments
     """
-    # Validate parameters with Pydantic for normalization and constraints
     try:
         id_params = EpisodeParam(show_id=show_id, season=season, episode=episode)
         options = CommentsListOptionsParam(
@@ -351,7 +359,6 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
         InvalidParamsError: If comment_id is invalid
         InternalError: If an error occurs fetching comment
     """
-    # Validate parameters with Pydantic for normalization and constraints
     try:
         params = CommentIdParam(comment_id=comment_id)
         comment_id = params.comment_id
@@ -396,7 +403,6 @@ async def fetch_comment_replies(
         InvalidParamsError: If comment_id is invalid
         InternalError: If an error occurs fetching comment replies
     """
-    # Validate parameters with Pydantic for normalization and constraints
     try:
         id_params = CommentIdParam(comment_id=comment_id)
         options = CommentsListOptionsParam(

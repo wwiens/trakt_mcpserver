@@ -1,13 +1,15 @@
 """Movie resources for the Trakt MCP server."""
 
+from __future__ import annotations
+
 import logging
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.types import MovieResponse
+    from mcp.server.fastmcp import FastMCP
 
-from mcp.server.fastmcp import FastMCP
+    from models.types import MovieResponse
 from pydantic import ValidationError
 
 from client.movies import MoviesClient
@@ -149,7 +151,7 @@ async def get_movie_ratings(movie_id: str) -> str:
         )
 
     # Type narrowing: movie is guaranteed to be MovieResponse after string check
-    movie_data: "MovieResponse" = movie
+    movie_data: MovieResponse = movie
     movie_title = movie_data["title"]
 
     ratings = await client.get_movie_ratings(movie_id)

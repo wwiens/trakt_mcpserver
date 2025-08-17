@@ -31,7 +31,9 @@ def _validate_and_normalize_limit(value: int, *, operation: str) -> int:
             }
             for error in e.errors()
         ]
-        field_messages = [f"{err['field']}: {err['message']}" for err in validation_errors]
+        field_messages = [
+            f"{err['field']}: {err['message']}" for err in validation_errors
+        ]
         summary_message = (
             f"Invalid parameters for {operation.replace('_', ' ')}: "
             + "; ".join(field_messages)

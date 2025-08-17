@@ -56,7 +56,7 @@ def _validate_search_params(query: str, limit: int, operation: str) -> tuple[str
                 "field": str(err.get("loc", ["query"])[-1]),
                 "message": str(err.get("msg", "Invalid value")),
                 "type": str(err.get("type", "validation_error")),
-                "input": err.get("input"),
+                "input": repr(err.get("input")),
             }
             for err in e.errors()
         ]

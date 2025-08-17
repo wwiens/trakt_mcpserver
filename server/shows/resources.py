@@ -1,13 +1,15 @@
 """Show resources for the Trakt MCP server."""
 
+from __future__ import annotations
+
 import logging
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.types import ShowResponse
+    from mcp.server.fastmcp import FastMCP
 
-from mcp.server.fastmcp import FastMCP
+    from models.types import ShowResponse
 from pydantic import ValidationError
 
 from client.shows.details import ShowDetailsClient

@@ -1,3 +1,7 @@
+[project]
+name = "trakt-mcp-server"
+requires-python = ">=3.12"
+
 [tool.ruff]
 target-version = "py312"
 line-length = 88
