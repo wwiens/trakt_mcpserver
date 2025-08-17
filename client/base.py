@@ -1,7 +1,7 @@
 """Base client for common HTTP functionality."""
 
 import os
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, TypeVar, overload
 
 import httpx
 from dotenv import load_dotenv
@@ -12,6 +12,28 @@ if TYPE_CHECKING:
     from models.auth import TraktAuthToken
 
 T = TypeVar("T")
+
+
+class PydanticModel(Protocol):
+    """Protocol for Pydantic models."""
+
+    @classmethod
+    def model_validate(cls, obj: Any) -> Any: ...
+
+
+def _is_dict_response(result: Any) -> TypeGuard[dict[str, Any]]:
+    """Type guard for dict responses."""
+    return isinstance(result, dict)
+
+
+def _is_list_response(result: Any) -> TypeGuard[list[dict[str, Any]]]:
+    """Type guard for list responses."""
+    return isinstance(result, list)
+
+
+def _is_pydantic_model(cls: type[T]) -> TypeGuard[type[PydanticModel]]:
+    """Type guard for Pydantic models."""
+    return hasattr(cls, "model_validate") and hasattr(cls, "__annotations__")
 
 
 class BaseClient:
@@ -36,7 +58,6 @@ class BaseClient:
             "trakt-api-key": self.client_id,
         }
 
-        # Auth token will be set by subclasses
         self.auth_token: TraktAuthToken | None = None
 
     def _update_headers_with_token(self):
@@ -77,9 +98,8 @@ class BaseClient:
     ) -> list[dict[str, Any]]:
         """Make a GET request that returns a list."""
         result = await self._make_request("GET", endpoint, params=params)
-        # Type-check and return appropriate type
-        if isinstance(result, list):
-            return result  # type: ignore[return-value]
+        if _is_list_response(result):
+            return result
         raise ValueError(
             f"Expected list response from {endpoint}, got {type(result).__name__}: {result}"
         )
@@ -89,9 +109,8 @@ class BaseClient:
     ) -> dict[str, Any]:
         """Make a GET request that returns a dictionary."""
         result = await self._make_request("GET", endpoint, params=params)
-        # Type-check and return appropriate type
-        if isinstance(result, dict):
-            return result  # type: ignore[return-value]
+        if _is_dict_response(result):
+            return result
         raise ValueError(
             f"Expected dict response from {endpoint}, got {type(result).__name__}: {result}"
         )
@@ -108,9 +127,8 @@ class BaseClient:
             request_headers.update(headers)
 
         result = await self._make_request("POST", endpoint, data=data)
-        # POST requests should return dict, not list
-        if isinstance(result, dict):
-            return result  # type: ignore[return-value]
+        if _is_dict_response(result):
+            return result
         raise ValueError(
             f"Expected dict response from POST {endpoint}, got {type(result).__name__}: {result}"
         )
@@ -144,26 +162,24 @@ class BaseClient:
         Returns the typed response if response_type is provided,
         otherwise returns the raw response data."""
         result = await self._make_request("GET", endpoint, params=params)
-        # Runtime validation with response_type
-        if response_type:
-            if hasattr(response_type, "model_validate") and hasattr(
-                response_type, "__annotations__"
-            ):
-                # Pydantic model - use model_validate for runtime validation
-                return response_type.model_validate(result)  # type: ignore[attr-defined]
-            # For non-Pydantic types, validate it's at least the expected base type
-            if not isinstance(result, dict):
-                raise ValueError(
-                    f"Expected dict-like response for {response_type.__name__} from {endpoint}, "
-                    + f"got {type(result).__name__}: {result}"
-                )
-            return result  # type: ignore[return-value]
-        # If no response_type, ensure we return dict not list
-        if isinstance(result, dict):
-            return result  # type: ignore[return-value]
-        raise ValueError(
-            f"Expected dict response from {endpoint}, got {type(result).__name__}: {result}"
-        )
+
+        if response_type is None:
+            if _is_dict_response(result):
+                return result
+            raise ValueError(
+                f"Expected dict response from {endpoint}, got {type(result).__name__}: {result}"
+            )
+
+        if _is_pydantic_model(response_type):
+            return response_type.model_validate(result)
+
+        if not _is_dict_response(result):
+            raise ValueError(
+                f"Expected dict-like response for {response_type.__name__} from {endpoint}, "
+                + f"got {type(result).__name__}: {result}"
+            )
+
+        return result  # type: ignore[return-value] # TypedDict runtime limitation
 
     async def _make_typed_list_request(
         self,
@@ -174,12 +190,6 @@ class BaseClient:
     ) -> list[T]:
         """Make a typed GET request that returns a list."""
         result = await self._make_list_request(endpoint, params=params)
-        # Runtime validation for list elements
-        if hasattr(response_type, "model_validate") and hasattr(
-            response_type, "__annotations__"
-        ):
-            # Pydantic model - validate each item
-            return [response_type.model_validate(item) for item in result]  # type: ignore[attr-defined]
-        # For non-Pydantic types, basic validation already done by _make_list_request
-        # which ensures result is list[dict[str, Any]]
-        return result  # type: ignore[return-value]
+        if _is_pydantic_model(response_type):
+            return [response_type.model_validate(item) for item in result]
+        return result  # type: ignore[return-value] # TypedDict runtime limitation

@@ -1,14 +1,12 @@
 """Tests for utils.api.errors module."""
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
 
-if TYPE_CHECKING:
-    from tests.types_stub import MCPErrorWithData
 from utils.api.error_types import (
     AuthenticationRequiredError,
     TraktRateLimitError,
@@ -74,13 +72,13 @@ class TestHandleApiErrorsDecorator:
         with pytest.raises(AuthenticationRequiredError) as exc_info:
             await decorated_func()
 
-        error = cast("MCPErrorWithData", exc_info.value)
         assert (
-            error.message
+            exc_info.value.message
             == "Authentication required. Please check your Trakt API credentials."
         )
-        assert error.data["error_type"] == "auth_required"
-        assert error.data["action"] == "access resource"
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "auth_required"
+        assert exc_info.value.data["action"] == "access resource"
 
     @pytest.mark.asyncio
     async def test_http_404_not_found_error(self, mock_async_func: AsyncMock) -> None:
@@ -99,11 +97,13 @@ class TestHandleApiErrorsDecorator:
         with pytest.raises(TraktResourceNotFoundError) as exc_info:
             await decorated_func()
 
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert "The requested resource 'unknown' was not found" in error.message
-        assert error.data["http_status"] == 404
-        assert error.data["resource_type"] == "resource"
-        assert error.data["resource_id"] == "unknown"
+        assert (
+            "The requested resource 'unknown' was not found" in exc_info.value.message
+        )
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 404
+        assert exc_info.value.data["resource_type"] == "resource"
+        assert exc_info.value.data["resource_id"] == "unknown"
 
     @pytest.mark.asyncio
     async def test_http_429_rate_limit_error(self, mock_async_func: AsyncMock) -> None:
@@ -123,10 +123,10 @@ class TestHandleApiErrorsDecorator:
         with pytest.raises(TraktRateLimitError) as exc_info:
             await decorated_func()
 
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert error.message == "Rate limit exceeded. Please try again later."
-        assert error.data["http_status"] == 429
-        assert "retry_after" not in error.data
+        assert exc_info.value.message == "Rate limit exceeded. Please try again later."
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 429
+        assert "retry_after" not in exc_info.value.data
 
     @pytest.mark.asyncio
     async def test_http_unknown_status_error(self, mock_async_func: AsyncMock) -> None:
@@ -147,10 +147,13 @@ class TestHandleApiErrorsDecorator:
         with pytest.raises(TraktServerError) as exc_info:
             await decorated_func()
 
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert error.message == "Service unavailable. Please try again in 30 seconds."
-        assert error.data["http_status"] == 503
-        assert error.data["is_temporary"] is True
+        assert (
+            exc_info.value.message
+            == "Service unavailable. Please try again in 30 seconds."
+        )
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 503
+        assert exc_info.value.data["is_temporary"] is True
 
     @pytest.mark.asyncio
     async def test_request_error_handling(self, mock_async_func: AsyncMock) -> None:
@@ -163,13 +166,13 @@ class TestHandleApiErrorsDecorator:
         with pytest.raises(InternalError) as exc_info:
             await decorated_func()
 
-        error = cast("MCPErrorWithData", exc_info.value)
         assert (
-            error.message
+            exc_info.value.message
             == "Unable to connect to Trakt API. Please check your internet connection."
         )
-        assert error.data["error_type"] == "request_error"
-        assert error.data["details"] == "Connection failed"
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "request_error"
+        assert exc_info.value.data["details"] == "Connection failed"
 
     @pytest.mark.asyncio
     async def test_unexpected_error_handling(self, mock_async_func: AsyncMock) -> None:
@@ -187,9 +190,11 @@ class TestHandleApiErrorsDecorator:
         with pytest.raises(InternalError) as exc_info:
             await decorated_func()
 
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert error.message == "An unexpected error occurred: Unexpected error"
-        assert error.data["error_type"] == "unexpected_error"
+        assert (
+            exc_info.value.message == "An unexpected error occurred: Unexpected error"
+        )
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "unexpected_error"
 
     @pytest.mark.asyncio
     async def test_decorator_with_args_and_kwargs(
@@ -292,12 +297,12 @@ class TestHandleApiErrorsMethodDecorator:
         with pytest.raises(AuthenticationRequiredError) as exc_info:
             await service.method_that_raises_http_error()
 
-        error = cast("MCPErrorWithData", exc_info.value)
         assert (
-            error.message
+            exc_info.value.message
             == "Authentication required. Please check your Trakt API credentials."
         )
-        assert error.data["error_type"] == "auth_required"
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "auth_required"
 
     @pytest.mark.asyncio
     async def test_method_decorator_request_error_handling(self) -> None:
@@ -307,12 +312,12 @@ class TestHandleApiErrorsMethodDecorator:
         with pytest.raises(InternalError) as exc_info:
             await service.method_that_raises_request_error()
 
-        error = cast("MCPErrorWithData", exc_info.value)
         assert (
-            error.message
+            exc_info.value.message
             == "Unable to connect to Trakt API. Please check your internet connection."
         )
-        assert error.data["error_type"] == "request_error"
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "request_error"
 
 
 class TestDecoratorIntegration:
@@ -378,7 +383,7 @@ class TestDecoratorIntegration:
         with pytest.raises(InvalidParamsError) as exc_info:
             await test_func()
 
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert "Bad request" in error.message
-        assert error.data["http_status"] == 400
-        assert error.data["details"] == "Bad Request"
+        assert "Bad request" in exc_info.value.message
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["http_status"] == 400
+        assert exc_info.value.data["details"] == "Bad Request"

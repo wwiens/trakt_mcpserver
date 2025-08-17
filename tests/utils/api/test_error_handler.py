@@ -1,14 +1,12 @@
 """Tests for utils.api.error_handler module."""
 
 import uuid
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
 
-if TYPE_CHECKING:
-    from tests.types_stub import MCPErrorWithData
 from utils.api.error_handler import TraktAPIErrorHandler, create_correlation_id
 from utils.api.error_types import (
     AuthenticationRequiredError,
@@ -42,9 +40,9 @@ class TestTraktAPIErrorHandler:
     ) -> None:
         """Test basic HTTP error handling."""
         result = TraktAPIErrorHandler.handle_http_error(mock_http_error)
-        result = cast("MCPErrorWithData", result)
 
         assert isinstance(result, TraktResourceNotFoundError)
+        assert result.data is not None
         assert result.data["http_status"] == 404
         assert "correlation_id" in result.data
         mock_logger.error.assert_called_once()
@@ -61,8 +59,8 @@ class TestTraktAPIErrorHandler:
             resource_id="test-show",
             correlation_id="test-123",
         )
-        result = cast("MCPErrorWithData", result)
 
+        assert result.data is not None
         assert result.data["endpoint"] == "/shows/test"
         assert result.data["resource_type"] == "show"
         assert result.data["resource_id"] == "test-show"
@@ -74,7 +72,7 @@ class TestTraktAPIErrorHandler:
     ) -> None:
         """Test correlation ID is generated when not provided."""
         result = TraktAPIErrorHandler.handle_http_error(mock_http_error)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         correlation_id = result.data.get("correlation_id")
         assert correlation_id is not None
         # Should be a valid UUID string
@@ -97,7 +95,6 @@ class TestTraktAPIErrorHandler:
         )
 
         result = TraktAPIErrorHandler.handle_http_error(http_error)
-        result = cast("MCPErrorWithData", result)
         assert isinstance(result, TraktServerError)
         # Should handle the exception gracefully
 
@@ -114,7 +111,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, InvalidParamsError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["http_status"] == 400
         assert result.data["details"] == "Generic bad request"
         assert result.data["endpoint"] == "/test"
@@ -128,7 +125,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, AuthorizationPendingError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["device_code"] == "device123"
 
     def test_handle_bad_request_validation_error(self) -> None:
@@ -138,7 +135,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, TraktValidationError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert (
             "invalid year parameter"
             in result.data["validation_details"]["api_response"]
@@ -149,7 +146,7 @@ class TestStatusCodeHandlers:
         result = TraktAPIErrorHandler.handle_unauthorized(resource_type="show")
 
         assert isinstance(result, AuthenticationRequiredError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["action"] == "access show"
 
     def test_handle_forbidden(self) -> None:
@@ -161,7 +158,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, InvalidRequestError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["http_status"] == 403
         assert result.data["endpoint"] == "/api/test"
         assert result.data["correlation_id"] == "test-456"
@@ -177,7 +174,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, TraktResourceNotFoundError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["resource_type"] == "movie"
         assert result.data["resource_id"] == "inception"
         assert result.data["endpoint"] == "/movies/inception"
@@ -188,7 +185,7 @@ class TestStatusCodeHandlers:
         result = TraktAPIErrorHandler.handle_not_found()
 
         assert isinstance(result, TraktResourceNotFoundError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["resource_type"] == "resource"
         assert result.data["resource_id"] == "unknown"
 
@@ -203,7 +200,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, InvalidRequestError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["http_status"] == 409
         assert result.data["endpoint"] == "/checkins"
         assert result.data["resource_type"] == "checkin"
@@ -220,7 +217,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, TraktValidationError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert (
             result.data["validation_details"]["api_response"]
             == "Validation failed: invalid year"
@@ -235,7 +232,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, TraktRateLimitError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert "retry_after" not in result.data
         assert result.data["endpoint"] == "/shows/trending"
         assert result.data["correlation_id"] == "test-rate-limit"
@@ -252,7 +249,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, TraktRateLimitError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["retry_after"] == 60
         assert result.data["endpoint"] == "/movies/popular"
 
@@ -266,7 +263,7 @@ class TestStatusCodeHandlers:
         result = TraktAPIErrorHandler.handle_rate_limit(error=mock_error)
 
         assert isinstance(result, TraktRateLimitError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert "retry_after" not in result.data
 
     def test_handle_server_error(self) -> None:
@@ -276,7 +273,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, TraktServerError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["http_status"] == 500
         assert result.data["endpoint"] == "/api/shows"
         assert result.data["correlation_id"] == "test-500"
@@ -288,7 +285,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, TraktServerError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["http_status"] == 502
         assert result.data["endpoint"] == "/api/movies"
         assert result.data["correlation_id"] == "test-502"
@@ -301,7 +298,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, TraktServerError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["http_status"] == 503
         assert result.data["endpoint"] == "/api/users"
         assert result.data["correlation_id"] == "test-503"
@@ -324,7 +321,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, InternalError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["http_status"] == 418
         assert result.data["endpoint"] == "/api/teapot"
         assert result.data["resource_type"] == "teapot"
@@ -339,7 +336,7 @@ class TestStatusCodeHandlers:
         )
 
         assert isinstance(result, InternalError)
-        result = cast("MCPErrorWithData", result)
+        assert result.data is not None
         assert result.data["http_status"] == "unknown"
         assert result.data["correlation_id"] == "test-unknown"
 
@@ -490,9 +487,9 @@ class TestIntegration:
             resource_id="nonexistent",
             correlation_id="integration-test-404",
         )
-        result = cast("MCPErrorWithData", result)
         # Check error type and properties
         assert isinstance(result, TraktResourceNotFoundError)
+        assert result.data is not None
         assert result.data["resource_type"] == "show"
         assert result.data["resource_id"] == "nonexistent"
         assert result.data["endpoint"] == "/shows/nonexistent"
@@ -518,9 +515,9 @@ class TestIntegration:
             endpoint="/shows/trending",
             correlation_id="integration-test-429",
         )
-        result = cast("MCPErrorWithData", result)
         # Check error type and properties
         assert isinstance(result, TraktRateLimitError)
+        assert result.data is not None
         assert result.data["http_status"] == 429
         assert result.data["retry_after"] == 120
         assert result.data["endpoint"] == "/shows/trending"
@@ -546,9 +543,9 @@ class TestIntegration:
             resource_type="user",
             correlation_id="integration-test-401",
         )
-        result = cast("MCPErrorWithData", result)
         # Check error type and properties
         assert isinstance(result, AuthenticationRequiredError)
+        assert result.data is not None
         assert result.data["error_type"] == "auth_required"
         assert result.data["action"] == "access user"
         assert "auth_url" in result.data
@@ -572,9 +569,9 @@ class TestIntegration:
             endpoint="/admin/settings",
             correlation_id="integration-test-403",
         )
-        result = cast("MCPErrorWithData", result)
         # Check error type and properties
         assert isinstance(result, InvalidRequestError)
+        assert result.data is not None
         assert result.data["http_status"] == 403
         assert result.data["details"] == "Forbidden access"
         assert result.data["endpoint"] == "/admin/settings"

@@ -8,14 +8,12 @@ It also tests correlation ID tracking, context preservation, and edge cases.
 
 import json
 import uuid
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import Protocol
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
-if TYPE_CHECKING:
-    from tests.types_stub import MCPErrorWithData
 from utils.api.error_types import (
     AuthenticationRequiredError,
     TraktRateLimitError,
@@ -114,17 +112,16 @@ class TestErrorPropagationThroughStack:
                 await search_shows(query="test")
 
             # Verify error context is preserved
-            error = cast("MCPErrorWithData", exc_info.value)
-            assert hasattr(error, "data")
-            assert error.data is not None
+            assert hasattr(exc_info.value, "data")
+            assert exc_info.value.data is not None
 
             # Should contain request context
-            if "correlation_id" in error.data:
-                assert error.data["correlation_id"] == context.correlation_id
-            if "endpoint" in error.data:
-                assert error.data["endpoint"] == "/shows/search"
-            if "resource_type" in error.data:
-                assert error.data["resource_type"] == "show"
+            if "correlation_id" in exc_info.value.data:
+                assert exc_info.value.data["correlation_id"] == context.correlation_id
+            if "endpoint" in exc_info.value.data:
+                assert exc_info.value.data["endpoint"] == "/shows/search"
+            if "resource_type" in exc_info.value.data:
+                assert exc_info.value.data["resource_type"] == "show"
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -158,11 +155,10 @@ class TestErrorPropagationThroughStack:
             with pytest.raises(AuthenticationRequiredError) as exc_info:
                 await fetch_user_watched_shows()
 
-            error = cast("MCPErrorWithData", exc_info.value)
-            assert "Authentication required" in str(error)
-            assert hasattr(error, "data")
-            assert error.data is not None
-            assert "auth_url" in error.data
+            assert "Authentication required" in str(exc_info.value)
+            assert hasattr(exc_info.value, "data")
+            assert exc_info.value.data is not None
+            assert "auth_url" in exc_info.value.data
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -208,11 +204,10 @@ class TestErrorPropagationThroughStack:
             ) as exc_info:
                 await fetch_show_summary(show_id="nonexistent")
 
-            error = cast("MCPErrorWithData", exc_info.value)
-            assert hasattr(error, "data")
-            assert error.data is not None
-            if "http_status" in error.data:
-                assert error.data["http_status"] == 404
+            assert hasattr(exc_info.value, "data")
+            assert exc_info.value.data is not None
+            if "http_status" in exc_info.value.data:
+                assert exc_info.value.data["http_status"] == 404
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -245,13 +240,12 @@ class TestErrorPropagationThroughStack:
             with pytest.raises((InternalError, TraktRateLimitError)) as exc_info:
                 await fetch_trending_shows()
 
-            error = cast("MCPErrorWithData", exc_info.value)
-            assert hasattr(error, "data")
-            assert error.data is not None
+            assert hasattr(exc_info.value, "data")
+            assert exc_info.value.data is not None
             # Should contain retry information
-            if "retry_after" in error.data:
+            if "retry_after" in exc_info.value.data:
                 # Normalize to integer for consistent comparison
-                retry_value = error.data["retry_after"]
+                retry_value = exc_info.value.data["retry_after"]
                 if isinstance(retry_value, str):
                     retry_value = int(retry_value)
                 assert retry_value == 60
@@ -287,11 +281,10 @@ class TestErrorPropagationThroughStack:
             with pytest.raises((InternalError, TraktServerError)) as exc_info:
                 await fetch_trending_movies()
 
-            error = cast("MCPErrorWithData", exc_info.value)
-            assert hasattr(error, "data")
-            assert error.data is not None
-            if "http_status" in error.data:
-                assert error.data["http_status"] == 503
+            assert hasattr(exc_info.value, "data")
+            assert exc_info.value.data is not None
+            if "http_status" in exc_info.value.data:
+                assert exc_info.value.data["http_status"] == 503
 
 
 class TestCorrelationIDTracking:
@@ -345,13 +338,12 @@ class TestCorrelationIDTracking:
             with pytest.raises((InternalError, TraktServerError)) as exc_info:
                 await fetch_show_summary(show_id="test")
 
-            error = cast("MCPErrorWithData", exc_info.value)
-            assert hasattr(error, "data")
-            assert error.data is not None
+            assert hasattr(exc_info.value, "data")
+            assert exc_info.value.data is not None
 
             # Correlation ID should be preserved in error data
-            if "correlation_id" in error.data:
-                assert error.data["correlation_id"] == original_correlation_id
+            if "correlation_id" in exc_info.value.data:
+                assert exc_info.value.data["correlation_id"] == original_correlation_id
 
     @pytest.mark.asyncio
     async def test_correlation_id_generation_when_none_exists(self):
@@ -390,13 +382,12 @@ class TestCorrelationIDTracking:
             with pytest.raises((InvalidParamsError, TraktValidationError)) as exc_info:
                 await search_shows(query="test")
 
-            error = cast("MCPErrorWithData", exc_info.value)
-            assert hasattr(error, "data")
-            assert error.data is not None
+            assert hasattr(exc_info.value, "data")
+            assert exc_info.value.data is not None
 
             # A correlation ID should have been generated
-            if "correlation_id" in error.data:
-                correlation_id = error.data["correlation_id"]
+            if "correlation_id" in exc_info.value.data:
+                correlation_id = exc_info.value.data["correlation_id"]
                 assert correlation_id is not None
                 # Should be a valid UUID
                 uuid.UUID(correlation_id)
@@ -461,10 +452,9 @@ class TestErrorContextPreservation:
             with pytest.raises((InvalidParamsError, TraktValidationError)) as exc_info:
                 await fetch_show_ratings(show_id="breaking-bad")
 
-            error = cast("MCPErrorWithData", exc_info.value)
-            assert hasattr(error, "data")
-            assert error.data is not None
-            error_data = error.data
+            assert hasattr(exc_info.value, "data")
+            assert exc_info.value.data is not None
+            error_data = exc_info.value.data
 
             # Verify all context is preserved
             expected_fields = {
@@ -510,12 +500,11 @@ class TestErrorContextPreservation:
             with pytest.raises(InvalidParamsError) as exc_info:
                 await checkin_to_show(season=0, episode=-1, show_id="")
 
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert hasattr(error, "data")
-        assert error.data is not None
+        assert hasattr(exc_info.value, "data")
+        assert exc_info.value.data is not None
 
         # Should contain information about invalid parameters
-        error_data = error.data
+        error_data = exc_info.value.data
         assert "error_type" in error_data
         assert error_data["error_type"] == "validation_error"
 
@@ -600,10 +589,9 @@ class TestEdgeCasesAndErrorScenarios:
             with pytest.raises(InternalError) as exc_info:
                 await fetch_movie_summary(movie_id="test")
 
-            error = cast("MCPErrorWithData", exc_info.value)
             # Should be handled as an internal error
-            assert hasattr(error, "data")
-            assert error.data is not None
+            assert hasattr(exc_info.value, "data")
+            assert exc_info.value.data is not None
 
     @pytest.mark.asyncio
     async def test_missing_required_parameters_validation(self):
@@ -619,13 +607,12 @@ class TestEdgeCasesAndErrorScenarios:
                 description="\t\n ",  # Test various whitespace characters
             )
 
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert "Missing required parameter" in str(error)
-        assert hasattr(error, "data")
-        assert error.data is not None
-        assert "missing_parameters" in error.data
+        assert "Missing required parameter" in str(exc_info.value)
+        assert hasattr(exc_info.value, "data")
+        assert exc_info.value.data is not None
+        assert "missing_parameters" in exc_info.value.data
 
-        missing_params = error.data["missing_parameters"]
+        missing_params = exc_info.value.data["missing_parameters"]
         assert "show_id" in missing_params
         assert "movie_id" in missing_params
         assert "query" in missing_params
@@ -657,11 +644,10 @@ class TestEdgeCasesAndErrorScenarios:
                 show_year=None,
             )
 
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert "Must provide one of" in str(error)
-        assert hasattr(error, "data")
-        assert error.data is not None
-        assert "required_parameter_sets" in error.data
+        assert "Must provide one of" in str(exc_info.value)
+        assert hasattr(exc_info.value, "data")
+        assert exc_info.value.data is not None
+        assert "required_parameter_sets" in exc_info.value.data
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -694,15 +680,15 @@ class TestEdgeCasesAndErrorScenarios:
             with pytest.raises(InternalError) as exc_info:
                 await fetch_show_summary(show_id="test")
 
-            error = cast("MCPErrorWithData", exc_info.value)
-            assert "unexpected error occurred" in str(error).lower()
-            assert hasattr(error, "data")
-            assert error.data is not None
+            assert "unexpected error occurred" in str(exc_info.value).lower()
+            assert hasattr(exc_info.value, "data")
+            assert exc_info.value.data is not None
 
             # Should contain information about the original error
-            if "original_error" in error.data:
-                assert "Something went wrong" in error.data["original_error"]
-            if "original_error_type" in error.data:
+            if "original_error" in exc_info.value.data:
+                assert "Something went wrong" in exc_info.value.data["original_error"]
+            if "original_error_type" in exc_info.value.data:
                 assert (
-                    error.data["original_error_type"] == type(unexpected_error).__name__
+                    exc_info.value.data["original_error_type"]
+                    == type(unexpected_error).__name__
                 )

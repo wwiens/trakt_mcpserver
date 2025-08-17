@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -22,7 +22,6 @@ from server.shows.tools import (
     fetch_trending_shows,
     fetch_watched_shows,
 )
-from tests.types_stub import MCPErrorWithData  # noqa: TC001
 from utils.api.error_types import (
     TraktResourceNotFoundError,
 )
@@ -338,10 +337,10 @@ async def test_fetch_episode_comments_string_error_handling():
         with pytest.raises(TraktResourceNotFoundError) as exc_info:
             await fetch_episode_comments(show_id="1", season=1, episode=1, limit=5)
 
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert error.data["resource_type"] == "show"
-        assert error.data["resource_id"] == "1"
-        assert "The requested show was not found" in str(error)
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["resource_type"] == "show"
+        assert exc_info.value.data["resource_id"] == "1"
+        assert "The requested show was not found" in str(exc_info.value)
 
         # Verify the client methods were called
         mock_client.get_episode_comments.assert_called_once_with(

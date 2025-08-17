@@ -2,7 +2,7 @@
 
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, TypeVar
+from typing import Any, TypeGuard, TypeVar
 
 from config.auth import AUTH_VERIFICATION_URL
 from utils.api.error_types import AuthenticationRequiredError
@@ -42,6 +42,16 @@ def is_sensitive_key(key: str) -> bool:
     """
     key_lower = key.lower()
     return any(pattern in key_lower for pattern in SENSITIVE_PARAM_PATTERNS)
+
+
+def _is_dict_type(value: Any) -> TypeGuard[dict[Any, Any]]:
+    """Type guard for dictionary values."""
+    return isinstance(value, dict)
+
+
+def _is_list_or_tuple_type(value: Any) -> TypeGuard[list[Any] | tuple[Any, ...]]:
+    """Type guard for list or tuple values."""
+    return isinstance(value, list | tuple)
 
 
 def sanitize_value(value: Any, key: str | None = None) -> Any:
@@ -91,15 +101,15 @@ def sanitize_value(value: Any, key: str | None = None) -> Any:
             return "[REDACTED]"
 
     # Recursively sanitize dictionaries
-    if isinstance(value, dict):
+    if _is_dict_type(value):
         result: dict[Any, Any] = {}
-        for k, v in value.items():  # type: ignore[misc]
-            result[k] = sanitize_value(v, str(k) if k else None)  # type: ignore[misc]
+        for k, v in value.items():
+            result[k] = sanitize_value(v, str(k) if k else None)
         return result
 
     # Recursively sanitize lists
-    if isinstance(value, list | tuple):
-        sanitized: list[Any] = [sanitize_value(item) for item in value]  # type: ignore[misc]
+    if _is_list_or_tuple_type(value):
+        sanitized: list[Any] = [sanitize_value(item) for item in value]
         if isinstance(value, tuple):
             return tuple(sanitized)
         return sanitized

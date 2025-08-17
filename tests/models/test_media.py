@@ -218,12 +218,12 @@ class TestTraktEpisode:
 
     def test_episode_minimal_data(self):
         """Test creating episode with minimal required data."""
-        minimal_data = {
+        minimal_data: EpisodeTestData = {
             "season": 2,
             "number": 5,
         }
 
-        episode = TraktEpisode(**minimal_data)  # type: ignore[arg-type] # Testing: Minimal valid data without TypedDict
+        episode = TraktEpisode(**minimal_data)
 
         assert episode.season == 2
         assert episode.number == 5
@@ -252,7 +252,7 @@ class TestTraktEpisode:
 
     def test_episode_serialization(self):
         """Test that TraktEpisode can be serialized."""
-        episode_data = {
+        episode_data: EpisodeTestData = {
             "season": 1,
             "number": 1,
             "title": "Pilot",
@@ -260,7 +260,7 @@ class TestTraktEpisode:
             "last_watched_at": "2023-01-15T20:30:00Z",
         }
 
-        episode = TraktEpisode(**episode_data)  # type: ignore[arg-type] # Testing: Valid episode data without TypedDict
+        episode = TraktEpisode(**episode_data)
         serialized = episode.model_dump()
 
         assert serialized == episode_data
@@ -490,7 +490,7 @@ class TestMediaModelIntegration:
 
     def test_complex_show_data_structure(self):
         """Test complex show data structure with all fields."""
-        complex_show_data = {
+        complex_show_data: ShowTestData = {
             "title": "Game of Thrones",
             "year": 2011,
             "ids": {
@@ -504,7 +504,7 @@ class TestMediaModelIntegration:
         }
 
         # Test direct show creation
-        show = TraktShow(**complex_show_data)  # type: ignore[arg-type] # Testing: Valid show data without TypedDict
+        show = TraktShow(**complex_show_data)
         assert show.title == "Game of Thrones"
 
         # Test in trending context
@@ -518,7 +518,7 @@ class TestMediaModelIntegration:
 
     def test_complex_movie_data_structure(self):
         """Test complex movie data structure with all fields."""
-        complex_movie_data = {
+        complex_movie_data: MovieTestData = {
             "title": "The Dark Knight",
             "year": 2008,
             "ids": {
@@ -531,7 +531,7 @@ class TestMediaModelIntegration:
         }
 
         # Test direct movie creation
-        movie = TraktMovie(**complex_movie_data)  # type: ignore[arg-type] # Testing: Valid movie data without TypedDict
+        movie = TraktMovie(**complex_movie_data)
         assert movie.title == "The Dark Knight"
 
         # Test in trending context
@@ -545,7 +545,7 @@ class TestMediaModelIntegration:
 
     def test_episode_integration(self):
         """Test episode model integration scenarios."""
-        episode_data = {
+        episode_data: EpisodeTestData = {
             "season": 1,
             "number": 1,
             "title": "Winter Is Coming",
@@ -558,7 +558,7 @@ class TestMediaModelIntegration:
             "last_watched_at": "2023-12-01T21:00:00Z",
         }
 
-        episode = TraktEpisode(**episode_data)  # type: ignore[arg-type] # Testing: Valid episode data without TypedDict
+        episode = TraktEpisode(**episode_data)
 
         assert episode.season == 1
         assert episode.number == 1

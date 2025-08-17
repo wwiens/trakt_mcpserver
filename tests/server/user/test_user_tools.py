@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -11,7 +11,6 @@ from utils.api.error_types import AuthenticationRequiredError
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.user.tools import fetch_user_watched_movies, fetch_user_watched_shows
-from tests.types_stub import MCPErrorWithData  # noqa: TC001
 
 
 @pytest.mark.asyncio
@@ -175,8 +174,8 @@ async def test_fetch_user_watched_shows_not_authenticated():
             await fetch_user_watched_shows()
 
         # Verify error contains expected information
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert error.data["error_type"] == "auth_required"
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "auth_required"
         mock_client.is_authenticated.assert_called_once()
 
 
@@ -191,6 +190,6 @@ async def test_fetch_user_watched_movies_not_authenticated():
             await fetch_user_watched_movies()
 
         # Verify error contains expected information
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert error.data["error_type"] == "auth_required"
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "auth_required"
         mock_client.is_authenticated.assert_called_once()

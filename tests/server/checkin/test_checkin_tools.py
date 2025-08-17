@@ -3,7 +3,7 @@
 import asyncio
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -12,7 +12,6 @@ import pytest
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.checkin.tools import checkin_to_show
-from tests.types_stub import MCPErrorWithData  # noqa: TC001
 from utils.api.error_types import (
     AuthenticationRequiredError,
     InvalidParamsError,
@@ -77,8 +76,8 @@ async def test_checkin_to_show_not_authenticated():
             await checkin_to_show(season=1, episode=1, show_id="1")
 
         # Verify error contains expected information
-        error = cast("MCPErrorWithData", exc_info.value)
-        assert error.data["error_type"] == "auth_required"
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "auth_required"
         # Verify the client methods were called
         mock_client.is_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_not_called()

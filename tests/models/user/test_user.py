@@ -9,7 +9,27 @@ from models.shows.show import TraktShow
 from models.user import TraktUserShow
 
 if TYPE_CHECKING:
+    from typing import TypedDict
+
     from tests.models.test_data_types import SeasonData, ShowTestData, UserShowTestData
+
+    class ApiShowResponse(TypedDict):
+        """API response for show data with mixed types."""
+
+        title: str
+        year: int
+        ids: dict[str, int | str]
+        overview: str
+
+    class ApiUserWatchedShowResponse(TypedDict):
+        """Raw API response structure for user watched shows."""
+
+        last_watched_at: str
+        last_updated_at: str
+        plays: int
+        reset_at: None
+        show: ApiShowResponse
+        seasons: list[dict[str, object]]
 
 
 class TestTraktUserShow:
@@ -355,7 +375,7 @@ class TestTraktUserShow:
     def test_user_show_from_api_response(self):
         """Test creating user show from typical API response."""
         # Simulate typical API response from Trakt
-        api_response: dict[str, object] = {
+        api_response: ApiUserWatchedShowResponse = {
             "last_watched_at": "2023-12-01T21:00:00.000Z",
             "last_updated_at": "2023-12-01T21:05:00.000Z",
             "plays": 62,
@@ -389,18 +409,28 @@ class TestTraktUserShow:
         # Convert API response to match our model expectations
         processed_response: UserShowTestData = {
             "show": {
-                "title": api_response["show"]["title"],  # type: ignore[index,misc] # Testing: Type validation
-                "year": api_response["show"]["year"],  # type: ignore[index,misc] # Testing: Type validation
+                "title": api_response["show"]["title"],
+                "year": api_response["show"]["year"],
                 "ids": {
-                    k: str(v) if isinstance(v, int | str) else ""
-                    for k, v in api_response["show"]["ids"].items()  # type: ignore[index,misc,union-attr] # Testing: Type validation
+                    k: str(v) for k, v in api_response["show"]["ids"].items()
                 },  # Convert to strings
-                "overview": api_response["show"]["overview"],  # type: ignore[index,misc] # Testing: Type validation
+                "overview": api_response["show"]["overview"],
             },
             "last_watched_at": api_response["last_watched_at"],
             "last_updated_at": api_response["last_updated_at"],
             "plays": api_response["plays"],
-            "seasons": api_response["seasons"],
+            "seasons": [
+                {
+                    "number": 1,
+                    "episodes": [
+                        {
+                            "number": 1,
+                            "plays": 1,
+                            "last_watched_at": "2023-01-01T20:00:00.000Z",
+                        }
+                    ],
+                }
+            ],
         }
 
         user_show = TraktUserShow(**processed_response)  # type: ignore[arg-type] # Testing: Type validation
