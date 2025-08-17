@@ -84,6 +84,7 @@ ruff check --fix    # Linting
 ruff format         # Formatting
 pyright             # Type checking
 pip-audit           # Security scanning
+npx @modelcontextprotocol/inspector --cli python server.py --method tools/list    # MCP validation
 
 # MCP server
 python server.py                                                        # Direct run

@@ -107,6 +107,29 @@ def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
     ) from e
 
 
+def _ensure_not_error_string(
+    value: object, *, resource_type: str, resource_id: str, operation: str
+) -> None:
+    """Helper to check if API response is an error string and raise appropriate error.
+
+    Args:
+        value: The API response value to check
+        resource_type: Type of resource for error context
+        resource_id: ID of the resource for error context
+        operation: Operation being performed for error context
+
+    Raises:
+        BaseToolErrorMixin error: If value is an error string
+    """
+    if isinstance(value, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type=resource_type,
+            resource_id=resource_id,
+            error_message=value,
+            operation=operation,
+        )
+
+
 # Type aliases for tool functions
 MovieCommentsToolType = Callable[[str, int, bool, CommentSort], Awaitable[str]]
 ShowCommentsToolType = Callable[[str, int, bool, CommentSort], Awaitable[str]]
@@ -156,13 +179,12 @@ async def fetch_movie_comments(
     )
 
     # Handle transitional case where API returns error strings
-    if isinstance(comments, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
-            resource_type="movie_comments",
-            resource_id=movie_id,
-            error_message=comments,
-            operation="fetch_movie_comments",
-        )
+    _ensure_not_error_string(
+        comments,
+        resource_type="movie_comments",
+        resource_id=movie_id,
+        operation="fetch_movie_comments",
+    )
 
     title = f"Movie ID: {movie_id}"
     return CommentsFormatters.format_comments(
@@ -210,13 +232,12 @@ async def fetch_show_comments(
     )
 
     # Handle transitional case where API returns error strings
-    if isinstance(comments, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
-            resource_type="show_comments",
-            resource_id=show_id,
-            error_message=comments,
-            operation="fetch_show_comments",
-        )
+    _ensure_not_error_string(
+        comments,
+        resource_type="show_comments",
+        resource_id=show_id,
+        operation="fetch_show_comments",
+    )
 
     title = f"Show ID: {show_id}"
     return CommentsFormatters.format_comments(
@@ -266,13 +287,12 @@ async def fetch_season_comments(
     )
 
     # Handle transitional case where API returns error strings
-    if isinstance(comments, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
-            resource_type="season_comments",
-            resource_id=f"{show_id}-{season}",
-            error_message=comments,
-            operation="fetch_season_comments",
-        )
+    _ensure_not_error_string(
+        comments,
+        resource_type="season_comments",
+        resource_id=f"{show_id}-{season}",
+        operation="fetch_season_comments",
+    )
 
     title = f"Show ID: {show_id} - Season {season}"
     return CommentsFormatters.format_comments(
@@ -328,13 +348,12 @@ async def fetch_episode_comments(
     )
 
     # Handle transitional case where API returns error strings
-    if isinstance(comments, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
-            resource_type="episode_comments",
-            resource_id=f"{show_id}-{season}-{episode}",
-            error_message=comments,
-            operation="fetch_episode_comments",
-        )
+    _ensure_not_error_string(
+        comments,
+        resource_type="episode_comments",
+        resource_id=f"{show_id}-{season}-{episode}",
+        operation="fetch_episode_comments",
+    )
 
     title = f"Show ID: {show_id} - S{season:02d}E{episode:02d}"
     return CommentsFormatters.format_comments(
@@ -370,13 +389,12 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
     comment = await client.get_comment(comment_id)
 
     # Handle transitional case where API returns error strings
-    if isinstance(comment, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
-            resource_type="comment",
-            resource_id=comment_id,
-            error_message=comment,
-            operation="fetch_comment",
-        )
+    _ensure_not_error_string(
+        comment,
+        resource_type="comment",
+        resource_id=comment_id,
+        operation="fetch_comment",
+    )
 
     return CommentsFormatters.format_comment(comment, show_spoilers=show_spoilers)
 
@@ -417,26 +435,24 @@ async def fetch_comment_replies(
     comment = await client.get_comment(comment_id)
 
     # Handle transitional case where API returns error strings
-    if isinstance(comment, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
-            resource_type="comment",
-            resource_id=comment_id,
-            error_message=comment,
-            operation="fetch_comment_replies",
-        )
+    _ensure_not_error_string(
+        comment,
+        resource_type="comment",
+        resource_id=comment_id,
+        operation="fetch_comment_replies",
+    )
 
     replies = await client.get_comment_replies(
         comment_id, limit=options.limit, sort=options.sort
     )
 
     # Handle transitional case where API returns error strings
-    if isinstance(replies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
-            resource_type="comment_replies",
-            resource_id=comment_id,
-            error_message=replies,
-            operation="fetch_comment_replies",
-        )
+    _ensure_not_error_string(
+        replies,
+        resource_type="comment_replies",
+        resource_id=comment_id,
+        operation="fetch_comment_replies",
+    )
 
     return CommentsFormatters.format_comment(
         comment,

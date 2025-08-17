@@ -17,6 +17,7 @@ from server.shows.resources import (
     get_trending_shows,
     get_watched_shows,
 )
+from utils.api.errors import InternalError
 
 
 @pytest.mark.asyncio
@@ -238,7 +239,7 @@ async def test_get_show_ratings_error_handling():
         mock_client.get_show.return_value = future
 
         # Call the resource function - should raise exception
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(InternalError) as exc_info:
             await get_show_ratings("1")
 
         # Verify it's an InternalError for unexpected exceptions
@@ -261,7 +262,7 @@ async def test_get_show_ratings_string_error_handling():
         mock_client.get_show.return_value = future
 
         # handle_api_string_error returns InternalError for string errors
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(InternalError) as exc_info:
             await get_show_ratings("1")
 
         # Check that it's an InternalError
