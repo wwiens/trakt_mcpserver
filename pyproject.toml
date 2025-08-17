@@ -1,5 +1,5 @@
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 88
 exclude = [
     ".git",
@@ -63,6 +63,7 @@ exclude = [
 ]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
+useLibraryCodeForTypes = true
 reportMissingTypeStubs = "error"
 reportUnknownMemberType = "error"
 reportUnknownVariableType = "error"

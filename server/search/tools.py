@@ -13,6 +13,9 @@ from models.formatters.search import SearchFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
+# Type alias for search tool handlers
+ToolHandler = Callable[[str, int], Awaitable[str]]
+
 
 class QueryParam(BaseModel):
     """Parameters for tools that require a search query and result limit."""
@@ -42,6 +45,29 @@ class QueryParam(BaseModel):
         return v
 
 
+def _validate_search_params(query: str, limit: int, operation: str) -> tuple[str, int]:
+    """Normalize and validate search parameters, mapping Pydantic errors to MCP."""
+    try:
+        params = QueryParam(query=query, limit=limit)
+        return params.query, params.limit
+    except ValidationError as e:
+        validation_errors: list[dict[str, Any]] = [
+            {
+                "field": str(err.get("loc", ["query"])[-1]),
+                "message": str(err.get("msg", "Invalid value")),
+                "type": str(err.get("type", "validation_error")),
+                "input": err.get("input"),
+            }
+            for err in e.errors()
+        ]
+        summary = "Invalid parameters for search: " + "; ".join(
+            f"{ve['field']}: {ve['message']}" for ve in validation_errors
+        )
+        raise BaseToolErrorMixin.handle_validation_error(
+            summary, validation_errors=validation_errors, operation=operation
+        ) from e
+
+
 @handle_api_errors_func
 async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
     """Search for shows on Trakt by title.
@@ -57,40 +83,15 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
         InvalidParamsError: If query and limit are invalid
         InternalError: If an error occurs during search
     """
-    # Validate parameters with Pydantic for normalization and constraints
-    try:
-        params = QueryParam(query=query, limit=limit)
-        query, limit = params.query, params.limit
-    except ValidationError as e:
-        # Extract structured validation details for the error mixin
-        validation_errors: list[dict[str, Any]] = [
-            {
-                "field": str(error.get("loc", ["query"])[-1]),
-                "message": str(error.get("msg", "Invalid value")),
-                "type": str(error.get("type", "validation_error")),
-                "input": error.get("input"),
-            }
-            for error in e.errors()
-        ]
-
-        # Create summary message for human readability
-        field_messages = [
-            f"{err['field']}: {err['message']}" for err in validation_errors
-        ]
-        summary_message = f"Invalid parameters for search: {'; '.join(field_messages)}"
-
-        # Use project's error mixin to attach structured details and request context
-        raise BaseToolErrorMixin.handle_validation_error(
-            summary_message,
-            validation_errors=validation_errors,
-            operation="search_shows_validation",
-        ) from e
+    query, limit = _validate_search_params(
+        query, limit, operation="search_shows_validation"
+    )
 
     client = SearchClient()
 
     try:
         # Perform the search
-        results = await client.search_shows(query, params.limit)
+        results = await client.search_shows(query, limit)
 
         # Format and return the results
         return SearchFormatters.format_show_search_results(results)
@@ -99,7 +100,7 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
     except Exception as e:
         # Convert any unexpected errors to structured MCP errors
         raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="search shows", error=e, query=query, limit=params.limit
+            operation="search shows", error=e, query=query, limit=limit
         ) from e
 
 
@@ -118,52 +119,27 @@ async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
         InvalidParamsError: If query and limit are invalid
         InternalError: If an error occurs during search
     """
-    # Validate parameters with Pydantic for normalization and constraints
-    try:
-        params = QueryParam(query=query, limit=limit)
-        query, limit = params.query, params.limit
-    except ValidationError as e:
-        # Extract structured validation details for the error mixin
-        validation_errors: list[dict[str, Any]] = [
-            {
-                "field": str(error.get("loc", ["query"])[-1]),
-                "message": str(error.get("msg", "Invalid value")),
-                "type": str(error.get("type", "validation_error")),
-                "input": error.get("input"),
-            }
-            for error in e.errors()
-        ]
-
-        # Create summary message for human readability
-        field_messages = [
-            f"{err['field']}: {err['message']}" for err in validation_errors
-        ]
-        summary_message = f"Invalid parameters for search: {'; '.join(field_messages)}"
-
-        # Use project's error mixin to attach structured details and request context
-        raise BaseToolErrorMixin.handle_validation_error(
-            summary_message,
-            validation_errors=validation_errors,
-            operation="search_movies_validation",
-        ) from e
+    query, limit = _validate_search_params(
+        query, limit, operation="search_movies_validation"
+    )
 
     client = SearchClient()
 
     try:
-        results = await client.search_movies(query, params.limit)
+        results = await client.search_movies(query, limit)
         return SearchFormatters.format_movie_search_results(results)
     except MCPError:
         raise
     except Exception as e:
         # Convert any unexpected errors to structured MCP errors
         raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="search movies", error=e, query=query, limit=params.limit
+            operation="search movies", error=e, query=query, limit=limit
         ) from e
 
 
 def register_search_tools(
     mcp: FastMCP,
-) -> tuple[Callable[..., Awaitable[str]], Callable[..., Awaitable[str]]]:
+) -> tuple[ToolHandler, ToolHandler]:
     """Register search tools with the MCP server.
 
     Returns:

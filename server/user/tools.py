@@ -1,5 +1,6 @@
 """User tools for the Trakt MCP server."""
 
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -11,6 +12,35 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.user import UserFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.error_types import AuthenticationRequiredError
+
+# Type alias for user tool handlers
+ToolHandler = Callable[[int], Awaitable[str]]
+
+
+def _validate_and_normalize_limit(value: int, *, operation: str) -> int:
+    try:
+        params = UserLimitParam(limit=value)
+        return params.limit
+    except ValidationError as e:
+        validation_errors: list[dict[str, Any]] = [
+            {
+                "field": str(error.get("loc", ["limit"])[-1]),
+                "message": str(error.get("msg", "Invalid value")),
+                "type": str(error.get("type", "validation_error")),
+                "input": error.get("input"),
+            }
+            for error in e.errors()
+        ]
+        field_messages = [f"{err['field']}: {err['message']}" for err in validation_errors]
+        summary_message = (
+            f"Invalid parameters for {operation.replace('_', ' ')}: "
+            + "; ".join(field_messages)
+        )
+        raise BaseToolErrorMixin.handle_validation_error(
+            summary_message,
+            validation_errors=validation_errors,
+            operation=f"{operation}_validation",
+        ) from e
 
 
 class UserLimitParam(BaseModel):
@@ -33,36 +63,7 @@ async def fetch_user_watched_shows(limit: int = 0) -> str:
     Returns:
         Information about user's watched shows
     """
-    # Validate parameters with Pydantic for normalization and constraints
-    try:
-        params = UserLimitParam(limit=limit)
-        limit = params.limit
-    except ValidationError as e:
-        # Extract structured validation details for the error mixin
-        validation_errors: list[dict[str, Any]] = [
-            {
-                "field": str(error.get("loc", ["limit"])[-1]),
-                "message": str(error.get("msg", "Invalid value")),
-                "type": str(error.get("type", "validation_error")),
-                "input": error.get("input"),
-            }
-            for error in e.errors()
-        ]
-
-        # Create summary message for human readability
-        field_messages = [
-            f"{err['field']}: {err['message']}" for err in validation_errors
-        ]
-        summary_message = (
-            f"Invalid parameters for user watched shows: {'; '.join(field_messages)}"
-        )
-
-        # Use project's error mixin to attach structured details and request context
-        raise BaseToolErrorMixin.handle_validation_error(
-            summary_message,
-            validation_errors=validation_errors,
-            operation="fetch_user_watched_shows_validation",
-        ) from e
+    limit = _validate_and_normalize_limit(limit, operation="fetch_user_watched_shows")
 
     client = UserClient()
 
@@ -76,7 +77,7 @@ async def fetch_user_watched_shows(limit: int = 0) -> str:
     shows = await client.get_user_watched_shows()
 
     # Apply limit if requested
-    if limit > 0 and len(shows) > limit:
+    if limit > 0:
         shows = shows[:limit]
 
     return UserFormatters.format_user_watched_shows(shows)
@@ -91,36 +92,7 @@ async def fetch_user_watched_movies(limit: int = 0) -> str:
     Returns:
         Information about user's watched movies
     """
-    # Validate parameters with Pydantic for normalization and constraints
-    try:
-        params = UserLimitParam(limit=limit)
-        limit = params.limit
-    except ValidationError as e:
-        # Extract structured validation details for the error mixin
-        validation_errors: list[dict[str, Any]] = [
-            {
-                "field": str(error.get("loc", ["limit"])[-1]),
-                "message": str(error.get("msg", "Invalid value")),
-                "type": str(error.get("type", "validation_error")),
-                "input": error.get("input"),
-            }
-            for error in e.errors()
-        ]
-
-        # Create summary message for human readability
-        field_messages = [
-            f"{err['field']}: {err['message']}" for err in validation_errors
-        ]
-        summary_message = (
-            f"Invalid parameters for user watched movies: {'; '.join(field_messages)}"
-        )
-
-        # Use project's error mixin to attach structured details and request context
-        raise BaseToolErrorMixin.handle_validation_error(
-            summary_message,
-            validation_errors=validation_errors,
-            operation="fetch_user_watched_movies_validation",
-        ) from e
+    limit = _validate_and_normalize_limit(limit, operation="fetch_user_watched_movies")
 
     client = UserClient()
 
@@ -134,13 +106,13 @@ async def fetch_user_watched_movies(limit: int = 0) -> str:
     movies = await client.get_user_watched_movies()
 
     # Apply limit if requested
-    if limit > 0 and len(movies) > limit:
+    if limit > 0:
         movies = movies[:limit]
 
     return UserFormatters.format_user_watched_movies(movies)
 
 
-def register_user_tools(mcp: FastMCP) -> tuple[Any, Any]:
+def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
     """Register user tools with the MCP server.
 
     Returns:
@@ -151,12 +123,20 @@ def register_user_tools(mcp: FastMCP) -> tuple[Any, Any]:
         name=TOOL_NAMES["fetch_user_watched_shows"],
         description="Fetch TV shows watched by the authenticated user from Trakt",
     )
+    @BaseToolErrorMixin.with_error_handling(
+        operation="fetch_user_watched_shows_tool",
+        tool=TOOL_NAMES["fetch_user_watched_shows"],
+    )
     async def fetch_user_watched_shows_tool(limit: int = 0) -> str:
         return await fetch_user_watched_shows(limit)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_user_watched_movies"],
         description="Fetch movies watched by the authenticated user from Trakt",
+    )
+    @BaseToolErrorMixin.with_error_handling(
+        operation="fetch_user_watched_movies_tool",
+        tool=TOOL_NAMES["fetch_user_watched_movies"],
     )
     async def fetch_user_watched_movies_tool(limit: int = 0) -> str:
         return await fetch_user_watched_movies(limit)

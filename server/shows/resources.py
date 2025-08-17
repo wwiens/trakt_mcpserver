@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.types import ShowResponse
@@ -22,15 +22,17 @@ from server.shows.tools import ShowIdParam
 from utils.api.error_types import TraktValidationError
 from utils.api.errors import handle_api_errors_func
 
-logger = logging.getLogger("trakt_mcp")
+logger: logging.Logger = logging.getLogger("trakt_mcp")
 
 # Type alias for resource handler functions
-ResourceHandler: TypeAlias = Callable[[], Awaitable[str]]
+type ResourceHandler = Callable[[], Awaitable[str]]
 
 
 @handle_api_errors_func
 async def get_trending_shows() -> str:
-    """Returns the most watched shows over the last 24 hours from Trakt. Shows with the most watchers are returned first.
+    """Returns the most watched shows over the last 24 hours from Trakt.
+
+    Shows with the most watchers are returned first.
 
     Returns:
         Formatted markdown text with trending shows
@@ -63,7 +65,7 @@ async def get_favorited_shows() -> str:
     shows = await client.get_favorited_shows(limit=DEFAULT_LIMIT)
 
     # Debug log for API response structure analysis
-    if shows and len(shows) > 0:
+    if shows:
         logger.debug(
             "Favorited shows API response structure",
             extra={
@@ -78,7 +80,10 @@ async def get_favorited_shows() -> str:
 
 @handle_api_errors_func
 async def get_played_shows() -> str:
-    """Returns the most played (a single user can watch multiple episodes multiple times) shows from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most played shows from Trakt in the specified time period.
+
+    A single user can watch multiple episodes multiple times. Defaults to weekly.
+    All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most played shows
@@ -90,7 +95,10 @@ async def get_played_shows() -> str:
 
 @handle_api_errors_func
 async def get_watched_shows() -> str:
-    """Returns the most watched (unique users) shows from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most watched (unique users) shows from Trakt.
+
+    Data is from the specified time period, defaulting to weekly.
+    All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most watched shows

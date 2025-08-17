@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.types import MovieResponse
@@ -17,17 +17,19 @@ from models.formatters.movies import MovieFormatters
 from server.base import BaseToolErrorMixin
 from server.movies.tools import MovieIdParam
 from utils.api.error_types import TraktValidationError
-from utils.api.errors import MCPError, handle_api_errors_func
+from utils.api.errors import handle_api_errors_func
 
-logger = logging.getLogger("trakt_mcp")
+logger: logging.Logger = logging.getLogger("trakt_mcp")
 
 # Type alias for resource handler functions
-ResourceHandler: TypeAlias = Callable[[], Awaitable[str]]
+type ResourceHandler = Callable[[], Awaitable[str]]
 
 
 @handle_api_errors_func
 async def get_trending_movies() -> str:
-    """Returns the most watched movies over the last 24 hours from Trakt. Movies with the most watchers are returned first.
+    """Returns the most watched movies over the last 24 hours from Trakt.
+
+    Movies with the most watchers are returned first.
 
     Returns:
         Formatted markdown text with trending movies
@@ -39,7 +41,9 @@ async def get_trending_movies() -> str:
 
 @handle_api_errors_func
 async def get_popular_movies() -> str:
-    """Returns the most popular movies from Trakt. Popularity is calculated using the rating percentage and the number of ratings.
+    """Returns the most popular movies from Trakt.
+
+    Popularity is calculated using the rating percentage and the number of ratings.
 
     Returns:
         Formatted markdown text with popular movies
@@ -51,7 +55,9 @@ async def get_popular_movies() -> str:
 
 @handle_api_errors_func
 async def get_favorited_movies() -> str:
-    """Returns the most favorited movies from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most favorited movies from Trakt in the specified time period.
+
+    Defaults to weekly. All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most favorited movies
@@ -60,7 +66,7 @@ async def get_favorited_movies() -> str:
     movies = await client.get_favorited_movies(limit=DEFAULT_LIMIT)
 
     # Debug log for API response structure analysis
-    if movies and len(movies) > 0:
+    if movies:
         logger.debug(
             "Favorited movies API response structure",
             extra={
@@ -75,7 +81,10 @@ async def get_favorited_movies() -> str:
 
 @handle_api_errors_func
 async def get_played_movies() -> str:
-    """Returns the most played (a single user can watch a single movie multiple times) movies from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most played movies from Trakt in the specified time period.
+
+    A single user can watch a single movie multiple times. Defaults to weekly.
+    All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most played movies
@@ -87,7 +96,10 @@ async def get_played_movies() -> str:
 
 @handle_api_errors_func
 async def get_watched_movies() -> str:
-    """Returns the most watched (unique users) movies from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most watched (unique users) movies from Trakt.
+
+    Data is from the specified time period, defaulting to weekly.
+    All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most watched movies
@@ -125,12 +137,7 @@ async def get_movie_ratings(movie_id: str) -> str:
             validation_details=error_details,
         ) from e
 
-    # Wrap get_movie call to handle MCPError propagation explicitly
-    try:
-        movie = await client.get_movie(movie_id)
-    except MCPError:
-        # Re-raise MCPErrors to be handled by the function-level decorator
-        raise
+    movie = await client.get_movie(movie_id)
 
     # Handle transitional case where API returns error strings
     if isinstance(movie, str):
@@ -142,15 +149,10 @@ async def get_movie_ratings(movie_id: str) -> str:
         )
 
     # Type narrowing: movie is guaranteed to be MovieResponse after string check
-    movie_data: MovieResponse = movie
+    movie_data: "MovieResponse" = movie
     movie_title = movie_data["title"]
 
-    # Wrap get_movie_ratings call to handle MCPError propagation explicitly
-    try:
-        ratings = await client.get_movie_ratings(movie_id)
-    except MCPError:
-        # Re-raise MCPErrors to be handled by the function-level decorator
-        raise
+    ratings = await client.get_movie_ratings(movie_id)
 
     # Handle transitional case where API returns error strings
     if isinstance(ratings, str):

@@ -17,7 +17,6 @@ from models.formatters.comments import CommentsFormatters
 from server.base import BaseToolErrorMixin
 from server.movies.tools import MovieIdParam
 from server.shows.tools import ShowIdParam
-from utils.api.error_types import TraktValidationError
 from utils.api.errors import handle_api_errors_func
 
 # Comment sort options supported by Trakt API
@@ -70,20 +69,29 @@ class CommentsListOptionsParam(BaseModel):
 
 
 def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
-    """Handle validation errors with consistent formatting.
+    """Handle validation errors with consistent formatting via BaseToolErrorMixin.
 
     Args:
         e: The ValidationError to handle
         context: Context string for the error message
 
     Raises:
-        TraktValidationError: Formatted validation error
+        BaseToolErrorMixin error: Formatted validation error via mixin
     """
-    error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
-    raise TraktValidationError(
-        f"Invalid parameters for {context}: {', '.join(error_details.keys())}",
-        invalid_params=list(error_details.keys()),
-        validation_details=error_details,
+    validation_errors = [
+        {
+            "field": str(error.get("loc", [context])[-1]),
+            "message": str(error.get("msg", "Invalid value")),
+            "type": str(error.get("type", "validation_error")),
+            "input": error.get("input"),
+        }
+        for error in e.errors()
+    ]
+
+    raise BaseToolErrorMixin.handle_validation_error(
+        f"Invalid parameters for {context}",
+        validation_errors=validation_errors,
+        operation=f"{context.replace(' ', '_')}_validation",
     ) from e
 
 
