@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, PositiveInt, field_validator
+from pydantic import BaseModel, Field, PositiveInt, ValidationError, field_validator
 
 from client.comments.details import CommentDetailsClient
 from client.comments.episode import EpisodeCommentsClient
@@ -17,6 +17,7 @@ from models.formatters.comments import CommentsFormatters
 from server.base import BaseToolErrorMixin
 from server.movies.tools import MovieIdParam
 from server.shows.tools import ShowIdParam
+from utils.api.error_types import TraktValidationError
 from utils.api.errors import handle_api_errors_func
 
 # Comment sort options supported by Trakt API
@@ -93,8 +94,16 @@ async def fetch_movie_comments(
         InternalError: If an error occurs fetching comments
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = MovieIdParam(movie_id=movie_id)
-    movie_id = params.movie_id
+    try:
+        params = MovieIdParam(movie_id=movie_id)
+        movie_id = params.movie_id
+    except ValidationError as e:
+        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
+        raise TraktValidationError(
+            f"Invalid parameters for movie comments: {', '.join(error_details.keys())}",
+            invalid_params=list(error_details.keys()),
+            validation_details=error_details,
+        ) from e
 
     client = MovieCommentsClient()
 
@@ -140,8 +149,16 @@ async def fetch_show_comments(
         InternalError: If an error occurs fetching comments
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = ShowIdParam(show_id=show_id)
-    show_id = params.show_id
+    try:
+        params = ShowIdParam(show_id=show_id)
+        show_id = params.show_id
+    except ValidationError as e:
+        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
+        raise TraktValidationError(
+            f"Invalid parameters for show comments: {', '.join(error_details.keys())}",
+            invalid_params=list(error_details.keys()),
+            validation_details=error_details,
+        ) from e
 
     client = ShowCommentsClient()
 
@@ -189,8 +206,16 @@ async def fetch_season_comments(
         InternalError: If an error occurs fetching comments
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = SeasonParam(show_id=show_id, season=season)
-    show_id, season = params.show_id, params.season
+    try:
+        params = SeasonParam(show_id=show_id, season=season)
+        show_id, season = params.show_id, params.season
+    except ValidationError as e:
+        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
+        raise TraktValidationError(
+            f"Invalid parameters for season comments: {', '.join(error_details.keys())}",
+            invalid_params=list(error_details.keys()),
+            validation_details=error_details,
+        ) from e
 
     client = SeasonCommentsClient()
 
@@ -240,8 +265,16 @@ async def fetch_episode_comments(
         InternalError: If an error occurs fetching comments
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = EpisodeParam(show_id=show_id, season=season, episode=episode)
-    show_id, season, episode = params.show_id, params.season, params.episode
+    try:
+        params = EpisodeParam(show_id=show_id, season=season, episode=episode)
+        show_id, season, episode = params.show_id, params.season, params.episode
+    except ValidationError as e:
+        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
+        raise TraktValidationError(
+            f"Invalid parameters for episode comments: {', '.join(error_details.keys())}",
+            invalid_params=list(error_details.keys()),
+            validation_details=error_details,
+        ) from e
 
     client = EpisodeCommentsClient()
 
@@ -282,8 +315,16 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
         InternalError: If an error occurs fetching comment
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = CommentIdParam(comment_id=comment_id)
-    comment_id = params.comment_id
+    try:
+        params = CommentIdParam(comment_id=comment_id)
+        comment_id = params.comment_id
+    except ValidationError as e:
+        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
+        raise TraktValidationError(
+            f"Invalid parameters for comment: {', '.join(error_details.keys())}",
+            invalid_params=list(error_details.keys()),
+            validation_details=error_details,
+        ) from e
 
     client = CommentDetailsClient()
 
@@ -324,8 +365,16 @@ async def fetch_comment_replies(
         InternalError: If an error occurs fetching comment replies
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = CommentIdParam(comment_id=comment_id)
-    comment_id = params.comment_id
+    try:
+        params = CommentIdParam(comment_id=comment_id)
+        comment_id = params.comment_id
+    except ValidationError as e:
+        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
+        raise TraktValidationError(
+            f"Invalid parameters for comment replies: {', '.join(error_details.keys())}",
+            invalid_params=list(error_details.keys()),
+            validation_details=error_details,
+        ) from e
 
     client = CommentDetailsClient()
 

@@ -5,6 +5,7 @@ from collections.abc import Awaitable, Callable
 from typing import TypeAlias
 
 from mcp.server.fastmcp import FastMCP
+from pydantic import ValidationError
 
 from client.shows.details import ShowDetailsClient
 from client.shows.popular import PopularShowsClient
@@ -15,6 +16,7 @@ from config.mcp.resources import MCP_RESOURCES
 from models.formatters.shows import ShowFormatters
 from server.base import BaseToolErrorMixin
 from server.shows.tools import ShowIdParam
+from utils.api.error_types import TraktValidationError
 from utils.api.errors import handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
@@ -104,44 +106,47 @@ async def get_show_ratings(show_id: str) -> str:
         InvalidParamsError: If show_id is invalid
         InternalError: If an error occurs fetching show or ratings data
     """
-    # Validate parameters with Pydantic for normalization and constraints
-    params = ShowIdParam(show_id=show_id)
-    show_id = params.show_id
     client: ShowDetailsClient = ShowDetailsClient()
 
+    # Validate parameters with Pydantic for normalization and constraints
     try:
-        show = await client.get_show(show_id)
-
-        # Handle transitional case where API returns error strings
-        # TODO: Remove once API returns structured errors consistently
-        if isinstance(show, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show",
-                resource_id=show_id,
-                error_message=show,
-                operation="fetch_show_details",
-            )
-
-        show_title = show.get("title", "Unknown Show")
-        ratings = await client.get_show_ratings(show_id)
-
-        # Handle transitional case where API returns error strings
-        # TODO: Remove once API returns structured errors consistently
-        if isinstance(ratings, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show_ratings",
-                resource_id=show_id,
-                error_message=ratings,
-                operation="fetch_show_ratings",
-                show_title=show_title,
-            )
-
-        return ShowFormatters.format_show_ratings(ratings, show_title)
-    except Exception as e:
-        # Convert any unexpected errors to structured MCP errors
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="fetch show ratings", error=e, show_id=show_id
+        params = ShowIdParam(show_id=show_id)
+        show_id = params.show_id
+    except ValidationError as e:
+        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
+        raise TraktValidationError(
+            f"Invalid parameters for show ratings: {', '.join(error_details.keys())}",
+            invalid_params=list(error_details.keys()),
+            validation_details=error_details,
         ) from e
+
+    show = await client.get_show(show_id)
+
+    # Handle transitional case where API returns error strings
+    # TODO: Remove once API returns structured errors consistently
+    if isinstance(show, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="show",
+            resource_id=show_id,
+            error_message=show,
+            operation="fetch_show_details",
+        )
+
+    show_title = show.get("title", "Unknown Show")
+    ratings = await client.get_show_ratings(show_id)
+
+    # Handle transitional case where API returns error strings
+    # TODO: Remove once API returns structured errors consistently
+    if isinstance(ratings, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="show_ratings",
+            resource_id=show_id,
+            error_message=ratings,
+            operation="fetch_show_ratings",
+            show_title=show_title,
+        )
+
+    return ShowFormatters.format_show_ratings(ratings, show_title)
 
 
 def register_show_resources(

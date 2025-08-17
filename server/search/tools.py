@@ -3,24 +3,41 @@
 from collections.abc import Awaitable, Callable
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from client.search.client import SearchClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.search import SearchFormatters
 from server.base import BaseToolErrorMixin
-from utils.api.errors import MCPError
+from utils.api.errors import InvalidParamsError, MCPError, handle_api_errors_func
 
 
 class QueryParam(BaseModel):
     """Parameters for tools that require a search query."""
 
     query: str = Field(
-        ..., min_length=1, max_length=200, description="Non-empty search query"
+        ...,
+        min_length=1,
+        max_length=200,
+        description="Non-empty, non-whitespace search query",
     )
 
+    @field_validator("query", mode="before")
+    @classmethod
+    def _validate_query(cls, v: object) -> object:
+        if isinstance(v, str):
+            # Strip whitespace and check if result is empty
+            stripped = v.strip()
+            if not stripped:
+                raise ValueError(
+                    "Search query cannot be empty or contain only whitespace"
+                )
+            return stripped
+        return v
 
+
+@handle_api_errors_func
 async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
     """Search for shows on Trakt by title.
 
@@ -36,8 +53,26 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
         InternalError: If an error occurs during search
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = QueryParam(query=query)
-    query = params.query
+    try:
+        params = QueryParam(query=query)
+        query = params.query.strip()
+
+        # Additional check for empty query after stripping
+        if not query:
+            raise InvalidParamsError(
+                "Search query cannot be empty or contain only whitespace"
+            )
+    except ValidationError as e:
+        # Extract validation error details and convert to InvalidParamsError
+        error_details: list[str] = []
+        for error in e.errors():
+            field = str(error.get("loc", ["query"])[-1])
+            message = str(error.get("msg", "Invalid value"))
+            error_details.append(f"{field}: {message}")
+
+        raise InvalidParamsError(
+            f"Invalid parameters for search: {'; '.join(error_details)}"
+        ) from e
 
     client = SearchClient()
 
@@ -56,6 +91,7 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
         ) from e
 
 
+@handle_api_errors_func
 async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
     """Search for movies on Trakt by title.
 
@@ -71,8 +107,26 @@ async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
         InternalError: If an error occurs during search
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = QueryParam(query=query)
-    query = params.query
+    try:
+        params = QueryParam(query=query)
+        query = params.query.strip()
+
+        # Additional check for empty query after stripping
+        if not query:
+            raise InvalidParamsError(
+                "Search query cannot be empty or contain only whitespace"
+            )
+    except ValidationError as e:
+        # Extract validation error details and convert to InvalidParamsError
+        error_details: list[str] = []
+        for error in e.errors():
+            field = str(error.get("loc", ["query"])[-1])
+            message = str(error.get("msg", "Invalid value"))
+            error_details.append(f"{field}: {message}")
+
+        raise InvalidParamsError(
+            f"Invalid parameters for search: {'; '.join(error_details)}"
+        ) from e
 
     client = SearchClient()
 

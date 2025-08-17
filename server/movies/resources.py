@@ -6,6 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import TypeAlias
 
 from mcp.server.fastmcp import FastMCP
+from pydantic import ValidationError
 
 from client.movies import MoviesClient
 from config.api import DEFAULT_LIMIT
@@ -13,7 +14,8 @@ from config.mcp.resources import MCP_RESOURCES
 from models.formatters.movies import MovieFormatters
 from server.base import BaseToolErrorMixin
 from server.movies.tools import MovieIdParam
-from utils.api.errors import MCPError
+from utils.api.error_types import TraktValidationError
+from utils.api.errors import handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -21,6 +23,7 @@ logger = logging.getLogger("trakt_mcp")
 ResourceHandler: TypeAlias = Callable[[], Awaitable[str]]
 
 
+@handle_api_errors_func
 async def get_trending_movies() -> str:
     """Returns the most watched movies over the last 24 hours from Trakt. Movies with the most watchers are returned first.
 
@@ -32,6 +35,7 @@ async def get_trending_movies() -> str:
     return MovieFormatters.format_trending_movies(movies)
 
 
+@handle_api_errors_func
 async def get_popular_movies() -> str:
     """Returns the most popular movies from Trakt. Popularity is calculated using the rating percentage and the number of ratings.
 
@@ -43,6 +47,7 @@ async def get_popular_movies() -> str:
     return MovieFormatters.format_popular_movies(movies)
 
 
+@handle_api_errors_func
 async def get_favorited_movies() -> str:
     """Returns the most favorited movies from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
 
@@ -61,6 +66,7 @@ async def get_favorited_movies() -> str:
     return MovieFormatters.format_favorited_movies(movies)
 
 
+@handle_api_errors_func
 async def get_played_movies() -> str:
     """Returns the most played (a single user can watch a single movie multiple times) movies from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
 
@@ -72,6 +78,7 @@ async def get_played_movies() -> str:
     return MovieFormatters.format_played_movies(movies)
 
 
+@handle_api_errors_func
 async def get_watched_movies() -> str:
     """Returns the most watched (unique users) movies from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
 
@@ -83,6 +90,7 @@ async def get_watched_movies() -> str:
     return MovieFormatters.format_watched_movies(movies)
 
 
+@handle_api_errors_func
 async def get_movie_ratings(movie_id: str) -> str:
     """Returns ratings for a specific movie from Trakt.
 
@@ -96,51 +104,48 @@ async def get_movie_ratings(movie_id: str) -> str:
         InvalidParamsError: If movie_id is invalid
         InternalError: If an error occurs fetching movie or ratings data
     """
-    # Validate parameters with Pydantic for normalization and constraints
-    params = MovieIdParam(movie_id=movie_id)
-    movie_id = params.movie_id
-
     client = MoviesClient()
 
+    # Validate parameters with Pydantic for normalization and constraints
     try:
-        movie = await client.get_movie(movie_id)
-
-        # Handle transitional case where API returns error strings
-        # TODO: Remove once API returns structured errors consistently
-        if isinstance(movie, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="movie",
-                resource_id=movie_id,
-                error_message=movie,
-                operation="fetch_movie_details",
-            )
-
-        movie_title = movie.get("title", f"Movie ID: {movie_id}")
-
-        ratings = await client.get_movie_ratings(movie_id)
-
-        # Handle transitional case where API returns error strings
-        # TODO: Remove once API returns structured errors consistently
-        if isinstance(ratings, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="movie_ratings",
-                resource_id=movie_id,
-                error_message=ratings,
-                operation="fetch_movie_ratings",
-                movie_title=movie_title,
-            )
-
-        return MovieFormatters.format_movie_ratings(ratings, movie_title)
-
-    # Let MCP errors propagate (NEVER catch and return strings)
-    except MCPError:
-        raise
-
-    # Convert unexpected errors to structured MCP errors
-    except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="fetch movie ratings", error=e, movie_id=movie_id
+        params = MovieIdParam(movie_id=movie_id)
+        movie_id = params.movie_id
+    except ValidationError as e:
+        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
+        raise TraktValidationError(
+            f"Invalid parameters for movie ratings: {', '.join(error_details.keys())}",
+            invalid_params=list(error_details.keys()),
+            validation_details=error_details,
         ) from e
+
+    movie = await client.get_movie(movie_id)
+
+    # Handle transitional case where API returns error strings
+    # TODO: Remove once API returns structured errors consistently
+    if isinstance(movie, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="movie",
+            resource_id=movie_id,
+            error_message=movie,
+            operation="fetch_movie_details",
+        )
+
+    movie_title = movie.get("title", f"Movie ID: {movie_id}")
+
+    ratings = await client.get_movie_ratings(movie_id)
+
+    # Handle transitional case where API returns error strings
+    # TODO: Remove once API returns structured errors consistently
+    if isinstance(ratings, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="movie_ratings",
+            resource_id=movie_id,
+            error_message=ratings,
+            operation="fetch_movie_ratings",
+            movie_title=movie_title,
+        )
+
+    return MovieFormatters.format_movie_ratings(ratings, movie_title)
 
 
 def register_movie_resources(
