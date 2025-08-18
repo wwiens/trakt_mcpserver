@@ -5,8 +5,8 @@ services:
     ports:
       - 8080:8080
     environment:
-      - TRAKT_CLIENT_ID=${TRAKT_CLIENT_ID:-""}
-      - TRAKT_CLIENT_SECRET=${TRAKT_CLIENT_SECRET:-""}
+      - TRAKT_CLIENT_ID=${TRAKT_CLIENT_ID}
+      - TRAKT_CLIENT_SECRET=${TRAKT_CLIENT_SECRET}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/status"]

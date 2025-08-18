@@ -5,14 +5,13 @@ FROM ghcr.io/sparfenyuk/mcp-proxy:latest
 RUN apk add --no-cache \
     python3 \
     py3-pip \
-    git \
     curl
 
 # Workdir
 WORKDIR /app
 
-# Clone Trakt MCP server
-RUN git clone https://github.com/wwiens/trakt_mcpserver.git trakt-server
+# Copy Trakt MCP server source
+COPY trakt-server ./trakt-server
 
 # Install Python dependencies
 WORKDIR /app/trakt-server
@@ -32,4 +31,5 @@ EXPOSE 8080
 # --port fixes the listening port (default would be random if omitted)
 # --pass-environment forwards TRAKT_* vars to the child process
 # `--` separates proxy args from child args
+ENTRYPOINT ["mcp-proxy"]
 CMD ["--host", "0.0.0.0", "--port", "8080", "--pass-environment", "--", "python3", "/app/trakt-server/server.py"]
