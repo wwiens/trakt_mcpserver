@@ -11,8 +11,8 @@ RUN apk add --no-cache \
 # Workdir
 WORKDIR /app
 
-# Copy Trakt MCP server source
-COPY trakt-server ./trakt-server
+# Copy Trakt MCP server sources
+COPY server requirements.txt ./trakt-server/
 
 # Install Python dependencies
 WORKDIR /app/trakt-server
