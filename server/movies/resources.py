@@ -1,21 +1,37 @@
-# pyright: reportUnusedFunction=none
 """Movie resources for the Trakt MCP server."""
 
-import json
-import logging
+from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP
+import logging
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, TypeAlias
+
+if TYPE_CHECKING:
+    from mcp.server.fastmcp import FastMCP
+
+    from models.types import MovieResponse
+from pydantic import ValidationError
 
 from client.movies import MoviesClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.movies import MovieFormatters
+from server.base import BaseToolErrorMixin
+from server.movies.tools import MovieIdParam
+from utils.api.error_types import TraktValidationError
+from utils.api.errors import handle_api_errors_func
 
-logger = logging.getLogger("trakt_mcp")
+logger: logging.Logger = logging.getLogger("trakt_mcp")
+
+# Type alias for resource handler functions
+ResourceHandler: TypeAlias = Callable[[], Awaitable[str]]
 
 
+@handle_api_errors_func
 async def get_trending_movies() -> str:
-    """Returns the most watched movies over the last 24 hours from Trakt. Movies with the most watchers are returned first.
+    """Returns the most watched movies over the last 24 hours from Trakt.
+
+    Movies with the most watchers are returned first.
 
     Returns:
         Formatted markdown text with trending movies
@@ -25,8 +41,11 @@ async def get_trending_movies() -> str:
     return MovieFormatters.format_trending_movies(movies)
 
 
+@handle_api_errors_func
 async def get_popular_movies() -> str:
-    """Returns the most popular movies from Trakt. Popularity is calculated using the rating percentage and the number of ratings.
+    """Returns the most popular movies from Trakt.
+
+    Popularity is calculated using the rating percentage and the number of ratings.
 
     Returns:
         Formatted markdown text with popular movies
@@ -36,8 +55,11 @@ async def get_popular_movies() -> str:
     return MovieFormatters.format_popular_movies(movies)
 
 
+@handle_api_errors_func
 async def get_favorited_movies() -> str:
-    """Returns the most favorited movies from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most favorited movies from Trakt in the specified time period.
+
+    Defaults to weekly. All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most favorited movies
@@ -45,17 +67,26 @@ async def get_favorited_movies() -> str:
     client = MoviesClient()
     movies = await client.get_favorited_movies(limit=DEFAULT_LIMIT)
 
-    # Log the first movie to see the structure
-    if movies and len(movies) > 0:
-        logger.info(
-            f"Favorited movies API response structure: {json.dumps(movies[0], indent=2)}"
+    # Debug log for API response structure analysis
+    if movies:
+        logger.debug(
+            "Favorited movies API response structure",
+            extra={
+                "first_movie_keys": list(movies[0].keys()),
+                "movie_count": len(movies),
+                "first_movie_type": type(movies[0]).__name__,
+            },
         )
 
     return MovieFormatters.format_favorited_movies(movies)
 
 
+@handle_api_errors_func
 async def get_played_movies() -> str:
-    """Returns the most played (a single user can watch a single movie multiple times) movies from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most played movies from Trakt in the specified time period.
+
+    A single user can watch a single movie multiple times. Defaults to weekly.
+    All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most played movies
@@ -65,8 +96,12 @@ async def get_played_movies() -> str:
     return MovieFormatters.format_played_movies(movies)
 
 
+@handle_api_errors_func
 async def get_watched_movies() -> str:
-    """Returns the most watched (unique users) movies from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most watched (unique users) movies from Trakt.
+
+    Data is from the specified time period, defaulting to weekly.
+    All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most watched movies
@@ -76,6 +111,7 @@ async def get_watched_movies() -> str:
     return MovieFormatters.format_watched_movies(movies)
 
 
+@handle_api_errors_func
 async def get_movie_ratings(movie_id: str) -> str:
     """Returns ratings for a specific movie from Trakt.
 
@@ -84,32 +120,65 @@ async def get_movie_ratings(movie_id: str) -> str:
 
     Returns:
         Formatted markdown text with movie ratings
+
+    Raises:
+        InvalidParamsError: If movie_id is invalid
+        InternalError: If an error occurs fetching movie or ratings data
     """
     client = MoviesClient()
 
+    # Validate parameters with Pydantic for normalization and constraints
     try:
-        movie = await client.get_movie(movie_id)
+        params = MovieIdParam(movie_id=movie_id)
+        movie_id = params.movie_id
+    except ValidationError as e:
+        error_details = {str(error["loc"][-1]): error["msg"] for error in e.errors()}
+        raise TraktValidationError(
+            f"Invalid parameters for movie ratings: {', '.join(error_details.keys())}",
+            invalid_params=list(error_details.keys()),
+            validation_details=error_details,
+        ) from e
 
-        # Check if the API returned an error string
-        if isinstance(movie, str):
-            return f"Error fetching ratings for movie ID {movie_id}: {movie}"
+    movie = await client.get_movie(movie_id)
 
-        movie_title = movie.get("title", f"Movie ID: {movie_id}")
+    # Handle transitional case where API returns error strings
+    if isinstance(movie, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="movie",
+            resource_id=movie_id,
+            error_message=movie,
+            operation="fetch_movie_details",
+        )
 
-        ratings = await client.get_movie_ratings(movie_id)
+    # Type narrowing: movie is guaranteed to be MovieResponse after string check
+    movie_data: MovieResponse = movie
+    movie_title = movie_data["title"]
 
-        # Check if the API returned an error string
-        if isinstance(ratings, str):
-            return f"Error fetching ratings for {movie_title}: {ratings}"
+    ratings = await client.get_movie_ratings(movie_id)
 
-        return MovieFormatters.format_movie_ratings(ratings, movie_title)
-    except Exception as e:
-        logger.error(f"Error fetching movie ratings: {e}")
-        return f"Error fetching ratings for movie ID {movie_id}: {e!s}"
+    # Handle transitional case where API returns error strings
+    if isinstance(ratings, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="movie_ratings",
+            resource_id=movie_id,
+            error_message=ratings,
+            operation="fetch_movie_ratings",
+            movie_title=movie_title,
+        )
+
+    return MovieFormatters.format_movie_ratings(ratings, movie_title)
 
 
-def register_movie_resources(mcp: FastMCP) -> None:
-    """Register movie resources with the MCP server."""
+def register_movie_resources(
+    mcp: FastMCP,
+) -> tuple[
+    ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler
+]:
+    """Register movie resources with the MCP server.
+
+    Returns:
+        Tuple of resource handlers for type checker visibility
+    """
 
     @mcp.resource(
         uri=MCP_RESOURCES["movies_trending"],
@@ -157,3 +226,12 @@ def register_movie_resources(mcp: FastMCP) -> None:
         return await get_watched_movies()
 
     # Note: movie_ratings moved to tools.py as @mcp.tool since it requires parameters
+
+    # Return handlers for type checker visibility
+    return (
+        movies_trending_resource,
+        movies_popular_resource,
+        movies_favorited_resource,
+        movies_played_resource,
+        movies_watched_resource,
+    )

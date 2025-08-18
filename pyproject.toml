@@ -1,3 +1,7 @@
+[project]
+name = "trakt-mcp-server"
+requires-python = ">=3.11"
+
 [tool.ruff]
 target-version = "py311"
 line-length = 88
@@ -26,6 +30,7 @@ select = [
 ]
 ignore = [
     "E501", # line too long (handled by formatter)
+    "UP040", # Type alias uses TypeAlias annotation (Python 3.12+ feature)
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -63,9 +68,10 @@ exclude = [
 ]
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
+useLibraryCodeForTypes = true
 reportMissingTypeStubs = "error"
-reportUnknownMemberType = "warning"
-reportUnknownVariableType = "warning"
+reportUnknownMemberType = "error"
+reportUnknownVariableType = "error"
 reportUnknownArgumentType = "error"
 reportGeneralTypeIssues = "error"
 reportOptionalMemberAccess = "error"
@@ -84,7 +90,7 @@ reportUnusedVariable = "error"
 reportDuplicateImport = "error"
 reportWildcardImportFromLibrary = "error"
 reportSelfClsParameterName = "error"
-reportImplicitStringConcatenation = "warning"
+reportImplicitStringConcatenation = "error"
 reportUndefinedVariable = "error"
 reportAssertAlwaysTrue = "error"
 reportFunctionMemberAccess = "error"

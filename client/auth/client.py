@@ -1,14 +1,18 @@
 """Authentication client for Trakt API."""
 
+import contextlib
 import json
+import logging
 import os
 import time
 
 from config.endpoints import TRAKT_ENDPOINTS
-from models.auth import TraktAuthToken, TraktDeviceCode
-from utils.api.errors import InternalError, handle_api_errors
+from models.auth import DeviceTokenRequest, TraktAuthToken, TraktDeviceCode
+from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
+
+logger = logging.getLogger(__name__)
 
 # User authentication token storage path
 AUTH_TOKEN_FILE = "auth_token.json"  # noqa: S105 # File path, not a password
@@ -21,7 +25,7 @@ class AuthClient(BaseClient):
         """Initialize the authentication client."""
         super().__init__()
         # Try to load auth token if exists
-        self.auth_token = self._load_auth_token()
+        self.auth_token: TraktAuthToken | None = self._load_auth_token()
         if self.auth_token:
             self._update_headers_with_token()
 
@@ -29,17 +33,41 @@ class AuthClient(BaseClient):
         """Load authentication token from storage."""
         if os.path.exists(AUTH_TOKEN_FILE):
             try:
-                with open(AUTH_TOKEN_FILE) as f:
+                with open(AUTH_TOKEN_FILE, encoding="utf-8") as f:
                     token_data = json.load(f)
-                    return TraktAuthToken(**token_data)
-            except Exception as e:
-                print(f"Error loading auth token: {e}")
+                    return TraktAuthToken.model_validate(token_data)
+            except Exception:
+                logger.exception("Error loading auth token from %s", AUTH_TOKEN_FILE)
         return None
 
-    def _save_auth_token(self, token: TraktAuthToken):
+    def _save_auth_token(self, token: TraktAuthToken) -> None:
         """Save authentication token to storage."""
-        with open(AUTH_TOKEN_FILE, "w") as f:
-            f.write(json.dumps(token.model_dump()))
+        # Create file with secure permissions (user read/write only) using
+        # an atomic write-then-replace to avoid partial files.
+        # Ensure parent directory exists if there is one
+        parent_dir = os.path.dirname(AUTH_TOKEN_FILE)
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+        tmp_path = f"{AUTH_TOKEN_FILE}.tmp"
+        fd = os.open(tmp_path, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+        try:
+            try:
+                file_obj = os.fdopen(fd, "w", encoding="utf-8")
+            except Exception:
+                with contextlib.suppress(OSError):
+                    os.close(fd)
+                raise
+            with file_obj:
+                file_obj.write(token.model_dump_json())
+                file_obj.flush()
+                # fsync may not be available on all file objects or platforms
+                with contextlib.suppress(OSError, AttributeError, TypeError):
+                    os.fsync(file_obj.fileno())
+            os.replace(tmp_path, AUTH_TOKEN_FILE)
+        except Exception:
+            with contextlib.suppress(OSError):
+                os.remove(tmp_path)
+            raise
 
     def is_authenticated(self) -> bool:
         """Check if the client is authenticated."""
@@ -47,9 +75,8 @@ class AuthClient(BaseClient):
             return False
 
         # Check if token is expired
-        current_time = int(time.time())
-        token_expiry = self.auth_token.created_at + self.auth_token.expires_in
-        return current_time < token_expiry
+        expiry = self.get_token_expiry()
+        return expiry is not None and int(time.time()) < expiry
 
     def get_token_expiry(self) -> int | None:
         """Get the expiry timestamp of the current token."""
@@ -67,40 +94,39 @@ class AuthClient(BaseClient):
         data = {
             "client_id": self.client_id,
         }
-        response = await self._post_request(TRAKT_ENDPOINTS["device_code"], data)
-        return TraktDeviceCode(**response)
+        return await self._post_typed_request(
+            TRAKT_ENDPOINTS["device_code"], data, response_type=TraktDeviceCode
+        )
 
     @handle_api_errors
-    async def get_device_token(self, device_code: str) -> TraktAuthToken | None:
+    async def get_device_token(self, device_code: str) -> TraktAuthToken:
         """Exchange device code for an access token.
 
         Args:
             device_code: The device code to exchange
 
         Returns:
-            Authentication token or None if not yet authorized
+            Authentication token
+
+        Raises:
+            AppError: AuthenticationError | NetworkError | InternalError raised
+                by the handle_api_errors decorator when the exchange fails.
         """
+        # Validate input with Pydantic
+        payload = DeviceTokenRequest.model_validate({"code": device_code})
         data = {
-            "code": device_code,
+            "code": payload.code,
             "client_id": self.client_id,
             "client_secret": self.client_secret,
         }
 
-        try:
-            response = await self._post_request(TRAKT_ENDPOINTS["device_token"], data)
-            if isinstance(response, str):
-                # Error response, user hasn't authorized yet
-                return None
-            token = TraktAuthToken(**response)
-            self.auth_token = token
-            self._save_auth_token(token)
-            self._update_headers_with_token()
-            return token
-        except InternalError as e:
-            # Check if this is a 400 error (user hasn't authorized yet)
-            if e.data and e.data.get("http_status") == 400:
-                return None
-            raise
+        token = await self._post_typed_request(
+            TRAKT_ENDPOINTS["device_token"], data, response_type=TraktAuthToken
+        )
+        self.auth_token = token
+        self._save_auth_token(token)
+        self._update_headers_with_token()
+        return token
 
     def clear_auth_token(self) -> bool:
         """Clear the stored authentication token.
@@ -116,7 +142,9 @@ class AuthClient(BaseClient):
                 if "Authorization" in self.headers:
                     del self.headers["Authorization"]
                 return True
-            except Exception as e:
-                print(f"Error clearing auth token: {e}")
+            except OSError:
+                logger.exception(
+                    "OS error clearing auth token file %s", AUTH_TOKEN_FILE
+                )
                 return False
         return False

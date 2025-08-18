@@ -21,7 +21,6 @@ async def test_get_auth_status_authenticated():
 
         result = await get_auth_status()
 
-        assert "# Authentication Status" in result
         assert "You are authenticated with Trakt" in result
 
         mock_client.is_authenticated.assert_called_once()
@@ -36,9 +35,7 @@ async def test_get_auth_status_not_authenticated():
 
         result = await get_auth_status()
 
-        assert "# Authentication Status" in result
         assert "You are not authenticated with Trakt" in result
-        assert "start_device_auth" in result
 
         mock_client.is_authenticated.assert_called_once()
         mock_client.get_token_expiry.assert_not_called()

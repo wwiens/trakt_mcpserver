@@ -1,9 +1,14 @@
 """Tests for the models.auth module."""
 
+from typing import TYPE_CHECKING
+
 import pytest
 from pydantic import ValidationError
 
 from models.auth import TraktAuthToken, TraktDeviceCode
+
+if TYPE_CHECKING:
+    from tests.models.test_data_types import AuthTokenTestData, DeviceCodeTestData
 
 
 class TestTraktDeviceCode:
@@ -28,7 +33,7 @@ class TestTraktDeviceCode:
     def test_device_code_required_fields(self):
         """Test that all required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
-            TraktDeviceCode(**{})  # type: ignore[call-arg]
+            TraktDeviceCode(**{})  # type: ignore[call-arg] # Testing: Pydantic validation with invalid types
 
         errors = exc_info.value.errors()
         assert len(errors) == 5  # All fields are required
@@ -48,7 +53,7 @@ class TestTraktDeviceCode:
         # Test with clearly incompatible types
         with pytest.raises(ValidationError):
             TraktDeviceCode(
-                device_code=["not", "a", "string"],  # type: ignore[arg-type]  # Should be string
+                device_code=["not", "a", "string"],  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
                 user_code="ABCD1234",
                 verification_url="https://trakt.tv/activate",
                 expires_in=600,
@@ -60,13 +65,13 @@ class TestTraktDeviceCode:
                 device_code="abc123def456",
                 user_code="ABCD1234",
                 verification_url="https://trakt.tv/activate",
-                expires_in=["not", "an", "int"],  # type: ignore[arg-type]  # Should be int
+                expires_in=["not", "an", "int"],  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
                 interval=5,
             )
 
     def test_device_code_serialization(self):
         """Test that TraktDeviceCode can be serialized to dict."""
-        device_code_data = {
+        device_code_data: DeviceCodeTestData = {
             "device_code": "abc123def456",
             "user_code": "ABCD1234",
             "verification_url": "https://trakt.tv/activate",
@@ -74,20 +79,14 @@ class TestTraktDeviceCode:
             "interval": 5,
         }
 
-        device_code = TraktDeviceCode(
-            device_code="abc123def456",
-            user_code="ABCD1234",
-            verification_url="https://trakt.tv/activate",
-            expires_in=600,
-            interval=5,
-        )
+        device_code = TraktDeviceCode(**device_code_data)
         serialized = device_code.model_dump()
 
         assert serialized == device_code_data
 
     def test_device_code_json_serialization(self):
         """Test that TraktDeviceCode can be serialized to JSON."""
-        device_code_data = {
+        device_code_data: DeviceCodeTestData = {
             "device_code": "abc123def456",
             "user_code": "ABCD1234",
             "verification_url": "https://trakt.tv/activate",
@@ -95,13 +94,7 @@ class TestTraktDeviceCode:
             "interval": 5,
         }
 
-        device_code = TraktDeviceCode(
-            device_code="abc123def456",
-            user_code="ABCD1234",
-            verification_url="https://trakt.tv/activate",
-            expires_in=600,
-            interval=5,
-        )
+        device_code = TraktDeviceCode(**device_code_data)
         json_str = device_code.model_dump_json()
 
         # Should be valid JSON
@@ -116,14 +109,14 @@ class TestTraktAuthToken:
 
     def test_valid_auth_token_creation(self):
         """Test creating a valid TraktAuthToken instance."""
-        token_data = {
+        token_data: AuthTokenTestData = {
             "access_token": "abc123def456ghi789",
             "refresh_token": "refresh123abc456",
             "expires_in": 7776000,  # 90 days
             "created_at": 1677123456,
         }
 
-        auth_token = TraktAuthToken(**token_data)  # type: ignore[arg-type]
+        auth_token = TraktAuthToken(**token_data)
 
         assert auth_token.access_token == "abc123def456ghi789"
         assert auth_token.refresh_token == "refresh123abc456"
@@ -134,7 +127,7 @@ class TestTraktAuthToken:
 
     def test_auth_token_with_custom_scope_and_type(self):
         """Test creating auth token with custom scope and token type."""
-        token_data = {
+        token_data: AuthTokenTestData = {
             "access_token": "abc123def456ghi789",
             "refresh_token": "refresh123abc456",
             "expires_in": 7776000,
@@ -143,7 +136,7 @@ class TestTraktAuthToken:
             "token_type": "Bearer",
         }
 
-        auth_token = TraktAuthToken(**token_data)  # type: ignore[arg-type]
+        auth_token = TraktAuthToken(**token_data)
 
         assert auth_token.scope == "public private"
         assert auth_token.token_type == "Bearer"
@@ -151,7 +144,7 @@ class TestTraktAuthToken:
     def test_auth_token_required_fields(self):
         """Test that required fields must be provided."""
         with pytest.raises(ValidationError) as exc_info:
-            TraktAuthToken()  # type: ignore[call-arg]
+            TraktAuthToken()  # type: ignore[call-arg] # Testing: Pydantic validation with invalid types
 
         errors = exc_info.value.errors()
         assert len(errors) == 4  # 4 required fields
@@ -165,7 +158,7 @@ class TestTraktAuthToken:
         # Test with clearly incompatible types
         with pytest.raises(ValidationError):
             TraktAuthToken(
-                access_token=["not", "a", "string"],  # type: ignore[arg-type]  # Should be string
+                access_token=["not", "a", "string"],  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
                 refresh_token="refresh123abc456",
                 expires_in=7776000,
                 created_at=1677123456,
@@ -175,7 +168,7 @@ class TestTraktAuthToken:
             TraktAuthToken(
                 access_token="abc123def456ghi789",
                 refresh_token="refresh123abc456",
-                expires_in=["not", "an", "int"],  # type: ignore[arg-type]  # Should be int
+                expires_in=["not", "an", "int"],  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
                 created_at=1677123456,
             )
 
@@ -184,12 +177,12 @@ class TestTraktAuthToken:
                 access_token="abc123def456ghi789",
                 refresh_token="refresh123abc456",
                 expires_in=7776000,
-                created_at=["not", "an", "int"],  # type: ignore[arg-type]  # Should be int
+                created_at=["not", "an", "int"],  # type: ignore[arg-type] # Testing: Pydantic validation with invalid types
             )
 
     def test_auth_token_serialization(self):
         """Test that TraktAuthToken can be serialized to dict."""
-        token_data = {
+        token_data: AuthTokenTestData = {
             "access_token": "abc123def456ghi789",
             "refresh_token": "refresh123abc456",
             "expires_in": 7776000,
@@ -198,21 +191,21 @@ class TestTraktAuthToken:
             "token_type": "bearer",
         }
 
-        auth_token = TraktAuthToken(**token_data)  # type: ignore[arg-type]
+        auth_token = TraktAuthToken(**token_data)
         serialized = auth_token.model_dump()
 
         assert serialized == token_data
 
     def test_auth_token_json_serialization(self):
         """Test that TraktAuthToken can be serialized to JSON."""
-        token_data = {
+        token_data: AuthTokenTestData = {
             "access_token": "abc123def456ghi789",
             "refresh_token": "refresh123abc456",
             "expires_in": 7776000,
             "created_at": 1677123456,
         }
 
-        auth_token = TraktAuthToken(**token_data)  # type: ignore[arg-type]
+        auth_token = TraktAuthToken(**token_data)
         json_str = auth_token.model_dump_json()
 
         # Should be valid JSON
@@ -280,14 +273,14 @@ class TestTraktAuthToken:
 
     def test_auth_token_partial_data(self):
         """Test creating auth token with minimal required data."""
-        minimal_data = {
+        minimal_data: AuthTokenTestData = {
             "access_token": "minimal_token",
             "refresh_token": "minimal_refresh",
             "expires_in": 3600,
             "created_at": 1677123456,
         }
 
-        auth_token = TraktAuthToken(**minimal_data)  # type: ignore[arg-type]
+        auth_token = TraktAuthToken(**minimal_data)
 
         assert auth_token.access_token == "minimal_token"
         assert auth_token.refresh_token == "minimal_refresh"
@@ -300,7 +293,7 @@ class TestTraktAuthToken:
     def test_auth_token_from_api_response(self):
         """Test creating auth token from typical API response format."""
         # Simulate typical Trakt OAuth API response
-        api_response = {
+        api_response: AuthTokenTestData = {
             "access_token": "2YotnFZFEjr1zCsicMWpAA",
             "token_type": "bearer",
             "expires_in": 7776000,
@@ -309,7 +302,7 @@ class TestTraktAuthToken:
             "created_at": 1677123456,
         }
 
-        auth_token = TraktAuthToken(**api_response)  # type: ignore[arg-type]
+        auth_token = TraktAuthToken(**api_response)
 
         assert auth_token.access_token == "2YotnFZFEjr1zCsicMWpAA"
         assert auth_token.token_type == "bearer"

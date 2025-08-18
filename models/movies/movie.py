@@ -9,7 +9,7 @@ class TraktMovie(BaseModel):
     """Represents a Trakt movie."""
 
     title: str
-    year: int | None = None
+    year: int
     ids: dict[str, str] = Field(
         description="Various IDs for the movie (trakt, slug, tmdb, imdb)"
     )

@@ -84,6 +84,7 @@ ruff check --fix    # Linting
 ruff format         # Formatting
 pyright             # Type checking
 pip-audit           # Security scanning
+npx @modelcontextprotocol/inspector --cli python server.py --method tools/list    # MCP validation
 
 # MCP server
 python server.py                                                        # Direct run
@@ -106,6 +107,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - Type hints required for all functions/methods/attributes
 - Use specific types: `list[str]` not `list`
 - Return type annotations including `None`
+- **CRITICAL: Prefer precise typing**: Use most specific types possible - NEVER use `Any` when concrete types are known
 
 ### Code Standards
 - PEP 8 compliance
@@ -152,5 +154,5 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - **Run tests after any changes** - `pytest`
 - **Run type checking** - `pyright` 
 - **Run code quality checks** - `ruff check --fix` and `ruff format`
-- **Run MCP validation** - `npx @modelcontextprotocol/inspector --cli python server.py --method tools/list`
+- **Run MCP validation** - run all checks
 - **Focused testing** - `pytest tests/specific/module/ -v`

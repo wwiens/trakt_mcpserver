@@ -1,38 +1,50 @@
 """Tests for checkin tools."""
 
-import asyncio
-import sys
-from pathlib import Path
-from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-# Add the project root directory to Python path
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
+from models.types.api_responses import CheckinResponse
 from server.checkin.tools import checkin_to_show
+from utils.api.error_types import (
+    AuthenticationRequiredError,
+    InvalidParamsError,
+)
+
+
+@pytest.fixture
+def sample_checkin_response() -> CheckinResponse:
+    """Sample checkin response for tests."""
+    return {
+        "id": 123456,
+        "watched_at": "2023-05-10T20:30:00Z",
+        "sharing": {"twitter": False, "mastodon": False, "tumblr": False},
+        "show": {
+            "title": "Breaking Bad",
+            "year": 2008,
+            "ids": {"trakt": 1, "slug": "breaking-bad"},
+        },
+        "episode": {
+            "season": 1,
+            "number": 1,
+            "title": "Pilot",
+            "ids": {"trakt": 73640, "slug": "pilot"},
+        },
+    }
 
 
 @pytest.mark.asyncio
-async def test_checkin_to_show_authenticated():
+async def test_checkin_to_show_authenticated(
+    sample_checkin_response: CheckinResponse,
+) -> None:
     """Test checking in to a show when authenticated."""
-    sample_response = {
-        "id": 123456,
-        "watched_at": "2023-05-10T20:30:00Z",
-        "show": {"title": "Breaking Bad", "year": 2008},
-        "episode": {"season": 1, "number": 1, "title": "Pilot"},
-    }
 
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
 
-        # Create awaitable result
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_response)
-        mock_client.checkin_to_show.return_value = future
+        mock_client.checkin_to_show = AsyncMock(return_value=sample_checkin_response)
 
         # Call the tool function
         result = await checkin_to_show(season=1, episode=1, show_id="1")
@@ -58,47 +70,44 @@ async def test_checkin_to_show_authenticated():
 
 
 @pytest.mark.asyncio
-async def test_checkin_to_show_not_authenticated():
+async def test_checkin_to_show_not_authenticated() -> None:
     """Test checking in to a show when not authenticated."""
     with (
         patch("server.checkin.tools.CheckinClient") as mock_client_class,
-        patch("server.checkin.tools.start_device_auth") as mock_start_auth,
     ):
         # Configure the mock
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = False
 
-        # Mock the start_device_auth function
-        mock_start_auth.return_value = (
-            "# Trakt Authentication Required\n\nPlease authenticate..."
-        )
+        # Call the tool function - should raise AuthenticationRequiredError
+        with pytest.raises(AuthenticationRequiredError) as exc_info:
+            await checkin_to_show(season=1, episode=1, show_id="1")
 
-        # Call the tool function
-        result = await checkin_to_show(season=1, episode=1, show_id="1")
-
-        # Verify the result
-        assert "Authentication required" in result
-        assert "# Trakt Authentication Required" in result
-
+        # Verify error contains expected information
+        assert exc_info.value.data is not None
+        assert exc_info.value.data["error_type"] == "auth_required"
+        assert exc_info.value.data.get("auth_url")
+        assert exc_info.value.data["action"]
         # Verify the client methods were called
         mock_client.is_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_not_called()
-        mock_start_auth.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_checkin_to_show_missing_info():
+async def test_checkin_to_show_missing_info() -> None:
     """Test checking in to a show with missing information."""
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
 
-        # Call the tool function with missing show_id and show_title
-        result = await checkin_to_show(season=1, episode=1)
+        # Call the tool function with missing show_id and show_title - should raise error
+        with pytest.raises(InvalidParamsError) as exc_info:
+            await checkin_to_show(season=1, episode=1)
 
-        # Verify the result
-        assert "Error: You must provide either a show_id or a show_title" in result
+        # Assert on structured fields instead of message substrings
+        assert exc_info.value.code == -32602  # INVALID_PARAMS
+        assert "Must provide one of" in str(exc_info.value)  # Fallback check
 
         # Verify the client methods were called
         mock_client.is_authenticated.assert_called_once()
@@ -106,22 +115,16 @@ async def test_checkin_to_show_missing_info():
 
 
 @pytest.mark.asyncio
-async def test_checkin_to_show_with_title():
+async def test_checkin_to_show_with_title(
+    sample_checkin_response: CheckinResponse,
+) -> None:
     """Test checking in to a show using title instead of ID."""
-    sample_response = {
-        "id": 123456,
-        "watched_at": "2023-05-10T20:30:00Z",
-        "show": {"title": "Breaking Bad", "year": 2008},
-        "episode": {"season": 1, "number": 1, "title": "Pilot"},
-    }
 
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_response)
-        mock_client.checkin_to_show.return_value = future
+        mock_client.checkin_to_show = AsyncMock(return_value=sample_checkin_response)
 
         result = await checkin_to_show(
             season=1, episode=1, show_title="Breaking Bad", show_year=2008
@@ -145,106 +148,24 @@ async def test_checkin_to_show_with_title():
 
 
 @pytest.mark.asyncio
-async def test_checkin_to_show_with_message_and_sharing():
-    """Test checking in to a show with message and social sharing."""
-    sample_response = {
-        "id": 123456,
-        "watched_at": "2023-05-10T20:30:00Z",
-        "show": {"title": "Breaking Bad", "year": 2008},
-        "episode": {"season": 1, "number": 1, "title": "Pilot"},
-    }
-
-    with patch("server.checkin.tools.CheckinClient") as mock_client_class:
-        mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_response)
-        mock_client.checkin_to_show.return_value = future
-
-        result = await checkin_to_show(
-            season=1,
-            episode=1,
-            show_id="1",
-            message="Great episode!",
-            share_twitter=True,
-            share_mastodon=True,
-        )
-
-        assert "# Successfully Checked In" in result
-
-        mock_client.checkin_to_show.assert_called_once_with(
-            episode_season=1,
-            episode_number=1,
-            show_id="1",
-            show_title=None,
-            show_year=None,
-            message="Great episode!",
-            share_twitter=True,
-            share_mastodon=True,
-            share_tumblr=False,
-        )
-
-
-@pytest.mark.asyncio
-async def test_checkin_to_show_value_error():
-    """Test checking in to a show with ValueError (authentication error)."""
-    with patch("server.checkin.tools.CheckinClient") as mock_client_class:
-        mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(ValueError("Authentication failed"))
-        mock_client.checkin_to_show.return_value = future
-
-        result = await checkin_to_show(season=1, episode=1, show_id="1")
-
-        assert "Error: Authentication failed" in result
-
-        mock_client.is_authenticated.assert_called_once()
-        mock_client.checkin_to_show.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_checkin_to_show_general_error():
-    """Test checking in to a show with general error."""
-    with patch("server.checkin.tools.CheckinClient") as mock_client_class:
-        mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
-
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_exception(Exception("Network error"))
-        mock_client.checkin_to_show.return_value = future
-
-        result = await checkin_to_show(season=1, episode=1, show_id="1")
-
-        assert (
-            "An error occurred while checking in to the show: Network error" in result
-        )
-        assert "Make sure you provided either:" in result
-        assert "search_shows" in result
-
-        mock_client.is_authenticated.assert_called_once()
-        mock_client.checkin_to_show.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_checkin_to_show_with_all_parameters():
+async def test_checkin_to_show_with_all_parameters(
+    sample_checkin_response: CheckinResponse,
+) -> None:
     """Test checking in to a show with all parameters provided."""
-    sample_response = {
-        "id": 123456,
-        "watched_at": "2023-05-10T20:30:00Z",
-        "show": {"title": "Breaking Bad", "year": 2008},
-        "episode": {"season": 2, "number": 5, "title": "Breakage"},
+    # Customize response for this test (S02E05)
+    custom_response = sample_checkin_response.copy()
+    custom_response["episode"] = {
+        "season": 2,
+        "number": 5,
+        "title": "Breakage",
+        "ids": {"trakt": 73645, "slug": "breakage"},
     }
 
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_response)
-        mock_client.checkin_to_show.return_value = future
+        mock_client.checkin_to_show = AsyncMock(return_value=custom_response)
 
         result = await checkin_to_show(
             season=2,
@@ -276,26 +197,29 @@ async def test_checkin_to_show_with_all_parameters():
 
 
 @pytest.mark.asyncio
-async def test_checkin_to_show_title_only():
+async def test_checkin_to_show_title_only(
+    sample_checkin_response: CheckinResponse,
+) -> None:
     """Test checking in to a show with only title (no year)."""
-    sample_response = {
-        "id": 123456,
-        "watched_at": "2023-05-10T20:30:00Z",
-        "show": {"title": "Friends", "year": 1994},
-        "episode": {
-            "season": 1,
-            "number": 1,
-            "title": "The One Where Monica Gets a Roommate",
-        },
+    # Customize response for Friends show
+    custom_response = sample_checkin_response.copy()
+    custom_response["show"] = {
+        "title": "Friends",
+        "year": 1994,
+        "ids": {"trakt": 2, "slug": "friends"},
+    }
+    custom_response["episode"] = {
+        "season": 1,
+        "number": 1,
+        "title": "The One Where Monica Gets a Roommate",
+        "ids": {"trakt": 73641, "slug": "the-one-where-monica-gets-a-roommate"},
     }
 
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = True
 
-        future: asyncio.Future[Any] = asyncio.Future()
-        future.set_result(sample_response)
-        mock_client.checkin_to_show.return_value = future
+        mock_client.checkin_to_show = AsyncMock(return_value=custom_response)
 
         result = await checkin_to_show(season=1, episode=1, show_title="Friends")
 

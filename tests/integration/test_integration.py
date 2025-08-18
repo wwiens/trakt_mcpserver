@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import os
 import sys
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from typing import TYPE_CHECKING
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
 
@@ -11,15 +14,25 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from client.auth import AuthClient
 from client.checkin import CheckinClient
-from client.comments import CommentsClient
 from client.search import SearchClient
-from client.shows import ShowsClient
 from models.auth import TraktAuthToken
+
+if TYPE_CHECKING:
+    from models.types import (
+        CheckinResponse,
+        CommentResponse,
+        DeviceCodeResponse,
+        SearchResult,
+        ShowResponse,
+        TokenResponse,
+        TraktRating,
+        TrendingWrapper,
+    )
 
 
 @pytest.mark.asyncio
-async def test_auth_flow_integration():
-    device_code_response = {
+async def test_auth_flow_integration() -> None:
+    device_code_response: DeviceCodeResponse = {
         "device_code": "device_code_123",
         "user_code": "USER123",
         "verification_url": "https://trakt.tv/activate",
@@ -27,7 +40,7 @@ async def test_auth_flow_integration():
         "interval": 5,
     }
 
-    auth_token_response = {
+    auth_token_response: TokenResponse = {
         "access_token": "access_token_123",
         "refresh_token": "refresh_token_123",
         "expires_in": 7200,
@@ -85,27 +98,37 @@ async def test_auth_flow_integration():
 
 
 @pytest.mark.asyncio
-async def test_search_and_checkin_integration():
+async def test_search_and_checkin_integration() -> None:
     # Mock search results
-    search_results = [
+    search_results: list[SearchResult] = [
         {
             "type": "show",
             "score": 100.0,
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "ids": {"trakt": "1", "slug": "breaking-bad"},
+                "ids": {"trakt": 1, "slug": "breaking-bad"},
                 "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
             },
         }
     ]
 
     # Mock checkin response
-    checkin_response = {
+    checkin_response: CheckinResponse = {
         "id": 123456,
         "watched_at": "2023-05-10T20:30:00Z",
-        "show": {"title": "Breaking Bad", "year": 2008},
-        "episode": {"season": 1, "number": 1, "title": "Pilot"},
+        "sharing": {"facebook": False, "twitter": False, "tumblr": False},
+        "show": {
+            "title": "Breaking Bad",
+            "year": 2008,
+            "ids": {"trakt": 1, "slug": "breaking-bad"},
+        },
+        "episode": {
+            "season": 1,
+            "number": 1,
+            "title": "Pilot",
+            "ids": {"trakt": 1, "slug": "pilot"},
+        },
     }
 
     # Set up mock responses for the focused clients
@@ -168,14 +191,15 @@ async def test_search_and_checkin_integration():
 
 
 @pytest.mark.asyncio
-async def test_trending_shows_integration():
+async def test_trending_shows_integration() -> None:
     # Mock trending shows response
-    trending_shows = [
+    trending_shows: list[TrendingWrapper] = [
         {
             "watchers": 100,
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
+                "ids": {"trakt": 1, "slug": "breaking-bad"},
                 "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
             },
         },
@@ -184,6 +208,7 @@ async def test_trending_shows_integration():
             "show": {
                 "title": "Stranger Things",
                 "year": 2016,
+                "ids": {"trakt": 2, "slug": "stranger-things"},
                 "overview": "When a young boy disappears, his mother and friends must confront terrifying forces.",
             },
         },
@@ -207,7 +232,12 @@ async def test_trending_shows_integration():
 
         mock_instance.get.return_value = trending_mock
 
-        with patch("server.shows.resources.ShowsClient", return_value=ShowsClient()):
+        with patch("server.shows.resources.ShowsClient") as mock_trending_client:
+            mock_client_instance = mock_trending_client.return_value
+            mock_client_instance.get_trending_shows = AsyncMock(
+                return_value=trending_shows
+            )
+
             from server.shows.resources import get_trending_shows
 
             resource_result = await get_trending_shows()
@@ -219,7 +249,12 @@ async def test_trending_shows_integration():
         assert "Stranger Things (2016)" in resource_result
         assert "80 watchers" in resource_result
 
-        with patch("server.shows.tools.ShowsClient", return_value=ShowsClient()):
+        with patch("server.shows.tools.TrendingShowsClient") as mock_trending_client:
+            mock_client_instance = mock_trending_client.return_value
+            mock_client_instance.get_trending_shows = AsyncMock(
+                return_value=trending_shows[:1]
+            )
+
             from server.shows.tools import fetch_trending_shows
 
             tool_result = await fetch_trending_shows(limit=1)
@@ -232,12 +267,16 @@ async def test_trending_shows_integration():
 
 
 @pytest.mark.asyncio
-async def test_show_ratings_integration():
+async def test_show_ratings_integration() -> None:
     # Mock show data
-    show_data = {"title": "Breaking Bad", "year": 2008}
+    show_data: ShowResponse = {
+        "title": "Breaking Bad",
+        "year": 2008,
+        "ids": {"trakt": 1, "slug": "breaking-bad"},
+    }
 
     # Mock ratings data
-    ratings_data = {
+    ratings_data: TraktRating = {
         "rating": 9.0,
         "votes": 1000,
         "distribution": {
@@ -283,7 +322,11 @@ async def test_show_ratings_integration():
             ratings_mock,
         ]
 
-        with patch("server.shows.resources.ShowsClient", return_value=ShowsClient()):
+        with patch("server.shows.resources.ShowsClient") as mock_details_client:
+            mock_client_instance = mock_details_client.return_value
+            mock_client_instance.get_show = AsyncMock(return_value=show_data)
+            mock_client_instance.get_show_ratings = AsyncMock(return_value=ratings_data)
+
             from server.shows.resources import get_show_ratings
 
             resource_result = await get_show_ratings(show_id="1")
@@ -293,7 +336,11 @@ async def test_show_ratings_integration():
         assert "**Average Rating:** 9.00/10" in resource_result
         assert "from 1000 votes" in resource_result
 
-        with patch("server.shows.tools.ShowsClient", return_value=ShowsClient()):
+        with patch("server.shows.tools.ShowDetailsClient") as mock_details_client:
+            mock_client_instance = mock_details_client.return_value
+            mock_client_instance.get_show = AsyncMock(return_value=show_data)
+            mock_client_instance.get_show_ratings = AsyncMock(return_value=ratings_data)
+
             from server.shows.tools import fetch_show_ratings
 
             tool_result = await fetch_show_ratings(show_id="1")
@@ -305,7 +352,7 @@ async def test_show_ratings_integration():
 
 
 @pytest.mark.asyncio
-async def test_error_handling_integration():
+async def test_error_handling_integration() -> None:
     # Set up mock responses for the focused clients that will trigger errors
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -319,32 +366,39 @@ async def test_error_handling_integration():
         mock_instance.get.side_effect = Exception("API error")
 
         # Test error handling in a resource function directly
-        with patch("server.shows.resources.ShowsClient", return_value=ShowsClient()):
+        with patch("server.shows.resources.ShowsClient") as mock_details_client:
+            mock_client_instance = mock_details_client.return_value
+            mock_client_instance.get_show = AsyncMock(
+                side_effect=Exception("API error")
+            )
+
             from server.shows.resources import get_show_ratings
+            from utils.api.errors import InternalError
 
-            resource_result = await get_show_ratings(show_id="1")
+            # Should raise an InternalError for unexpected exceptions
+            with pytest.raises(InternalError) as exc_info:
+                await get_show_ratings(show_id="1")
 
-        # Verify the resource result indicates some issue (either error or no data)
-        assert (
-            "Error fetching" in resource_result
-            or "No ratings data available" in resource_result
-        )
+            assert "unexpected error occurred" in str(exc_info.value).lower()
 
         # Test error handling in a tool function directly
-        with patch("server.shows.tools.ShowsClient", return_value=ShowsClient()):
+        with patch("server.shows.tools.ShowDetailsClient") as mock_details_client:
+            mock_client_instance = mock_details_client.return_value
+            mock_client_instance.get_show = AsyncMock(
+                side_effect=Exception("API error")
+            )
+
             from server.shows.tools import fetch_show_ratings
 
-            tool_result = await fetch_show_ratings(show_id="1")
+            # Should raise an InternalError for unexpected exceptions
+            with pytest.raises(InternalError) as exc_info:
+                await fetch_show_ratings(show_id="1")
 
-        # Verify the tool result indicates some issue (either error or no data)
-        assert (
-            "Error fetching" in tool_result
-            or "No ratings data available" in tool_result
-        )
+            assert "unexpected error occurred" in str(exc_info.value).lower()
 
 
 @pytest.mark.asyncio
-async def test_token_refresh_integration():
+async def test_token_refresh_integration() -> None:
     # Since refresh_token method doesn't exist, we'll test authentication status instead
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -360,7 +414,12 @@ async def test_token_refresh_integration():
 
         # Mock for API request
         api_mock = MagicMock()
-        api_mock.json.return_value = {"title": "Breaking Bad", "year": 2008}
+        show_response: ShowResponse = {
+            "title": "Breaking Bad",
+            "year": 2008,
+            "ids": {"trakt": 1, "slug": "breaking-bad"},
+        }
+        api_mock.json.return_value = show_response
         api_mock.raise_for_status = MagicMock()
 
         mock_instance.get.return_value = api_mock
@@ -387,22 +446,30 @@ async def test_token_refresh_integration():
 
 
 @pytest.mark.asyncio
-async def test_comments_integration():
+async def test_comments_integration() -> None:
     # Mock comments data
-    sample_comments = [
+    sample_comments: list[CommentResponse] = [
         {
-            "id": "123",
+            "id": 123,
             "comment": "This show is amazing!",
             "spoiler": False,
             "review": False,
             "likes": 10,
             "replies": 2,
             "created_at": "2023-01-15T20:30:00Z",
-            "user": {"username": "testuser"},
+            "user": {
+                "username": "testuser",
+                "private": False,
+                "ids": {"slug": "testuser"},
+            },
         }
     ]
 
-    sample_show = {"title": "Breaking Bad", "year": 2008}
+    sample_show: ShowResponse = {
+        "title": "Breaking Bad",
+        "year": 2008,
+        "ids": {"trakt": 1, "slug": "breaking-bad"},
+    }
 
     # Set up mock responses for the focused clients
     with (
@@ -429,9 +496,12 @@ async def test_comments_integration():
         mock_instance.get.return_value = comments_mock
 
         # Call the function directly
-        with patch(
-            "server.comments.tools.CommentsClient", return_value=CommentsClient()
-        ):
+        with patch("server.comments.tools.ShowCommentsClient") as mock_comments_client:
+            mock_client_instance = mock_comments_client.return_value
+            mock_client_instance.get_show_comments = AsyncMock(
+                return_value=sample_comments
+            )
+
             from server.comments.tools import fetch_show_comments
 
             result = await fetch_show_comments(show_id="1")
