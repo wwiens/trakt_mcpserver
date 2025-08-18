@@ -311,7 +311,7 @@ You can log out at any time using the `clear_auth` tool.
    python server.py
    ```
 
-## 🐳 Run with Docker (SSE / HTTP mode)
+## 🐳 Run with Docker (SSE/HTTP mode)
 
 You can also deploy this MCP server using Docker with SSE (HTTP) transport.  
 This runs the server on `http://localhost:8080` and proxies MCP requests over SSE.

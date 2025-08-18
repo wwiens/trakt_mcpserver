@@ -5,7 +5,8 @@ FROM ghcr.io/sparfenyuk/mcp-proxy:latest
 RUN apk add --no-cache \
     python3 \
     py3-pip \
-    curl
+    curl \
+    ca-certificates
 
 # Workdir
 WORKDIR /app
