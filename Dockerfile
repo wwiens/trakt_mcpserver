@@ -9,13 +9,21 @@ RUN apk add --no-cache \
     ca-certificates
 
 # Workdir
-WORKDIR /app
+WORKDIR /app/trakt-server
 
-# Copy Trakt MCP server sources
-COPY server requirements.txt ./trakt-server/
+# # Copy Trakt MCP server sources
+# COPY client ./client
+# COPY config ./config
+# COPY models ./models
+# COPY server ./server
+# COPY utils ./utils
+# COPY requirements.txt ./
+# COPY server.py ./
+
+# Copy project (everything except what's in .dockerignore)
+COPY . .
 
 # Install Python dependencies
-WORKDIR /app/trakt-server
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Back to root workdir

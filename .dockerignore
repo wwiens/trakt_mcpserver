@@ -1,8 +1,21 @@
+# Ignore VCS
 .git
+.gitignore
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-venv/
+*.pytest_cache/
+
+# Local configs
 .env
-node_modules/
+*.env
+*.local
+*.log
+
+# Dev stuff
+tests/
+.vscode/
+.idea/
