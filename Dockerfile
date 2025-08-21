@@ -11,15 +11,6 @@ RUN apk add --no-cache \
 # Workdir
 WORKDIR /app/trakt-server
 
-# # Copy Trakt MCP server sources
-# COPY client ./client
-# COPY config ./config
-# COPY models ./models
-# COPY server ./server
-# COPY utils ./utils
-# COPY requirements.txt ./
-# COPY server.py ./
-
 # Copy project (everything except what's in .dockerignore)
 COPY . .
 
