@@ -1,13 +1,23 @@
 """Video formatting methods for the Trakt MCP server."""
 
-import html
 import re
 from datetime import datetime
+from html import escape
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 if TYPE_CHECKING:
     from models.types.api_responses import VideoResponse
+
+# Pre-compiled regex patterns for YouTube video ID extraction
+_YT_PATTERNS = [
+    re.compile(
+        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([A-Za-z0-9_-]{11})(?:[&\s]|$)"
+    ),
+    re.compile(r"(?:m\.youtube\.com/watch\?v=)([A-Za-z0-9_-]{11})(?:[&\s]|$)"),
+    re.compile(r"youtube\.com/watch\?.*v=([A-Za-z0-9_-]{11})(?:[&\s]|$)"),
+    re.compile(r"youtube(?:-nocookie)?\.com/shorts/([A-Za-z0-9_-]{11})(?:[&\s]|$)"),
+]
 
 
 class VideoFormatters:
@@ -26,14 +36,9 @@ class VideoFormatters:
         if not url:
             return None
 
-        # Handle different YouTube URL formats - ensure exactly 11 characters
-        patterns = [
-            r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})(?:[&\s]|$)",
-            r"youtube\.com/watch\?.*v=([a-zA-Z0-9_-]{11})(?:[&\s]|$)",
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, url)
+        # Use pre-compiled patterns for better performance
+        for pattern in _YT_PATTERNS:
+            match = pattern.search(url)
             if match:
                 return match.group(1)
 
@@ -72,7 +77,7 @@ class VideoFormatters:
             return None
 
     @staticmethod
-    def _validate_embed_url(url: str) -> bool:
+    def validate_embed_url(url: str) -> bool:
         """Validate that embed URL is from trusted domains with safe schemes.
 
         Args:
@@ -86,9 +91,31 @@ class VideoFormatters:
             # Only allow https scheme for embed URLs
             if parsed.scheme != "https":
                 return False
-            # Only allow trusted embed domains
-            allowed_domains = {"www.youtube.com", "youtube.com", "www.youtube-nocookie.com"}
-            return parsed.netloc in allowed_domains
+            # Only allow trusted YouTube embed domains (wildcard-based + country TLDs)
+            domain = parsed.netloc.lower()
+
+            # Standard domains
+            if (
+                domain == "youtube.com"
+                or domain == "youtube-nocookie.com"
+                or domain.endswith(".youtube.com")
+                or domain.endswith(".youtube-nocookie.com")
+            ):
+                return True
+
+            # Country TLD patterns: youtube.[cc], youtube.com.[cc], youtube.co.[cc]
+            import re
+
+            country_patterns = [
+                r"^youtube\.(?!co$)[a-z]{2}$",  # youtube.de, youtube.fr (exclude youtube.co)
+                r"^youtube\.com\.[a-z]{2}$",  # youtube.com.au, youtube.com.mx
+                r"^youtube\.co\.[a-z]{2}$",  # youtube.co.uk, youtube.co.jp (requires country code)
+                r"^[a-z0-9-]+\.youtube\.(?!co$)[a-z]{2}$",  # www.youtube.de (exclude .co)
+                r"^[a-z0-9-]+\.youtube\.com\.[a-z]{2}$",  # www.youtube.com.au
+                r"^[a-z0-9-]+\.youtube\.co\.[a-z]{2}$",  # www.youtube.co.uk
+            ]
+
+            return any(re.match(pattern, domain) for pattern in country_patterns)
         except Exception:
             return False
 
@@ -107,7 +134,7 @@ class VideoFormatters:
             # Use youtube-nocookie.com for privacy-friendly embeds
             embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}"
             # Validate the constructed URL before returning
-            if VideoFormatters._validate_embed_url(embed_url):
+            if VideoFormatters.validate_embed_url(embed_url):
                 return embed_url
         return None
 
@@ -150,7 +177,7 @@ class VideoFormatters:
         lines = [f"# Videos for {title}\n"]
 
         # Group by type
-        by_type: dict[str, list[VideoResponse]] = {}
+        by_type: dict[str, list["VideoResponse"]] = {}  # noqa: UP037
         for video in videos:
             video_type = video.get("type", "unknown").title()
             by_type.setdefault(video_type, []).append(video)
@@ -183,25 +210,26 @@ class VideoFormatters:
                         if embed_url:
                             lines.append("<!-- Preserve iframe HTML below -->")
                             # HTML-escape the embed URL to prevent XSS
-                            escaped_url = html.escape(embed_url, quote=True)
+                            escaped_url = escape(embed_url, quote=True)
                             iframe_html = (
                                 f'<iframe width="560" height="315" src="{escaped_url}" '
-                                f'frameborder="0" allow="accelerometer; autoplay; clipboard-write; '
-                                f'encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
+                                f'frameborder="0" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" '
+                                f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" '
+                                f"allowfullscreen></iframe>"
                             )
                             lines.append(iframe_html)
                         else:
                             # Fallback to markdown link if embed URL extraction fails
                             site_display = VideoFormatters.normalize_site_name(site)
-                            lines.append(f"[▶️ Watch on {site_display}]({url})")
+                            lines.append(f"[▶️ Watch on {site_display}](<{url}>)")
                     else:
                         # For non-YouTube videos, use simple markdown link
                         site_display = VideoFormatters.normalize_site_name(site)
-                        lines.append(f"[▶️ Watch on {site_display}]({url})")
+                        lines.append(f"[▶️ Watch on {site_display}](<{url}>)")
                 else:
                     # Simple text link
                     site_display = VideoFormatters.normalize_site_name(site)
-                    lines.append(f"[▶️ Watch on {site_display}]({url})")
+                    lines.append(f"[▶️ Watch on {site_display}](<{url}>)")
 
                 # Video metadata
                 metadata: list[str] = []

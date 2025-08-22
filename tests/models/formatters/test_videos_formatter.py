@@ -88,6 +88,27 @@ class TestVideoFormatters:
         video_id = extract_fn(url)
         assert video_id == "ZbsiKjVAV28"
 
+    def test_extract_youtube_video_id_mobile_format(self):
+        """Test YouTube video ID extraction from mobile URL format."""
+        url = "https://m.youtube.com/watch?v=ZbsiKjVAV28"
+        extract_fn = VideoFormatters.extract_youtube_video_id
+        video_id = extract_fn(url)
+        assert video_id == "ZbsiKjVAV28"
+
+    def test_extract_youtube_video_id_shorts_format(self):
+        """Test YouTube video ID extraction from YouTube Shorts format."""
+        url = "https://youtube.com/shorts/ZbsiKjVAV28"
+        extract_fn = VideoFormatters.extract_youtube_video_id
+        video_id = extract_fn(url)
+        assert video_id == "ZbsiKjVAV28"
+
+    def test_extract_youtube_video_id_nocookie_shorts_format(self):
+        """Test YouTube video ID extraction from YouTube nocookie shorts format."""
+        url = "https://youtube-nocookie.com/shorts/ZbsiKjVAV28"
+        extract_fn = VideoFormatters.extract_youtube_video_id
+        video_id = extract_fn(url)
+        assert video_id == "ZbsiKjVAV28"
+
     def test_extract_youtube_video_id_invalid_url(self):
         """Test YouTube video ID extraction with invalid URL."""
         invalid_urls = [
@@ -119,6 +140,81 @@ class TestVideoFormatters:
         embed_fn = VideoFormatters.get_youtube_embed_url
         embed_url = embed_fn(url)
         assert embed_url is None
+
+    def test_validate_embed_url_exact_matches(self):
+        """Test URL validation for exact YouTube domain matches."""
+        # Test private method via get_youtube_embed_url
+        test_cases = [
+            ("https://youtube.com/embed/ZbsiKjVAV28", True),
+            ("https://youtube-nocookie.com/embed/ZbsiKjVAV28", True),
+        ]
+
+        for test_url, should_be_valid in test_cases:
+            result = VideoFormatters.validate_embed_url(test_url)
+            assert result == should_be_valid, f"Failed for {test_url}"
+
+    def test_validate_embed_url_subdomain_matches(self):
+        """Test URL validation for YouTube subdomain matches."""
+        valid_subdomains = [
+            "https://www.youtube.com/embed/ZbsiKjVAV28",
+            "https://m.youtube.com/embed/ZbsiKjVAV28",
+            "https://music.youtube.com/embed/ZbsiKjVAV28",
+            "https://gaming.youtube.com/embed/ZbsiKjVAV28",
+            "https://www.youtube-nocookie.com/embed/ZbsiKjVAV28",
+        ]
+
+        for test_url in valid_subdomains:
+            result = VideoFormatters.validate_embed_url(test_url)
+            assert result, f"Failed for valid subdomain: {test_url}"
+
+    def test_validate_embed_url_invalid_domains(self):
+        """Test URL validation rejects malicious or invalid domains."""
+        invalid_domains = [
+            "https://youtube.com.evil.com/embed/ZbsiKjVAV28",
+            "https://youtube-nocookie.com.malicious.org/embed/ZbsiKjVAV28",
+            "https://fakeyoutube.com/embed/ZbsiKjVAV28",
+            "https://youtube.co/embed/ZbsiKjVAV28",
+            "https://evil-youtube.com/embed/ZbsiKjVAV28",
+            "http://youtube.com/embed/ZbsiKjVAV28",  # http instead of https
+            "https://youtube.com:8080/embed/ZbsiKjVAV28",  # with port
+        ]
+
+        for test_url in invalid_domains:
+            result = VideoFormatters.validate_embed_url(test_url)
+            assert not result, f"Should reject invalid domain: {test_url}"
+
+    def test_validate_embed_url_country_tlds(self):
+        """Test URL validation for YouTube country TLD domains."""
+        valid_country_domains = [
+            "https://youtube.de/embed/ZbsiKjVAV28",  # Germany
+            "https://youtube.fr/embed/ZbsiKjVAV28",  # France
+            "https://youtube.co.uk/embed/ZbsiKjVAV28",  # UK
+            "https://youtube.com.au/embed/ZbsiKjVAV28",  # Australia
+            "https://youtube.com.mx/embed/ZbsiKjVAV28",  # Mexico
+            "https://www.youtube.de/embed/ZbsiKjVAV28",  # Germany with www
+            "https://m.youtube.fr/embed/ZbsiKjVAV28",  # France mobile
+            "https://www.youtube.co.uk/embed/ZbsiKjVAV28",  # UK with www
+            "https://www.youtube.com.au/embed/ZbsiKjVAV28",  # Australia with www
+        ]
+
+        for test_url in valid_country_domains:
+            result = VideoFormatters.validate_embed_url(test_url)
+            assert result, f"Failed for valid country domain: {test_url}"
+
+    def test_validate_embed_url_invalid_country_patterns(self):
+        """Test URL validation rejects invalid country TLD patterns."""
+        invalid_country_domains = [
+            "https://youtube.com.evil.com/embed/ZbsiKjVAV28",  # Still malicious
+            "https://youtube.toolong/embed/ZbsiKjVAV28",  # TLD too long
+            "https://youtube.123/embed/ZbsiKjVAV28",  # Numeric TLD
+            "https://youtube.c/embed/ZbsiKjVAV28",  # TLD too short
+            "https://fakeyoutube.de/embed/ZbsiKjVAV28",  # Wrong base domain
+            "https://youtube.evil.de/embed/ZbsiKjVAV28",  # Extra subdomain before country
+        ]
+
+        for test_url in invalid_country_domains:
+            result = VideoFormatters.validate_embed_url(test_url)
+            assert not result, f"Should reject invalid country pattern: {test_url}"
 
     def test_get_video_thumbnail_url_youtube(self):
         """Test thumbnail URL generation for YouTube videos."""
