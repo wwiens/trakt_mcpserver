@@ -1,5 +1,6 @@
 """Video formatting methods for the Trakt MCP server."""
 
+import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -9,6 +10,66 @@ if TYPE_CHECKING:
 
 class VideoFormatters:
     """Helper class for formatting video-related data for MCP responses."""
+
+    @staticmethod
+    def _extract_youtube_video_id(url: str) -> str | None:
+        """Extract YouTube video ID from various URL formats.
+        
+        Args:
+            url: YouTube URL in various formats
+            
+        Returns:
+            Video ID if found, None otherwise
+        """
+        if not url:
+            return None
+            
+        # Handle different YouTube URL formats
+        patterns = [
+            r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})',
+            r'youtube\.com/watch\?.*v=([a-zA-Z0-9_-]{11})',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+        
+        return None
+
+    @staticmethod
+    def _get_youtube_embed_url(url: str) -> str | None:
+        """Get YouTube embed URL from various YouTube URL formats.
+        
+        Args:
+            url: YouTube URL in various formats
+            
+        Returns:
+            YouTube embed URL or None if not a YouTube video
+        """
+        video_id = VideoFormatters._extract_youtube_video_id(url)
+        if video_id:
+            return f"https://www.youtube.com/embed/{video_id}"
+        return None
+
+    @staticmethod
+    def _get_video_thumbnail_url(url: str, site: str) -> str:
+        """Get thumbnail URL for video.
+        
+        Args:
+            url: Video URL
+            site: Video site (youtube, vimeo, etc.)
+            
+        Returns:
+            Thumbnail URL or original URL if no thumbnail available
+        """
+        if site.lower() == "youtube":
+            video_id = VideoFormatters._extract_youtube_video_id(url)
+            if video_id:
+                return f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+        
+        # For other sites or if extraction fails, return original URL
+        return url
 
     @staticmethod
     def format_videos_list(
@@ -59,8 +120,22 @@ class VideoFormatters:
                 site = video.get("site", "unknown")
 
                 if embed_markdown:
-                    # Embedded markdown syntax
-                    lines.append(f"[![{title_text}]({url})]({url})")
+                    # Generate HTML iframe for YouTube videos, fallback to markdown for others
+                    if site.lower() == "youtube":
+                        embed_url = VideoFormatters._get_youtube_embed_url(url)
+                        if embed_url:
+                            iframe_html = (
+                                f'<iframe width="560" height="315" src="{embed_url}" '
+                                f'frameborder="0" allow="accelerometer; autoplay; clipboard-write; '
+                                f'encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
+                            )
+                            lines.append(iframe_html)
+                        else:
+                            # Fallback to markdown link if embed URL extraction fails
+                            lines.append(f"[▶️ Watch on YouTube]({url})")
+                    else:
+                        # For non-YouTube videos, use simple markdown link
+                        lines.append(f"[▶️ Watch on {site.title()}]({url})")
                 else:
                     # Simple text link
                     lines.append(f"[▶️ Watch on {site.title()}]({url})")
