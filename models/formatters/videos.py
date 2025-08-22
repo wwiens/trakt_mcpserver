@@ -1,8 +1,10 @@
 """Video formatting methods for the Trakt MCP server."""
 
+import html
 import re
 from datetime import datetime
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 if TYPE_CHECKING:
     from models.types.api_responses import VideoResponse
@@ -38,6 +40,59 @@ class VideoFormatters:
         return None
 
     @staticmethod
+    def normalize_site_name(site: str) -> str:
+        """Normalize video site display names for consistent UX.
+
+        Args:
+            site: Site name from API response
+
+        Returns:
+            Normalized display name
+        """
+        site_mapping = {
+            "youtube": "YouTube",
+        }
+        return site_mapping.get(site.lower(), site.title())
+
+    @staticmethod
+    def parse_iso_datetime(date_string: str | None) -> datetime | None:
+        """Parse ISO datetime string with Z timezone.
+
+        Args:
+            date_string: ISO datetime string, possibly with 'Z' timezone
+
+        Returns:
+            Parsed datetime or None if parsing fails
+        """
+        if not date_string:
+            return None
+        try:
+            return datetime.fromisoformat(date_string.replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return None
+
+    @staticmethod
+    def _validate_embed_url(url: str) -> bool:
+        """Validate that embed URL is from trusted domains with safe schemes.
+
+        Args:
+            url: URL to validate
+
+        Returns:
+            True if URL is safe for embedding, False otherwise
+        """
+        try:
+            parsed = urlparse(url)
+            # Only allow https scheme for embed URLs
+            if parsed.scheme != "https":
+                return False
+            # Only allow trusted embed domains
+            allowed_domains = {"www.youtube.com", "youtube.com", "www.youtube-nocookie.com"}
+            return parsed.netloc in allowed_domains
+        except Exception:
+            return False
+
+    @staticmethod
     def get_youtube_embed_url(url: str) -> str | None:
         """Get YouTube embed URL from various YouTube URL formats.
 
@@ -49,7 +104,11 @@ class VideoFormatters:
         """
         video_id = VideoFormatters.extract_youtube_video_id(url)
         if video_id:
-            return f"https://www.youtube.com/embed/{video_id}"
+            # Use youtube-nocookie.com for privacy-friendly embeds
+            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}"
+            # Validate the constructed URL before returning
+            if VideoFormatters._validate_embed_url(embed_url):
+                return embed_url
         return None
 
     @staticmethod
@@ -101,12 +160,10 @@ class VideoFormatters:
 
             # Sort by published date (parse ISO string)
             def get_published_date(video: "VideoResponse") -> datetime:
-                try:
-                    return datetime.fromisoformat(
-                        video.get("published_at", "1970-01-01").replace("Z", "+00:00")
-                    )
-                except (ValueError, TypeError):
-                    return datetime.min
+                parsed_date = VideoFormatters.parse_iso_datetime(
+                    video.get("published_at")
+                )
+                return parsed_date or datetime.min
 
             sorted_videos = sorted(type_videos, key=get_published_date, reverse=True)
 
@@ -124,25 +181,27 @@ class VideoFormatters:
                     if site.lower() == "youtube":
                         embed_url = VideoFormatters.get_youtube_embed_url(url)
                         if embed_url:
-                            # Add explicit instructional text for LLM to preserve iframe HTML
-                            lines.append(
-                                "🎥 **PRESERVE THIS IFRAME HTML** - DO NOT convert to markdown links. Display this exact HTML iframe code in your response. Users can watch the video directly here."
-                            )
+                            lines.append("<!-- Preserve iframe HTML below -->")
+                            # HTML-escape the embed URL to prevent XSS
+                            escaped_url = html.escape(embed_url, quote=True)
                             iframe_html = (
-                                f'<iframe width="560" height="315" src="{embed_url}" '
+                                f'<iframe width="560" height="315" src="{escaped_url}" '
                                 f'frameborder="0" allow="accelerometer; autoplay; clipboard-write; '
                                 f'encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
                             )
                             lines.append(iframe_html)
                         else:
                             # Fallback to markdown link if embed URL extraction fails
-                            lines.append(f"[▶️ Watch on YouTube]({url})")
+                            site_display = VideoFormatters.normalize_site_name(site)
+                            lines.append(f"[▶️ Watch on {site_display}]({url})")
                     else:
                         # For non-YouTube videos, use simple markdown link
-                        lines.append(f"[▶️ Watch on {site.title()}]({url})")
+                        site_display = VideoFormatters.normalize_site_name(site)
+                        lines.append(f"[▶️ Watch on {site_display}]({url})")
                 else:
                     # Simple text link
-                    lines.append(f"[▶️ Watch on {site.title()}]({url})")
+                    site_display = VideoFormatters.normalize_site_name(site)
+                    lines.append(f"[▶️ Watch on {site_display}]({url})")
 
                 # Video metadata
                 metadata: list[str] = []
@@ -160,12 +219,10 @@ class VideoFormatters:
 
                 # Format publication date
                 if published_at := video.get("published_at"):
-                    try:
-                        date_obj = datetime.fromisoformat(
-                            published_at.replace("Z", "+00:00")
-                        )
+                    date_obj = VideoFormatters.parse_iso_datetime(published_at)
+                    if date_obj:
                         metadata.append(f"*{date_obj.strftime('%B %d, %Y')}*")
-                    except (ValueError, TypeError):
+                    else:
                         metadata.append("*Date unknown*")
 
                 lines.append(" • ".join(metadata))

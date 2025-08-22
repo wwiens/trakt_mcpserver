@@ -1,5 +1,7 @@
 """Movie videos functionality."""
 
+from urllib.parse import quote
+
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types.api_responses import VideoResponse
 from utils.api.errors import handle_api_errors
@@ -20,7 +22,12 @@ class MovieVideosClient(BaseClient):
         Returns:
             List of video response data
         """
-        endpoint = TRAKT_ENDPOINTS["movie_videos"].replace(":id", movie_id)
+        movie_id = movie_id.strip()
+        if not movie_id:
+            raise ValueError("movie_id cannot be empty")
+
+        encoded_id = quote(movie_id, safe="")
+        endpoint = TRAKT_ENDPOINTS["movie_videos"].replace(":id", encoded_id)
         return await self._make_typed_list_request(
             endpoint, response_type=VideoResponse
         )

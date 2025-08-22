@@ -111,7 +111,7 @@ class TestVideoFormatters:
         url = "https://youtube.com/watch?v=ZbsiKjVAV28"
         embed_fn = VideoFormatters.get_youtube_embed_url
         embed_url = embed_fn(url)
-        assert embed_url == "https://www.youtube.com/embed/ZbsiKjVAV28"
+        assert embed_url == "https://www.youtube-nocookie.com/embed/ZbsiKjVAV28"
 
     def test_get_youtube_embed_url_invalid(self):
         """Test YouTube embed URL generation with invalid URL."""
@@ -169,9 +169,9 @@ class TestVideoFormatters:
         assert "### Official Trailer" in result
 
         # Check iframe embed
-        assert "PRESERVE THIS IFRAME HTML" in result
+        assert "<!-- Preserve iframe HTML below -->" in result
         assert "<iframe" in result
-        assert "https://www.youtube.com/embed/ZbsiKjVAV28" in result
+        assert "https://www.youtube-nocookie.com/embed/ZbsiKjVAV28" in result
         assert 'width="560"' in result
         assert 'height="315"' in result
         assert "allowfullscreen" in result
@@ -204,11 +204,11 @@ class TestVideoFormatters:
         )
 
         # Should not contain iframe or instructional text
-        assert "PRESERVE THIS IFRAME HTML" not in result
+        assert "<!-- Preserve iframe HTML below -->" not in result
         assert "<iframe" not in result
 
         # Should contain simple link
-        assert "[▶️ Watch on Youtube]" in result
+        assert "[▶️ Watch on YouTube]" in result
         assert "https://youtube.com/watch?v=ZbsiKjVAV28" in result
 
     def test_format_videos_list_with_non_youtube_video(self):
@@ -232,7 +232,7 @@ class TestVideoFormatters:
         )
 
         # Should not contain iframe for non-YouTube
-        assert "PRESERVE THIS IFRAME HTML" not in result
+        assert "<!-- Preserve iframe HTML below -->" not in result
         assert "<iframe" not in result
 
         # Should contain simple link even with embed_markdown=True
@@ -275,7 +275,7 @@ class TestVideoFormatters:
         assert "## Teasers" in result
 
         # Check both videos have iframe embeds
-        assert result.count("PRESERVE THIS IFRAME HTML") == 2
+        assert result.count("<!-- Preserve iframe HTML below -->") == 2
         assert result.count("<iframe") == 2
 
     def test_format_videos_list_sorting_by_date(self):
@@ -345,7 +345,7 @@ class TestVideoFormatters:
         # Should still work and contain the video
         assert "Minimal Video" in result
         assert "<iframe" in result
-        assert "https://www.youtube.com/embed/ABC123DEF12" in result
+        assert "https://www.youtube-nocookie.com/embed/ABC123DEF12" in result
 
     def test_format_videos_list_youtube_extraction_failure(self):
         """Test handling when YouTube video ID extraction fails."""
@@ -363,7 +363,7 @@ class TestVideoFormatters:
         )
 
         # Should fallback to simple link, not iframe
-        assert "PRESERVE THIS IFRAME HTML" not in result
+        assert "<!-- Preserve iframe HTML below -->" not in result
         assert "<iframe" not in result
         assert "[▶️ Watch on YouTube]" in result
         assert "https://youtube.com/watch?v=INVALID" in result

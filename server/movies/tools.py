@@ -312,7 +312,7 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
     movie_id, embed_markdown = params.movie_id, params.embed_markdown
 
     try:
-        client = MoviesClient()  # Use unified client
+        client: MoviesClient = MoviesClient()  # Use unified client
         videos = await client.get_videos(movie_id)
 
         # Get movie title for context, fallback to ID if fetch fails
@@ -329,7 +329,13 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
                 )
 
             title = movie.get("title", f"Movie ID: {movie_id}")
-        except MCPError:
+        except Exception as e:
+            # Best-effort title lookup - don't fail the whole operation
+            logger.debug(
+                "Non-fatal exception during movie title lookup: %s (movie_id: %s)",
+                str(e),
+                movie_id,
+            )
             # Use movie_id as fallback title if movie fetch fails
             title = f"Movie ID: {movie_id}"
 
@@ -426,7 +432,10 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_movie_videos"],
-        description="Get videos (trailers, teasers, etc.) for a movie from Trakt",
+        description=(
+            "Get videos (trailers, teasers, etc.) for a movie from Trakt. "
+            "Set embed_markdown=False to return simple links instead of YouTube iframes."
+        ),
     )
     @handle_api_errors_func
     async def fetch_movie_videos_tool(

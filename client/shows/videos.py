@@ -1,5 +1,7 @@
 """Show videos functionality."""
 
+from urllib.parse import quote
+
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types.api_responses import VideoResponse
 from utils.api.errors import handle_api_errors
@@ -20,7 +22,12 @@ class ShowVideosClient(BaseClient):
         Returns:
             List of video response data
         """
-        endpoint = TRAKT_ENDPOINTS["show_videos"].replace(":id", show_id)
+        show_id = show_id.strip()
+        if not show_id:
+            raise ValueError("show_id cannot be empty")
+
+        encoded_id = quote(show_id, safe="")
+        endpoint = TRAKT_ENDPOINTS["show_videos"].replace(":id", encoded_id)
         return await self._make_typed_list_request(
             endpoint, response_type=VideoResponse
         )

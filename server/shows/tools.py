@@ -313,7 +313,7 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
     show_id, embed_markdown = params.show_id, params.embed_markdown
 
     try:
-        client = ShowsClient()  # Use unified client
+        client: ShowsClient = ShowsClient()  # Use unified client
         videos = await client.get_videos(show_id)
 
         # Get show title for context, fallback to ID if fetch fails
@@ -330,7 +330,13 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
                 )
 
             title = show.get("title", f"Show ID: {show_id}")
-        except MCPError:
+        except Exception as e:
+            # Best-effort title lookup - don't fail the whole operation
+            logger.debug(
+                "Non-fatal exception during show title lookup: %s (show_id: %s)",
+                str(e),
+                show_id,
+            )
             # Use show_id as fallback title if show fetch fails
             title = f"Show ID: {show_id}"
 
@@ -427,7 +433,10 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_videos"],
-        description="Get videos (trailers, teasers, etc.) for a show from Trakt",
+        description=(
+            "Get videos (trailers, teasers, etc.) for a show from Trakt. "
+            "Set embed_markdown=False to return simple links instead of YouTube iframes."
+        ),
     )
     @handle_api_errors_func
     async def fetch_show_videos_tool(show_id: str, embed_markdown: bool = True) -> str:
