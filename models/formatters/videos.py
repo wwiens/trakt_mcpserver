@@ -14,36 +14,36 @@ class VideoFormatters:
     @staticmethod
     def _extract_youtube_video_id(url: str) -> str | None:
         """Extract YouTube video ID from various URL formats.
-        
+
         Args:
             url: YouTube URL in various formats
-            
+
         Returns:
             Video ID if found, None otherwise
         """
         if not url:
             return None
-            
-        # Handle different YouTube URL formats
+
+        # Handle different YouTube URL formats - ensure exactly 11 characters
         patterns = [
-            r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})',
-            r'youtube\.com/watch\?.*v=([a-zA-Z0-9_-]{11})',
+            r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})(?:[&\s]|$)",
+            r"youtube\.com/watch\?.*v=([a-zA-Z0-9_-]{11})(?:[&\s]|$)",
         ]
-        
+
         for pattern in patterns:
             match = re.search(pattern, url)
             if match:
                 return match.group(1)
-        
+
         return None
 
     @staticmethod
     def _get_youtube_embed_url(url: str) -> str | None:
         """Get YouTube embed URL from various YouTube URL formats.
-        
+
         Args:
             url: YouTube URL in various formats
-            
+
         Returns:
             YouTube embed URL or None if not a YouTube video
         """
@@ -55,11 +55,11 @@ class VideoFormatters:
     @staticmethod
     def _get_video_thumbnail_url(url: str, site: str) -> str:
         """Get thumbnail URL for video.
-        
+
         Args:
             url: Video URL
             site: Video site (youtube, vimeo, etc.)
-            
+
         Returns:
             Thumbnail URL or original URL if no thumbnail available
         """
@@ -67,7 +67,7 @@ class VideoFormatters:
             video_id = VideoFormatters._extract_youtube_video_id(url)
             if video_id:
                 return f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
-        
+
         # For other sites or if extraction fails, return original URL
         return url
 
@@ -124,6 +124,10 @@ class VideoFormatters:
                     if site.lower() == "youtube":
                         embed_url = VideoFormatters._get_youtube_embed_url(url)
                         if embed_url:
+                            # Add clear instructional text for LLM and user clarity
+                            lines.append(
+                                "▶️ **INTERACTIVE VIDEO EMBED** - This HTML iframe displays a playable YouTube video directly in the response. Users can watch the video without leaving this interface."
+                            )
                             iframe_html = (
                                 f'<iframe width="560" height="315" src="{embed_url}" '
                                 f'frameborder="0" allow="accelerometer; autoplay; clipboard-write; '
