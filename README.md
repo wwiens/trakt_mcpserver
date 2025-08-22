@@ -55,7 +55,6 @@ This project was developed using a combination of cutting-edge AI development to
 - **[Cursor](https://cursor.sh/)** - AI-powered code editor for rapid development
 - **[Aider](https://aider.chat/)** - AI pair programming tool for code collaboration
 - **[Claude Code](https://claude.ai/code)** - Claude's dedicated coding interface
-- **Claude Opus** - Architectural guidance and design decisions when needed
 
 This multi-tool approach demonstrates:
 
@@ -174,6 +173,12 @@ fetch_show_summary(show_id="game-of-thrones", extended=True)  # Default: compreh
 # Get basic show summary (title, year, ID only)
 fetch_show_summary(show_id="game-of-thrones", extended=False)
 
+# Get videos for a show (with embedded markdown - default)
+fetch_show_videos(show_id="game-of-thrones")
+
+# Get videos for a show (simple text links)
+fetch_show_videos(show_id="game-of-thrones", embed_markdown=False)
+
 # Search for movies by title to get movie IDs and details
 search_movies(query="The Godfather", limit=5)
 ```
@@ -203,6 +208,12 @@ fetch_movie_summary(movie_id="tron-legacy-2010", extended=True)  # Default: comp
 
 # Get basic movie summary (title, year, ID only)
 fetch_movie_summary(movie_id="tron-legacy-2010", extended=False)
+
+# Get videos for a movie (with embedded markdown - default)
+fetch_movie_videos(movie_id="tron-legacy-2010")
+
+# Get videos for a movie (simple text links)
+fetch_movie_videos(movie_id="tron-legacy-2010", embed_markdown=False)
 ```
 
 ### Authentication & User Tools
@@ -388,6 +399,9 @@ Once installed, you can ask Claude questions like:
 - "What's the rating for Game of Thrones?"
 - "Show me the rating distribution for The Godfather"
 - "How highly rated is Breaking Bad?"
+- "Show me trailers for TRON: Legacy"
+- "Get videos for Game of Thrones"
+- "What trailers are available for The Godfather?"
 - "Get a detailed summary of Breaking Bad" (comprehensive data with air times, status, ratings)
 - "Show me details about The Godfather movie" (comprehensive data with production status, metadata)
 - "Give me basic info for Game of Thrones" (basic summary with title, year, ID only)
@@ -423,5 +437,5 @@ All data is fetched directly from your Trakt account in real-time.
 
 <div align="center">
   <p>Built with 🧠 AI and human collaboration</p>
-  <p>Powered by Cursor + Aider + Claude Code + Claude Sonnet</p>
+  <p>Powered by Claude</p>
 </div>

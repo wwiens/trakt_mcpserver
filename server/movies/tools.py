@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Literal
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, PositiveInt, field_validator
 
+from client.movies.client import MoviesClient
 from client.movies.details import MovieDetailsClient
 from client.movies.popular import PopularMoviesClient
 from client.movies.stats import MovieStatsClient
@@ -15,6 +16,7 @@ from client.movies.trending import TrendingMoviesClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.movies import MovieFormatters
+from models.formatters.videos import VideoFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
@@ -56,6 +58,12 @@ class MovieSummaryParams(MovieIdParam):
     """Parameters for movie summary tools with extended option."""
 
     extended: bool = True
+
+
+class MovieVideoParams(MovieIdParam):
+    """Parameters for movie video tools."""
+
+    embed_markdown: bool = True
 
 
 @handle_api_errors_func
@@ -288,6 +296,48 @@ async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
         raise
 
 
+@handle_api_errors_func
+async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
+    """Fetch videos for a movie from Trakt.
+
+    Args:
+        movie_id: Trakt ID, slug, or IMDB ID
+        embed_markdown: Use embedded markdown syntax for video links
+
+    Returns:
+        Markdown formatted list of videos
+    """
+    # Validate required parameters via Pydantic
+    params = MovieVideoParams(movie_id=movie_id, embed_markdown=embed_markdown)
+    movie_id, embed_markdown = params.movie_id, params.embed_markdown
+
+    try:
+        client = MoviesClient()  # Use unified client
+        videos = await client.get_videos(movie_id)
+
+        # Get movie title for context, fallback to ID if fetch fails
+        try:
+            movie = await client.get_movie(movie_id)
+
+            # Handle transitional case where API returns error strings
+            if isinstance(movie, str):
+                raise BaseToolErrorMixin.handle_api_string_error(
+                    resource_type="movie",
+                    resource_id=movie_id,
+                    error_message=movie,
+                    operation="fetch_movie_for_videos",
+                )
+
+            title = movie.get("title", f"Movie ID: {movie_id}")
+        except MCPError:
+            # Use movie_id as fallback title if movie fetch fails
+            title = f"Movie ID: {movie_id}"
+
+        return VideoFormatters.format_videos_list(videos, title, embed_markdown)
+    except MCPError:
+        raise
+
+
 def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """Register movie tools with the MCP server.
 
@@ -374,6 +424,18 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         params = MovieSummaryParams(movie_id=movie_id, extended=extended)
         return await fetch_movie_summary(params.movie_id, params.extended)
 
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_movie_videos"],
+        description="Get videos (trailers, teasers, etc.) for a movie from Trakt",
+    )
+    @handle_api_errors_func
+    async def fetch_movie_videos_tool(
+        movie_id: str, embed_markdown: bool = True
+    ) -> str:
+        # Validate parameters with Pydantic
+        params = MovieVideoParams(movie_id=movie_id, embed_markdown=embed_markdown)
+        return await fetch_movie_videos(params.movie_id, params.embed_markdown)
+
     # Return handlers for type checker visibility
     return (
         fetch_trending_movies_tool,
@@ -383,4 +445,5 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         fetch_watched_movies_tool,
         fetch_movie_ratings_tool,
         fetch_movie_summary_tool,
+        fetch_movie_videos_tool,
     )

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Literal
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, PositiveInt, field_validator
 
+from client.shows.client import ShowsClient
 from client.shows.details import ShowDetailsClient
 from client.shows.popular import PopularShowsClient
 from client.shows.stats import ShowStatsClient
@@ -15,6 +16,7 @@ from client.shows.trending import TrendingShowsClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.shows import ShowFormatters
+from models.formatters.videos import VideoFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
@@ -56,6 +58,12 @@ class ShowSummaryParams(ShowIdParam):
     """Parameters for show summary tools with extended option."""
 
     extended: bool = True
+
+
+class ShowVideoParams(ShowIdParam):
+    """Parameters for show video tools."""
+
+    embed_markdown: bool = True
 
 
 @handle_api_errors_func
@@ -289,6 +297,48 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
         raise
 
 
+@handle_api_errors_func
+async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
+    """Fetch videos for a show from Trakt.
+
+    Args:
+        show_id: Trakt ID, slug, or IMDB ID
+        embed_markdown: Use embedded markdown syntax for video links
+
+    Returns:
+        Markdown formatted list of videos
+    """
+    # Validate required parameters via Pydantic
+    params = ShowVideoParams(show_id=show_id, embed_markdown=embed_markdown)
+    show_id, embed_markdown = params.show_id, params.embed_markdown
+
+    try:
+        client = ShowsClient()  # Use unified client
+        videos = await client.get_videos(show_id)
+
+        # Get show title for context, fallback to ID if fetch fails
+        try:
+            show = await client.get_show(show_id)
+
+            # Handle transitional case where API returns error strings
+            if isinstance(show, str):
+                raise BaseToolErrorMixin.handle_api_string_error(
+                    resource_type="show",
+                    resource_id=show_id,
+                    error_message=show,
+                    operation="fetch_show_for_videos",
+                )
+
+            title = show.get("title", f"Show ID: {show_id}")
+        except MCPError:
+            # Use show_id as fallback title if show fetch fails
+            title = f"Show ID: {show_id}"
+
+        return VideoFormatters.format_videos_list(videos, title, embed_markdown)
+    except MCPError:
+        raise
+
+
 def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """Register show tools with the MCP server.
 
@@ -375,6 +425,16 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         params = ShowSummaryParams(show_id=show_id, extended=extended)
         return await fetch_show_summary(params.show_id, params.extended)
 
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_show_videos"],
+        description="Get videos (trailers, teasers, etc.) for a show from Trakt",
+    )
+    @handle_api_errors_func
+    async def fetch_show_videos_tool(show_id: str, embed_markdown: bool = True) -> str:
+        # Validate parameters with Pydantic
+        params = ShowVideoParams(show_id=show_id, embed_markdown=embed_markdown)
+        return await fetch_show_videos(params.show_id, params.embed_markdown)
+
     # Return handlers for type checker visibility
     return (
         fetch_trending_shows_tool,
@@ -384,4 +444,5 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         fetch_watched_shows_tool,
         fetch_show_ratings_tool,
         fetch_show_summary_tool,
+        fetch_show_videos_tool,
     )
