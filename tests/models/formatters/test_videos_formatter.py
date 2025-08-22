@@ -48,43 +48,43 @@ class TestVideoFormatters:
     def test_all_methods_are_static(self):
         """Test that all methods are static methods."""
         # Check that methods don't require instance
-        assert callable(VideoFormatters._extract_youtube_video_id)
-        assert callable(VideoFormatters._get_youtube_embed_url)
-        assert callable(VideoFormatters._get_video_thumbnail_url)
+        assert callable(VideoFormatters.extract_youtube_video_id)
+        assert callable(VideoFormatters.get_youtube_embed_url)
+        assert callable(VideoFormatters.get_video_thumbnail_url)
         assert callable(VideoFormatters.format_videos_list)
 
     def test_extract_youtube_video_id_standard_format(self):
         """Test YouTube video ID extraction from standard URL format."""
         url = "https://youtube.com/watch?v=ZbsiKjVAV28"
-        extract_fn = VideoFormatters._extract_youtube_video_id
+        extract_fn = VideoFormatters.extract_youtube_video_id
         video_id = extract_fn(url)
         assert video_id == "ZbsiKjVAV28"
 
     def test_extract_youtube_video_id_www_format(self):
         """Test YouTube video ID extraction from www URL format."""
         url = "https://www.youtube.com/watch?v=ZbsiKjVAV28"
-        extract_fn = VideoFormatters._extract_youtube_video_id
+        extract_fn = VideoFormatters.extract_youtube_video_id
         video_id = extract_fn(url)
         assert video_id == "ZbsiKjVAV28"
 
     def test_extract_youtube_video_id_short_format(self):
         """Test YouTube video ID extraction from short URL format."""
         url = "https://youtu.be/ZbsiKjVAV28"
-        extract_fn = VideoFormatters._extract_youtube_video_id
+        extract_fn = VideoFormatters.extract_youtube_video_id
         video_id = extract_fn(url)
         assert video_id == "ZbsiKjVAV28"
 
     def test_extract_youtube_video_id_embed_format(self):
         """Test YouTube video ID extraction from embed URL format."""
         url = "https://youtube.com/embed/ZbsiKjVAV28"
-        extract_fn = VideoFormatters._extract_youtube_video_id
+        extract_fn = VideoFormatters.extract_youtube_video_id
         video_id = extract_fn(url)
         assert video_id == "ZbsiKjVAV28"
 
     def test_extract_youtube_video_id_with_additional_params(self):
         """Test YouTube video ID extraction with additional URL parameters."""
         url = "https://youtube.com/watch?v=ZbsiKjVAV28&t=123&list=xyz"
-        extract_fn = VideoFormatters._extract_youtube_video_id
+        extract_fn = VideoFormatters.extract_youtube_video_id
         video_id = extract_fn(url)
         assert video_id == "ZbsiKjVAV28"
 
@@ -97,7 +97,7 @@ class TestVideoFormatters:
             "https://youtube.com/watch?v=ABC",  # Too short
             "https://youtube.com/watch?v=ABC123TOOLONGFORVALIDID",  # Too long
         ]
-        extract_fn = VideoFormatters._extract_youtube_video_id
+        extract_fn = VideoFormatters.extract_youtube_video_id
         for url in invalid_urls:
             video_id = extract_fn(url)
             assert video_id is None
@@ -109,21 +109,21 @@ class TestVideoFormatters:
     def test_get_youtube_embed_url_valid(self):
         """Test YouTube embed URL generation with valid video ID."""
         url = "https://youtube.com/watch?v=ZbsiKjVAV28"
-        embed_fn = VideoFormatters._get_youtube_embed_url
+        embed_fn = VideoFormatters.get_youtube_embed_url
         embed_url = embed_fn(url)
         assert embed_url == "https://www.youtube.com/embed/ZbsiKjVAV28"
 
     def test_get_youtube_embed_url_invalid(self):
         """Test YouTube embed URL generation with invalid URL."""
         url = "https://example.com/video"
-        embed_fn = VideoFormatters._get_youtube_embed_url
+        embed_fn = VideoFormatters.get_youtube_embed_url
         embed_url = embed_fn(url)
         assert embed_url is None
 
     def test_get_video_thumbnail_url_youtube(self):
         """Test thumbnail URL generation for YouTube videos."""
         url = "https://youtube.com/watch?v=ZbsiKjVAV28"
-        thumbnail_fn = VideoFormatters._get_video_thumbnail_url
+        thumbnail_fn = VideoFormatters.get_video_thumbnail_url
         thumbnail_url = thumbnail_fn(url, "youtube")
         assert (
             thumbnail_url == "https://img.youtube.com/vi/ZbsiKjVAV28/maxresdefault.jpg"
@@ -132,7 +132,7 @@ class TestVideoFormatters:
     def test_get_video_thumbnail_url_non_youtube(self):
         """Test thumbnail URL generation for non-YouTube videos."""
         url = "https://vimeo.com/123456789"
-        thumbnail_fn = VideoFormatters._get_video_thumbnail_url
+        thumbnail_fn = VideoFormatters.get_video_thumbnail_url
         thumbnail_url = thumbnail_fn(url, "vimeo")
         assert thumbnail_url == url  # Should return original URL
 
@@ -169,7 +169,7 @@ class TestVideoFormatters:
         assert "### Official Trailer" in result
 
         # Check iframe embed
-        assert "INTERACTIVE VIDEO EMBED" in result
+        assert "PRESERVE THIS IFRAME HTML" in result
         assert "<iframe" in result
         assert "https://www.youtube.com/embed/ZbsiKjVAV28" in result
         assert 'width="560"' in result
@@ -204,7 +204,7 @@ class TestVideoFormatters:
         )
 
         # Should not contain iframe or instructional text
-        assert "INTERACTIVE VIDEO EMBED" not in result
+        assert "PRESERVE THIS IFRAME HTML" not in result
         assert "<iframe" not in result
 
         # Should contain simple link
@@ -232,7 +232,7 @@ class TestVideoFormatters:
         )
 
         # Should not contain iframe for non-YouTube
-        assert "INTERACTIVE VIDEO EMBED" not in result
+        assert "PRESERVE THIS IFRAME HTML" not in result
         assert "<iframe" not in result
 
         # Should contain simple link even with embed_markdown=True
@@ -275,7 +275,7 @@ class TestVideoFormatters:
         assert "## Teasers" in result
 
         # Check both videos have iframe embeds
-        assert result.count("INTERACTIVE VIDEO EMBED") == 2
+        assert result.count("PRESERVE THIS IFRAME HTML") == 2
         assert result.count("<iframe") == 2
 
     def test_format_videos_list_sorting_by_date(self):
@@ -363,7 +363,7 @@ class TestVideoFormatters:
         )
 
         # Should fallback to simple link, not iframe
-        assert "INTERACTIVE VIDEO EMBED" not in result
+        assert "PRESERVE THIS IFRAME HTML" not in result
         assert "<iframe" not in result
         assert "[▶️ Watch on YouTube]" in result
         assert "https://youtube.com/watch?v=INVALID" in result

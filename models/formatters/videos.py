@@ -12,7 +12,7 @@ class VideoFormatters:
     """Helper class for formatting video-related data for MCP responses."""
 
     @staticmethod
-    def _extract_youtube_video_id(url: str) -> str | None:
+    def extract_youtube_video_id(url: str) -> str | None:
         """Extract YouTube video ID from various URL formats.
 
         Args:
@@ -38,7 +38,7 @@ class VideoFormatters:
         return None
 
     @staticmethod
-    def _get_youtube_embed_url(url: str) -> str | None:
+    def get_youtube_embed_url(url: str) -> str | None:
         """Get YouTube embed URL from various YouTube URL formats.
 
         Args:
@@ -47,13 +47,13 @@ class VideoFormatters:
         Returns:
             YouTube embed URL or None if not a YouTube video
         """
-        video_id = VideoFormatters._extract_youtube_video_id(url)
+        video_id = VideoFormatters.extract_youtube_video_id(url)
         if video_id:
             return f"https://www.youtube.com/embed/{video_id}"
         return None
 
     @staticmethod
-    def _get_video_thumbnail_url(url: str, site: str) -> str:
+    def get_video_thumbnail_url(url: str, site: str) -> str:
         """Get thumbnail URL for video.
 
         Args:
@@ -64,7 +64,7 @@ class VideoFormatters:
             Thumbnail URL or original URL if no thumbnail available
         """
         if site.lower() == "youtube":
-            video_id = VideoFormatters._extract_youtube_video_id(url)
+            video_id = VideoFormatters.extract_youtube_video_id(url)
             if video_id:
                 return f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
 
@@ -122,11 +122,11 @@ class VideoFormatters:
                 if embed_markdown:
                     # Generate HTML iframe for YouTube videos, fallback to markdown for others
                     if site.lower() == "youtube":
-                        embed_url = VideoFormatters._get_youtube_embed_url(url)
+                        embed_url = VideoFormatters.get_youtube_embed_url(url)
                         if embed_url:
-                            # Add clear instructional text for LLM and user clarity
+                            # Add explicit instructional text for LLM to preserve iframe HTML
                             lines.append(
-                                "▶️ **INTERACTIVE VIDEO EMBED** - This HTML iframe displays a playable YouTube video directly in the response. Users can watch the video without leaving this interface."
+                                "🎥 **PRESERVE THIS IFRAME HTML** - DO NOT convert to markdown links. Display this exact HTML iframe code in your response. Users can watch the video directly here."
                             )
                             iframe_html = (
                                 f'<iframe width="560" height="315" src="{embed_url}" '

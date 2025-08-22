@@ -488,7 +488,7 @@ async def test_fetch_show_videos_with_embeds():
 
         # Verify result content
         assert "# Videos for Test Show" in result
-        assert "INTERACTIVE VIDEO EMBED" in result
+        assert "PRESERVE THIS IFRAME HTML" in result
         assert "<iframe" in result
         assert "https://www.youtube.com/embed/ZbsiKjVAV28" in result
 
@@ -516,7 +516,7 @@ async def test_fetch_show_videos_without_embeds():
         result = await fetch_show_videos("test-show", embed_markdown=False)
 
         # Should not contain iframe or instructional text
-        assert "INTERACTIVE VIDEO EMBED" not in result
+        assert "PRESERVE THIS IFRAME HTML" not in result
         assert "<iframe" not in result
         assert "[▶️ Watch on Youtube]" in result
 
