@@ -213,7 +213,7 @@ class VideoFormatters:
                             escaped_url = escape(embed_url, quote=True)
                             iframe_html = (
                                 f'<iframe width="560" height="315" src="{escaped_url}" '
-                                f'frameborder="0" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" '
+                                f'frameborder="0" loading="lazy" '
                                 f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" '
                                 f"allowfullscreen></iframe>"
                             )
