@@ -488,7 +488,7 @@ async def test_fetch_show_videos_with_embeds():
 
         # Verify result content
         assert "# Videos for Test Show" in result
-        assert "<!-- Preserve iframe HTML below -->" in result
+        assert "Preserve iframe HTML below" in result
         assert "<iframe" in result
         assert "https://www.youtube-nocookie.com/embed/ZbsiKjVAV28" in result
 
@@ -516,7 +516,7 @@ async def test_fetch_show_videos_without_embeds():
         result = await fetch_show_videos("test-show", embed_markdown=False)
 
         # Should not contain iframe or instructional text
-        assert "<!-- Preserve iframe HTML below -->" not in result
+        assert "Preserve iframe HTML below" not in result
         assert "<iframe" not in result
         assert "[▶️ Watch on YouTube]" in result
 

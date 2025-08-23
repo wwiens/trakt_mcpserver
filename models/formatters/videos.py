@@ -208,7 +208,7 @@ class VideoFormatters:
                     if site.lower() == "youtube":
                         embed_url = VideoFormatters.get_youtube_embed_url(url)
                         if embed_url:
-                            lines.append("<!-- Preserve iframe HTML below -->")
+                            lines.append("Preserve iframe HTML below")
                             # HTML-escape the embed URL to prevent XSS
                             escaped_url = escape(embed_url, quote=True)
                             iframe_html = (
