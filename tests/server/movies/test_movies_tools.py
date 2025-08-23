@@ -359,7 +359,7 @@ async def test_fetch_movie_videos_with_embeds():
         assert "# Videos for Test Movie" in result
         assert "Preserve iframe HTML below" in result
         assert "<iframe" in result
-        assert "https://www.youtube-nocookie.com/embed/ABC123DEF12" in result
+        assert "https://www.youtube.com/embed/ABC123DEF12" in result
 
 
 @pytest.mark.asyncio

@@ -130,8 +130,8 @@ class VideoFormatters:
         """
         video_id = VideoFormatters.extract_youtube_video_id(url)
         if video_id:
-            # Use youtube-nocookie.com for privacy-friendly embeds
-            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}"
+            # Use regular YouTube embed URL
+            embed_url = f"https://www.youtube.com/embed/{video_id}"
             # Validate the constructed URL before returning
             if VideoFormatters.validate_embed_url(embed_url):
                 return embed_url
