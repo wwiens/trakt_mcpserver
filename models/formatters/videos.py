@@ -210,9 +210,8 @@ class VideoFormatters:
                             lines.append("Preserve iframe HTML below")
                             iframe_html = (
                                 f'<iframe width="560" height="315" src="{embed_url}" '
-                                f'frameborder="0" loading="lazy" '
-                                f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" '
-                                f"allowfullscreen></iframe>"
+                                f'frameborder="0" allow="accelerometer; autoplay; clipboard-write; '
+                                f'encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
                             )
                             lines.append(iframe_html)
                         else:
