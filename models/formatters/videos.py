@@ -2,7 +2,6 @@
 
 import re
 from datetime import datetime
-from html import escape
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -209,10 +208,8 @@ class VideoFormatters:
                         embed_url = VideoFormatters.get_youtube_embed_url(url)
                         if embed_url:
                             lines.append("Preserve iframe HTML below")
-                            # HTML-escape the embed URL to prevent XSS
-                            escaped_url = escape(embed_url, quote=True)
                             iframe_html = (
-                                f'<iframe width="560" height="315" src="{escaped_url}" '
+                                f'<iframe width="560" height="315" src="{embed_url}" '
                                 f'frameborder="0" loading="lazy" '
                                 f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" '
                                 f"allowfullscreen></iframe>"
