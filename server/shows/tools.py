@@ -340,7 +340,9 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
             # Use show_id as fallback title if show fetch fails
             title = f"Show ID: {show_id}"
 
-        return VideoFormatters.format_videos_list(videos, title, embed_markdown)
+        return VideoFormatters.format_videos_list(
+            videos, title, embed_markdown, validate_input=False
+        )
     except MCPError:
         raise
 

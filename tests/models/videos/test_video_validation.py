@@ -22,9 +22,9 @@ class TestValidatedVideo:
             "country": "US",
             "language": "en",
         }
-        
+
         video = ValidatedVideo.model_validate(video_data)
-        
+
         assert video.title == "Official Trailer"
         assert video.url == "https://youtube.com/watch?v=ABC123"
         assert video.site == "youtube"
@@ -54,7 +54,7 @@ class TestValidatedVideo:
             "http://example.com/video.mp4",
             "https://vimeo.com/123456789",
         ]
-        
+
         for url in valid_urls:
             video_data = {**base_data, "url": url}
             video = ValidatedVideo.model_validate(video_data)
@@ -68,7 +68,7 @@ class TestValidatedVideo:
             "javascript:alert(1)",  # Dangerous protocol
             "not-a-url",  # Not a URL
         ]
-        
+
         for url in invalid_urls:
             video_data = {**base_data, "url": url}
             with pytest.raises(ValidationError) as exc_info:
@@ -95,7 +95,7 @@ class TestValidatedVideo:
             ("de", "DE"),
             ("fr", "FR"),
         ]
-        
+
         for input_country, expected_country in valid_countries:
             video_data = {**base_data, "country": input_country}
             video = ValidatedVideo.model_validate(video_data)
@@ -110,7 +110,7 @@ class TestValidatedVideo:
             "U1",  # Mixed
             "   ",  # Whitespace
         ]
-        
+
         for country in invalid_countries:
             video_data = {**base_data, "country": country}
             with pytest.raises(ValidationError) as exc_info:
@@ -137,7 +137,7 @@ class TestValidatedVideo:
             ("De", "de"),
             ("ES", "es"),
         ]
-        
+
         for input_lang, expected_lang in valid_languages:
             video_data = {**base_data, "language": input_lang}
             video = ValidatedVideo.model_validate(video_data)
@@ -152,7 +152,7 @@ class TestValidatedVideo:
             "e1",  # Mixed
             "   ",  # Whitespace
         ]
-        
+
         for language in invalid_languages:
             video_data = {**base_data, "language": language}
             with pytest.raises(ValidationError) as exc_info:
@@ -175,10 +175,17 @@ class TestValidatedVideo:
         }
 
         required_fields = [
-            "title", "url", "site", "type", "size", 
-            "official", "published_at", "country", "language"
+            "title",
+            "url",
+            "site",
+            "type",
+            "size",
+            "official",
+            "published_at",
+            "country",
+            "language",
         ]
-        
+
         for field in required_fields:
             invalid_data = {k: v for k, v in base_data.items() if k != field}
             with pytest.raises(ValidationError) as exc_info:
@@ -206,10 +213,19 @@ class TestValidatedVideo:
 
         # Invalid site should fail
         with pytest.raises(ValidationError):
-            ValidatedVideo.model_validate({**base_data, "site": "invalid_site", "type": "trailer"})
+            ValidatedVideo.model_validate(
+                {**base_data, "site": "invalid_site", "type": "trailer"}
+            )
 
         # Valid types
-        valid_types = ["trailer", "teaser", "featurette", "clip", "behind_the_scenes", "gag_reel"]
+        valid_types = [
+            "trailer",
+            "teaser",
+            "featurette",
+            "clip",
+            "behind_the_scenes",
+            "gag_reel",
+        ]
         for video_type in valid_types:
             video_data = {**base_data, "site": "youtube", "type": video_type}
             video = ValidatedVideo.model_validate(video_data)
@@ -217,7 +233,9 @@ class TestValidatedVideo:
 
         # Invalid type should fail
         with pytest.raises(ValidationError):
-            ValidatedVideo.model_validate({**base_data, "site": "youtube", "type": "invalid_type"})
+            ValidatedVideo.model_validate(
+                {**base_data, "site": "youtube", "type": "invalid_type"}
+            )
 
     def test_size_validation(self):
         """Test video size validation."""

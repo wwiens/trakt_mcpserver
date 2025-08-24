@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
 from typing import TYPE_CHECKING, Any, cast
+
+import pytest
 
 from models.formatters.videos import VideoFormatters
 
@@ -329,7 +330,7 @@ class TestVideoFormatters:
 
         with pytest.raises(ValueError) as exc_info:
             VideoFormatters.validate_video_list(invalid_videos)
-        
+
         error_message = str(exc_info.value)
         assert "Video validation failed" in error_message
         assert "Video 0" in error_message  # First video error
@@ -390,17 +391,20 @@ class TestVideoFormatters:
         """Test formatting fails with invalid input when validation is enabled."""
         # Create a video with invalid data that would fail Pydantic validation
         # but still fits the VideoResponse TypedDict structure
-        invalid_video = cast("VideoResponse", {
-            "title": "",  # Empty title should fail Pydantic validation
-            "url": "https://youtube.com/watch?v=ZbsiKjVAV28",
-            "site": "youtube", 
-            "type": "trailer",
-            "size": 1080,
-            "official": True,
-            "published_at": "2023-01-15T10:30:00Z",
-            "country": "US",
-            "language": "en",
-        })
+        invalid_video = cast(
+            "VideoResponse",
+            {
+                "title": "",  # Empty title should fail Pydantic validation
+                "url": "https://youtube.com/watch?v=ZbsiKjVAV28",
+                "site": "youtube",
+                "type": "trailer",
+                "size": 1080,
+                "official": True,
+                "published_at": "2023-01-15T10:30:00Z",
+                "country": "US",
+                "language": "en",
+            },
+        )
 
         # Should fail with validation enabled
         with pytest.raises(ValueError) as exc_info:
