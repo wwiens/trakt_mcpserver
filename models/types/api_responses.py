@@ -1,6 +1,26 @@
 """Type definitions for Trakt API responses."""
 
-from typing import Any, NotRequired, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
+
+# Video types
+VideoSite = Literal["youtube", "vimeo", "dailymotion", "metacafe"]
+VideoType = Literal[
+    "trailer", "teaser", "featurette", "clip", "behind_the_scenes", "gag_reel"
+]
+
+
+class VideoResponse(TypedDict):
+    """Video response from Trakt API."""
+
+    title: str
+    url: str
+    site: VideoSite
+    type: VideoType
+    size: int  # 480, 720, 1080, etc.
+    official: bool
+    published_at: str  # ISO datetime string from API
+    country: str  # ISO 3166-1 alpha-2
+    language: str  # ISO 639-1
 
 
 # Base types

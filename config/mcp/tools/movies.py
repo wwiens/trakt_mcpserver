@@ -9,4 +9,5 @@ MOVIE_TOOLS = {
     "fetch_watched_movies": "fetch_watched_movies",
     "fetch_movie_ratings": "fetch_movie_ratings",
     "fetch_movie_summary": "fetch_movie_summary",
+    "fetch_movie_videos": "fetch_movie_videos",
 }
