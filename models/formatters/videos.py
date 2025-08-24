@@ -130,31 +130,12 @@ class VideoFormatters:
         """
         video_id = VideoFormatters.extract_youtube_video_id(url)
         if video_id:
-            # Use privacy-friendly YouTube embed URL
-            embed_url = f"https://www.youtube-nocookie.com/embed/{video_id}"
+            # Use standard YouTube embed URL
+            embed_url = f"https://www.youtube.com/embed/{video_id}"
             # Validate the constructed URL before returning
             if VideoFormatters.validate_embed_url(embed_url):
                 return embed_url
         return None
-
-    @staticmethod
-    def get_video_thumbnail_url(url: str, site: str) -> str:
-        """Get thumbnail URL for video.
-
-        Args:
-            url: Video URL
-            site: Video site (youtube, vimeo, etc.)
-
-        Returns:
-            Thumbnail URL or original URL if no thumbnail available
-        """
-        if site.lower() == "youtube":
-            video_id = VideoFormatters.extract_youtube_video_id(url)
-            if video_id:
-                return f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
-
-        # For other sites or if extraction fails, return original URL
-        return url
 
     @staticmethod
     def format_videos_list(
@@ -210,8 +191,10 @@ class VideoFormatters:
                             lines.append("Preserve iframe HTML below")
                             iframe_html = (
                                 f'<iframe width="560" height="315" src="{embed_url}" '
-                                f'frameborder="0" allow="accelerometer; autoplay; clipboard-write; '
-                                f'encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
+                                f'title="YouTube video player" frameborder="0" '
+                                f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; '
+                                f'gyroscope; picture-in-picture; web-share" '
+                                f'referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>'
                             )
                             lines.append(iframe_html)
                         else:

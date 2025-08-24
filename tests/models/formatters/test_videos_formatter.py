@@ -50,7 +50,6 @@ class TestVideoFormatters:
         # Check that methods don't require instance
         assert callable(VideoFormatters.extract_youtube_video_id)
         assert callable(VideoFormatters.get_youtube_embed_url)
-        assert callable(VideoFormatters.get_video_thumbnail_url)
         assert callable(VideoFormatters.format_videos_list)
 
     def test_extract_youtube_video_id_standard_format(self):
@@ -132,7 +131,7 @@ class TestVideoFormatters:
         url = "https://youtube.com/watch?v=ZbsiKjVAV28"
         embed_fn = VideoFormatters.get_youtube_embed_url
         embed_url = embed_fn(url)
-        assert embed_url == "https://www.youtube-nocookie.com/embed/ZbsiKjVAV28"
+        assert embed_url == "https://www.youtube.com/embed/ZbsiKjVAV28"
 
     def test_get_youtube_embed_url_invalid(self):
         """Test YouTube embed URL generation with invalid URL."""
@@ -216,22 +215,6 @@ class TestVideoFormatters:
             result = VideoFormatters.validate_embed_url(test_url)
             assert not result, f"Should reject invalid country pattern: {test_url}"
 
-    def test_get_video_thumbnail_url_youtube(self):
-        """Test thumbnail URL generation for YouTube videos."""
-        url = "https://youtube.com/watch?v=ZbsiKjVAV28"
-        thumbnail_fn = VideoFormatters.get_video_thumbnail_url
-        thumbnail_url = thumbnail_fn(url, "youtube")
-        assert (
-            thumbnail_url == "https://img.youtube.com/vi/ZbsiKjVAV28/maxresdefault.jpg"
-        )
-
-    def test_get_video_thumbnail_url_non_youtube(self):
-        """Test thumbnail URL generation for non-YouTube videos."""
-        url = "https://vimeo.com/123456789"
-        thumbnail_fn = VideoFormatters.get_video_thumbnail_url
-        thumbnail_url = thumbnail_fn(url, "vimeo")
-        assert thumbnail_url == url  # Should return original URL
-
     def test_format_videos_list_empty(self):
         """Test video formatting with empty list."""
         videos: list[VideoResponse] = []
@@ -267,9 +250,12 @@ class TestVideoFormatters:
         # Check iframe embed
         assert "Preserve iframe HTML below" in result
         assert "<iframe" in result
-        assert "https://www.youtube-nocookie.com/embed/ZbsiKjVAV28" in result
+        assert "https://www.youtube.com/embed/ZbsiKjVAV28" in result
         assert 'width="560"' in result
         assert 'height="315"' in result
+        assert 'title="YouTube video player"' in result
+        assert "web-share" in result
+        assert 'referrerpolicy="strict-origin-when-cross-origin"' in result
         assert "allowfullscreen" in result
 
         # Check metadata
@@ -441,7 +427,7 @@ class TestVideoFormatters:
         # Should still work and contain the video
         assert "Minimal Video" in result
         assert "<iframe" in result
-        assert "https://www.youtube-nocookie.com/embed/ABC123DEF12" in result
+        assert "https://www.youtube.com/embed/ABC123DEF12" in result
 
     def test_format_videos_list_youtube_extraction_failure(self):
         """Test handling when YouTube video ID extraction fails."""
