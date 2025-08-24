@@ -1,8 +1,8 @@
 pytest==8.4.1
 pytest-asyncio>=0.21.0
 fastmcp>=2.0.0
-pyright>=1.1.403
-ruff>=0.12.09
+pyright>=1.1.404
+ruff>=0.12.10
 pip-audit>=2.9.0
 types-requests>=2.32.0
 types-setuptools>=80.9.0
