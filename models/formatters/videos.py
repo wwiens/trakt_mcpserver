@@ -1,10 +1,16 @@
 """Video formatting methods for the Trakt MCP server."""
 
+from __future__ import annotations
+
 import re
 from datetime import UTC, datetime
 from html import escape
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
+
+from pydantic import ValidationError
+
+from models.videos.video import ValidatedVideo
 
 if TYPE_CHECKING:
     from models.types.api_responses import VideoResponse
@@ -38,6 +44,7 @@ class VideoFormatters:
         """
         if not url:
             return None
+        url = url.strip()
 
         # Use pre-compiled patterns for better performance
         for pattern in _YT_PATTERNS:
@@ -61,6 +68,40 @@ class VideoFormatters:
             "youtube": "YouTube",
         }
         return site_mapping.get(site.lower(), site.title())
+
+    @staticmethod
+    def escape_markdown(text: str) -> str:
+        """Escape Markdown characters to prevent formatting injection.
+
+        Args:
+            text: Text that may contain Markdown characters
+
+        Returns:
+            Text with Markdown characters escaped
+        """
+        # Escape backslash first to avoid double-escaping newly added backslashes
+        replacements = [
+            ("\\", r"\\"),
+            ("`", r"\`"),
+            ("*", r"\*"),
+            ("_", r"\_"),
+            ("{", r"\{"),
+            ("}", r"\}"),
+            ("[", r"\["),
+            ("]", r"\]"),
+            ("(", r"\("),
+            (")", r"\)"),
+            ("#", r"\#"),
+            ("+", r"\+"),
+            ("-", r"\-"),
+            (".", r"\."),
+            ("!", r"\!"),
+            ("|", r"\|"),
+            (">", r"\>"),
+        ]
+        for a, b in replacements:
+            text = text.replace(a, b)
+        return text
 
     @staticmethod
     def parse_iso_datetime(date_string: str | None) -> datetime | None:
@@ -99,6 +140,9 @@ class VideoFormatters:
             parsed = urlparse(url)
             # Only allow https scheme for embed URLs
             if parsed.scheme != "https":
+                return False
+            # Only allow explicit embed paths
+            if not parsed.path.startswith("/embed/"):
                 return False
             # Only allow trusted YouTube embed domains (wildcard-based + country TLDs)
             domain = parsed.netloc.lower()
@@ -140,14 +184,10 @@ class VideoFormatters:
             return None
         try:
             parsed = urlparse(url)
-            # Only allow http and https schemes to prevent javascript:, data:, etc.
-            if parsed.scheme in ("http", "https"):
-                return url
-            # Allow scheme-relative URLs (starting with //)
-            if url.startswith("//") and parsed.netloc:
-                return url
-            # Allow relative URLs (no scheme, starting with /)
-            if url.startswith("/") and not url.startswith("//"):
+            # Only allow absolute http(s) URLs with a host and no whitespace
+            if any(ch.isspace() for ch in url):
+                return None
+            if parsed.scheme in ("http", "https") and parsed.netloc:
                 return url
             return None
         except Exception:
@@ -173,8 +213,49 @@ class VideoFormatters:
         return None
 
     @staticmethod
+    def validate_video_list(videos: list[dict[str, Any]]) -> list[ValidatedVideo]:
+        """Validate a list of video dictionaries using Pydantic models.
+
+        Args:
+            videos: List of video data dictionaries from API responses
+
+        Returns:
+            List of validated video models
+
+        Raises:
+            ValueError: If any video fails validation with details
+        """
+        if not videos:
+            return []
+
+        validated_videos: list[ValidatedVideo] = []
+        validation_errors: list[str] = []
+
+        for i, video in enumerate(videos):
+            try:
+                validated_video = ValidatedVideo.model_validate(video)
+                validated_videos.append(validated_video)
+            except ValidationError as e:
+                error_details: list[str] = []
+                for error in e.errors():
+                    field = ".".join(str(loc) for loc in error["loc"])
+                    message = error["msg"]
+                    error_details.append(f"{field}: {message}")
+                validation_errors.append(f"Video {i}: {'; '.join(error_details)}")
+
+        if validation_errors:
+            raise ValueError(
+                f"Video validation failed: {' | '.join(validation_errors)}"
+            )
+
+        return validated_videos
+
+    @staticmethod
     def format_videos_list(
-        videos: list["VideoResponse"], title: str, embed_markdown: bool = True
+        videos: list[VideoResponse],
+        title: str,
+        embed_markdown: bool = True,
+        validate_input: bool = True,
     ) -> str:
         """Format videos with optional embedded markdown.
 
@@ -182,17 +263,28 @@ class VideoFormatters:
             videos: List of video response data
             title: Title of the movie/show for context
             embed_markdown: Use embedded markdown syntax for videos (default: True)
+            validate_input: Whether to validate input data with Pydantic models (default: True)
 
         Returns:
             Formatted markdown text with videos grouped by type
+
+        Raises:
+            ValueError: If validate_input=True and video data is invalid
         """
+        # Validate inputs if requested (follows project guideline: "Validate all inputs with Pydantic models")
+        if validate_input and videos:
+            try:
+                # Convert VideoResponse TypedDicts to plain dicts for validation
+                video_dicts = [dict(video) for video in videos]
+                VideoFormatters.validate_video_list(video_dicts)
+            except ValueError as e:
+                raise ValueError(f"Invalid video data provided: {e}") from e
         if not videos:
             return f"# Videos for {title}\n\nNo videos available."
 
         lines = [f"# Videos for {title}\n"]
 
-        # Group by type
-        by_type: dict[str, list["VideoResponse"]] = {}  # noqa: UP037
+        by_type: dict[str, list[VideoResponse]] = {}
         for video in videos:
             video_type = video.get("type", "unknown").title()
             by_type.setdefault(video_type, []).append(video)
@@ -201,8 +293,7 @@ class VideoFormatters:
             lines.append(f"## {video_type}s\n")
             type_videos = by_type[video_type]
 
-            # Sort by published date (parse ISO string)
-            def get_published_date(video: "VideoResponse") -> datetime:
+            def get_published_date(video: VideoResponse) -> datetime:
                 parsed_date = VideoFormatters.parse_iso_datetime(
                     video.get("published_at")
                 )
@@ -211,8 +302,8 @@ class VideoFormatters:
             sorted_videos = sorted(type_videos, key=get_published_date, reverse=True)
 
             for video in sorted_videos:
-                # Format video title
-                title_text = video.get("title", "Unknown Video")
+                raw_title = video.get("title", "Unknown Video")
+                title_text = VideoFormatters.escape_markdown(raw_title)
                 lines.append(f"### {title_text}")
 
                 # Format video link
@@ -282,7 +373,8 @@ class VideoFormatters:
                     else:
                         metadata.append("*Date unknown*")
 
-                lines.append(" • ".join(metadata))
+                if metadata:
+                    lines.append(" • ".join(metadata))
                 lines.append("")  # Empty line between videos
 
         return "\n".join(lines)

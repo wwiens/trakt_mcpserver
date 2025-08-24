@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from typing import TYPE_CHECKING, Any, cast
 
 from models.formatters.videos import VideoFormatters
@@ -231,12 +232,188 @@ class TestVideoFormatters:
             result = VideoFormatters.validate_embed_url(test_url)
             assert not result, f"Should reject invalid country pattern: {test_url}"
 
+    def test_validate_embed_url_path_validation(self):
+        """Test embed URL validation requires /embed/ path."""
+        test_cases = [
+            ("https://youtube.com/embed/ZbsiKjVAV28", True),  # Valid embed path
+            (
+                "https://youtube.com/watch?v=ZbsiKjVAV28",
+                False,
+            ),  # Watch path not allowed
+            ("https://youtube.com/v/ZbsiKjVAV28", False),  # Old video path not allowed
+            ("https://youtube.com/user/channel", False),  # User path not allowed
+            ("https://youtube.com/", False),  # Root path not allowed
+        ]
+
+        for test_url, should_be_valid in test_cases:
+            result = VideoFormatters.validate_embed_url(test_url)
+            assert result == should_be_valid, f"Path validation failed for {test_url}"
+
+    def test_extract_youtube_video_id_whitespace_trimming(self):
+        """Test YouTube video ID extraction trims whitespace."""
+        test_cases = [
+            ("  https://youtube.com/watch?v=ZbsiKjVAV28  ", "ZbsiKjVAV28"),
+            ("\nhttps://youtu.be/ZbsiKjVAV28\t", "ZbsiKjVAV28"),
+            (" https://youtube.com/embed/ZbsiKjVAV28\n", "ZbsiKjVAV28"),
+        ]
+
+        for test_url, expected_id in test_cases:
+            result = VideoFormatters.extract_youtube_video_id(test_url)
+            assert result == expected_id, f"Whitespace trimming failed for {test_url}"
+
     def test_format_videos_list_empty(self):
         """Test video formatting with empty list."""
         videos: list[VideoResponse] = []
         result = VideoFormatters.format_videos_list(videos, "Test Movie")
         assert "# Videos for Test Movie" in result
         assert "No videos available." in result
+
+    def test_validate_video_list_valid_data(self):
+        """Test video list validation with valid data."""
+        valid_videos = [
+            {
+                "title": "Official Trailer",
+                "url": "https://youtube.com/watch?v=ABC123",
+                "site": "youtube",
+                "type": "trailer",
+                "size": 1080,
+                "official": True,
+                "published_at": "2023-01-15T10:30:00Z",
+                "country": "US",
+                "language": "en",
+            },
+            {
+                "title": "Behind the Scenes",
+                "url": "https://vimeo.com/123456789",
+                "site": "vimeo",
+                "type": "behind_the_scenes",
+                "size": 720,
+                "official": False,
+                "published_at": "2023-01-16T14:45:00Z",
+                "country": "GB",
+                "language": "en",
+            },
+        ]
+
+        validated = VideoFormatters.validate_video_list(valid_videos)
+        assert len(validated) == 2
+        assert validated[0].title == "Official Trailer"
+        assert validated[1].title == "Behind the Scenes"
+
+    def test_validate_video_list_invalid_data(self):
+        """Test video list validation with invalid data."""
+        invalid_videos = [
+            {
+                "title": "",  # Invalid: empty title
+                "url": "https://youtube.com/watch?v=ABC123",
+                "site": "youtube",
+                "type": "trailer",
+                "size": 1080,
+                "official": True,
+                "published_at": "2023-01-15T10:30:00Z",
+                "country": "US",
+                "language": "en",
+            },
+            {
+                "title": "Valid Title",
+                "url": "not-a-url",  # Invalid: not a proper URL
+                "site": "youtube",
+                "type": "trailer",
+                "size": 1080,
+                "official": True,
+                "published_at": "2023-01-15T10:30:00Z",
+                "country": "US",
+                "language": "en",
+            },
+        ]
+
+        with pytest.raises(ValueError) as exc_info:
+            VideoFormatters.validate_video_list(invalid_videos)
+        
+        error_message = str(exc_info.value)
+        assert "Video validation failed" in error_message
+        assert "Video 0" in error_message  # First video error
+        assert "Video 1" in error_message  # Second video error
+
+    def test_validate_video_list_empty(self):
+        """Test video list validation with empty list."""
+        result = VideoFormatters.validate_video_list([])
+        assert result == []
+
+    def test_format_videos_list_with_validation_enabled(self):
+        """Test formatting with input validation enabled."""
+        videos = [
+            make_video_response(
+                title="Official Trailer",
+                url="https://youtube.com/watch?v=ZbsiKjVAV28",
+                site="youtube",
+                type_="trailer",
+                size=1080,
+                official=True,
+                published_at="2023-01-15T10:30:00Z",
+                country="US",
+                language="en",
+            )
+        ]
+
+        # Should work with validation enabled (default)
+        result = VideoFormatters.format_videos_list(
+            videos, "Test Movie", embed_markdown=False, validate_input=True
+        )
+        assert "# Videos for Test Movie" in result
+        assert "Official Trailer" in result
+
+    def test_format_videos_list_with_validation_disabled(self):
+        """Test formatting with input validation disabled."""
+        videos = [
+            make_video_response(
+                title="Official Trailer",
+                url="https://youtube.com/watch?v=ZbsiKjVAV28",
+                site="youtube",
+                type_="trailer",
+                size=1080,
+                official=True,
+                published_at="2023-01-15T10:30:00Z",
+                country="US",
+                language="en",
+            )
+        ]
+
+        # Should work with validation disabled
+        result = VideoFormatters.format_videos_list(
+            videos, "Test Movie", embed_markdown=False, validate_input=False
+        )
+        assert "# Videos for Test Movie" in result
+        assert "Official Trailer" in result
+
+    def test_format_videos_list_with_invalid_input_and_validation(self):
+        """Test formatting fails with invalid input when validation is enabled."""
+        # Create a video with invalid data that would fail Pydantic validation
+        # but still fits the VideoResponse TypedDict structure
+        invalid_video = cast("VideoResponse", {
+            "title": "",  # Empty title should fail Pydantic validation
+            "url": "https://youtube.com/watch?v=ZbsiKjVAV28",
+            "site": "youtube", 
+            "type": "trailer",
+            "size": 1080,
+            "official": True,
+            "published_at": "2023-01-15T10:30:00Z",
+            "country": "US",
+            "language": "en",
+        })
+
+        # Should fail with validation enabled
+        with pytest.raises(ValueError) as exc_info:
+            VideoFormatters.format_videos_list(
+                [invalid_video], "Test Movie", validate_input=True
+            )
+        assert "Invalid video data provided" in str(exc_info.value)
+
+        # Should work with validation disabled (for backward compatibility)
+        result = VideoFormatters.format_videos_list(
+            [invalid_video], "Test Movie", validate_input=False
+        )
+        assert "# Videos for Test Movie" in result
 
     def test_format_videos_list_with_youtube_embed_true(self):
         """Test video formatting with YouTube video and embed_markdown=True."""
@@ -321,23 +498,35 @@ class TestVideoFormatters:
             )
         ]
         result = VideoFormatters.format_videos_list(
-            videos, "Test Movie", embed_markdown=False
+            videos, "Test Movie", embed_markdown=False, validate_input=False
         )
         assert "javascript:" not in result
         assert "Unsafe Link" in result
         assert "Watch link unavailable" in result
 
     def test_validate_watch_url_safe_schemes(self):
-        """Test validate_watch_url allows safe URL schemes."""
+        """Test validate_watch_url allows only absolute http(s) URLs with hosts."""
         safe_urls = [
             "https://vimeo.com/123456789",
             "http://example.com/video",
-            "//youtube.com/watch?v=ABC123DEF12",  # scheme-relative
-            "/local/path/video",  # relative path
         ]
         for url in safe_urls:
             result = VideoFormatters.validate_watch_url(url)
-            assert result == url, f"Should allow safe URL: {url}"
+            assert result == url, f"Should allow safe absolute URL: {url}"
+
+        # Test URLs that should now be rejected (scheme-relative and relative)
+        rejected_urls = [
+            "//youtube.com/watch?v=ABC123DEF12",  # scheme-relative
+            "/local/path/video",  # relative path
+            "https://example.com/video with spaces",  # whitespace
+            " https://example.com/video",  # leading whitespace
+            "https://example.com/video ",  # trailing whitespace
+            "https://",  # no netloc
+            "http://",  # no netloc
+        ]
+        for url in rejected_urls:
+            result = VideoFormatters.validate_watch_url(url)
+            assert result is None, f"Should reject URL: {url}"
 
     def test_validate_watch_url_unsafe_schemes(self):
         """Test validate_watch_url blocks unsafe URL schemes."""
