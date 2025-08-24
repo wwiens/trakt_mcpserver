@@ -357,7 +357,10 @@ async def test_fetch_movie_videos_with_embeds():
 
         # Verify result content
         assert "# Videos for Test Movie" in result
-        assert "IMPORTANT: Preserve iframe HTML below exactly as provided" in result
+        assert (
+            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            in result
+        )
         assert "<iframe" in result
         assert "https://www.youtube.com/embed/ABC123DEF12" in result
 
@@ -385,7 +388,10 @@ async def test_fetch_movie_videos_without_embeds():
         result = await fetch_movie_videos("test-movie", embed_markdown=False)
 
         # Should not contain iframe or instructional text
-        assert "IMPORTANT: Preserve iframe HTML below exactly as provided" not in result
+        assert (
+            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            not in result
+        )
         assert "<iframe" not in result
         assert "[▶️ Watch on YouTube]" in result
 

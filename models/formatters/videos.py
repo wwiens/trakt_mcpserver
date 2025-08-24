@@ -55,7 +55,7 @@ class VideoFormatters:
         return None
 
     @staticmethod
-    def normalize_site_name(site: str) -> str:
+    def normalize_site_name(site: str | None) -> str:
         """Normalize video site display names for consistent UX.
 
         Args:
@@ -64,13 +64,15 @@ class VideoFormatters:
         Returns:
             Normalized display name
         """
+        # Coerce None to safe default to prevent AttributeError
+        safe_site = site or "unknown"
         site_mapping = {
             "youtube": "YouTube",
         }
-        return site_mapping.get(site.lower(), site.title())
+        return site_mapping.get(safe_site.lower(), safe_site.title())
 
     @staticmethod
-    def normalize_video_type_for_display(video_type: str) -> str:
+    def normalize_video_type_for_display(video_type: str | None) -> str:
         """Normalize video type for display with proper pluralization.
 
         Args:
@@ -79,8 +81,10 @@ class VideoFormatters:
         Returns:
             Clean, properly pluralized display name
         """
+        # Coerce None to safe default to prevent AttributeError
+        safe_type = video_type or "unknown"
         # Clean the type - replace underscores with spaces and normalize case
-        cleaned = video_type.replace("_", " ").strip().lower()
+        cleaned = safe_type.replace("_", " ").strip().lower()
 
         # Mapping for irregular plurals and special cases
         type_mapping = {
@@ -315,17 +319,20 @@ class VideoFormatters:
 
         # Check if any YouTube videos will generate iframes (only when embed_markdown=True)
         will_have_iframes = embed_markdown and any(
-            video.get("site", "").lower() == "youtube"
-            and VideoFormatters.get_youtube_embed_url(video.get("url", "")) is not None
+            (video.get("site") or "").lower() == "youtube"
+            and VideoFormatters.get_youtube_embed_url(video.get("url") or "")
+            is not None
             for video in videos
         )
 
         if will_have_iframes:
-            lines.append("IMPORTANT: Preserve iframe HTML below exactly as provided\n")
+            lines.append(
+                "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response\n"
+            )
 
         by_type: dict[str, list[VideoResponse]] = {}
         for video in videos:
-            video_type = video.get("type", "unknown")
+            video_type = video.get("type") or "unknown"
             by_type.setdefault(video_type, []).append(video)
 
         for video_type in sorted(by_type):
@@ -347,12 +354,12 @@ class VideoFormatters:
                 lines.append(f"### {title_text}")
 
                 # Format video link
-                url = video.get("url", "")
-                site = video.get("site", "unknown")
+                url = video.get("url") or ""
+                site = video.get("site") or "unknown"
 
                 if embed_markdown:
                     # Generate HTML iframe for YouTube videos, fallback to markdown for others
-                    if site.lower() == "youtube":
+                    if (site or "").lower() == "youtube":
                         embed_url = VideoFormatters.get_youtube_embed_url(url)
                         if embed_url:
                             iframe_html = (
@@ -399,10 +406,10 @@ class VideoFormatters:
                     metadata.append(f"{size}p")
 
                 if language := video.get("language"):
-                    metadata.append(language.upper())
+                    metadata.append((language or "").upper())
 
                 if country := video.get("country"):
-                    metadata.append(f"({country.upper()})")
+                    metadata.append(f"({(country or '').upper()})")
 
                 # Format publication date
                 if published_at := video.get("published_at"):

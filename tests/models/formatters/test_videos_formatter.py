@@ -445,7 +445,10 @@ class TestVideoFormatters:
         assert "### Official Trailer" in result
 
         # Check iframe embed
-        assert "IMPORTANT: Preserve iframe HTML below exactly as provided" in result
+        assert (
+            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            in result
+        )
         assert "<iframe" in result
         assert "https://www.youtube.com/embed/ZbsiKjVAV28" in result
         assert 'width="560"' in result
@@ -483,7 +486,10 @@ class TestVideoFormatters:
         )
 
         # Should not contain iframe or instructional text
-        assert "IMPORTANT: Preserve iframe HTML below exactly as provided" not in result
+        assert (
+            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            not in result
+        )
         assert "<iframe" not in result
 
         # Should contain simple link
@@ -567,7 +573,10 @@ class TestVideoFormatters:
         )
 
         # Should not contain iframe for non-YouTube
-        assert "IMPORTANT: Preserve iframe HTML below exactly as provided" not in result
+        assert (
+            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            not in result
+        )
         assert "<iframe" not in result
 
         # Should contain simple link even with embed_markdown=True
@@ -611,7 +620,9 @@ class TestVideoFormatters:
 
         # Check both videos have iframe embeds
         assert (
-            result.count("IMPORTANT: Preserve iframe HTML below exactly as provided")
+            result.count(
+                "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            )
             == 1
         )
         assert result.count("<iframe") == 2
@@ -701,7 +712,10 @@ class TestVideoFormatters:
         )
 
         # Should fallback to simple link, not iframe
-        assert "IMPORTANT: Preserve iframe HTML below exactly as provided" not in result
+        assert (
+            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            not in result
+        )
         assert "<iframe" not in result
         assert "[▶️ Watch on YouTube]" in result
         assert "https://youtube.com/watch?v=INVALID" in result
