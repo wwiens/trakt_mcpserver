@@ -445,7 +445,7 @@ class TestVideoFormatters:
         assert "### Official Trailer" in result
 
         # Check iframe embed
-        assert "Preserve iframe HTML below" in result
+        assert "IMPORTANT: Preserve iframe HTML below exactly as provided" in result
         assert "<iframe" in result
         assert "https://www.youtube.com/embed/ZbsiKjVAV28" in result
         assert 'width="560"' in result
@@ -483,7 +483,7 @@ class TestVideoFormatters:
         )
 
         # Should not contain iframe or instructional text
-        assert "Preserve iframe HTML below" not in result
+        assert "IMPORTANT: Preserve iframe HTML below exactly as provided" not in result
         assert "<iframe" not in result
 
         # Should contain simple link
@@ -567,7 +567,7 @@ class TestVideoFormatters:
         )
 
         # Should not contain iframe for non-YouTube
-        assert "Preserve iframe HTML below" not in result
+        assert "IMPORTANT: Preserve iframe HTML below exactly as provided" not in result
         assert "<iframe" not in result
 
         # Should contain simple link even with embed_markdown=True
@@ -610,7 +610,10 @@ class TestVideoFormatters:
         assert "## Teasers" in result
 
         # Check both videos have iframe embeds
-        assert result.count("Preserve iframe HTML below") == 2
+        assert (
+            result.count("IMPORTANT: Preserve iframe HTML below exactly as provided")
+            == 1
+        )
         assert result.count("<iframe") == 2
 
     def test_format_videos_list_sorting_by_date(self):
@@ -698,7 +701,7 @@ class TestVideoFormatters:
         )
 
         # Should fallback to simple link, not iframe
-        assert "Preserve iframe HTML below" not in result
+        assert "IMPORTANT: Preserve iframe HTML below exactly as provided" not in result
         assert "<iframe" not in result
         assert "[▶️ Watch on YouTube]" in result
         assert "https://youtube.com/watch?v=INVALID" in result

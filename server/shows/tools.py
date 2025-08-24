@@ -320,22 +320,26 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
         try:
             show = await client.get_show(show_id)
 
-            # Handle transitional case where API returns error strings
+            # Transitional case where API may return error strings; don't fail the tool
             if isinstance(show, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
-                    resource_type="show",
-                    resource_id=show_id,
-                    error_message=show,
-                    operation="fetch_show_for_videos",
+                logger.debug(
+                    "Show lookup returned API error; falling back to ID title.",
+                    extra={
+                        "resource_type": "show",
+                        "resource_id": show_id,
+                        "api_error_message": show,
+                        "operation": "fetch_show_for_videos",
+                    },
                 )
-
-            title = show.get("title", f"Show ID: {show_id}")
-        except Exception as e:
-            # Best-effort title lookup - don't fail the whole operation
+                title = f"Show ID: {show_id}"
+            else:
+                title = show.get("title", f"Show ID: {show_id}")
+        except Exception:
+            # Best-effort title lookup — don't fail the operation
             logger.debug(
-                "Non-fatal exception during show title lookup: %s (show_id: %s)",
-                str(e),
-                show_id,
+                "Non-fatal exception during show title lookup; falling back to ID title.",
+                exc_info=True,
+                extra={"resource_id": show_id, "operation": "fetch_show_for_videos"},
             )
             # Use show_id as fallback title if show fetch fails
             title = f"Show ID: {show_id}"
@@ -442,6 +446,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_show_videos_tool(show_id: str, embed_markdown: bool = True) -> str:
+        """MCP tool wrapper for fetch_show_videos."""
         # Validate parameters with Pydantic
         params = ShowVideoParams(show_id=show_id, embed_markdown=embed_markdown)
         return await fetch_show_videos(params.show_id, params.embed_markdown)

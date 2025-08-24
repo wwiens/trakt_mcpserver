@@ -70,6 +70,35 @@ class VideoFormatters:
         return site_mapping.get(site.lower(), site.title())
 
     @staticmethod
+    def normalize_video_type_for_display(video_type: str) -> str:
+        """Normalize video type for display with proper pluralization.
+
+        Args:
+            video_type: Raw video type from API response
+
+        Returns:
+            Clean, properly pluralized display name
+        """
+        # Clean the type - replace underscores with spaces and normalize case
+        cleaned = video_type.replace("_", " ").strip().lower()
+
+        # Mapping for irregular plurals and special cases
+        type_mapping = {
+            "behind the scenes": "Behind the Scenes",
+            "featurette": "Featurettes",
+            "trailer": "Trailers",
+            "teaser": "Teasers",
+            "clip": "Clips",
+            "unknown": "Unknown Videos",
+        }
+
+        if cleaned in type_mapping:
+            return type_mapping[cleaned]
+
+        # Fall back to safe pluralization - title case with 's' appended
+        return cleaned.title() + "s"
+
+    @staticmethod
     def escape_markdown(text: str) -> str:
         """Escape Markdown characters to prevent formatting injection.
 
@@ -284,13 +313,24 @@ class VideoFormatters:
 
         lines = [f"# Videos for {title}\n"]
 
+        # Check if any YouTube videos will generate iframes (only when embed_markdown=True)
+        will_have_iframes = embed_markdown and any(
+            video.get("site", "").lower() == "youtube"
+            and VideoFormatters.get_youtube_embed_url(video.get("url", "")) is not None
+            for video in videos
+        )
+
+        if will_have_iframes:
+            lines.append("IMPORTANT: Preserve iframe HTML below exactly as provided\n")
+
         by_type: dict[str, list[VideoResponse]] = {}
         for video in videos:
-            video_type = video.get("type", "unknown").title()
+            video_type = video.get("type", "unknown")
             by_type.setdefault(video_type, []).append(video)
 
         for video_type in sorted(by_type):
-            lines.append(f"## {video_type}s\n")
+            display_name = VideoFormatters.normalize_video_type_for_display(video_type)
+            lines.append(f"## {display_name}\n")
             type_videos = by_type[video_type]
 
             def get_published_date(video: VideoResponse) -> datetime:
@@ -315,7 +355,6 @@ class VideoFormatters:
                     if site.lower() == "youtube":
                         embed_url = VideoFormatters.get_youtube_embed_url(url)
                         if embed_url:
-                            lines.append("Preserve iframe HTML below")
                             iframe_html = (
                                 f'<iframe width="560" height="315" src="{escape(embed_url, quote=True)}" '
                                 f'title="YouTube video player" frameborder="0" '

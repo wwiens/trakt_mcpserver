@@ -314,6 +314,14 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
     try:
         client: MoviesClient = MoviesClient()  # Use unified client
         videos = await client.get_videos(movie_id)
+        # Transitional safeguard if client returns string errors
+        if isinstance(videos, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="movie_videos",
+                resource_id=movie_id,
+                error_message=videos,
+                operation="fetch_movie_videos",
+            )
 
         # Get movie title for context, fallback to ID if fetch fails
         try:
@@ -335,6 +343,7 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
                 "Non-fatal exception during movie title lookup: %s (movie_id: %s)",
                 str(e),
                 movie_id,
+                exc_info=True,
             )
             # Use movie_id as fallback title if movie fetch fails
             title = f"Movie ID: {movie_id}"
@@ -443,6 +452,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     async def fetch_movie_videos_tool(
         movie_id: str, embed_markdown: bool = True
     ) -> str:
+        """MCP tool wrapper for fetch_movie_videos."""
         # Validate parameters with Pydantic
         params = MovieVideoParams(movie_id=movie_id, embed_markdown=embed_markdown)
         return await fetch_movie_videos(params.movie_id, params.embed_markdown)
