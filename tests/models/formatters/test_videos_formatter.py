@@ -126,6 +126,22 @@ class TestVideoFormatters:
         video_id = extract_fn(None)  # type: ignore[arg-type]
         assert video_id is None
 
+    def test_extract_youtube_video_id_modern_share_urls(self):
+        """Test YouTube video ID extraction from modern share URLs with ?si= parameters."""
+        modern_urls = [
+            "youtu.be/mcvLKldPM08?si=nOWNYgjPFPezp47c",
+            "https://youtu.be/mcvLKldPM08?si=nOWNYgjPFPezp47c",
+            "https://www.youtube.com/embed/mcvLKldPM08?si=nOWNYgjPFPezp47c",
+            "https://youtube.com/shorts/mcvLKldPM08?si=nOWNYgjPFPezp47c",
+            "https://m.youtube.com/watch?v=mcvLKldPM08&si=nOWNYgjPFPezp47c",
+            "youtube.com/watch?t=123&v=mcvLKldPM08&si=test",
+            "https://youtube-nocookie.com/embed/mcvLKldPM08?si=test",
+        ]
+        extract_fn = VideoFormatters.extract_youtube_video_id
+        for url in modern_urls:
+            video_id = extract_fn(url)
+            assert video_id == "mcvLKldPM08", f"Failed to extract from: {url}"
+
     def test_get_youtube_embed_url_valid(self):
         """Test YouTube embed URL generation with valid video ID."""
         url = "https://youtube.com/watch?v=ZbsiKjVAV28"
@@ -292,6 +308,50 @@ class TestVideoFormatters:
         # Should contain simple link
         assert "[▶️ Watch on YouTube]" in result
         assert "https://youtube.com/watch?v=ZbsiKjVAV28" in result
+
+    def test_format_videos_list_rejects_unsafe_link_schemes(self):
+        """Ensure non-embed links do not render unsafe schemes."""
+        videos = [
+            make_video_response(
+                title="Unsafe Link",
+                url="javascript:alert(1)",  # should be rejected
+                site="vimeo",
+                type_="featurette",
+                official=False,
+            )
+        ]
+        result = VideoFormatters.format_videos_list(
+            videos, "Test Movie", embed_markdown=False
+        )
+        assert "javascript:" not in result
+        assert "Unsafe Link" in result
+        assert "Watch link unavailable" in result
+
+    def test_validate_watch_url_safe_schemes(self):
+        """Test validate_watch_url allows safe URL schemes."""
+        safe_urls = [
+            "https://vimeo.com/123456789",
+            "http://example.com/video",
+            "//youtube.com/watch?v=ABC123DEF12",  # scheme-relative
+            "/local/path/video",  # relative path
+        ]
+        for url in safe_urls:
+            result = VideoFormatters.validate_watch_url(url)
+            assert result == url, f"Should allow safe URL: {url}"
+
+    def test_validate_watch_url_unsafe_schemes(self):
+        """Test validate_watch_url blocks unsafe URL schemes."""
+        unsafe_urls = [
+            "javascript:alert(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "ftp://example.com/file",
+            "file:///etc/passwd",
+            "mailto:test@example.com",
+            "",  # empty string
+        ]
+        for url in unsafe_urls:
+            result = VideoFormatters.validate_watch_url(url)
+            assert result is None, f"Should reject unsafe URL: {url}"
 
     def test_format_videos_list_with_non_youtube_video(self):
         """Test video formatting with non-YouTube video."""

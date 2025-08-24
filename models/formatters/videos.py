@@ -1,7 +1,8 @@
 """Video formatting methods for the Trakt MCP server."""
 
 import re
-from datetime import datetime
+from datetime import UTC, datetime
+from html import escape
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -10,12 +11,15 @@ if TYPE_CHECKING:
 
 # Pre-compiled regex patterns for YouTube video ID extraction
 _YT_PATTERNS = [
+    # YouTube domains (youtube.com, youtube-nocookie.com) with all path formats
     re.compile(
-        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([A-Za-z0-9_-]{11})(?:[&\s]|$)"
+        r"(?:https?://)?(?:(?:www|m)\.)?youtube(?:-nocookie)?\.com/"
+        + r"(?:watch\?(?:[^&]*&)*v=|embed/|shorts/)([A-Za-z0-9_-]{11})(?=[?#&/\s]|$)"
     ),
-    re.compile(r"(?:m\.youtube\.com/watch\?v=)([A-Za-z0-9_-]{11})(?:[&\s]|$)"),
-    re.compile(r"youtube\.com/watch\?.*v=([A-Za-z0-9_-]{11})(?:[&\s]|$)"),
-    re.compile(r"youtube(?:-nocookie)?\.com/shorts/([A-Za-z0-9_-]{11})(?:[&\s]|$)"),
+    # youtu.be short URLs
+    re.compile(
+        r"(?:https?://)?(?:(?:www|m)\.)?youtu\.be/([A-Za-z0-9_-]{11})(?=[?#&/\s]|$)"
+    ),
 ]
 
 
@@ -66,12 +70,18 @@ class VideoFormatters:
             date_string: ISO datetime string, possibly with 'Z' timezone
 
         Returns:
-            Parsed datetime or None if parsing fails
+            Timezone-aware datetime in UTC or None if parsing fails
         """
         if not date_string:
             return None
         try:
-            return datetime.fromisoformat(date_string.replace("Z", "+00:00"))
+            # Parse datetime and ensure it's timezone-aware in UTC
+            dt = datetime.fromisoformat(date_string.replace("Z", "+00:00"))
+            # If somehow still naive, assume UTC
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
+            # Convert to UTC if not already
+            return dt.astimezone(UTC)
         except (ValueError, TypeError):
             return None
 
@@ -103,8 +113,6 @@ class VideoFormatters:
                 return True
 
             # Country TLD patterns: youtube.[cc], youtube.com.[cc], youtube.co.[cc]
-            import re
-
             country_patterns = [
                 r"^youtube\.(?!co$)[a-z]{2}$",  # youtube.de, youtube.fr (exclude youtube.co)
                 r"^youtube\.com\.[a-z]{2}$",  # youtube.com.au, youtube.com.mx
@@ -117,6 +125,33 @@ class VideoFormatters:
             return any(re.match(pattern, domain) for pattern in country_patterns)
         except Exception:
             return False
+
+    @staticmethod
+    def validate_watch_url(url: str) -> str | None:
+        """Validate that watch URL uses safe schemes (http/https only).
+
+        Args:
+            url: URL to validate for safety
+
+        Returns:
+            Original URL if safe, None if unsafe or malformed
+        """
+        if not url:
+            return None
+        try:
+            parsed = urlparse(url)
+            # Only allow http and https schemes to prevent javascript:, data:, etc.
+            if parsed.scheme in ("http", "https"):
+                return url
+            # Allow scheme-relative URLs (starting with //)
+            if url.startswith("//") and parsed.netloc:
+                return url
+            # Allow relative URLs (no scheme, starting with /)
+            if url.startswith("/") and not url.startswith("//"):
+                return url
+            return None
+        except Exception:
+            return None
 
     @staticmethod
     def get_youtube_embed_url(url: str) -> str | None:
@@ -162,15 +197,16 @@ class VideoFormatters:
             video_type = video.get("type", "unknown").title()
             by_type.setdefault(video_type, []).append(video)
 
-        for video_type, type_videos in by_type.items():
+        for video_type in sorted(by_type):
             lines.append(f"## {video_type}s\n")
+            type_videos = by_type[video_type]
 
             # Sort by published date (parse ISO string)
             def get_published_date(video: "VideoResponse") -> datetime:
                 parsed_date = VideoFormatters.parse_iso_datetime(
                     video.get("published_at")
                 )
-                return parsed_date or datetime.min
+                return parsed_date or datetime.min.replace(tzinfo=UTC)
 
             sorted_videos = sorted(type_videos, key=get_published_date, reverse=True)
 
@@ -190,7 +226,7 @@ class VideoFormatters:
                         if embed_url:
                             lines.append("Preserve iframe HTML below")
                             iframe_html = (
-                                f'<iframe width="560" height="315" src="{embed_url}" '
+                                f'<iframe width="560" height="315" src="{escape(embed_url, quote=True)}" '
                                 f'title="YouTube video player" frameborder="0" '
                                 f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; '
                                 f'gyroscope; picture-in-picture; web-share" '
@@ -200,15 +236,29 @@ class VideoFormatters:
                         else:
                             # Fallback to markdown link if embed URL extraction fails
                             site_display = VideoFormatters.normalize_site_name(site)
-                            lines.append(f"[▶️ Watch on {site_display}](<{url}>)")
+                            safe_url = VideoFormatters.validate_watch_url(url)
+                            if safe_url:
+                                lines.append(
+                                    f"[▶️ Watch on {site_display}](<{safe_url}>)"
+                                )
+                            else:
+                                lines.append("Watch link unavailable")
                     else:
                         # For non-YouTube videos, use simple markdown link
                         site_display = VideoFormatters.normalize_site_name(site)
-                        lines.append(f"[▶️ Watch on {site_display}](<{url}>)")
+                        safe_url = VideoFormatters.validate_watch_url(url)
+                        if safe_url:
+                            lines.append(f"[▶️ Watch on {site_display}](<{safe_url}>)")
+                        else:
+                            lines.append("Watch link unavailable")
                 else:
                     # Simple text link
                     site_display = VideoFormatters.normalize_site_name(site)
-                    lines.append(f"[▶️ Watch on {site_display}](<{url}>)")
+                    safe_url = VideoFormatters.validate_watch_url(url)
+                    if safe_url:
+                        lines.append(f"[▶️ Watch on {site_display}](<{safe_url}>)")
+                    else:
+                        lines.append("Watch link unavailable")
 
                 # Video metadata
                 metadata: list[str] = []
