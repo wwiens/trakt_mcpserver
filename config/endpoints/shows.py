@@ -9,4 +9,6 @@ SHOWS_ENDPOINTS = {
     "shows_watched": "/shows/watched",
     # Rating endpoints
     "show_ratings": "/shows/:id/ratings",
+    # Video endpoints
+    "show_videos": "/shows/:id/videos",
 }

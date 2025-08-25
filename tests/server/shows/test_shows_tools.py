@@ -17,6 +17,7 @@ from server.shows.tools import (
     fetch_popular_shows,
     fetch_show_ratings,
     fetch_show_summary,
+    fetch_show_videos,
     fetch_trending_shows,
     fetch_watched_shows,
 )
@@ -451,3 +452,127 @@ async def test_fetch_show_summary_basic_string_error():
         ) or "An unexpected error occurred" in str(exc_info.value)
 
         mock_client.get_show.assert_called_once_with("54321")
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_videos_with_embeds():
+    """Test fetching show videos with iframe embeds."""
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        # Mock video data
+        mock_videos = [
+            {
+                "title": "Official Trailer",
+                "url": "https://youtube.com/watch?v=ZbsiKjVAV28",
+                "site": "youtube",
+                "type": "trailer",
+                "size": 1080,
+                "official": True,
+                "published_at": "2025-06-05T00:00:00.000Z",
+                "country": "us",
+                "language": "en",
+            }
+        ]
+
+        mock_show = {"title": "Test Show", "year": 2025}
+
+        mock_client.get_videos = AsyncMock(return_value=mock_videos)
+        mock_client.get_show = AsyncMock(return_value=mock_show)
+
+        result = await fetch_show_videos("test-show", embed_markdown=True)
+
+        # Verify client calls
+        mock_client.get_videos.assert_called_once_with("test-show")
+        mock_client.get_show.assert_called_once_with("test-show")
+
+        # Verify result content
+        assert "# Videos for Test Show" in result
+        assert (
+            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            in result
+        )
+        assert "<iframe" in result
+        assert "https://www.youtube.com/embed/ZbsiKjVAV28" in result
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_videos_without_embeds():
+    """Test fetching show videos without iframe embeds."""
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        mock_videos = [
+            {
+                "title": "Official Trailer",
+                "url": "https://youtube.com/watch?v=ZbsiKjVAV28",
+                "site": "youtube",
+                "type": "trailer",
+            }
+        ]
+
+        mock_show = {"title": "Test Show"}
+
+        mock_client.get_videos = AsyncMock(return_value=mock_videos)
+        mock_client.get_show = AsyncMock(return_value=mock_show)
+
+        result = await fetch_show_videos("test-show", embed_markdown=False)
+
+        # Should not contain iframe or instructional text
+        assert (
+            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            not in result
+        )
+        assert "<iframe" not in result
+        assert "[▶️ Watch on YouTube]" in result
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_videos_show_fetch_failure():
+    """Test show video fetching when show details fetch fails."""
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        mock_videos = [
+            {
+                "title": "Official Trailer",
+                "url": "https://youtube.com/watch?v=ZbsiKjVAV28",
+                "site": "youtube",
+                "type": "trailer",
+            }
+        ]
+
+        mock_client.get_videos = AsyncMock(return_value=mock_videos)
+        mock_client.get_show = AsyncMock(side_effect=InternalError("Show not found"))
+
+        result = await fetch_show_videos("test-show", embed_markdown=True)
+
+        # Should use fallback title
+        assert "Show ID: test-show" in result
+        assert "<iframe" in result  # Videos should still be processed
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_videos_string_error_handling():
+    """Test show video fetching with string error responses."""
+    with patch("server.shows.tools.ShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        mock_videos = [
+            {
+                "title": "Official Trailer",
+                "url": "https://youtube.com/watch?v=ZbsiKjVAV28",
+                "site": "youtube",
+                "type": "trailer",
+            }
+        ]
+
+        mock_client.get_videos = AsyncMock(return_value=mock_videos)
+        mock_client.get_show = AsyncMock(return_value="Show not found")
+
+        # Should handle string error gracefully and use fallback title
+        result = await fetch_show_videos("test-show", embed_markdown=True)
+
+        # Should use fallback title since string error triggers fallback behavior
+        assert "Show ID: test-show" in result
+        assert "<iframe" in result  # Videos should still be processed

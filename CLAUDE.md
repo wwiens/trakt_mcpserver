@@ -10,6 +10,8 @@ This file provides guidance to Claude Code when working with this repository.
 
 **CRITICAL REQUIREMENT**: Every file must have exactly ONE clear purpose. No exceptions.
 
+**BEFORE ADDING FEATURES**: Examine existing code patterns, design style, and architectural conventions to ensure consistency.
+
 ### Current Structure
 
 ```
@@ -108,6 +110,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - Use specific types: `list[str]` not `list`
 - Return type annotations including `None`
 - **CRITICAL: Prefer precise typing**: Use most specific types possible - NEVER use `Any` when concrete types are known
+- **Avoid `cast()`**: Use type guards, unions, or proper design instead of bypassing type checker
 
 ### Code Standards
 - PEP 8 compliance

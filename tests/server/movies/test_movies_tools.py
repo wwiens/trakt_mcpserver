@@ -2,7 +2,7 @@ import asyncio
 import sys
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -12,6 +12,7 @@ from server.comments.tools import fetch_movie_comments
 from server.movies.tools import (
     fetch_movie_ratings,
     fetch_movie_summary,
+    fetch_movie_videos,
     fetch_trending_movies,
 )
 from utils.api.error_types import (
@@ -324,3 +325,91 @@ async def test_fetch_movie_summary_basic_string_error():
         ) or "An unexpected error occurred" in str(exc_info.value)
 
         mock_client.get_movie.assert_called_once_with("12345")
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_videos_with_embeds():
+    """Test fetching movie videos with iframe embeds."""
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        # Mock video data
+        mock_videos = [
+            {
+                "title": "Official Trailer",
+                "url": "https://youtube.com/watch?v=ABC123DEF12",
+                "site": "youtube",
+                "type": "trailer",
+                "size": 1080,
+                "official": True,
+                "published_at": "2025-06-05T00:00:00.000Z",
+                "country": "us",
+                "language": "en",
+            }
+        ]
+
+        mock_movie = {"title": "Test Movie", "year": 2025}
+
+        mock_client.get_videos = AsyncMock(return_value=mock_videos)
+        mock_client.get_movie = AsyncMock(return_value=mock_movie)
+
+        result = await fetch_movie_videos("test-movie", embed_markdown=True)
+
+        # Verify result content
+        assert "# Videos for Test Movie" in result
+        assert (
+            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            in result
+        )
+        assert "<iframe" in result
+        assert "https://www.youtube.com/embed/ABC123DEF12" in result
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_videos_without_embeds():
+    """Test fetching movie videos without iframe embeds."""
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        mock_videos = [
+            {
+                "title": "Official Trailer",
+                "url": "https://youtube.com/watch?v=ABC123DEF12",
+                "site": "youtube",
+                "type": "trailer",
+            }
+        ]
+
+        mock_movie = {"title": "Test Movie"}
+
+        mock_client.get_videos = AsyncMock(return_value=mock_videos)
+        mock_client.get_movie = AsyncMock(return_value=mock_movie)
+
+        result = await fetch_movie_videos("test-movie", embed_markdown=False)
+
+        # Should not contain iframe or instructional text
+        assert (
+            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            not in result
+        )
+        assert "<iframe" not in result
+        assert "[▶️ Watch on YouTube]" in result
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_videos_no_videos():
+    """Test movie video fetching with no videos available."""
+    with patch("server.movies.tools.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        mock_client.get_videos = AsyncMock(return_value=[])  # No videos
+
+        mock_movie = {"title": "Test Movie"}
+
+        mock_client.get_movie = AsyncMock(return_value=mock_movie)
+
+        result = await fetch_movie_videos("test-movie", embed_markdown=True)
+
+        # Should handle empty video list gracefully
+        assert "# Videos for Test Movie" in result
+        assert "No videos available." in result
