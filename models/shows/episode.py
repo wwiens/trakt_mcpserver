@@ -9,5 +9,5 @@ class TraktEpisode(BaseModel):
     season: int
     number: int
     title: str | None = None
-    ids: dict[str, str | int] | None = None
+    ids: dict[str, str | int | None] | None = None
     last_watched_at: str | None = None

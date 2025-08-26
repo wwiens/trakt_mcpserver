@@ -17,6 +17,11 @@ from models.sync.ratings import (
     TraktSyncRatingItem,
     TraktSyncRatingsRequest,
 )
+from models.types.pagination import (
+    PaginatedResponse,
+    PaginationMetadata,
+    PaginationParams,
+)
 from utils.api.error_types import TraktResourceNotFoundError
 
 # Sample API response data based on USER_RATINGS_DOC.MD
@@ -125,23 +130,29 @@ class TestSyncRatingsClient:
     ) -> None:
         """Test successful retrieval of movie ratings."""
         with patch.object(
-            authenticated_client, "_make_typed_list_request"
+            authenticated_client, "_make_paginated_request"
         ) as mock_request:
-            # Mock the response
+            # Mock the paginated response
             mock_ratings = [
                 create_movie_rating("TRON: Legacy", 2010, "1", 10),
                 create_movie_rating("The Dark Knight", 2008, "6", 10),
             ]
-            mock_request.return_value = mock_ratings
+            mock_pagination = PaginationMetadata(
+                current_page=1, items_per_page=10, total_pages=1, total_items=2
+            )
+            mock_paginated_response = PaginatedResponse[TraktSyncRating](
+                data=mock_ratings, pagination=mock_pagination
+            )
+            mock_request.return_value = mock_paginated_response
 
             result = await authenticated_client.get_sync_ratings("movies")
 
-            assert len(result) == 2
-            assert result[0].type == "movie"
-            assert result[0].movie is not None
-            assert result[0].movie.title == "TRON: Legacy"
-            assert result[1].movie is not None
-            assert result[1].movie.title == "The Dark Knight"
+            assert len(result.data) == 2
+            assert result.data[0].type == "movie"
+            assert result.data[0].movie is not None
+            assert result.data[0].movie.title == "TRON: Legacy"
+            assert result.data[1].movie is not None
+            assert result.data[1].movie.title == "The Dark Knight"
 
             # Verify correct endpoint was called
             mock_request.assert_called_once()
@@ -155,34 +166,29 @@ class TestSyncRatingsClient:
     ) -> None:
         """Test retrieval of show ratings with specific rating filter."""
         with patch.object(
-            authenticated_client, "_make_typed_list_request"
+            authenticated_client, "_make_paginated_request"
         ) as mock_request:
             mock_ratings = [create_show_rating("Breaking Bad", 2008, "1", 10)]
-            mock_request.return_value = mock_ratings
+            mock_pagination = PaginationMetadata(
+                current_page=1, items_per_page=10, total_pages=1, total_items=1
+            )
+            mock_paginated_response = PaginatedResponse[TraktSyncRating](
+                data=mock_ratings, pagination=mock_pagination
+            )
+            mock_request.return_value = mock_paginated_response
 
             result = await authenticated_client.get_sync_ratings("shows", rating=10)
 
-            assert len(result) == 1
-            assert result[0].type == "show"
-            assert result[0].rating == 10
-            assert result[0].show is not None
-            assert result[0].show.title == "Breaking Bad"
+            assert len(result.data) == 1
+            assert result.data[0].type == "show"
+            assert result.data[0].rating == 10
+            assert result.data[0].show is not None
+            assert result.data[0].show.title == "Breaking Bad"
 
             # Verify correct endpoint was called with rating filter
             mock_request.assert_called_once()
             args, _ = mock_request.call_args
             assert "/sync/ratings/shows/10" in args[0]
-
-    @pytest.mark.asyncio
-    async def test_get_sync_ratings_unauthenticated(
-        self, unauthenticated_client: SyncRatingsClient
-    ) -> None:
-        """Test that unauthenticated requests raise ValueError."""
-        with pytest.raises(
-            ValueError,
-            match="You must be authenticated to access your personal ratings",
-        ):
-            await unauthenticated_client.get_sync_ratings("movies")
 
     @pytest.mark.asyncio
     async def test_add_sync_ratings_success(
@@ -265,11 +271,11 @@ class TestSyncRatingsClient:
             assert result.removed.episodes == 1
             assert len(result.not_found.movies) == 0
 
-            # Verify DELETE method was used
+            # Verify POST method was used
             mock_request.assert_called_once()
             args, kwargs = mock_request.call_args
-            assert args[0] == "DELETE"
-            assert args[1] == "/sync/ratings"
+            assert args[0] == "POST"
+            assert args[1] == "/sync/ratings/remove"
             assert "data" in kwargs
 
     @pytest.mark.asyncio
@@ -290,7 +296,7 @@ class TestSyncRatingsClient:
     ) -> None:
         """Test error handling in get_sync_ratings."""
         with patch.object(
-            authenticated_client, "_make_typed_list_request"
+            authenticated_client, "_make_paginated_request"
         ) as mock_request:
             # Mock an HTTP error
             mock_request.side_effect = httpx.HTTPStatusError(
@@ -323,9 +329,16 @@ class TestSyncRatingsClient:
     ) -> None:
         """Test correct endpoint URL construction."""
         with patch.object(
-            authenticated_client, "_make_typed_list_request"
+            authenticated_client, "_make_paginated_request"
         ) as mock_request:
-            mock_request.return_value = []
+            # Mock empty paginated response
+            mock_pagination = PaginationMetadata(
+                current_page=1, items_per_page=10, total_pages=1, total_items=0
+            )
+            empty_paginated_response = PaginatedResponse[TraktSyncRating](
+                data=[], pagination=mock_pagination
+            )
+            mock_request.return_value = empty_paginated_response
 
             # Test different endpoint constructions
             await authenticated_client.get_sync_ratings("movies")
@@ -339,6 +352,183 @@ class TestSyncRatingsClient:
             await authenticated_client.get_sync_ratings("episodes", rating=5)
             third_call = mock_request.call_args_list[2]
             assert "/sync/ratings/episodes/5" in third_call[0][0]
+
+    @pytest.mark.asyncio
+    async def test_get_sync_ratings_success(
+        self, authenticated_client: SyncRatingsClient
+    ) -> None:
+        """Test successful retrieval of paginated movie ratings."""
+        with patch.object(
+            authenticated_client, "_make_paginated_request"
+        ) as mock_request:
+            # Mock the paginated response
+            mock_ratings = [
+                create_movie_rating("TRON: Legacy", 2010, "1", 10),
+                create_movie_rating("The Dark Knight", 2008, "6", 10),
+            ]
+            mock_pagination = PaginationMetadata(
+                current_page=1, items_per_page=10, total_pages=3, total_items=25
+            )
+            mock_paginated_response = PaginatedResponse[TraktSyncRating](
+                data=mock_ratings, pagination=mock_pagination
+            )
+            mock_request.return_value = mock_paginated_response
+
+            pagination_params = PaginationParams(page=1, limit=10)
+            result = await authenticated_client.get_sync_ratings(
+                "movies", pagination=pagination_params
+            )
+
+            assert len(result.data) == 2
+            assert result.data[0].type == "movie"
+            assert result.data[0].movie is not None
+            assert result.data[0].movie.title == "TRON: Legacy"
+            assert result.pagination.current_page == 1
+            assert result.pagination.total_pages == 3
+            assert result.pagination.total_items == 25
+
+            # Verify correct endpoint was called with pagination params
+            mock_request.assert_called_once()
+            args, kwargs = mock_request.call_args
+            assert "/sync/ratings/movies" in args[0]
+            assert kwargs["response_type"] == TraktSyncRating
+            assert "params" in kwargs
+            assert kwargs["params"]["page"] == 1
+            assert kwargs["params"]["limit"] == 10
+
+    @pytest.mark.asyncio
+    async def test_get_sync_ratings_with_rating_filter(
+        self, authenticated_client: SyncRatingsClient
+    ) -> None:
+        """Test paginated retrieval with rating filter."""
+        with patch.object(
+            authenticated_client, "_make_paginated_request"
+        ) as mock_request:
+            mock_ratings = [create_show_rating("Breaking Bad", 2008, "1", 10)]
+            mock_pagination = PaginationMetadata(
+                current_page=2, items_per_page=5, total_pages=2, total_items=8
+            )
+            mock_paginated_response = PaginatedResponse[TraktSyncRating](
+                data=mock_ratings, pagination=mock_pagination
+            )
+            mock_request.return_value = mock_paginated_response
+
+            pagination_params = PaginationParams(page=2, limit=5)
+            result = await authenticated_client.get_sync_ratings(
+                "shows", rating=10, pagination=pagination_params
+            )
+
+            assert len(result.data) == 1
+            assert result.data[0].rating == 10
+            assert result.pagination.current_page == 2
+            assert not result.pagination.has_next_page
+            assert result.pagination.has_previous_page
+
+            # Verify correct endpoint was called with rating filter
+            mock_request.assert_called_once()
+            args, _ = mock_request.call_args
+            assert "/sync/ratings/shows/10" in args[0]
+
+    @pytest.mark.asyncio
+    async def test_get_sync_ratings_unauthenticated(
+        self, unauthenticated_client: SyncRatingsClient
+    ) -> None:
+        """Test that unauthenticated paginated requests raise ValueError."""
+        pagination_params = PaginationParams(page=1, limit=10)
+
+        with pytest.raises(
+            ValueError,
+            match="You must be authenticated to access your personal ratings",
+        ):
+            await unauthenticated_client.get_sync_ratings(
+                "movies", pagination=pagination_params
+            )
+
+    @pytest.mark.asyncio
+    async def test_get_sync_ratings_default_params(
+        self, authenticated_client: SyncRatingsClient
+    ) -> None:
+        """Test paginated request with no pagination params uses defaults."""
+        with patch.object(
+            authenticated_client, "_make_paginated_request"
+        ) as mock_request:
+            mock_ratings = [create_movie_rating("Inception", 2010, "12", 9)]
+            mock_pagination = PaginationMetadata(
+                current_page=1, items_per_page=10, total_pages=1, total_items=1
+            )
+            mock_paginated_response = PaginatedResponse[TraktSyncRating](
+                data=mock_ratings, pagination=mock_pagination
+            )
+            mock_request.return_value = mock_paginated_response
+
+            result = await authenticated_client.get_sync_ratings("movies")
+
+            assert len(result.data) == 1
+            assert result.is_single_page
+
+            # Verify request was made with empty params when None is passed
+            mock_request.assert_called_once()
+            _, kwargs = mock_request.call_args
+            assert kwargs["params"] == {}
+
+    @pytest.mark.asyncio
+    async def test_get_sync_ratings_pagination_metadata(
+        self, authenticated_client: SyncRatingsClient
+    ) -> None:
+        """Test pagination metadata properties."""
+        with patch.object(
+            authenticated_client, "_make_paginated_request"
+        ) as mock_request:
+            # Test case with multiple pages
+            mock_ratings = [create_movie_rating("Test Movie", 2020, "999", 8)]
+            mock_pagination = PaginationMetadata(
+                current_page=2, items_per_page=5, total_pages=4, total_items=18
+            )
+            mock_paginated_response = PaginatedResponse[TraktSyncRating](
+                data=mock_ratings, pagination=mock_pagination
+            )
+            mock_request.return_value = mock_paginated_response
+
+            result = await authenticated_client.get_sync_ratings(
+                "movies", pagination=PaginationParams(page=2, limit=5)
+            )
+
+            # Test pagination properties
+            pagination = result.pagination
+            assert pagination.has_previous_page
+            assert pagination.has_next_page
+            assert pagination.previous_page == 1
+            assert pagination.next_page == 3
+            assert not result.is_empty
+            assert not result.is_single_page
+
+            # Test page info summary
+            summary = result.page_info_summary()
+            assert "Page 2 of 4" in summary
+            assert "18" in summary  # total items
+
+    @pytest.mark.asyncio
+    async def test_get_sync_ratings_empty_result(
+        self, authenticated_client: SyncRatingsClient
+    ) -> None:
+        """Test paginated request with empty results."""
+        with patch.object(
+            authenticated_client, "_make_paginated_request"
+        ) as mock_request:
+            mock_pagination = PaginationMetadata(
+                current_page=1, items_per_page=10, total_pages=1, total_items=0
+            )
+            mock_paginated_response = PaginatedResponse[TraktSyncRating](
+                data=[], pagination=mock_pagination
+            )
+            mock_request.return_value = mock_paginated_response
+
+            result = await authenticated_client.get_sync_ratings("movies")
+
+            assert len(result.data) == 0
+            assert result.is_empty
+            assert result.is_single_page
+            assert result.pagination.total_items == 0
 
 
 class TestSyncClient:
@@ -378,11 +568,18 @@ class TestSyncClient:
             # Mock the is_authenticated method to return True
             client.is_authenticated = lambda: True
 
-            with patch.object(client, "_make_typed_list_request") as mock_request:
-                mock_request.return_value = []
+            with patch.object(client, "_make_paginated_request") as mock_request:
+                # Mock empty paginated response
+                mock_pagination = PaginationMetadata(
+                    current_page=1, items_per_page=10, total_pages=1, total_items=0
+                )
+                empty_paginated_response = PaginatedResponse[TraktSyncRating](
+                    data=[], pagination=mock_pagination
+                )
+                mock_request.return_value = empty_paginated_response
 
                 result = await client.get_sync_ratings("movies")
-                assert result == []
+                assert result.data == []
 
                 mock_request.assert_called_once()
 

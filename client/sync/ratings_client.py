@@ -8,6 +8,7 @@ from models.sync.ratings import (
     TraktSyncRating,
     TraktSyncRatingsRequest,
 )
+from models.types.pagination import PaginatedResponse, PaginationParams
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -18,16 +19,20 @@ class SyncRatingsClient(AuthClient):
 
     @handle_api_errors
     async def get_sync_ratings(
-        self, rating_type: str, rating: int | None = None
-    ) -> list[TraktSyncRating]:
-        """Get user's personal ratings from sync API.
+        self,
+        rating_type: str,
+        rating: int | None = None,
+        pagination: PaginationParams | None = None,
+    ) -> PaginatedResponse[TraktSyncRating]:
+        """Get user's personal ratings from sync API with pagination.
 
         Args:
             rating_type: Type of ratings to get (movies, shows, seasons, episodes)
             rating: Optional specific rating to filter by (1-10)
+            pagination: Optional pagination parameters (page, limit)
 
         Returns:
-            List of user's ratings for the specified type
+            Paginated response with user's ratings and pagination metadata
 
         Raises:
             ValueError: If not authenticated
@@ -49,8 +54,13 @@ class SyncRatingsClient(AuthClient):
                 ":type", rating_type
             )
 
-        return await self._make_typed_list_request(
-            endpoint, response_type=TraktSyncRating
+        # Build query parameters with pagination
+        params: dict[str, Any] = {}
+        if pagination:
+            params.update(pagination.model_dump())
+
+        return await self._make_paginated_request(
+            endpoint, response_type=TraktSyncRating, params=params
         )
 
     @handle_api_errors
@@ -101,5 +111,7 @@ class SyncRatingsClient(AuthClient):
 
         # Use POST method for sync ratings removal
         return await self._post_typed_request(
-            SYNC_ENDPOINTS["sync_ratings_remove"], data, response_type=SyncRatingsSummary
+            SYNC_ENDPOINTS["sync_ratings_remove"],
+            data,
+            response_type=SyncRatingsSummary,
         )

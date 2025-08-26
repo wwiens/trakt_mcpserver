@@ -8,7 +8,7 @@ class ShowTestData(TypedDict):
 
     title: str
     year: int
-    ids: dict[str, str]
+    ids: dict[str, str | int | None]
     overview: NotRequired[str | None]
 
 
@@ -17,7 +17,7 @@ class MovieTestData(TypedDict):
 
     title: str
     year: int
-    ids: dict[str, str]
+    ids: dict[str, str | int | None]
     overview: NotRequired[str | None]
 
 
@@ -27,7 +27,7 @@ class EpisodeTestData(TypedDict):
     season: int
     number: int
     title: NotRequired[str | None]
-    ids: NotRequired[dict[str, str] | None]
+    ids: NotRequired[dict[str, str | int | None] | None]
     last_watched_at: NotRequired[str | None]
 
 
@@ -71,7 +71,7 @@ class SyncRatingItemTestData(TypedDict):
     rated_at: NotRequired[str | None]
     title: NotRequired[str | None]
     year: NotRequired[int | None]
-    ids: NotRequired[dict[str, str | int] | None]
+    ids: NotRequired[dict[str, str | int | None] | None]
 
 
 class SyncRatingsSummaryTestData(TypedDict):

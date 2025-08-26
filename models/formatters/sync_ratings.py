@@ -1,6 +1,7 @@
 """Sync ratings formatting methods for the Trakt MCP server."""
 
 from models.sync.ratings import SyncRatingsSummary, TraktSyncRating
+from models.types.pagination import PaginatedResponse
 
 
 class SyncRatingsFormatters:
@@ -8,32 +9,53 @@ class SyncRatingsFormatters:
 
     @staticmethod
     def format_user_ratings(
-        ratings: list[TraktSyncRating],
+        paginated_ratings: PaginatedResponse[TraktSyncRating],
         rating_type: str,
         rating_filter: int | None = None,
     ) -> str:
-        """Format user's personal ratings by type.
+        """Format user's personal ratings with pagination information.
 
         Args:
-            ratings: List of user's sync ratings
+            paginated_ratings: Paginated response with ratings data and pagination metadata
             rating_type: Type of content (movies, shows, seasons, episodes)
             rating_filter: Optional specific rating filter applied
 
         Returns:
-            Formatted markdown text with user's ratings grouped by type
+            Formatted markdown text with user's ratings and pagination information
         """
+        ratings = paginated_ratings.data
+        pagination = paginated_ratings.pagination
+
         # Handle empty state
         if not ratings:
             filter_text = f" with rating {rating_filter}" if rating_filter else ""
-            return (
-                f"# Your {rating_type.title()} Ratings{filter_text}\n\n"
-                f"You haven't rated any {rating_type} yet{filter_text}. "
-                f"Use the `add_user_ratings` tool to add ratings for your {rating_type}."
+            result = f"# Your {rating_type.title()} Ratings{filter_text}\n\n"
+            result += f"You haven't rated any {rating_type} yet{filter_text}. "
+            result += f"Use the `add_user_ratings` tool to add ratings for your {rating_type}.\n\n"
+
+            # Show pagination info even for empty results
+            result += (
+                f"📄 **Pagination Info:** {paginated_ratings.page_info_summary()}\n"
             )
+            return result
 
         filter_text = f" (filtered to rating {rating_filter})" if rating_filter else ""
         result = f"# Your {rating_type.title()} Ratings{filter_text}\n\n"
-        result += f"Found {len(ratings)} rated {rating_type}:\n\n"
+
+        # Show pagination summary at the top
+        result += f"📄 **{paginated_ratings.page_info_summary()}**\n\n"
+
+        # Show page navigation hints
+        navigation_hints: list[str] = []
+        if pagination.has_previous_page:
+            navigation_hints.append(f"Previous: page {pagination.previous_page}")
+        if pagination.has_next_page:
+            navigation_hints.append(f"Next: page {pagination.next_page}")
+
+        if navigation_hints:
+            result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+        result += f"Found {len(ratings)} rated {rating_type} on this page:\n\n"
 
         # Group ratings by rating value for better organization
         ratings_by_score: dict[int, list[TraktSyncRating]] = {}

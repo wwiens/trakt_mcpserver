@@ -13,7 +13,7 @@ class TraktSeason(BaseModel):
     """Represents a Trakt season for ratings."""
 
     number: int
-    ids: dict[str, str | int] | None = None
+    ids: dict[str, str | int | None] | None = None
 
 
 class TraktSyncRating(BaseModel):
@@ -40,7 +40,7 @@ class TraktSyncRatingItem(BaseModel):
     rated_at: str | None = Field(default=None, description="ISO timestamp when rated")
     title: str | None = None
     year: int | None = None
-    ids: dict[str, str | int] | None = None
+    ids: dict[str, str | int | None] | None = None
     # For episodes within shows
     seasons: list["TraktSyncSeasonRating"] | None = None
 

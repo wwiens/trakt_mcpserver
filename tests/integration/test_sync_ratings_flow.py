@@ -266,12 +266,12 @@ async def test_remove_user_ratings_integration() -> None:
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
 
-        # Mock for remove ratings DELETE request
+        # Mock for remove ratings POST request
         remove_mock = MagicMock()
         remove_mock.json.return_value = SAMPLE_REMOVE_RATINGS_RESPONSE
         remove_mock.raise_for_status = MagicMock()
 
-        mock_instance.request.return_value = remove_mock
+        mock_instance.post.return_value = remove_mock
 
         sync_client = SyncClient()
         sync_client.auth_token = TraktAuthToken(
@@ -298,11 +298,10 @@ async def test_remove_user_ratings_integration() -> None:
             assert "Shows: 1" in result
             assert "Episodes: 1" in result
 
-            # Verify the DELETE request was made correctly
-            mock_instance.request.assert_called()
-            call_args = mock_instance.request.call_args
-            assert call_args[1]["method"] == "DELETE"  # HTTP method
-            assert "/sync/ratings" in call_args[1]["url"]  # endpoint
+            # Verify the POST request was made correctly
+            mock_instance.post.assert_called()
+            call_args = mock_instance.post.call_args
+            assert "/sync/ratings/remove" in call_args[0][0]  # endpoint
             assert "json" in call_args[1]  # request data
 
 
@@ -562,3 +561,400 @@ async def test_rating_grouping_integration() -> None:
             pos_10 = result.find("## Rating 10/10")
             pos_8 = result.find("## Rating 8/10")
             assert pos_10 < pos_8  # 10/10 should come before 8/10
+
+
+# Pagination integration tests
+@pytest.mark.asyncio
+async def test_fetch_user_ratings_paginated_integration() -> None:
+    """Test complete flow for paginated user ratings fetching."""
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        # Configure the mock HTTP client
+        mock_instance = mock_client.return_value.__aenter__.return_value
+
+        # Mock paginated response - first page of results
+        ratings_mock = MagicMock()
+        ratings_mock.json.return_value = SAMPLE_USER_RATINGS_RESPONSE[
+            :2
+        ]  # First 2 items
+        ratings_mock.raise_for_status = MagicMock()
+        # Mock pagination headers
+        ratings_mock.headers = {
+            "X-Pagination-Page": "1",
+            "X-Pagination-Limit": "2",
+            "X-Pagination-Page-Count": "2",
+            "X-Pagination-Item-Count": "3",
+        }
+
+        mock_instance.get.return_value = ratings_mock
+
+        # Create authenticated sync client
+        sync_client = SyncClient()
+        sync_client.auth_token = TraktAuthToken(
+            access_token="test_access_token",
+            refresh_token="test_refresh_token",
+            expires_in=7200,
+            created_at=int(time.time()),
+            scope="public",
+            token_type="bearer",
+        )
+
+        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+            from server.sync.tools import fetch_user_ratings
+
+            # Test fetching page 1 of movies
+            result = await fetch_user_ratings(rating_type="movies", page=1)
+
+            # Verify paginated response format
+            assert "# Your Movies Ratings" in result
+            assert "📄 **Page 1 of 2" in result
+            assert "items 1-2 of 3" in result  # 2 items on this page
+            assert "📍 **Navigation:** Next: page 2" in result
+            assert "Found 2 rated movies on this page" in result
+            assert "TRON: Legacy (2010)" in result
+
+            # Verify the HTTP request was made correctly with page parameter
+            mock_instance.get.assert_called()
+            call_args = mock_instance.get.call_args
+            call_kwargs = call_args[1]
+            assert "params" in call_kwargs
+            assert call_kwargs["params"]["page"] == 1
+            assert (
+                call_kwargs["params"]["limit"] == 100
+            )  # pagination limit when page specified
+            assert "/sync/ratings/movies" in call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_fetch_user_ratings_paginated_last_page_integration() -> None:
+    """Test paginated user ratings on the last page (no next page navigation)."""
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = mock_client.return_value.__aenter__.return_value
+
+        # Mock last page response
+        ratings_mock = MagicMock()
+        ratings_mock.json.return_value = SAMPLE_USER_RATINGS_RESPONSE[2:]  # Last item
+        ratings_mock.raise_for_status = MagicMock()
+        # Mock pagination headers for last page
+        ratings_mock.headers = {
+            "X-Pagination-Page": "2",
+            "X-Pagination-Limit": "2",
+            "X-Pagination-Page-Count": "2",
+            "X-Pagination-Item-Count": "3",
+        }
+
+        mock_instance.get.return_value = ratings_mock
+
+        sync_client = SyncClient()
+        sync_client.auth_token = TraktAuthToken(
+            access_token="test_access_token",
+            refresh_token="test_refresh_token",
+            expires_in=7200,
+            created_at=int(time.time()),
+            scope="public",
+            token_type="bearer",
+        )
+
+        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+            from server.sync.tools import fetch_user_ratings
+
+            result = await fetch_user_ratings(rating_type="episodes", page=2)
+
+            # Verify last page pagination formatting
+            assert "# Your Episodes Ratings" in result
+            assert "📄 **Page 2 of 2" in result
+            assert "📍 **Navigation:** Previous: page 1" in result
+            # Should NOT have "Next: page" text
+            assert "Next: page" not in result
+            assert "Found 1 rated episodes on this page" in result
+
+            # Verify page parameter was sent correctly
+            call_args = mock_instance.get.call_args
+            assert call_args[1]["params"]["page"] == 2
+
+
+@pytest.mark.asyncio
+async def test_fetch_user_ratings_paginated_with_rating_filter_integration() -> None:
+    """Test paginated user ratings with rating filter through complete stack."""
+
+    # Filter response to only rating=10 content
+    high_rated_response = [r for r in SAMPLE_USER_RATINGS_RESPONSE if r["rating"] == 10]
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = mock_client.return_value.__aenter__.return_value
+
+        ratings_mock = MagicMock()
+        ratings_mock.json.return_value = high_rated_response
+        ratings_mock.raise_for_status = MagicMock()
+        # Mock pagination headers for filtered results
+        ratings_mock.headers = {
+            "X-Pagination-Page": "1",
+            "X-Pagination-Limit": "10",
+            "X-Pagination-Page-Count": "1",
+            "X-Pagination-Item-Count": "1",
+        }
+
+        mock_instance.get.return_value = ratings_mock
+
+        sync_client = SyncClient()
+        sync_client.auth_token = TraktAuthToken(
+            access_token="test_access_token",
+            refresh_token="test_refresh_token",
+            expires_in=7200,
+            created_at=int(time.time()),
+            scope="public",
+            token_type="bearer",
+        )
+
+        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+            from server.sync.tools import fetch_user_ratings
+
+            result = await fetch_user_ratings(rating_type="movies", rating=10, page=1)
+
+            # Verify paginated response with rating filter
+            assert "# Your Movies Ratings (filtered to rating 10)" in result
+            assert "📄 **1 total items" in result  # Single page format
+            assert "TRON: Legacy (2010)" in result
+            assert "Breaking Bad" not in result  # Should not appear (rating 8)
+
+            # Verify API endpoint includes rating filter
+            call_args = mock_instance.get.call_args
+            assert "/sync/ratings/movies/10" in call_args[0][0]
+            assert call_args[1]["params"]["page"] == 1
+
+
+@pytest.mark.asyncio
+async def test_fetch_user_ratings_paginated_empty_result_integration() -> None:
+    """Test paginated user ratings with empty results through complete stack."""
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = mock_client.return_value.__aenter__.return_value
+
+        # Mock empty paginated response
+        empty_mock = MagicMock()
+        empty_mock.json.return_value = []
+        empty_mock.raise_for_status = MagicMock()
+        # Mock pagination headers for empty results
+        empty_mock.headers = {
+            "X-Pagination-Page": "1",
+            "X-Pagination-Limit": "10",
+            "X-Pagination-Page-Count": "1",
+            "X-Pagination-Item-Count": "0",
+        }
+
+        mock_instance.get.return_value = empty_mock
+
+        sync_client = SyncClient()
+        sync_client.auth_token = TraktAuthToken(
+            access_token="test_access_token",
+            refresh_token="test_refresh_token",
+            expires_in=7200,
+            created_at=int(time.time()),
+            scope="public",
+            token_type="bearer",
+        )
+
+        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+            from server.sync.tools import fetch_user_ratings
+
+            result = await fetch_user_ratings(rating_type="seasons", page=1)
+
+            # Verify empty paginated state handling
+            assert "# Your Seasons Ratings" in result
+            assert "You haven't rated any seasons yet" in result
+            assert "📄 **Pagination Info:** 0 total items" in result
+
+            # Verify page parameter was sent
+            call_args = mock_instance.get.call_args
+            assert call_args[1]["params"]["page"] == 1
+
+
+@pytest.mark.asyncio
+async def test_fetch_user_ratings_backward_compatibility_integration() -> None:
+    """Test that non-paginated requests still work alongside paginated ones."""
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = mock_client.return_value.__aenter__.return_value
+
+        # Mock non-paginated response (no pagination headers)
+        ratings_mock = MagicMock()
+        ratings_mock.json.return_value = SAMPLE_USER_RATINGS_RESPONSE
+        ratings_mock.raise_for_status = MagicMock()
+
+        mock_instance.get.return_value = ratings_mock
+
+        sync_client = SyncClient()
+        sync_client.auth_token = TraktAuthToken(
+            access_token="test_access_token",
+            refresh_token="test_refresh_token",
+            expires_in=7200,
+            created_at=int(time.time()),
+            scope="public",
+            token_type="bearer",
+        )
+
+        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+            from server.sync.tools import fetch_user_ratings
+
+            # Test without page parameter (non-paginated request)
+            result = await fetch_user_ratings(rating_type="movies")
+
+            # Verify response format (pagination info is always present in response structure)
+            assert "# Your Movies Ratings" in result
+            assert "Found 3 rated movies on this page" in result
+            assert "TRON: Legacy (2010)" in result
+            # Response will contain pagination metadata (with default values when no headers present)
+            assert "📄" in result
+
+            # Verify NO pagination parameters were sent (following "Pagination Optional" pattern)
+            call_args = mock_instance.get.call_args
+            call_kwargs = call_args[1]
+            assert "params" not in call_kwargs or not call_kwargs["params"]
+
+
+@pytest.mark.asyncio
+async def test_fetch_user_ratings_pagination_error_handling_integration() -> None:
+    """Test pagination error handling through complete stack."""
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = mock_client.return_value.__aenter__.return_value
+
+        # Mock HTTP error during paginated request
+        mock_instance.get.side_effect = Exception("Pagination API error")
+
+        sync_client = SyncClient()
+        sync_client.auth_token = TraktAuthToken(
+            access_token="test_access_token",
+            refresh_token="test_refresh_token",
+            expires_in=7200,
+            created_at=int(time.time()),
+            scope="public",
+            token_type="bearer",
+        )
+
+        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+            from server.sync.tools import fetch_user_ratings
+            from utils.api.errors import InternalError
+
+            # Should handle pagination errors gracefully
+            with pytest.raises(InternalError) as exc_info:
+                await fetch_user_ratings(rating_type="movies", page=1)
+
+            assert "unexpected error occurred" in str(exc_info.value).lower()
+
+            # Verify page parameter was attempted
+            call_args = mock_instance.get.call_args
+            assert call_args[1]["params"]["page"] == 1
+
+
+@pytest.mark.asyncio
+async def test_fetch_user_ratings_pagination_authentication_flow_integration() -> None:
+    """Test that paginated requests require authentication just like regular requests."""
+
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+    ):
+        # Create unauthenticated sync client
+        sync_client = SyncClient()
+        sync_client.is_authenticated = lambda: False
+
+        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+            from server.sync.tools import fetch_user_ratings
+
+            # Paginated request should also require authentication
+            with pytest.raises(
+                ValueError,
+                match="You must be authenticated to access your personal ratings",
+            ):
+                await fetch_user_ratings(rating_type="movies", page=1)
+
+
+@pytest.mark.asyncio
+async def test_fetch_user_ratings_pagination_headers_extraction_integration() -> None:
+    """Test that pagination headers are correctly extracted and processed."""
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = mock_client.return_value.__aenter__.return_value
+
+        # Mock response with specific pagination headers
+        ratings_mock = MagicMock()
+        ratings_mock.json.return_value = SAMPLE_USER_RATINGS_RESPONSE[:1]
+        ratings_mock.raise_for_status = MagicMock()
+        # Mock specific pagination header values for testing
+        ratings_mock.headers = {
+            "X-Pagination-Page": "3",
+            "X-Pagination-Limit": "5",
+            "X-Pagination-Page-Count": "10",
+            "X-Pagination-Item-Count": "47",
+        }
+
+        mock_instance.get.return_value = ratings_mock
+
+        sync_client = SyncClient()
+        sync_client.auth_token = TraktAuthToken(
+            access_token="test_access_token",
+            refresh_token="test_refresh_token",
+            expires_in=7200,
+            created_at=int(time.time()),
+            scope="public",
+            token_type="bearer",
+        )
+
+        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+            from server.sync.tools import fetch_user_ratings
+
+            result = await fetch_user_ratings(rating_type="shows", page=3)
+
+            # Verify pagination metadata is correctly extracted and formatted
+            assert "📄 **Page 3 of 10" in result
+            assert "items 11-11 of 47" in result  # Calculated based on page 3, limit 5
+            assert "📍 **Navigation:** Previous: page 2 | Next: page 4" in result
+            assert "Found 1 rated shows on this page" in result
+
+            # Verify correct API call
+            call_args = mock_instance.get.call_args
+            assert call_args[1]["params"]["page"] == 3

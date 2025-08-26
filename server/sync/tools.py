@@ -16,6 +16,7 @@ from models.sync.ratings import (
     TraktSyncRatingItem,
     TraktSyncRatingsRequest,
 )
+from models.types.pagination import PaginatedResponse, PaginationParams
 from server.base import BaseToolErrorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
@@ -33,10 +34,20 @@ class UserRatingsParams(BaseModel):
     rating: int | None = Field(
         default=None, ge=1, le=10, description="Optional specific rating to filter by"
     )
+    page: int | None = Field(
+        default=None, ge=1, description="Optional page number for pagination (1-based)"
+    )
 
     @field_validator("rating", mode="before")
     @classmethod
     def _validate_rating(cls, v: object) -> object:
+        if v is None or v == "":
+            return None
+        return v
+
+    @field_validator("page", mode="before")
+    @classmethod
+    def _validate_page(cls, v: object) -> object:
         if v is None or v == "":
             return None
         return v
@@ -71,39 +82,50 @@ class UserRatingRequest(BaseModel):
 async def fetch_user_ratings(
     rating_type: Literal["movies", "shows", "seasons", "episodes"] = "movies",
     rating: int | None = None,
+    page: int | None = None,
 ) -> str:
     """Fetch authenticated user's personal ratings from Trakt.
 
     Args:
         rating_type: Type of ratings to fetch (movies, shows, seasons, episodes)
         rating: Optional specific rating to filter by (1-10)
+        page: Optional page number for pagination (1-based)
 
     Returns:
-        User's personal ratings formatted as markdown
+        User's personal ratings formatted as markdown (with pagination info if paginated)
 
     Raises:
         AuthenticationRequiredError: If user is not authenticated
     """
     # Validate parameters with Pydantic
-    params = UserRatingsParams(rating_type=rating_type, rating=rating)
-    rating_type, rating = params.rating_type, params.rating
+    params = UserRatingsParams(rating_type=rating_type, rating=rating, page=page)
+    rating_type, rating, page = params.rating_type, params.rating, params.page
 
     try:
         client = SyncClient()
-        ratings: list[TraktSyncRating] = await client.get_sync_ratings(
-            rating_type, rating
+
+        # Use pagination only if page parameter is provided, otherwise get all items
+        pagination_params = (
+            PaginationParams(page=page, limit=100) if page is not None else None
+        )
+        paginated_result: PaginatedResponse[
+            TraktSyncRating
+        ] = await client.get_sync_ratings(
+            rating_type, rating, pagination=pagination_params
         )
 
         # Handle transitional case where API returns error strings
-        if isinstance(ratings, str):
+        if isinstance(paginated_result, str):
             raise BaseToolErrorMixin.handle_api_string_error(
                 resource_type=f"user_{rating_type}_ratings",
                 resource_id=f"user_ratings_{rating_type}",
-                error_message=ratings,
+                error_message=paginated_result,
                 operation="fetch_user_ratings",
             )
 
-        return SyncRatingsFormatters.format_user_ratings(ratings, rating_type, rating)
+        return SyncRatingsFormatters.format_user_ratings(
+            paginated_result, rating_type, rating
+        )
     except MCPError:
         raise
 
@@ -144,7 +166,9 @@ async def add_user_ratings(
             if item.imdb_id:
                 ids["imdb"] = item.imdb_id
             if item.tmdb_id:
-                ids["tmdb"] = int(item.tmdb_id) if item.tmdb_id.isdigit() else item.tmdb_id
+                ids["tmdb"] = (
+                    int(item.tmdb_id) if item.tmdb_id.isdigit() else item.tmdb_id
+                )
 
             # Create sync rating item
             sync_item_data: dict[str, Any] = {
@@ -225,7 +249,9 @@ async def remove_user_ratings(
             if item.imdb_id:
                 ids["imdb"] = item.imdb_id
             if item.tmdb_id:
-                ids["tmdb"] = int(item.tmdb_id) if item.tmdb_id.isdigit() else item.tmdb_id
+                ids["tmdb"] = (
+                    int(item.tmdb_id) if item.tmdb_id.isdigit() else item.tmdb_id
+                )
 
             # Create sync rating item (no rating for removal)
             sync_item_data: dict[str, Any] = {"ids": ids}
@@ -269,16 +295,17 @@ def register_sync_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler, ToolHan
 
     @mcp.tool(
         name=SYNC_TOOLS["fetch_user_ratings"],
-        description="Fetch the authenticated user's personal ratings from Trakt. Requires OAuth authentication.",
+        description="Fetch the authenticated user's personal ratings from Trakt. Supports optional pagination with 'page' parameter. Requires OAuth authentication.",
     )
     @handle_api_errors_func
     async def fetch_user_ratings_tool(
         rating_type: Literal["movies", "shows", "seasons", "episodes"] = "movies",
         rating: int | None = None,
+        page: int | None = None,
     ) -> str:
         # Validate parameters with Pydantic
-        params = UserRatingsParams(rating_type=rating_type, rating=rating)
-        return await fetch_user_ratings(params.rating_type, params.rating)
+        params = UserRatingsParams(rating_type=rating_type, rating=rating, page=page)
+        return await fetch_user_ratings(params.rating_type, params.rating, params.page)
 
     @mcp.tool(
         name=SYNC_TOOLS["add_user_ratings"],
