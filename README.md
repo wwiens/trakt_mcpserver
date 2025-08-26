@@ -82,6 +82,7 @@ This multi-tool approach demonstrates:
   - Include custom messages with your check-ins
   - See when you watched the episode in human-readable format
 - **Search for shows** to find their details and IDs
+- **Manage your ratings**: View, add, and remove personal ratings for movies, shows, seasons, and episodes with pagination support
 - Secure authentication with Trakt through device code flow
 - Personal data is fetched directly from your Trakt account
 
@@ -232,6 +233,15 @@ fetch_user_watched_shows(limit=0)  # 0 for all shows
 
 # Fetch movies watched by the authenticated user
 fetch_user_watched_movies(limit=0)  # 0 for all movies
+
+# Fetch user's personal ratings with pagination support
+fetch_user_ratings(rating_type="movies", rating=10, page=1)
+
+# Add new ratings for movies, shows, seasons, or episodes
+add_user_ratings(rating_type="movies", items=[{"trakt_id": "314", "rating": 9}])
+
+# Remove existing ratings by ID
+remove_user_ratings(rating_type="movies", items=[{"trakt_id": "314"}])
 ```
 
 ### Check-in Tools
@@ -383,6 +393,8 @@ Once installed, you can ask Claude questions like:
 - "What was the last show I watched?" (requires authentication)
 - "Show me the movies I've watched" (requires authentication)
 - "What was the last movie I watched?" (requires authentication)
+- "Show me my 10/10 rated movies" (requires authentication)
+- "Add a 9/10 rating for Breaking Bad" (requires authentication)
 - "Search for shows like 'Breaking Bad'"
 - "Check me in to Season 2 Episode 5 of Breaking Bad" (uses title)
 - "Check me in to Season 1 Episode 3 of show ID 1388 and share it on Twitter" (uses ID)
