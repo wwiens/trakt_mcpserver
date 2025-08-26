@@ -6,6 +6,7 @@ from .comments import COMMENT_TOOLS
 from .movies import MOVIE_TOOLS
 from .search import SEARCH_TOOLS
 from .shows import SHOW_TOOLS
+from .sync import SYNC_TOOLS
 from .user import USER_TOOLS
 
 # Combine all tools for backward compatibility
@@ -17,6 +18,7 @@ TOOL_NAMES = {
     **CHECKIN_TOOLS,
     **COMMENT_TOOLS,
     **SEARCH_TOOLS,
+    **SYNC_TOOLS,
 }
 
 __all__ = [
@@ -26,6 +28,7 @@ __all__ = [
     "MOVIE_TOOLS",
     "SEARCH_TOOLS",
     "SHOW_TOOLS",
+    "SYNC_TOOLS",
     "TOOL_NAMES",
     "USER_TOOLS",
 ]

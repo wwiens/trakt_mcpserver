@@ -1,6 +1,6 @@
 """TypedDict definitions for test data to ensure type safety in model tests."""
 
-from typing import NotRequired, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 
 class ShowTestData(TypedDict):
@@ -48,8 +48,38 @@ class AuthTokenTestData(TypedDict):
     refresh_token: str
     expires_in: int
     created_at: int
-    scope: NotRequired[str]
-    token_type: NotRequired[str]
+    scope: str
+    token_type: str
+
+
+class SyncRatingTestData(TypedDict):
+    """Type definition for sync rating test data."""
+
+    rated_at: str
+    rating: int
+    type: Literal["movie", "show", "season", "episode"]
+    movie: NotRequired[dict[str, str | int | dict[str, str]] | None]
+    show: NotRequired[dict[str, str | int | dict[str, str]] | None]
+    season: NotRequired[dict[str, str | int | dict[str, str]] | None]
+    episode: NotRequired[dict[str, str | int | dict[str, str]] | None]
+
+
+class SyncRatingItemTestData(TypedDict):
+    """Type definition for sync rating item test data."""
+
+    rating: NotRequired[int | None]
+    rated_at: NotRequired[str | None]
+    title: NotRequired[str | None]
+    year: NotRequired[int | None]
+    ids: NotRequired[dict[str, str | int] | None]
+
+
+class SyncRatingsSummaryTestData(TypedDict):
+    """Type definition for sync ratings summary test data."""
+
+    added: NotRequired[dict[str, int] | None]
+    removed: NotRequired[dict[str, int] | None]
+    not_found: dict[str, list[dict[str, str | int | dict[str, str | int]]]]
 
 
 class TrendingShowTestData(TypedDict):

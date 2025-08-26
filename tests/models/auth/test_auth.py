@@ -114,6 +114,8 @@ class TestTraktAuthToken:
             "refresh_token": "refresh123abc456",
             "expires_in": 7776000,  # 90 days
             "created_at": 1677123456,
+            "scope": "public",
+            "token_type": "bearer",
         }
 
         auth_token = TraktAuthToken(**token_data)
@@ -203,6 +205,8 @@ class TestTraktAuthToken:
             "refresh_token": "refresh123abc456",
             "expires_in": 7776000,
             "created_at": 1677123456,
+            "scope": "public",
+            "token_type": "bearer",
         }
 
         auth_token = TraktAuthToken(**token_data)
@@ -278,6 +282,8 @@ class TestTraktAuthToken:
             "refresh_token": "minimal_refresh",
             "expires_in": 3600,
             "created_at": 1677123456,
+            "scope": "public",
+            "token_type": "bearer",
         }
 
         auth_token = TraktAuthToken(**minimal_data)

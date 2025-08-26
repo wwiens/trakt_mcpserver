@@ -12,6 +12,7 @@ from .movies import register_movie_resources, register_movie_tools
 from .prompts.basic import register_basic_prompts
 from .search import register_search_tools
 from .shows import register_show_resources, register_show_tools
+from .sync import register_sync_tools
 from .user import register_user_resources, register_user_tools
 
 # Set up logging
@@ -47,6 +48,7 @@ def create_server() -> FastMCP:
 
     _ = register_search_tools(mcp)
     _ = register_checkin_tools(mcp)
+    _ = register_sync_tools(mcp)
 
     # Register prompts and capture handlers for type checker
     _ = register_basic_prompts(mcp)
