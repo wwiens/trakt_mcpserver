@@ -1,6 +1,6 @@
 """Sync ratings functionality for Trakt."""
 
-from typing import Any
+from typing import Any, Literal
 
 from config.endpoints.sync import SYNC_ENDPOINTS
 from models.sync.ratings import (
@@ -20,7 +20,7 @@ class SyncRatingsClient(AuthClient):
     @handle_api_errors
     async def get_sync_ratings(
         self,
-        rating_type: str,
+        rating_type: Literal["movies", "shows", "seasons", "episodes"],
         rating: int | None = None,
         pagination: PaginationParams | None = None,
     ) -> PaginatedResponse[TraktSyncRating]:

@@ -1,6 +1,7 @@
 """Tests for the client.sync.ratings_client module."""
 
 import os
+from datetime import datetime
 from unittest.mock import patch
 
 import httpx
@@ -259,9 +260,22 @@ class TestSyncRatingsClient:
         ]
         request = TraktSyncRatingsRequest(movies=movies)
 
-        with patch.object(authenticated_client, "_make_request") as mock_request:
-            # Mock the response
-            mock_request.return_value = SAMPLE_REMOVE_RATINGS_RESPONSE
+        with patch.object(authenticated_client, "_post_typed_request") as mock_request:
+            # Mock the response with proper Pydantic object
+            from models.sync.ratings import SyncRatingsNotFound, SyncRatingsSummaryCount
+
+            mock_summary = SyncRatingsSummary(
+                removed=SyncRatingsSummaryCount(
+                    movies=2, shows=1, seasons=0, episodes=1
+                ),
+                not_found=SyncRatingsNotFound(
+                    movies=[],
+                    shows=[],
+                    seasons=[],
+                    episodes=[],
+                ),
+            )
+            mock_request.return_value = mock_summary
 
             result = await authenticated_client.remove_sync_ratings(request)
 
@@ -271,12 +285,15 @@ class TestSyncRatingsClient:
             assert result.removed.episodes == 1
             assert len(result.not_found.movies) == 0
 
-            # Verify POST method was used
+            # Verify correct endpoint and data were used
             mock_request.assert_called_once()
             args, kwargs = mock_request.call_args
-            assert args[0] == "POST"
-            assert args[1] == "/sync/ratings/remove"
-            assert "data" in kwargs
+            assert args[0] == "/sync/ratings/remove"
+            assert kwargs["response_type"] == SyncRatingsSummary
+            # Verify request data structure
+            request_data = args[1]
+            assert "movies" in request_data
+            assert len(request_data["movies"]) == 1
 
     @pytest.mark.asyncio
     async def test_remove_sync_ratings_unauthenticated(
@@ -469,7 +486,7 @@ class TestSyncRatingsClient:
             # Verify request was made with empty params when None is passed
             mock_request.assert_called_once()
             _, kwargs = mock_request.call_args
-            assert kwargs["params"] == {}
+            assert not kwargs.get("params")
 
     @pytest.mark.asyncio
     async def test_get_sync_ratings_pagination_metadata(
@@ -606,7 +623,10 @@ def create_movie_rating(
         ids={"trakt": trakt_id, "slug": f"{title.lower().replace(' ', '-')}-{year}"},
     )
     return TraktSyncRating(
-        rated_at="2014-09-01T09:10:11.000Z", rating=rating, type="movie", movie=movie
+        rated_at=datetime.fromisoformat("2014-09-01T09:10:11.000+00:00"),
+        rating=rating,
+        type="movie",
+        movie=movie,
     )
 
 
@@ -620,5 +640,8 @@ def create_show_rating(
         ids={"trakt": trakt_id, "slug": title.lower().replace(" ", "-")},
     )
     return TraktSyncRating(
-        rated_at="2014-09-01T09:10:11.000Z", rating=rating, type="show", show=show
+        rated_at=datetime.fromisoformat("2014-09-01T09:10:11.000+00:00"),
+        rating=rating,
+        type="show",
+        show=show,
     )

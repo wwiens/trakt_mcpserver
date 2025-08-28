@@ -243,6 +243,7 @@ class BaseClient:
             return [response_type.model_validate(item) for item in result]
         return result  # type: ignore[return-value] # TypedDict runtime limitation
 
+    @handle_api_errors
     async def _make_paginated_request(
         self,
         endpoint: str,
@@ -266,6 +267,8 @@ class BaseClient:
             ValueError: If response format is invalid or headers missing
         """
         url = f"{self.BASE_URL}{endpoint}"
+        # Ensure Authorization header is present when authenticated
+        self._update_headers_with_token()
         request_headers = self.headers
 
         async with httpx.AsyncClient() as client:
@@ -292,7 +295,11 @@ class BaseClient:
                 typed_data = result  # type: ignore[assignment] # TypedDict runtime limitation
 
             # Extract pagination metadata from headers
-            pagination = self._extract_pagination_headers(response)
+            try:
+                pagination = self._extract_pagination_headers(response)
+            except ValueError as e:
+                # Convert to an exception type that will be handled by @handle_api_errors
+                raise RuntimeError(f"Failed to parse pagination headers: {e}") from e
 
             # Fix total_items when no pagination headers present (non-paginated requests)
             if pagination.total_items == 0 and len(typed_data) > 0:

@@ -37,7 +37,10 @@ class PaginationMetadata(BaseModel):
     current_page: PositiveInt = Field(description="Current page number")
     items_per_page: PositiveInt = Field(description="Items returned per page")
     total_pages: PositiveInt = Field(description="Total number of pages")
-    total_items: int = Field(ge=0, description="Total number of items across all pages")
+    total_items: int = Field(
+        ge=0,
+        description="Total number of items across all pages",
+    )
 
     @property
     def has_next_page(self) -> bool:
@@ -84,6 +87,14 @@ class PaginatedResponse(BaseModel, Generic[T]):
         """Get a human-readable summary of pagination state."""
         if self.is_single_page:
             return f"{self.pagination.total_items} total items"
+
+        if len(self.data) == 0:
+            return (
+                f"Page {self.pagination.current_page} of "
+                f"{self.pagination.total_pages} "
+                f"(no items on this page; "
+                f"{self.pagination.total_items} total)"
+            )
 
         start_item = (
             self.pagination.current_page - 1

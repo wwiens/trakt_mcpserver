@@ -1,10 +1,9 @@
 """Tests for the server.sync.tools module."""
 
-import asyncio
 import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -20,55 +19,7 @@ from server.sync.tools import (
 from utils.api.error_types import TraktResourceNotFoundError
 from utils.api.errors import InternalError
 
-# Sample API response data from USER_RATINGS_DOC.MD
-SAMPLE_USER_RATINGS_RESPONSE = [
-    {
-        "rated_at": "2014-09-01T09:10:11.000Z",
-        "rating": 10,
-        "type": "movie",
-        "movie": {
-            "title": "TRON: Legacy",
-            "year": 2010,
-            "ids": {
-                "trakt": "1",
-                "slug": "tron-legacy-2010",
-                "imdb": "tt1104001",
-                "tmdb": "20526",
-            },
-        },
-    },
-    {
-        "rated_at": "2014-09-01T09:10:11.000Z",
-        "rating": 8,
-        "type": "show",
-        "show": {
-            "title": "Breaking Bad",
-            "year": 2008,
-            "ids": {
-                "trakt": "1",
-                "slug": "breaking-bad",
-                "tvdb": "81189",
-                "imdb": "tt0903747",
-                "tmdb": "1396",
-            },
-        },
-    },
-]
-
-SAMPLE_ADD_RATINGS_RESPONSE = {
-    "added": {"movies": 1, "shows": 1, "seasons": 1, "episodes": 2},
-    "not_found": {
-        "movies": [{"rating": 10, "ids": {"imdb": "tt0000111"}}],
-        "shows": [],
-        "seasons": [],
-        "episodes": [],
-    },
-}
-
-SAMPLE_REMOVE_RATINGS_RESPONSE: dict[str, dict[str, int | list[dict[str, str]]]] = {
-    "removed": {"movies": 2, "shows": 1, "seasons": 0, "episodes": 1},
-    "not_found": {"movies": [], "shows": [], "seasons": [], "episodes": []},
-}
+# (Intentionally left blank: inline pydantic objects are constructed per test)
 
 
 @pytest.mark.asyncio
@@ -92,7 +43,7 @@ async def test_fetch_user_ratings_movies_success() -> None:
 
         sample_ratings = [
             TraktSyncRating(
-                rated_at="2014-09-01T09:10:11.000Z",
+                rated_at=datetime.fromisoformat("2014-09-01T09:10:11.000+00:00"),
                 rating=10,
                 type="movie",
                 movie=movie,
@@ -112,15 +63,13 @@ async def test_fetch_user_ratings_movies_success() -> None:
             data=sample_ratings, pagination=pagination_metadata
         )
 
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_result(paginated_response)
-        mock_client.get_sync_ratings.return_value = ratings_future
+        mock_client.get_sync_ratings = AsyncMock(return_value=paginated_response)
 
         result = await fetch_user_ratings(rating_type="movies")
 
         # Verify result contains formatted content
         assert "# Your Movies Ratings" in result
-        assert "Found 1 rated movies on this page" in result
+        assert "Found 1 rated movie on this page" in result
         assert "TRON: Legacy (2010)" in result
         assert "Rating 10/10" in result
 
@@ -151,7 +100,7 @@ async def test_fetch_user_ratings_with_rating_filter() -> None:
 
         high_rated_response = [
             TraktSyncRating(
-                rated_at="2014-09-01T09:10:11.000Z",
+                rated_at=datetime.fromisoformat("2014-09-01T09:10:11.000+00:00"),
                 rating=10,
                 type="movie",
                 movie=movie,
@@ -171,14 +120,12 @@ async def test_fetch_user_ratings_with_rating_filter() -> None:
             data=high_rated_response, pagination=pagination_metadata
         )
 
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_result(paginated_response)
-        mock_client.get_sync_ratings.return_value = ratings_future
+        mock_client.get_sync_ratings = AsyncMock(return_value=paginated_response)
 
         result = await fetch_user_ratings(rating_type="shows", rating=10)
 
         assert "# Your Shows Ratings (filtered to rating 10)" in result
-        assert "Found 1 rated shows on this page" in result
+        assert "Found 1 rated show on this page" in result
 
         # Verify client was called with rating filter (no pagination when no page specified)
         mock_client.get_sync_ratings.assert_called_once_with(
@@ -205,9 +152,7 @@ async def test_fetch_user_ratings_empty_result() -> None:
             data=[], pagination=pagination_metadata
         )
 
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_result(empty_paginated_response)
-        mock_client.get_sync_ratings.return_value = ratings_future
+        mock_client.get_sync_ratings = AsyncMock(return_value=empty_paginated_response)
 
         result = await fetch_user_ratings(rating_type="episodes")
 
@@ -226,9 +171,7 @@ async def test_fetch_user_ratings_error_handling() -> None:
         mock_client = mock_client_class.return_value
 
         # Mock API error
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_exception(Exception("API error"))
-        mock_client.get_sync_ratings.return_value = ratings_future
+        mock_client.get_sync_ratings = AsyncMock(side_effect=Exception("API error"))
 
         with pytest.raises(InternalError) as exc_info:
             await fetch_user_ratings(rating_type="movies")
@@ -267,9 +210,7 @@ async def test_add_user_ratings_success() -> None:
                 episodes=[],
             ),
         )
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_result(summary_response)
-        mock_client.add_sync_ratings.return_value = ratings_future
+        mock_client.add_sync_ratings = AsyncMock(return_value=summary_response)
 
         result = await add_user_ratings(rating_type="movies", items=sample_items)
 
@@ -314,9 +255,7 @@ async def test_add_user_ratings_api_error() -> None:
         mock_client = mock_client_class.return_value
 
         # Mock API error
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_exception(Exception("API error"))
-        mock_client.add_sync_ratings.return_value = ratings_future
+        mock_client.add_sync_ratings = AsyncMock(side_effect=Exception("API error"))
 
         with pytest.raises(InternalError) as exc_info:
             await add_user_ratings(rating_type="movies", items=sample_items)
@@ -343,9 +282,7 @@ async def test_remove_user_ratings_success() -> None:
             removed=SyncRatingsSummaryCount(movies=2, shows=1, seasons=0, episodes=1),
             not_found=SyncRatingsNotFound(movies=[], shows=[], seasons=[], episodes=[]),
         )
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_result(summary_response)
-        mock_client.remove_sync_ratings.return_value = ratings_future
+        mock_client.remove_sync_ratings = AsyncMock(return_value=summary_response)
 
         result = await remove_user_ratings(rating_type="movies", items=sample_items)
 
@@ -392,9 +329,7 @@ async def test_remove_user_ratings_with_not_found() -> None:
                 episodes=[],
             ),
         )
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_result(summary_response)
-        mock_client.remove_sync_ratings.return_value = ratings_future
+        mock_client.remove_sync_ratings = AsyncMock(return_value=summary_response)
 
         result = await remove_user_ratings(rating_type="shows", items=sample_items)
 
@@ -412,11 +347,9 @@ async def test_remove_user_ratings_api_error() -> None:
         mock_client = mock_client_class.return_value
 
         # Mock API error
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_exception(
-            TraktResourceNotFoundError("user", "ratings", "Not found")
+        mock_client.remove_sync_ratings = AsyncMock(
+            side_effect=TraktResourceNotFoundError("user", "ratings", "Not found")
         )
-        mock_client.remove_sync_ratings.return_value = ratings_future
 
         with pytest.raises(TraktResourceNotFoundError):
             await remove_user_ratings(rating_type="movies", items=sample_items)
@@ -442,9 +375,9 @@ async def test_all_tools_content_type_validation() -> None:
                 data=[], pagination=pagination_metadata
             )
 
-            ratings_future: asyncio.Future[Any] = asyncio.Future()
-            ratings_future.set_result(empty_paginated_response)
-            mock_client.get_sync_ratings.return_value = ratings_future
+            mock_client.get_sync_ratings = AsyncMock(
+                return_value=empty_paginated_response
+            )
 
             result = await fetch_user_ratings(rating_type=content_type)
             assert f"You haven't rated any {content_type} yet" in result
@@ -475,12 +408,12 @@ async def test_rating_parameter_validation() -> None:
                 data=[], pagination=pagination_metadata
             )
 
-            ratings_future: asyncio.Future[Any] = asyncio.Future()
-            ratings_future.set_result(empty_paginated_response)
-            mock_client.get_sync_ratings.return_value = ratings_future
+            mock_client.get_sync_ratings = AsyncMock(
+                return_value=empty_paginated_response
+            )
 
             result = await fetch_user_ratings(rating_type="movies", rating=rating)
-            assert f"You haven't rated any movies yet with rating {rating}" in result
+            assert f"You haven't rated any movies with rating {rating} yet" in result
 
             # Import here to avoid NameError
 
@@ -512,7 +445,7 @@ async def test_fetch_user_ratings_paginated_success() -> None:
 
         sample_ratings = [
             TraktSyncRating(
-                rated_at="2014-09-01T09:10:11.000Z",
+                rated_at=datetime.fromisoformat("2014-09-01T09:10:11.000+00:00"),
                 rating=10,
                 type="movie",
                 movie=movie,
@@ -527,9 +460,7 @@ async def test_fetch_user_ratings_paginated_success() -> None:
             data=sample_ratings, pagination=pagination_metadata
         )
 
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_result(paginated_response)
-        mock_client.get_sync_ratings.return_value = ratings_future
+        mock_client.get_sync_ratings = AsyncMock(return_value=paginated_response)
 
         result = await fetch_user_ratings(rating_type="movies", page=1)
 
@@ -538,7 +469,7 @@ async def test_fetch_user_ratings_paginated_success() -> None:
         assert "📄 **Page 1 of 3" in result
         assert "items 1-1 of 25" in result
         assert "📍 **Navigation:** Next: page 2" in result
-        assert "Found 1 rated movies on this page" in result
+        assert "Found 1 rated movie on this page" in result
         assert "TRON: Legacy (2010)" in result
 
         # Verify paginated client method was called
@@ -574,7 +505,7 @@ async def test_fetch_user_ratings_paginated_with_filter() -> None:
 
         sample_ratings = [
             TraktSyncRating(
-                rated_at="2014-09-01T09:10:11.000Z",
+                rated_at=datetime.fromisoformat("2014-09-01T09:10:11.000+00:00"),
                 rating=10,
                 type="movie",
                 movie=movie,
@@ -589,9 +520,7 @@ async def test_fetch_user_ratings_paginated_with_filter() -> None:
             data=sample_ratings, pagination=pagination_metadata
         )
 
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_result(paginated_response)
-        mock_client.get_sync_ratings.return_value = ratings_future
+        mock_client.get_sync_ratings = AsyncMock(return_value=paginated_response)
 
         result = await fetch_user_ratings(rating_type="movies", rating=10, page=2)
 
@@ -627,9 +556,7 @@ async def test_fetch_user_ratings_paginated_empty_result() -> None:
             data=[], pagination=pagination_metadata
         )
 
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_result(paginated_response)
-        mock_client.get_sync_ratings.return_value = ratings_future
+        mock_client.get_sync_ratings = AsyncMock(return_value=paginated_response)
 
         result = await fetch_user_ratings(rating_type="shows", page=1)
 
@@ -653,9 +580,7 @@ async def test_fetch_user_ratings_paginated_error_handling() -> None:
         mock_client = mock_client_class.return_value
 
         # Mock API error in paginated request
-        ratings_future: asyncio.Future[Any] = asyncio.Future()
-        ratings_future.set_exception(Exception("API error"))
-        mock_client.get_sync_ratings.return_value = ratings_future
+        mock_client.get_sync_ratings = AsyncMock(side_effect=Exception("API error"))
 
         with pytest.raises(InternalError) as exc_info:
             await fetch_user_ratings(rating_type="movies", page=1)
@@ -690,9 +615,7 @@ async def test_fetch_user_ratings_page_parameter_validation() -> None:
                 data=[], pagination=pagination_metadata
             )
 
-            ratings_future: asyncio.Future[Any] = asyncio.Future()
-            ratings_future.set_result(paginated_response)
-            mock_client.get_sync_ratings.return_value = ratings_future
+            mock_client.get_sync_ratings = AsyncMock(return_value=paginated_response)
 
             result = await fetch_user_ratings(rating_type="movies", page=page_num)
             assert f"Page {page_num} of 100" in result

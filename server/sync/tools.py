@@ -69,6 +69,21 @@ class UserRatingRequestItem(BaseModel):
         return v.strip() if isinstance(v, str) else v
 
 
+class UserRatingIdentifier(BaseModel):
+    """Rating item identifier for removal operations (no rating required)."""
+
+    trakt_id: str | None = Field(default=None, min_length=1, description="Trakt ID")
+    imdb_id: str | None = Field(default=None, min_length=1, description="IMDB ID")
+    tmdb_id: str | None = Field(default=None, min_length=1, description="TMDB ID")
+    title: str | None = Field(default=None, min_length=1, description="Title")
+    year: int | None = Field(default=None, gt=1800, description="Release year")
+
+    @field_validator("trakt_id", "imdb_id", "tmdb_id", "title", mode="before")
+    @classmethod
+    def _strip_strings(cls, v: object) -> object:
+        return v.strip() if isinstance(v, str) else v
+
+
 class UserRatingRequest(BaseModel):
     """Parameters for adding/removing user ratings."""
 
@@ -97,6 +112,7 @@ async def fetch_user_ratings(
     Raises:
         AuthenticationRequiredError: If user is not authenticated
     """
+    logger.debug("fetch_user_ratings called with rating_type=%s", rating_type)
     # Validate parameters with Pydantic
     params = UserRatingsParams(rating_type=rating_type, rating=rating, page=page)
     rating_type, rating, page = params.rating_type, params.rating, params.page
@@ -116,12 +132,13 @@ async def fetch_user_ratings(
 
         # Handle transitional case where API returns error strings
         if isinstance(paginated_result, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
+            error = BaseToolErrorMixin.handle_api_string_error(
                 resource_type=f"user_{rating_type}_ratings",
                 resource_id=f"user_ratings_{rating_type}",
                 error_message=paginated_result,
                 operation="fetch_user_ratings",
             )
+            raise error
 
         return SyncRatingsFormatters.format_user_ratings(
             paginated_result, rating_type, rating
@@ -147,6 +164,7 @@ async def add_user_ratings(
     Raises:
         AuthenticationRequiredError: If user is not authenticated
     """
+    logger.debug("add_user_ratings called with rating_type=%s", rating_type)
     # Validate parameters with Pydantic
     items_list = [UserRatingRequestItem(**item) for item in items]
     params = UserRatingRequest(rating_type=rating_type, items=items_list)
@@ -192,12 +210,13 @@ async def add_user_ratings(
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
+            error = BaseToolErrorMixin.handle_api_string_error(
                 resource_type=f"add_user_{rating_type}_ratings",
                 resource_id=f"add_ratings_{rating_type}",
                 error_message=summary,
                 operation="add_user_ratings",
             )
+            raise error
 
         return SyncRatingsFormatters.format_user_ratings_summary(
             summary, "added", rating_type
@@ -223,17 +242,9 @@ async def remove_user_ratings(
     Raises:
         AuthenticationRequiredError: If user is not authenticated
     """
-    # For removal, we don't need ratings, just IDs - but we'll accept the same format
-    items_list: list[UserRatingRequestItem] = []
-    for item in items:
-        # Create a copy without requiring rating for removal
-        item_copy = dict(item)
-        if "rating" not in item_copy:
-            item_copy["rating"] = 1  # Dummy rating for validation, not used in DELETE
-        items_list.append(UserRatingRequestItem(**item_copy))
-
-    params = UserRatingRequest(rating_type=rating_type, items=items_list)
-    rating_type, validated_items = params.rating_type, params.items
+    logger.debug("remove_user_ratings called with rating_type=%s", rating_type)
+    # For removal, we only need identifiers (no ratings required)
+    validated_items = [UserRatingIdentifier(**item) for item in items]
 
     try:
         client = SyncClient()
@@ -272,12 +283,13 @@ async def remove_user_ratings(
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
+            error = BaseToolErrorMixin.handle_api_string_error(
                 resource_type=f"remove_user_{rating_type}_ratings",
                 resource_id=f"remove_ratings_{rating_type}",
                 error_message=summary,
                 operation="remove_user_ratings",
             )
+            raise error
 
         return SyncRatingsFormatters.format_user_ratings_summary(
             summary, "removed", rating_type
@@ -295,9 +307,12 @@ def register_sync_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler, ToolHan
 
     @mcp.tool(
         name=SYNC_TOOLS["fetch_user_ratings"],
-        description="Fetch the authenticated user's personal ratings from Trakt. Supports optional pagination with 'page' parameter. Requires OAuth authentication.",
+        description=(
+            "Fetch the authenticated user's personal ratings from Trakt. "
+            "Supports optional pagination with 'page' parameter. "
+            "Requires OAuth authentication."
+        ),
     )
-    @handle_api_errors_func
     async def fetch_user_ratings_tool(
         rating_type: Literal["movies", "shows", "seasons", "episodes"] = "movies",
         rating: int | None = None,
@@ -311,7 +326,6 @@ def register_sync_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler, ToolHan
         name=SYNC_TOOLS["add_user_ratings"],
         description="Add new ratings for the authenticated user. Requires OAuth authentication.",
     )
-    @handle_api_errors_func
     async def add_user_ratings_tool(
         rating_type: Literal["movies", "shows", "seasons", "episodes"],
         items: list[dict[str, Any]],
@@ -322,7 +336,6 @@ def register_sync_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler, ToolHan
         name=SYNC_TOOLS["remove_user_ratings"],
         description="Remove ratings for the authenticated user. Requires OAuth authentication.",
     )
-    @handle_api_errors_func
     async def remove_user_ratings_tool(
         rating_type: Literal["movies", "shows", "seasons", "episodes"],
         items: list[dict[str, Any]],

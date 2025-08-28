@@ -1,5 +1,6 @@
 """TypedDict definitions for test data to ensure type safety in model tests."""
 
+from datetime import datetime
 from typing import Literal, NotRequired, TypedDict
 
 
@@ -55,7 +56,7 @@ class AuthTokenTestData(TypedDict):
 class SyncRatingTestData(TypedDict):
     """Type definition for sync rating test data."""
 
-    rated_at: str
+    rated_at: datetime
     rating: int
     type: Literal["movie", "show", "season", "episode"]
     movie: NotRequired[dict[str, str | int | dict[str, str]] | None]
@@ -68,7 +69,7 @@ class SyncRatingItemTestData(TypedDict):
     """Type definition for sync rating item test data."""
 
     rating: NotRequired[int | None]
-    rated_at: NotRequired[str | None]
+    rated_at: NotRequired[datetime | None]
     title: NotRequired[str | None]
     year: NotRequired[int | None]
     ids: NotRequired[dict[str, str | int | None] | None]

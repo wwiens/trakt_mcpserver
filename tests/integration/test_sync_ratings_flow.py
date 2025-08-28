@@ -192,7 +192,7 @@ async def test_fetch_user_ratings_with_rating_filter_integration() -> None:
 
             # Verify rating-specific formatting
             assert "# Your Shows Ratings (filtered to rating 8)" in result
-            assert "shows" in result
+            assert "show" in result
             assert "TRON: Legacy" not in result  # Should only show rated=8 content
 
             # Verify the correct API endpoint was called with rating filter
@@ -552,7 +552,7 @@ async def test_rating_grouping_integration() -> None:
 
             # Verify ratings are grouped by score
             assert "## Rating 10/10 (2 movies)" in result
-            assert "## Rating 8/10 (1 movies)" in result
+            assert "## Rating 8/10 (1 movie)" in result
             assert "Movie A (2020)" in result
             assert "Movie B (2021)" in result
             assert "Movie C (2022)" in result
@@ -679,7 +679,7 @@ async def test_fetch_user_ratings_paginated_last_page_integration() -> None:
             assert "📍 **Navigation:** Previous: page 1" in result
             # Should NOT have "Next: page" text
             assert "Next: page" not in result
-            assert "Found 1 rated episodes on this page" in result
+            assert "Found 1 rated episode on this page" in result
 
             # Verify page parameter was sent correctly
             call_args = mock_instance.get.call_args
@@ -953,7 +953,7 @@ async def test_fetch_user_ratings_pagination_headers_extraction_integration() ->
             assert "📄 **Page 3 of 10" in result
             assert "items 11-11 of 47" in result  # Calculated based on page 3, limit 5
             assert "📍 **Navigation:** Previous: page 2 | Next: page 4" in result
-            assert "Found 1 rated shows on this page" in result
+            assert "Found 1 rated show on this page" in result
 
             # Verify correct API call
             call_args = mock_instance.get.call_args

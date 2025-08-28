@@ -28,9 +28,11 @@ class SyncRatingsFormatters:
 
         # Handle empty state
         if not ratings:
-            filter_text = f" with rating {rating_filter}" if rating_filter else ""
-            result = f"# Your {rating_type.title()} Ratings{filter_text}\n\n"
-            result += f"You haven't rated any {rating_type} yet{filter_text}. "
+            result = f"# Your {rating_type.title()} Ratings\n\n"
+            if rating_filter:
+                result += f"You haven't rated any {rating_type} with rating {rating_filter} yet. "
+            else:
+                result += f"You haven't rated any {rating_type} yet. "
             result += f"Use the `add_user_ratings` tool to add ratings for your {rating_type}.\n\n"
 
             # Show pagination info even for empty results
@@ -55,7 +57,10 @@ class SyncRatingsFormatters:
         if navigation_hints:
             result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
 
-        result += f"Found {len(ratings)} rated {rating_type} on this page:\n\n"
+        # Handle pluralization for "Found X rated Y" line
+        count = len(ratings)
+        noun = rating_type[:-1] if count == 1 else rating_type
+        result += f"Found {count} rated {noun} on this page:\n\n"
 
         # Group ratings by rating value for better organization
         ratings_by_score: dict[int, list[TraktSyncRating]] = {}
@@ -68,9 +73,10 @@ class SyncRatingsFormatters:
         # Display ratings grouped by score (highest first)
         for rating_score in sorted(ratings_by_score.keys(), reverse=True):
             rated_items = ratings_by_score[rating_score]
-            result += (
-                f"## Rating {rating_score}/10 ({len(rated_items)} {rating_type})\n\n"
-            )
+            # Handle pluralization for rating section headings
+            count = len(rated_items)
+            noun = rating_type[:-1] if count == 1 else rating_type
+            result += f"## Rating {rating_score}/10 ({count} {noun})\n\n"
 
             for rating_item in rated_items:
                 title = "Unknown"
@@ -80,18 +86,6 @@ class SyncRatingsFormatters:
                     title = rating_item.movie.title
                     year = (
                         f" ({rating_item.movie.year})" if rating_item.movie.year else ""
-                    )
-                elif rating_item.show:
-                    title = rating_item.show.title
-                    year = (
-                        f" ({rating_item.show.year})" if rating_item.show.year else ""
-                    )
-                elif rating_item.season and rating_item.show:
-                    title = (
-                        f"{rating_item.show.title} - Season {rating_item.season.number}"
-                    )
-                    year = (
-                        f" ({rating_item.show.year})" if rating_item.show.year else ""
                     )
                 elif rating_item.episode and rating_item.show:
                     season = rating_item.episode.season
@@ -103,10 +97,22 @@ class SyncRatingsFormatters:
                     year = (
                         f" ({rating_item.show.year})" if rating_item.show.year else ""
                     )
+                elif rating_item.season and rating_item.show:
+                    title = (
+                        f"{rating_item.show.title} - Season {rating_item.season.number}"
+                    )
+                    year = (
+                        f" ({rating_item.show.year})" if rating_item.show.year else ""
+                    )
+                elif rating_item.show:
+                    title = rating_item.show.title
+                    year = (
+                        f" ({rating_item.show.year})" if rating_item.show.year else ""
+                    )
 
                 # Format rating date (show just the date part)
                 rating_date = (
-                    rating_item.rated_at[:10]
+                    rating_item.rated_at.strftime("%Y-%m-%d")
                     if rating_item.rated_at
                     else "Unknown date"
                 )
