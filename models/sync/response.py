@@ -1,13 +1,13 @@
 """Sync response models for the Trakt MCP server."""
 
-from __future__ import annotations
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from .base import TraktSyncRating  # noqa: TC001  # Required at runtime for Pydantic
+from models.sync.base import TraktSyncRating
 
 
 class TraktSyncRatingsResponse(BaseModel):
     """Response structure from sync ratings API."""
 
-    ratings: list[TraktSyncRating] = Field(default_factory=list)  # type: ignore[misc]  # Pydantic forward reference
+    ratings: Annotated[list[TraktSyncRating], Field(default_factory=list)]

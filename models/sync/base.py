@@ -13,7 +13,7 @@ from models.shows.show import TraktShow
 class TraktSeason(BaseModel):
     """Represents a Trakt season for ratings."""
 
-    number: int
+    number: int = Field(ge=0)  # Season 0 is typically specials
     ids: dict[str, str | int | None] | None = None
 
 
@@ -21,14 +21,14 @@ class TraktSyncEpisodeRating(BaseModel):
     """Episode rating item for nested ratings within seasons."""
 
     rating: int = Field(ge=1, le=10, description="Episode rating")
-    number: int
+    number: int = Field(ge=1)  # Episode numbers start at 1
 
 
 class TraktSyncSeasonRating(BaseModel):
     """Season rating item for nested ratings within shows."""
 
     rating: int | None = Field(default=None, ge=1, le=10, description="Season rating")
-    number: int
+    number: int = Field(ge=0)  # Season 0 is typically specials
     episodes: list[TraktSyncEpisodeRating] | None = None
 
 
@@ -45,7 +45,7 @@ class TraktSyncRatingItem(BaseModel):
         default=None, description="Timestamp when rated (UTC)"
     )
     title: str | None = None
-    year: int | None = None
+    year: int | None = Field(default=None, gt=1800)  # Reasonable year constraint
     ids: dict[str, str | int | None] | None = None
     # For episodes within shows
     seasons: list[TraktSyncSeasonRating] | None = None

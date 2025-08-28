@@ -59,10 +59,14 @@ class SyncRatingTestData(TypedDict):
     rated_at: datetime
     rating: int
     type: Literal["movie", "show", "season", "episode"]
-    movie: NotRequired[dict[str, str | int | dict[str, str]] | None]
-    show: NotRequired[dict[str, str | int | dict[str, str]] | None]
-    season: NotRequired[dict[str, str | int | dict[str, str]] | None]
-    episode: NotRequired[dict[str, str | int | dict[str, str]] | None]
+    movie: NotRequired[dict[str, str | int | None | dict[str, str | int | None]] | None]
+    show: NotRequired[dict[str, str | int | None | dict[str, str | int | None]] | None]
+    season: NotRequired[
+        dict[str, str | int | None | dict[str, str | int | None]] | None
+    ]
+    episode: NotRequired[
+        dict[str, str | int | None | dict[str, str | int | None]] | None
+    ]
 
 
 class SyncRatingItemTestData(TypedDict):
@@ -80,7 +84,9 @@ class SyncRatingsSummaryTestData(TypedDict):
 
     added: NotRequired[dict[str, int] | None]
     removed: NotRequired[dict[str, int] | None]
-    not_found: dict[str, list[dict[str, str | int | dict[str, str | int]]]]
+    not_found: dict[
+        str, list[dict[str, str | int | None | dict[str, str | int | None]]]
+    ]
 
 
 class TrendingShowTestData(TypedDict):

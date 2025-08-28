@@ -1,10 +1,10 @@
 """Sync summary models for the Trakt MCP server."""
 
-from __future__ import annotations
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from .base import TraktSyncRatingItem  # noqa: TC001  # Required at runtime for Pydantic
+from models.sync.base import TraktSyncRatingItem
 
 
 class SyncRatingsSummaryCount(BaseModel):
@@ -19,10 +19,15 @@ class SyncRatingsSummaryCount(BaseModel):
 class SyncRatingsNotFound(BaseModel):
     """Items not found during add/remove operations."""
 
-    movies: list[TraktSyncRatingItem] = Field(default_factory=list)  # type: ignore[misc]  # Pydantic forward reference
-    shows: list[TraktSyncRatingItem] = Field(default_factory=list)  # type: ignore[misc]  # Pydantic forward reference
-    seasons: list[TraktSyncRatingItem] = Field(default_factory=list)  # type: ignore[misc]  # Pydantic forward reference
-    episodes: list[TraktSyncRatingItem] = Field(default_factory=list)  # type: ignore[misc]  # Pydantic forward reference
+    movies: Annotated[list[TraktSyncRatingItem], Field(default_factory=list)]
+    shows: Annotated[list[TraktSyncRatingItem], Field(default_factory=list)]
+    seasons: Annotated[list[TraktSyncRatingItem], Field(default_factory=list)]
+    episodes: Annotated[list[TraktSyncRatingItem], Field(default_factory=list)]
+
+
+def _create_sync_ratings_not_found() -> SyncRatingsNotFound:
+    """Factory function to create SyncRatingsNotFound instance."""
+    return SyncRatingsNotFound(movies=[], shows=[], seasons=[], episodes=[])
 
 
 class SyncRatingsSummary(BaseModel):
@@ -30,4 +35,6 @@ class SyncRatingsSummary(BaseModel):
 
     added: SyncRatingsSummaryCount | None = None
     removed: SyncRatingsSummaryCount | None = None
-    not_found: SyncRatingsNotFound
+    not_found: SyncRatingsNotFound = Field(
+        default_factory=_create_sync_ratings_not_found
+    )

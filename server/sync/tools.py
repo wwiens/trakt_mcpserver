@@ -5,9 +5,10 @@ from collections.abc import Awaitable, Callable
 from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from client.sync.client import SyncClient
+from config.api import DEFAULT_LIMIT
 from config.mcp.tools.sync import SYNC_TOOLS
 from models.formatters.sync_ratings import SyncRatingsFormatters
 from models.sync.ratings import (
@@ -68,6 +69,35 @@ class UserRatingRequestItem(BaseModel):
     def _strip_strings(cls, v: object) -> object:
         return v.strip() if isinstance(v, str) else v
 
+    @field_validator("trakt_id", mode="after")
+    @classmethod
+    def _validate_trakt_id_numeric(cls, v: str | None) -> str | None:
+        """Ensure trakt_id is numeric if provided."""
+        if v is not None and not v.isdigit():
+            raise ValueError(f"trakt_id must be numeric, got: '{v}'")
+        return v
+
+    @field_validator("tmdb_id", mode="after")
+    @classmethod
+    def _validate_tmdb_id_numeric(cls, v: str | None) -> str | None:
+        """Ensure tmdb_id is numeric if provided."""
+        if v is not None and not v.isdigit():
+            raise ValueError(f"tmdb_id must be numeric, got: '{v}'")
+        return v
+
+    @model_validator(mode="after")
+    def _validate_identifiers(self) -> "UserRatingRequestItem":
+        """Ensure at least one identifier (trakt_id/imdb_id/tmdb_id) OR both title+year are provided."""
+        has_id = any([self.trakt_id, self.imdb_id, self.tmdb_id])
+        has_title_year = self.title and self.year
+
+        if not has_id and not has_title_year:
+            raise ValueError(
+                "Rating item must include either an identifier (trakt_id, imdb_id, or tmdb_id) "
+                + "or both title and year for proper identification"
+            )
+        return self
+
 
 class UserRatingIdentifier(BaseModel):
     """Rating item identifier for removal operations (no rating required)."""
@@ -82,6 +112,35 @@ class UserRatingIdentifier(BaseModel):
     @classmethod
     def _strip_strings(cls, v: object) -> object:
         return v.strip() if isinstance(v, str) else v
+
+    @field_validator("trakt_id", mode="after")
+    @classmethod
+    def _validate_trakt_id_numeric(cls, v: str | None) -> str | None:
+        """Ensure trakt_id is numeric if provided."""
+        if v is not None and not v.isdigit():
+            raise ValueError(f"trakt_id must be numeric, got: '{v}'")
+        return v
+
+    @field_validator("tmdb_id", mode="after")
+    @classmethod
+    def _validate_tmdb_id_numeric(cls, v: str | None) -> str | None:
+        """Ensure tmdb_id is numeric if provided."""
+        if v is not None and not v.isdigit():
+            raise ValueError(f"tmdb_id must be numeric, got: '{v}'")
+        return v
+
+    @model_validator(mode="after")
+    def _validate_identifiers(self) -> "UserRatingIdentifier":
+        """Ensure at least one identifier (trakt_id/imdb_id/tmdb_id) OR both title+year are provided."""
+        has_id = any([self.trakt_id, self.imdb_id, self.tmdb_id])
+        has_title_year = self.title and self.year
+
+        if not has_id and not has_title_year:
+            raise ValueError(
+                "Rating item must include either an identifier (trakt_id, imdb_id, or tmdb_id) "
+                + "or both title and year for proper identification"
+            )
+        return self
 
 
 class UserRatingRequest(BaseModel):
@@ -107,7 +166,8 @@ async def fetch_user_ratings(
         page: Optional page number for pagination (1-based)
 
     Returns:
-        User's personal ratings formatted as markdown (with pagination info if paginated)
+        User's personal ratings formatted as markdown. When 'page' is None,
+        only the first page is retrieved (see pagination info in the output).
 
     Raises:
         AuthenticationRequiredError: If user is not authenticated
@@ -120,9 +180,11 @@ async def fetch_user_ratings(
     try:
         client = SyncClient()
 
-        # Use pagination only if page parameter is provided, otherwise get all items
+        # If 'page' is provided, request that page; otherwise use default page=1.
         pagination_params = (
-            PaginationParams(page=page, limit=100) if page is not None else None
+            PaginationParams(page=page, limit=DEFAULT_LIMIT)
+            if page is not None
+            else None
         )
         paginated_result: PaginatedResponse[
             TraktSyncRating
@@ -178,15 +240,13 @@ async def add_user_ratings(
         for item in validated_items:
             ids: dict[str, Any] = {}
 
-            # Add IDs that are provided
+            # Add IDs that are provided (upstream validation ensures numeric strings)
             if item.trakt_id:
                 ids["trakt"] = int(item.trakt_id)
             if item.imdb_id:
                 ids["imdb"] = item.imdb_id
             if item.tmdb_id:
-                ids["tmdb"] = (
-                    int(item.tmdb_id) if item.tmdb_id.isdigit() else item.tmdb_id
-                )
+                ids["tmdb"] = int(item.tmdb_id)
 
             # Create sync rating item
             sync_item_data: dict[str, Any] = {
@@ -254,15 +314,13 @@ async def remove_user_ratings(
         for item in validated_items:
             ids: dict[str, Any] = {}
 
-            # Add IDs that are provided
+            # Add IDs that are provided (upstream validation ensures numeric strings)
             if item.trakt_id:
                 ids["trakt"] = int(item.trakt_id)
             if item.imdb_id:
                 ids["imdb"] = item.imdb_id
             if item.tmdb_id:
-                ids["tmdb"] = (
-                    int(item.tmdb_id) if item.tmdb_id.isdigit() else item.tmdb_id
-                )
+                ids["tmdb"] = int(item.tmdb_id)
 
             # Create sync rating item (no rating for removal)
             sync_item_data: dict[str, Any] = {"ids": ids}

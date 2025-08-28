@@ -478,9 +478,11 @@ async def test_fetch_user_ratings_paginated_success() -> None:
         assert args[0] == "movies"
         assert args[1] is None  # rating filter
         assert "pagination" in kwargs
+        from config.api import DEFAULT_LIMIT
+
         pagination_params = kwargs["pagination"]
         assert pagination_params.page == 1
-        assert pagination_params.limit == 100  # test limit
+        assert pagination_params.limit == DEFAULT_LIMIT  # uses DEFAULT_LIMIT
 
 
 @pytest.mark.asyncio

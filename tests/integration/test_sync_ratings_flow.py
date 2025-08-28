@@ -625,9 +625,11 @@ async def test_fetch_user_ratings_paginated_integration() -> None:
             call_kwargs = call_args[1]
             assert "params" in call_kwargs
             assert call_kwargs["params"]["page"] == 1
+            from config.api import DEFAULT_LIMIT
+
             assert (
-                call_kwargs["params"]["limit"] == 100
-            )  # pagination limit when page specified
+                call_kwargs["params"]["limit"] == DEFAULT_LIMIT
+            )  # uses DEFAULT_LIMIT when page specified
             assert "/sync/ratings/movies" in call_args[0][0]
 
 

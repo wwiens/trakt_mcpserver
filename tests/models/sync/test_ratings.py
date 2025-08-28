@@ -354,7 +354,7 @@ class TestSyncRatingsNotFound:
 
     def test_default_not_found(self) -> None:
         """Test default not found lists."""
-        not_found = SyncRatingsNotFound()
+        not_found = SyncRatingsNotFound.model_construct()
 
         assert not_found.movies == []
         assert not_found.shows == []
@@ -365,7 +365,9 @@ class TestSyncRatingsNotFound:
         """Test not found with actual items."""
         not_found_movie = TraktSyncRatingItem(rating=10, ids={"imdb": "tt0000111"})
 
-        not_found = SyncRatingsNotFound(movies=[not_found_movie])
+        not_found = SyncRatingsNotFound(
+            movies=[not_found_movie], shows=[], seasons=[], episodes=[]
+        )
 
         assert len(not_found.movies) == 1
         assert not_found.movies[0].rating == 10
@@ -378,7 +380,7 @@ class TestSyncRatingsSummary:
     def test_add_operation_summary(self) -> None:
         """Test summary for add operation."""
         added = SyncRatingsSummaryCount(movies=1, shows=1, seasons=1, episodes=2)
-        not_found = SyncRatingsNotFound()
+        not_found = SyncRatingsNotFound.model_construct()
 
         summary = SyncRatingsSummary(added=added, not_found=not_found)
 
@@ -391,7 +393,7 @@ class TestSyncRatingsSummary:
     def test_remove_operation_summary(self) -> None:
         """Test summary for remove operation."""
         removed = SyncRatingsSummaryCount(movies=2, shows=1)
-        not_found = SyncRatingsNotFound()
+        not_found = SyncRatingsNotFound.model_construct()
 
         summary = SyncRatingsSummary(removed=removed, not_found=not_found)
 
@@ -403,7 +405,9 @@ class TestSyncRatingsSummary:
     def test_summary_with_not_found_items(self) -> None:
         """Test summary with not found items from API response."""
         not_found_item = TraktSyncRatingItem(rating=10, ids={"imdb": "tt0000111"})
-        not_found = SyncRatingsNotFound(movies=[not_found_item])
+        not_found = SyncRatingsNotFound(
+            movies=[not_found_item], shows=[], seasons=[], episodes=[]
+        )
         added = SyncRatingsSummaryCount(movies=1)
 
         summary = SyncRatingsSummary(added=added, not_found=not_found)
@@ -449,14 +453,21 @@ class TestComprehensiveValidation:
         assert item.year == year
 
     def test_negative_year_handling(self) -> None:
-        """Test that negative years are handled (no explicit validation currently)."""
-        # Note: Current model doesn't validate year range - this documents behavior
-        item = TraktSyncRatingItem(
-            rating=5,
-            title="Test Movie",
-            year=-100,  # This currently passes but might want validation
-        )
-        assert item.year == -100
+        """Test that years must be reasonable (> 1800)."""
+        # Verify year validation rejects unreasonable values
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError) as exc:
+            TraktSyncRatingItem(
+                rating=5,
+                title="Test Movie",
+                year=-100,  # Should be rejected
+            )
+        assert "greater than 1800" in str(exc.value).lower()
+
+        # Valid year should work
+        item = TraktSyncRatingItem(rating=5, title="Test Movie", year=1850)
+        assert item.year == 1850
 
     def test_non_negative_count_constraints(self) -> None:
         """Test that count fields enforce non-negative constraints."""
@@ -522,8 +533,8 @@ class TestComprehensiveValidation:
 
     def test_default_factory_behavior(self) -> None:
         """Test that default_factory creates independent list instances."""
-        not_found_1 = SyncRatingsNotFound()
-        not_found_2 = SyncRatingsNotFound()
+        not_found_1 = SyncRatingsNotFound.model_construct()
+        not_found_2 = SyncRatingsNotFound.model_construct()
 
         # Lists should be independent instances
         assert not_found_1.movies is not not_found_2.movies

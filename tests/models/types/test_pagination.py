@@ -3,7 +3,9 @@
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
+from config.api import DEFAULT_LIMIT
 from models.types.pagination import (
     PaginatedResponse,
     PaginationMetadata,
@@ -18,7 +20,7 @@ class TestPaginationParams:
         """Test default parameter values."""
         params = PaginationParams()
         assert params.page == 1
-        assert params.limit == 10  # DEFAULT_LIMIT from config
+        assert params.limit == DEFAULT_LIMIT
 
     def test_custom_values(self) -> None:
         """Test custom parameter values."""
@@ -28,16 +30,16 @@ class TestPaginationParams:
 
     def test_validation_positive_integers(self) -> None:
         """Test validation requires positive integers."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             PaginationParams(page=0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             PaginationParams(page=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             PaginationParams(limit=0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             PaginationParams(limit=-5)
 
 
@@ -339,7 +341,7 @@ class TestPaginatedResponse:
         assert metadata_zero.total_items == 0
 
         # Negative total_items should fail
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             PaginationMetadata(
                 current_page=1, items_per_page=10, total_pages=1, total_items=-1
             )
