@@ -8,8 +8,12 @@ RUN apk add --no-cache \
     curl \
     ca-certificates
 
+# Create a non-root user and group
+RUN addgroup -g 1000 -S appuser && \
+    adduser -u 1000 -S appuser -G appuser
+
 # Workdir
-WORKDIR /app/trakt-server
+WORKDIR /app/trakt_mcpserver
 
 # Copy project (everything except what's in .dockerignore)
 COPY . .
@@ -20,16 +24,26 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Back to root workdir
 WORKDIR /app
 
-# Trakt credentials (override at runtime)
+# Change ownership of application files to non-root user
+RUN chown -R appuser:appuser /app
+
+# Copy .env file to container
+COPY .env.example /app/.env
+
+# Load environment variables from .env file
+# Default values (can be overridden at runtime)
 ENV TRAKT_CLIENT_ID=""
 ENV TRAKT_CLIENT_SECRET=""
 
-# Expose SSE port
+# Expose SSE port (will be overridden by runtime environment)
 EXPOSE 8080
+
+# Switch to non-root user
+USER appuser
 
 # Run as: SSE proxy on 0.0.0.0:8080 -> spawn local stdio server
 # --port fixes the listening port (default would be random if omitted)
 # --pass-environment forwards TRAKT_* vars to the child process
 # `--` separates proxy args from child args
 ENTRYPOINT ["mcp-proxy"]
-CMD ["--host", "0.0.0.0", "--port", "8080", "--pass-environment", "--", "python3", "/app/trakt-server/server.py"]
+CMD ["--host", "0.0.0.0", "--port", "8080", "--pass-environment", "--", "python3", "/app/trakt_mcpserver/server.py"]

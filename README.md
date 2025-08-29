@@ -320,14 +320,20 @@ This runs the server on `http://localhost:8080` and proxies MCP requests over SS
 
 ```bash
 # Build the image (from project root, where the Dockerfile is located)
-docker build -t mcp-trakt .
+docker build -t trakt_mcpserver .
 
-# Run the container
+# Run the container using .env file
+docker run -it --rm \
+  --env-file .env \
+  -p 8080:8080 \
+  trakt_mcpserver
+
+# Or run the container setting env variables
 docker run -it --rm \
   -e TRAKT_CLIENT_ID=your_client_id \
   -e TRAKT_CLIENT_SECRET=your_client_secret \
   -p 8080:8080 \
-  mcp-trakt
+  trakt_mcpserver
 ```
 
 ### Option 2: Using `docker compose`
