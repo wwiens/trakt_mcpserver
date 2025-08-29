@@ -5,29 +5,41 @@ from typing import Literal, NotRequired, TypedDict
 
 # Shared type aliases to reduce repetition and keep lines under 88 chars
 IDsDict = dict[str, str | int | None]
-MediaType = Literal["image", "audio", "video", "document"]
 RatingValue = Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 
 class ItemRefTestData(TypedDict, total=False):
-    id: str
-    type: str
+    """Minimal media item reference for sync payloads/results."""
+
+    title: str | None
+    year: int | None
+    ids: IDsDict | None
 
 
 # Sync rating specific aliases
 SyncMediaType = Literal["movie", "show", "season", "episode"]
-SyncMediaItemTestData = dict[str, str | int | None | IDsDict]
 
 
-class NotFoundItemTestData(TypedDict, total=False):
-    """Type definition for items not found during sync operations."""
+class SyncMediaItemTestData(TypedDict, total=False):
+    """Type definition for sync media item test data.
 
-    trakt_id: int | None
-    imdb_id: str | None
-    tmdb_id: int | None
+    Covers fields from TraktMovie, TraktShow, TraktSeason, and TraktEpisode models.
+    """
+
+    # Common fields for movies and shows
     title: str | None
     year: int | None
-    ids: IDsDict
+    ids: IDsDict | None
+    overview: str | None
+
+    # Season and episode specific fields
+    number: int | None  # Season number or episode number
+    season: int | None  # Episode season number
+    last_watched_at: str | None  # Episode watch timestamp
+
+
+class NotFoundItemTestData(ItemRefTestData, total=False):
+    """Item reference for not_found buckets (ids/title/year only)."""
 
 
 class ShowTestData(TypedDict):
@@ -79,26 +91,30 @@ class AuthTokenTestData(TypedDict):
     token_type: str
 
 
+class SyncRatingItemTestData(ItemRefTestData, total=False):
+    """Type definition for sync rating item test data."""
+
+    rating: NotRequired[RatingValue | None]
+    rated_at: NotRequired[datetime | None]
+
+
+class SeasonTestData(TypedDict):
+    """Type definition for season test data in sync ratings."""
+
+    number: int
+    ids: NotRequired[IDsDict | None]
+
+
 class SyncRatingTestData(TypedDict):
     """Type definition for sync rating test data."""
 
     rated_at: datetime
     rating: RatingValue
     type: SyncMediaType
-    movie: NotRequired[SyncMediaItemTestData | None]
-    show: NotRequired[SyncMediaItemTestData | None]
-    season: NotRequired[SyncMediaItemTestData | None]
-    episode: NotRequired[SyncMediaItemTestData | None]
-
-
-class SyncRatingItemTestData(TypedDict):
-    """Type definition for sync rating item test data."""
-
-    rating: NotRequired[RatingValue | None]
-    rated_at: NotRequired[datetime | None]
-    title: NotRequired[str | None]
-    year: NotRequired[int | None]
-    ids: NotRequired[IDsDict | None]
+    movie: NotRequired[MovieTestData | None]
+    show: NotRequired[ShowTestData | None]
+    season: NotRequired[SeasonTestData | None]
+    episode: NotRequired[EpisodeTestData | None]
 
 
 class SyncRatingsSummaryTestData(TypedDict):
