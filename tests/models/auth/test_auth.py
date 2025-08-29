@@ -237,6 +237,8 @@ class TestTraktAuthToken:
             refresh_token="test_refresh",
             expires_in=expires_in,
             created_at=current_time,
+            scope="public",
+            token_type="bearer",
         )
 
         # Token should expire at created_at + expires_in
@@ -258,6 +260,8 @@ class TestTraktAuthToken:
             refresh_token="refresh",
             expires_in=3600,  # 1 hour
             created_at=current_time - 7200,  # 2 hours ago
+            scope="public",
+            token_type="bearer",
         )
 
         # Create a valid token (created now, expires in 1 hour)
@@ -266,6 +270,8 @@ class TestTraktAuthToken:
             refresh_token="refresh",
             expires_in=3600,  # 1 hour
             created_at=current_time,
+            scope="public",
+            token_type="bearer",
         )
 
         # Test expiration logic (would be implemented in business logic)

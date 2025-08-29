@@ -1,5 +1,7 @@
 """Tests for UserRatingIdentifier validation (removal operations)."""
 
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
@@ -9,55 +11,85 @@ from server.sync.tools import UserRatingIdentifier
 class TestUserRatingIdentifierValidation:
     """Test validation logic for UserRatingIdentifier (removal operations)."""
 
-    def test_valid_with_trakt_id(self) -> None:
-        """Test valid identifier with trakt_id."""
-        item = UserRatingIdentifier(trakt_id="123")
-        assert item.trakt_id == "123"
-        assert item.imdb_id is None
-        assert item.tmdb_id is None
-        assert item.title is None
-        assert item.year is None
+    @pytest.mark.parametrize(
+        "kwargs,expected",
+        [
+            pytest.param(
+                {"trakt_id": "123"},
+                {
+                    "trakt_id": "123",
+                    "imdb_id": None,
+                    "tmdb_id": None,
+                    "title": None,
+                    "year": None,
+                },
+                id="trakt_id_only",
+            ),
+            pytest.param(
+                {"imdb_id": "tt1234567"},
+                {
+                    "trakt_id": None,
+                    "imdb_id": "tt1234567",
+                    "tmdb_id": None,
+                    "title": None,
+                    "year": None,
+                },
+                id="imdb_id_only",
+            ),
+            pytest.param(
+                {"tmdb_id": "456"},
+                {
+                    "trakt_id": None,
+                    "imdb_id": None,
+                    "tmdb_id": "456",
+                    "title": None,
+                    "year": None,
+                },
+                id="tmdb_id_only",
+            ),
+            pytest.param(
+                {"title": "Inception", "year": 2010},
+                {
+                    "trakt_id": None,
+                    "imdb_id": None,
+                    "tmdb_id": None,
+                    "title": "Inception",
+                    "year": 2010,
+                },
+                id="title_and_year",
+            ),
+            pytest.param(
+                {"trakt_id": "123", "imdb_id": "tt1234567", "tmdb_id": "456"},
+                {
+                    "trakt_id": "123",
+                    "imdb_id": "tt1234567",
+                    "tmdb_id": "456",
+                    "title": None,
+                    "year": None,
+                },
+                id="multiple_identifiers",
+            ),
+            pytest.param(
+                {"trakt_id": "123", "title": "Inception", "year": 2010},
+                {
+                    "trakt_id": "123",
+                    "imdb_id": None,
+                    "tmdb_id": None,
+                    "title": "Inception",
+                    "year": 2010,
+                },
+                id="identifier_and_title_year",
+            ),
+        ],
+    )
+    def test_valid_identifiers(
+        self, kwargs: dict[str, Any], expected: dict[str, Any]
+    ) -> None:
+        """Test valid identifier configurations."""
+        item = UserRatingIdentifier(**kwargs)
 
-    def test_valid_with_imdb_id(self) -> None:
-        """Test valid identifier with imdb_id."""
-        item = UserRatingIdentifier(imdb_id="tt1234567")
-        assert item.imdb_id == "tt1234567"
-        assert item.trakt_id is None
-        assert item.tmdb_id is None
-        assert item.title is None
-        assert item.year is None
-
-    def test_valid_with_tmdb_id(self) -> None:
-        """Test valid identifier with tmdb_id."""
-        item = UserRatingIdentifier(tmdb_id="456")
-        assert item.tmdb_id == "456"
-        assert item.trakt_id is None
-        assert item.imdb_id is None
-        assert item.title is None
-        assert item.year is None
-
-    def test_valid_with_title_and_year(self) -> None:
-        """Test valid identifier with title and year."""
-        item = UserRatingIdentifier(title="Inception", year=2010)
-        assert item.title == "Inception"
-        assert item.year == 2010
-        assert item.trakt_id is None
-        assert item.imdb_id is None
-        assert item.tmdb_id is None
-
-    def test_valid_with_multiple_identifiers(self) -> None:
-        """Test valid identifier with multiple IDs."""
-        item = UserRatingIdentifier(trakt_id="123", imdb_id="tt1234567", tmdb_id="456")
-        assert item.trakt_id == "123"
-        assert item.imdb_id == "tt1234567"
-        assert item.tmdb_id == "456"
-
-    def test_valid_with_identifier_and_title_year(self) -> None:
-        """Test valid identifier with both ID and title/year."""
-        item = UserRatingIdentifier(trakt_id="123", title="Inception", year=2010)
-        assert item.trakt_id == "123"
-        assert item.title == "Inception"
-        assert item.year == 2010
+        for field, expected_value in expected.items():
+            assert getattr(item, field) == expected_value
 
     def test_invalid_no_identifiers_no_title_year(self) -> None:
         """Test validation error when no identifiers or title/year provided."""
@@ -66,7 +98,7 @@ class TestUserRatingIdentifierValidation:
 
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "Rating item must include either an identifier" in error_msg
         assert "trakt_id, imdb_id, or tmdb_id" in error_msg
         assert "or both title and year" in error_msg
@@ -78,7 +110,7 @@ class TestUserRatingIdentifierValidation:
 
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "Rating item must include either an identifier" in error_msg
 
     def test_invalid_year_without_title(self) -> None:
@@ -88,7 +120,7 @@ class TestUserRatingIdentifierValidation:
 
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "Rating item must include either an identifier" in error_msg
 
     def test_invalid_empty_strings_no_title_year(self) -> None:

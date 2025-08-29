@@ -1,5 +1,7 @@
 """Tests for UserRatingRequestItem model validation."""
 
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
@@ -9,65 +11,96 @@ from server.sync.tools import UserRatingRequestItem
 class TestUserRatingRequestItemValidation:
     """Test validation logic for UserRatingRequestItem."""
 
-    def test_valid_with_trakt_id(self) -> None:
-        """Test valid request with trakt_id identifier."""
-        item = UserRatingRequestItem(rating=8, trakt_id="123")
-        assert item.rating == 8
-        assert item.trakt_id == "123"
-        assert item.imdb_id is None
-        assert item.tmdb_id is None
-        assert item.title is None
-        assert item.year is None
+    @pytest.mark.parametrize(
+        "kwargs,expected",
+        [
+            pytest.param(
+                {"rating": 8, "trakt_id": "123"},
+                {
+                    "rating": 8,
+                    "trakt_id": "123",
+                    "imdb_id": None,
+                    "tmdb_id": None,
+                    "title": None,
+                    "year": None,
+                },
+                id="trakt_id_only",
+            ),
+            pytest.param(
+                {"rating": 9, "imdb_id": "tt1234567"},
+                {
+                    "rating": 9,
+                    "trakt_id": None,
+                    "imdb_id": "tt1234567",
+                    "tmdb_id": None,
+                    "title": None,
+                    "year": None,
+                },
+                id="imdb_id_only",
+            ),
+            pytest.param(
+                {"rating": 7, "tmdb_id": "456"},
+                {
+                    "rating": 7,
+                    "trakt_id": None,
+                    "imdb_id": None,
+                    "tmdb_id": "456",
+                    "title": None,
+                    "year": None,
+                },
+                id="tmdb_id_only",
+            ),
+            pytest.param(
+                {"rating": 10, "title": "Inception", "year": 2010},
+                {
+                    "rating": 10,
+                    "trakt_id": None,
+                    "imdb_id": None,
+                    "tmdb_id": None,
+                    "title": "Inception",
+                    "year": 2010,
+                },
+                id="title_and_year",
+            ),
+            pytest.param(
+                {
+                    "rating": 6,
+                    "trakt_id": "123",
+                    "imdb_id": "tt1234567",
+                    "tmdb_id": "456",
+                },
+                {
+                    "rating": 6,
+                    "trakt_id": "123",
+                    "imdb_id": "tt1234567",
+                    "tmdb_id": "456",
+                    "title": None,
+                    "year": None,
+                },
+                id="multiple_identifiers",
+            ),
+            pytest.param(
+                {"rating": 5, "trakt_id": "123", "title": "Inception", "year": 2010},
+                {
+                    "rating": 5,
+                    "trakt_id": "123",
+                    "imdb_id": None,
+                    "tmdb_id": None,
+                    "title": "Inception",
+                    "year": 2010,
+                },
+                id="identifier_and_title_year",
+            ),
+        ],
+    )
+    def test_valid_request_items(
+        self, kwargs: dict[str, Any], expected: dict[str, Any]
+    ) -> None:
+        """Test valid rating request item configurations."""
+        item = UserRatingRequestItem(**kwargs)
 
-    def test_valid_with_imdb_id(self) -> None:
-        """Test valid request with imdb_id identifier."""
-        item = UserRatingRequestItem(rating=9, imdb_id="tt1234567")
-        assert item.rating == 9
-        assert item.imdb_id == "tt1234567"
-        assert item.trakt_id is None
-        assert item.tmdb_id is None
-        assert item.title is None
-        assert item.year is None
-
-    def test_valid_with_tmdb_id(self) -> None:
-        """Test valid request with tmdb_id identifier."""
-        item = UserRatingRequestItem(rating=7, tmdb_id="456")
-        assert item.rating == 7
-        assert item.tmdb_id == "456"
-        assert item.trakt_id is None
-        assert item.imdb_id is None
-        assert item.title is None
-        assert item.year is None
-
-    def test_valid_with_title_and_year(self) -> None:
-        """Test valid request with title and year."""
-        item = UserRatingRequestItem(rating=10, title="Inception", year=2010)
-        assert item.rating == 10
-        assert item.title == "Inception"
-        assert item.year == 2010
-        assert item.trakt_id is None
-        assert item.imdb_id is None
-        assert item.tmdb_id is None
-
-    def test_valid_with_multiple_identifiers(self) -> None:
-        """Test valid request with multiple identifiers."""
-        item = UserRatingRequestItem(
-            rating=6, trakt_id="123", imdb_id="tt1234567", tmdb_id="456"
-        )
-        assert item.rating == 6
-        assert item.trakt_id == "123"
-        assert item.imdb_id == "tt1234567"
-        assert item.tmdb_id == "456"
-
-    def test_valid_with_identifier_and_title_year(self) -> None:
-        """Test valid request with both identifier and title/year."""
-        item = UserRatingRequestItem(
-            rating=5, trakt_id="123", title="Inception", year=2010
-        )
-        assert item.rating == 5
-        assert item.trakt_id == "123"
-        assert item.title == "Inception"
-        assert item.year == 2010
+        for field, expected_value in expected.items():
+            assert getattr(item, field) == expected_value
 
     def test_invalid_no_identifiers_no_title_year(self) -> None:
         """Test validation error when no identifiers or title/year provided."""
@@ -76,7 +109,7 @@ class TestUserRatingRequestItemValidation:
 
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "Rating item must include either an identifier" in error_msg
         assert "trakt_id, imdb_id, or tmdb_id" in error_msg
         assert "or both title and year" in error_msg
@@ -88,7 +121,7 @@ class TestUserRatingRequestItemValidation:
 
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "Rating item must include either an identifier" in error_msg
 
     def test_invalid_year_without_title(self) -> None:
@@ -98,7 +131,7 @@ class TestUserRatingRequestItemValidation:
 
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "Rating item must include either an identifier" in error_msg
 
     def test_invalid_empty_strings_no_title_year(self) -> None:
@@ -116,7 +149,7 @@ class TestUserRatingRequestItemValidation:
         with pytest.raises(ValidationError) as exc_info:
             UserRatingRequestItem(rating=8, trakt_id="   ", imdb_id="  ", tmdb_id=" ")
 
-        # Whitespace strings fail min_length validation before stripping occurs
+        # Whitespace strings are stripped first, then min_length validation fails
         error = exc_info.value.errors()[0]
         assert error["type"] == "string_too_short"
         assert error["loc"] == ("trakt_id",)
@@ -183,3 +216,10 @@ class TestUserRatingRequestItemValidation:
         error = exc_info.value.errors()[0]
         assert error["type"] == "string_too_short"
         assert error["loc"] == ("title",)
+
+    def test_missing_rating_is_invalid(self) -> None:
+        """Rating is required for request items."""
+        with pytest.raises(ValidationError) as exc_info:
+            UserRatingRequestItem(trakt_id="123")  # type: ignore[call-arg]
+        error = exc_info.value.errors()[0]
+        assert error["loc"] == ("rating",)

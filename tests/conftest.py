@@ -32,6 +32,24 @@ def mock_auth_token():
 
 
 @pytest.fixture
+def authenticated_sync_client():
+    """Create an authenticated sync client for testing."""
+    from client.sync.client import SyncClient
+    from models.auth.auth import TraktAuthToken
+
+    client = SyncClient()
+    client.auth_token = TraktAuthToken(
+        access_token="test_access_token",
+        refresh_token="test_refresh_token",
+        expires_in=7200,
+        created_at=int(time.time()),
+        scope="public",
+        token_type="bearer",
+    )
+    return client
+
+
+@pytest.fixture
 def sample_show_data():
     """Sample show data for testing."""
     return {

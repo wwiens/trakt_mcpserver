@@ -304,27 +304,25 @@ class TestTraktSyncRatingsRequest:
         assert request.episodes is None
 
     def test_mixed_ratings_request(self) -> None:
-        """Test creating a request with multiple content types."""
+        """Test that requests with multiple content types are rejected."""
         movies = [TraktSyncRatingItem(rating=8, ids={"imdb": "tt1375666"})]
         shows = [TraktSyncRatingItem(rating=9, ids={"trakt": "123"})]
 
-        request = TraktSyncRatingsRequest(movies=movies, shows=shows)
+        with pytest.raises(ValidationError) as exc_info:
+            TraktSyncRatingsRequest(movies=movies, shows=shows)
 
-        assert request.movies is not None
-        assert len(request.movies) == 1
-        assert request.shows is not None
-        assert len(request.shows) == 1
-        assert request.seasons is None
-        assert request.episodes is None
+        error = exc_info.value.errors()[0]
+        assert error["type"] == "value_error"
+        assert "Only one ratings list allowed per request" in error["msg"]
 
     def test_empty_request(self) -> None:
-        """Test creating an empty request."""
-        request = TraktSyncRatingsRequest()
+        """Test that empty requests are rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            TraktSyncRatingsRequest()
 
-        assert request.movies is None
-        assert request.shows is None
-        assert request.seasons is None
-        assert request.episodes is None
+        error = exc_info.value.errors()[0]
+        assert error["type"] == "value_error"
+        assert "At least one ratings list must be provided" in error["msg"]
 
 
 class TestSyncRatingsSummaryCount:

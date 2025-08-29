@@ -3,13 +3,39 @@
 from datetime import datetime
 from typing import Literal, NotRequired, TypedDict
 
+# Shared type aliases to reduce repetition and keep lines under 88 chars
+IDsDict = dict[str, str | int | None]
+MediaType = Literal["image", "audio", "video", "document"]
+RatingValue = Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+
+class ItemRefTestData(TypedDict, total=False):
+    id: str
+    type: str
+
+
+# Sync rating specific aliases
+SyncMediaType = Literal["movie", "show", "season", "episode"]
+SyncMediaItemTestData = dict[str, str | int | None | IDsDict]
+
+
+class NotFoundItemTestData(TypedDict, total=False):
+    """Type definition for items not found during sync operations."""
+
+    trakt_id: int | None
+    imdb_id: str | None
+    tmdb_id: int | None
+    title: str | None
+    year: int | None
+    ids: IDsDict
+
 
 class ShowTestData(TypedDict):
     """Type definition for show test data."""
 
     title: str
     year: int
-    ids: dict[str, str | int | None]
+    ids: IDsDict
     overview: NotRequired[str | None]
 
 
@@ -18,7 +44,7 @@ class MovieTestData(TypedDict):
 
     title: str
     year: int
-    ids: dict[str, str | int | None]
+    ids: IDsDict
     overview: NotRequired[str | None]
 
 
@@ -28,7 +54,7 @@ class EpisodeTestData(TypedDict):
     season: int
     number: int
     title: NotRequired[str | None]
-    ids: NotRequired[dict[str, str | int | None] | None]
+    ids: NotRequired[IDsDict | None]
     last_watched_at: NotRequired[str | None]
 
 
@@ -57,26 +83,22 @@ class SyncRatingTestData(TypedDict):
     """Type definition for sync rating test data."""
 
     rated_at: datetime
-    rating: int
-    type: Literal["movie", "show", "season", "episode"]
-    movie: NotRequired[dict[str, str | int | None | dict[str, str | int | None]] | None]
-    show: NotRequired[dict[str, str | int | None | dict[str, str | int | None]] | None]
-    season: NotRequired[
-        dict[str, str | int | None | dict[str, str | int | None]] | None
-    ]
-    episode: NotRequired[
-        dict[str, str | int | None | dict[str, str | int | None]] | None
-    ]
+    rating: RatingValue
+    type: SyncMediaType
+    movie: NotRequired[SyncMediaItemTestData | None]
+    show: NotRequired[SyncMediaItemTestData | None]
+    season: NotRequired[SyncMediaItemTestData | None]
+    episode: NotRequired[SyncMediaItemTestData | None]
 
 
 class SyncRatingItemTestData(TypedDict):
     """Type definition for sync rating item test data."""
 
-    rating: NotRequired[int | None]
+    rating: NotRequired[RatingValue | None]
     rated_at: NotRequired[datetime | None]
     title: NotRequired[str | None]
     year: NotRequired[int | None]
-    ids: NotRequired[dict[str, str | int | None] | None]
+    ids: NotRequired[IDsDict | None]
 
 
 class SyncRatingsSummaryTestData(TypedDict):
@@ -84,9 +106,7 @@ class SyncRatingsSummaryTestData(TypedDict):
 
     added: NotRequired[dict[str, int] | None]
     removed: NotRequired[dict[str, int] | None]
-    not_found: dict[
-        str, list[dict[str, str | int | None | dict[str, str | int | None]]]
-    ]
+    not_found: dict[str, list[NotFoundItemTestData]]
 
 
 class TrendingShowTestData(TypedDict):

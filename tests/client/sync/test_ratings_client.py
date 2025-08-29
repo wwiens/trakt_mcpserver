@@ -242,7 +242,9 @@ class TestSyncRatingsClient:
         self, unauthenticated_client: SyncRatingsClient
     ) -> None:
         """Test that unauthenticated add requests raise ValueError."""
-        request = TraktSyncRatingsRequest()
+        request = TraktSyncRatingsRequest(
+            movies=[TraktSyncRatingItem(rating=8, ids={"trakt": 123})]
+        )
 
         with pytest.raises(
             ValueError, match="You must be authenticated to add personal ratings"
@@ -300,7 +302,9 @@ class TestSyncRatingsClient:
         self, unauthenticated_client: SyncRatingsClient
     ) -> None:
         """Test that unauthenticated remove requests raise ValueError."""
-        request = TraktSyncRatingsRequest()
+        request = TraktSyncRatingsRequest(
+            movies=[TraktSyncRatingItem(ids={"trakt": 123})]
+        )
 
         with pytest.raises(
             ValueError, match="You must be authenticated to remove personal ratings"
@@ -335,7 +339,9 @@ class TestSyncRatingsClient:
             # Mock an HTTP error response
             mock_request.side_effect = Exception("HTTP error")
 
-            request = TraktSyncRatingsRequest(movies=[])
+            request = TraktSyncRatingsRequest(
+                movies=[TraktSyncRatingItem(rating=8, ids={"trakt": 123})]
+            )
 
             with pytest.raises(Exception, match="HTTP error"):
                 await authenticated_client.add_sync_ratings(request)

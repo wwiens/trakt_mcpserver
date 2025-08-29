@@ -3,19 +3,12 @@
 from __future__ import annotations
 
 import os
-import sys
-import time
-from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Add the project root directory to Python path
-sys.path.append(str(Path(__file__).parent.parent.parent))
-
 from client.sync.client import SyncClient
-from models.auth.auth import TraktAuthToken
 
 # TYPE_CHECKING imports removed as not actually used in runtime
 
@@ -99,7 +92,9 @@ SAMPLE_REMOVE_RATINGS_RESPONSE: dict[str, Any] = {
 
 
 @pytest.mark.asyncio
-async def test_fetch_user_ratings_integration() -> None:
+async def test_fetch_user_ratings_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test complete flow from server tool to client for fetching user ratings."""
 
     # Set up mock HTTP responses
@@ -120,18 +115,9 @@ async def test_fetch_user_ratings_integration() -> None:
 
         mock_instance.get.return_value = ratings_mock
 
-        # Create authenticated sync client
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             # Test fetching all movies
@@ -150,7 +136,9 @@ async def test_fetch_user_ratings_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_fetch_user_ratings_with_rating_filter_integration() -> None:
+async def test_fetch_user_ratings_with_rating_filter_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test fetching user ratings with rating filter through complete stack."""
 
     # Filter for only shows with rating 8
@@ -175,17 +163,9 @@ async def test_fetch_user_ratings_with_rating_filter_integration() -> None:
 
         mock_instance.get.return_value = ratings_mock
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="shows", rating=8)
@@ -202,7 +182,9 @@ async def test_fetch_user_ratings_with_rating_filter_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_add_user_ratings_integration() -> None:
+async def test_add_user_ratings_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test complete flow for adding user ratings."""
 
     with (
@@ -221,17 +203,9 @@ async def test_add_user_ratings_integration() -> None:
 
         mock_instance.post.return_value = add_mock
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import add_user_ratings
 
             # Sample request data - using flat structure
@@ -254,7 +228,9 @@ async def test_add_user_ratings_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_remove_user_ratings_integration() -> None:
+async def test_remove_user_ratings_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test complete flow for removing user ratings."""
 
     with (
@@ -273,17 +249,9 @@ async def test_remove_user_ratings_integration() -> None:
 
         mock_instance.post.return_value = remove_mock
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import remove_user_ratings
 
             # Sample request data (no rating needed for removal) - using flat structure
@@ -306,7 +274,9 @@ async def test_remove_user_ratings_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_authentication_flow_integration() -> None:
+async def test_authentication_flow_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test that sync ratings operations require authentication."""
 
     with patch.dict(
@@ -349,7 +319,9 @@ async def test_authentication_flow_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_error_propagation_integration() -> None:
+async def test_error_propagation_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test error propagation through the complete sync ratings stack."""
 
     with (
@@ -363,17 +335,9 @@ async def test_error_propagation_integration() -> None:
         mock_instance = mock_client.return_value.__aenter__.return_value
         mock_instance.get.side_effect = Exception("API connection error")
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
             from utils.api.errors import InternalError
 
@@ -385,7 +349,9 @@ async def test_error_propagation_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_empty_ratings_response_integration() -> None:
+async def test_empty_ratings_response_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test handling of empty ratings response through complete stack."""
 
     with (
@@ -404,17 +370,9 @@ async def test_empty_ratings_response_integration() -> None:
 
         mock_instance.get.return_value = empty_mock
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="episodes")
@@ -425,7 +383,9 @@ async def test_empty_ratings_response_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mixed_content_types_integration() -> None:
+async def test_mixed_content_types_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test fetching ratings for different content types in sequence."""
 
     with (
@@ -465,17 +425,9 @@ async def test_mixed_content_types_integration() -> None:
 
         mock_instance.get.side_effect = mock_get_side_effect
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             # Test movies
@@ -495,7 +447,9 @@ async def test_mixed_content_types_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_rating_grouping_integration() -> None:
+async def test_rating_grouping_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test that ratings are properly grouped by score in formatted output."""
 
     # Create ratings with different scores for grouping test
@@ -535,17 +489,9 @@ async def test_rating_grouping_integration() -> None:
 
         mock_instance.get.return_value = ratings_mock
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="movies")
@@ -565,7 +511,9 @@ async def test_rating_grouping_integration() -> None:
 
 # Pagination integration tests
 @pytest.mark.asyncio
-async def test_fetch_user_ratings_paginated_integration() -> None:
+async def test_fetch_user_ratings_paginated_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test complete flow for paginated user ratings fetching."""
 
     with (
@@ -594,18 +542,9 @@ async def test_fetch_user_ratings_paginated_integration() -> None:
 
         mock_instance.get.return_value = ratings_mock
 
-        # Create authenticated sync client
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             # Test fetching page 1 of movies
@@ -634,7 +573,9 @@ async def test_fetch_user_ratings_paginated_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_fetch_user_ratings_paginated_last_page_integration() -> None:
+async def test_fetch_user_ratings_paginated_last_page_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test paginated user ratings on the last page (no next page navigation)."""
 
     with (
@@ -660,17 +601,9 @@ async def test_fetch_user_ratings_paginated_last_page_integration() -> None:
 
         mock_instance.get.return_value = ratings_mock
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="episodes", page=2)
@@ -689,7 +622,9 @@ async def test_fetch_user_ratings_paginated_last_page_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_fetch_user_ratings_paginated_with_rating_filter_integration() -> None:
+async def test_fetch_user_ratings_paginated_with_rating_filter_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test paginated user ratings with rating filter through complete stack."""
 
     # Filter response to only rating=10 content
@@ -717,17 +652,9 @@ async def test_fetch_user_ratings_paginated_with_rating_filter_integration() -> 
 
         mock_instance.get.return_value = ratings_mock
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="movies", rating=10, page=1)
@@ -745,7 +672,9 @@ async def test_fetch_user_ratings_paginated_with_rating_filter_integration() -> 
 
 
 @pytest.mark.asyncio
-async def test_fetch_user_ratings_paginated_empty_result_integration() -> None:
+async def test_fetch_user_ratings_paginated_empty_result_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test paginated user ratings with empty results through complete stack."""
 
     with (
@@ -771,17 +700,9 @@ async def test_fetch_user_ratings_paginated_empty_result_integration() -> None:
 
         mock_instance.get.return_value = empty_mock
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="seasons", page=1)
@@ -797,7 +718,9 @@ async def test_fetch_user_ratings_paginated_empty_result_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_fetch_user_ratings_backward_compatibility_integration() -> None:
+async def test_fetch_user_ratings_backward_compatibility_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test that non-paginated requests still work alongside paginated ones."""
 
     with (
@@ -816,17 +739,9 @@ async def test_fetch_user_ratings_backward_compatibility_integration() -> None:
 
         mock_instance.get.return_value = ratings_mock
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             # Test without page parameter (non-paginated request)
@@ -846,7 +761,9 @@ async def test_fetch_user_ratings_backward_compatibility_integration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_fetch_user_ratings_pagination_error_handling_integration() -> None:
+async def test_fetch_user_ratings_pagination_error_handling_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test pagination error handling through complete stack."""
 
     with (
@@ -861,17 +778,9 @@ async def test_fetch_user_ratings_pagination_error_handling_integration() -> Non
         # Mock HTTP error during paginated request
         mock_instance.get.side_effect = Exception("Pagination API error")
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
             from utils.api.errors import InternalError
 
@@ -887,7 +796,9 @@ async def test_fetch_user_ratings_pagination_error_handling_integration() -> Non
 
 
 @pytest.mark.asyncio
-async def test_fetch_user_ratings_pagination_authentication_flow_integration() -> None:
+async def test_fetch_user_ratings_pagination_authentication_flow_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test that paginated requests require authentication just like regular requests."""
 
     with patch.dict(
@@ -910,7 +821,9 @@ async def test_fetch_user_ratings_pagination_authentication_flow_integration() -
 
 
 @pytest.mark.asyncio
-async def test_fetch_user_ratings_pagination_headers_extraction_integration() -> None:
+async def test_fetch_user_ratings_pagination_headers_extraction_integration(
+    authenticated_sync_client: SyncClient,
+) -> None:
     """Test that pagination headers are correctly extracted and processed."""
 
     with (
@@ -936,17 +849,9 @@ async def test_fetch_user_ratings_pagination_headers_extraction_integration() ->
 
         mock_instance.get.return_value = ratings_mock
 
-        sync_client = SyncClient()
-        sync_client.auth_token = TraktAuthToken(
-            access_token="test_access_token",
-            refresh_token="test_refresh_token",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-
-        with patch("server.sync.tools.SyncClient", return_value=sync_client):
+        with patch(
+            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="shows", page=3)

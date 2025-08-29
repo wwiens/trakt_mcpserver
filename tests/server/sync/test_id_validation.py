@@ -28,7 +28,7 @@ class TestIDValidationInSyncTools:
 
             error = exc_info.value.errors()[0]
             assert error["type"] == "value_error"
-            error_msg = str(error.get("ctx", {}).get("error", ""))
+            error_msg = error["msg"]
             assert "trakt_id must be numeric" in error_msg
             assert invalid_id in error_msg
 
@@ -46,7 +46,7 @@ class TestIDValidationInSyncTools:
 
             error = exc_info.value.errors()[0]
             assert error["type"] == "value_error"
-            error_msg = str(error.get("ctx", {}).get("error", ""))
+            error_msg = error["msg"]
             assert "tmdb_id must be numeric" in error_msg
             assert invalid_id in error_msg
 
@@ -63,7 +63,7 @@ class TestIDValidationInSyncTools:
 
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "trakt_id must be numeric" in error_msg
         assert "invalid_id" in error_msg
 
@@ -80,7 +80,7 @@ class TestIDValidationInSyncTools:
 
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "tmdb_id must be numeric" in error_msg
         assert "not_numeric" in error_msg
 
@@ -136,7 +136,7 @@ class TestIDValidationInSyncTools:
 
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "trakt_id must be numeric" in error_msg
         assert "bad_trakt_id" in error_msg
 
@@ -151,7 +151,7 @@ class TestIDValidationInSyncTools:
 
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "tmdb_id must be numeric" in error_msg
         assert "non.numeric" in error_msg
 
@@ -208,23 +208,30 @@ class TestIDValidationInSyncTools:
         error = exc_info.value.errors()[0]
         assert error["type"] == "value_error"
         assert error["loc"] == ("trakt_id",)
-        error_msg = str(error.get("ctx", {}).get("error", ""))
+        error_msg = error["msg"]
         assert "trakt_id must be numeric" in error_msg
         assert "invalid123" in error_msg
 
+    @pytest.mark.parametrize(
+        "field,invalid_value,expected_message",
+        [
+            ("trakt_id", "bad_trakt", "trakt_id must be numeric"),
+            ("tmdb_id", "bad_tmdb", "tmdb_id must be numeric"),
+        ],
+    )
     @pytest.mark.asyncio
-    async def test_multiple_validation_errors(self) -> None:
-        """Test that multiple invalid IDs are caught in validation."""
-        invalid_items = [{"rating": 6, "trakt_id": "bad_trakt", "tmdb_id": "bad_tmdb"}]
+    async def test_multiple_validation_errors_parametrized(
+        self, field: str, invalid_value: str, expected_message: str
+    ) -> None:
+        """Test that each invalid ID field generates the expected validation error."""
+        invalid_items = [{"rating": 6, field: invalid_value}]
 
-        # Should catch the first validation error
         with pytest.raises(ValidationError) as exc_info:
             await add_user_ratings(rating_type="movies", items=invalid_items)
 
-        # Pydantic reports multiple errors when possible
-        errors = exc_info.value.errors()
-        assert len(errors) >= 1
-
-        # Check that at least one numeric validation error is present
-        error_types = [error["type"] for error in errors]
-        assert "value_error" in error_types
+        error = exc_info.value.errors()[0]
+        assert error["type"] == "value_error"
+        assert error["loc"] == (field,)
+        error_msg = error["msg"]
+        assert expected_message in error_msg
+        assert invalid_value in error_msg
