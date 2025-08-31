@@ -20,24 +20,6 @@ class ItemRefTestData(TypedDict, total=False):
 SyncMediaType = Literal["movie", "show", "season", "episode"]
 
 
-class SyncMediaItemTestData(TypedDict, total=False):
-    """Type definition for sync media item test data.
-
-    Covers fields from TraktMovie, TraktShow, TraktSeason, and TraktEpisode models.
-    """
-
-    # Common fields for movies and shows
-    title: str | None
-    year: int | None
-    ids: IDsDict | None
-    overview: str | None
-
-    # Season and episode specific fields
-    number: int | None  # Season number or episode number
-    season: int | None  # Episode season number
-    last_watched_at: str | None  # Episode watch timestamp
-
-
 class NotFoundItemTestData(ItemRefTestData, total=False):
     """Item reference for not_found buckets (ids/title/year only)."""
 

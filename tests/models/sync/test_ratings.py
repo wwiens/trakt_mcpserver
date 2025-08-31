@@ -312,7 +312,7 @@ class TestTraktSyncRatingsRequest:
             TraktSyncRatingsRequest(movies=movies, shows=shows)
 
         error = exc_info.value.errors()[0]
-        assert error["type"] == "value_error"
+        assert error["type"] == "ratings.multiple_collections"
         assert "Only one ratings list allowed per request" in error["msg"]
 
     def test_empty_request(self) -> None:
@@ -321,7 +321,7 @@ class TestTraktSyncRatingsRequest:
             TraktSyncRatingsRequest()
 
         error = exc_info.value.errors()[0]
-        assert error["type"] == "value_error"
+        assert error["type"] == "ratings.collection_missing"
         assert "At least one ratings list must be provided" in error["msg"]
 
 

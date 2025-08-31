@@ -2,6 +2,7 @@ import os
 import sys
 import time
 from collections.abc import Generator
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -9,6 +10,7 @@ import pytest
 
 if TYPE_CHECKING:
     from client.sync.client import SyncClient
+    from models.auth.auth import TraktAuthToken
 
 # Add project root to path - more explicit approach
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -37,20 +39,11 @@ def mock_auth_token():
 
 
 @pytest.fixture
-def authenticated_sync_client() -> Generator["SyncClient", None, None]:
+def authenticated_sync_client(
+    mock_auth_token: "TraktAuthToken",
+) -> Generator["SyncClient", None, None]:
     """Create an authenticated sync client for testing."""
     from client.sync.client import SyncClient
-    from models.auth.auth import TraktAuthToken
-
-    # Consolidate token construction into a single variable
-    mock_auth_token = TraktAuthToken(
-        access_token="test_access_token",
-        refresh_token="test_refresh_token",
-        expires_in=7200,
-        created_at=int(time.time()),
-        scope="public",
-        token_type="bearer",
-    )
 
     client = SyncClient()
     client.auth_token = mock_auth_token
@@ -59,23 +52,9 @@ def authenticated_sync_client() -> Generator["SyncClient", None, None]:
 
     # Cleanup: check for and call client.close() if it exists
     if hasattr(client, "close"):
-        close_method = getattr(client, "close", None)
-        if close_method and callable(close_method):
-            try:
-                result = close_method()
-                # Check if result is awaitable (for async methods)
-                if hasattr(result, "__await__"):
-                    import asyncio
-
-                    try:
-                        asyncio.get_event_loop().run_until_complete(result)  # type: ignore[arg-type]
-                    except RuntimeError:
-                        # No event loop running, create a new one
-                        asyncio.run(result)  # type: ignore[arg-type]
-            except Exception:
-                # Ignore cleanup errors to avoid breaking tests - client may not have close()
-                # or cleanup may fail, but we don't want this to break test execution
-                return
+        # Ignore cleanup errors to avoid breaking tests
+        with suppress(Exception):
+            client.close()  # type: ignore[attr-defined]
 
 
 @pytest.fixture

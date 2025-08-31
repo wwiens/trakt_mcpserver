@@ -3,6 +3,7 @@
 from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic_core import PydanticCustomError
 
 from .base import TraktSyncRatingItem
 
@@ -17,37 +18,37 @@ class TraktSyncRatingsRequest(BaseModel):
     FIELDS: ClassVar[tuple[str, ...]] = ("movies", "shows", "seasons", "episodes")
 
     # Reject unknown fields to avoid silent payload issues
-    model_config = ConfigDict(extra="forbid")
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
     movies: list[TraktSyncRatingItem] | None = Field(
-        default=None, description="Ratings payload for movies"
+        default=None, min_length=1, description="Ratings payload for movies"
     )
     shows: list[TraktSyncRatingItem] | None = Field(
-        default=None, description="Ratings payload for shows"
+        default=None, min_length=1, description="Ratings payload for shows"
     )
     seasons: list[TraktSyncRatingItem] | None = Field(
-        default=None, description="Ratings payload for seasons"
+        default=None, min_length=1, description="Ratings payload for seasons"
     )
     episodes: list[TraktSyncRatingItem] | None = Field(
-        default=None, description="Ratings payload for episodes"
+        default=None, min_length=1, description="Ratings payload for episodes"
     )
 
     def _non_empty_lists(self) -> list[str]:
-        present: list[str] = []
-        for name in self.FIELDS:
-            items = getattr(self, name)
-            if items:
-                present.append(name)
-        return present
+        return [name for name in self.FIELDS if getattr(self, name)]
 
     @model_validator(mode="after")
     def validate_exactly_one_list(self) -> "TraktSyncRatingsRequest":
         """Validate that exactly one non-empty ratings list is provided."""
         present = self._non_empty_lists()
         if len(present) == 0:
-            raise ValueError("At least one ratings list must be provided")
+            raise PydanticCustomError(
+                "ratings.collection_missing",
+                "At least one ratings list must be provided",
+            )
         if len(present) > 1:
-            raise ValueError(
-                f"Only one ratings list allowed per request, got: {', '.join(present)}"
+            raise PydanticCustomError(
+                "ratings.multiple_collections",
+                "Only one ratings list allowed per request, got: {collections}",
+                {"collections": ", ".join(present)},
             )
         return self
