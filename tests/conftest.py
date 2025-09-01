@@ -1,9 +1,16 @@
 import os
 import sys
 import time
+from collections.abc import Generator
+from contextlib import suppress
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from client.sync.client import SyncClient
+    from models.auth.auth import TraktAuthToken
 
 # Add project root to path - more explicit approach
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -29,6 +36,25 @@ def mock_auth_token():
         scope="public",
         token_type="bearer",
     )
+
+
+@pytest.fixture
+def authenticated_sync_client(
+    mock_auth_token: "TraktAuthToken",
+) -> Generator["SyncClient", None, None]:
+    """Create an authenticated sync client for testing."""
+    from client.sync.client import SyncClient
+
+    client = SyncClient()
+    client.auth_token = mock_auth_token
+
+    yield client
+
+    # Cleanup: check for and call client.close() if it exists
+    if hasattr(client, "close"):
+        # Ignore cleanup errors to avoid breaking tests
+        with suppress(Exception):
+            client.close()  # type: ignore[attr-defined]
 
 
 @pytest.fixture

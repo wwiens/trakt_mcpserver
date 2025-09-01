@@ -34,6 +34,10 @@ from .common import (
     TRequest,
     TResponse,
 )
+from .pagination import (
+    PaginationMetadata,
+    PaginationParams,
+)
 from .protocols import (
     AuthClientProtocol,
     CheckinClientProtocol,
@@ -58,6 +62,9 @@ __all__ = [
     "MoviesClientProtocol",
     # Common Types
     "PaginatedResponse",
+    # Pagination Types
+    "PaginationMetadata",
+    "PaginationParams",
     "PlayedMovieWrapper",
     "PlayedShowWrapper",
     "SearchClientProtocol",
