@@ -1,11 +1,11 @@
 """TypedDict definitions for test data to ensure type safety in model tests."""
 
 from datetime import datetime
-from typing import Literal, NotRequired, TypedDict
+from typing import Literal, NotRequired, TypeAlias, TypedDict
 
 # Shared type aliases to reduce repetition and keep lines under 88 chars
-IDsDict = dict[str, str | int | None]
-RatingValue = Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+IDsDict: TypeAlias = dict[str, str | int | None]
+RatingValue: TypeAlias = Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 
 class ItemRefTestData(TypedDict, total=False):
@@ -17,7 +17,8 @@ class ItemRefTestData(TypedDict, total=False):
 
 
 # Sync rating specific aliases
-SyncMediaType = Literal["movie", "show", "season", "episode"]
+SyncMediaType: TypeAlias = Literal["movie", "show", "season", "episode"]
+SyncCollectionKey: TypeAlias = Literal["movies", "shows", "seasons", "episodes"]
 
 
 class NotFoundItemTestData(ItemRefTestData, total=False):
@@ -104,7 +105,7 @@ class SyncRatingsSummaryTestData(TypedDict):
 
     added: NotRequired[dict[str, int] | None]
     removed: NotRequired[dict[str, int] | None]
-    not_found: dict[str, list[NotFoundItemTestData]]
+    not_found: dict[SyncCollectionKey, list[NotFoundItemTestData]]
 
 
 class TrendingShowTestData(TypedDict):

@@ -7,6 +7,8 @@ from pydantic_core import PydanticCustomError
 
 from .base import TraktSyncRatingItem
 
+__all__ = ["TraktSyncRatingsRequest"]
+
 
 class TraktSyncRatingsRequest(BaseModel):
     """Request structure for POST/DELETE sync ratings operations.
