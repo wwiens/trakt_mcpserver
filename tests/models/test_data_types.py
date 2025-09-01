@@ -103,8 +103,8 @@ class SyncRatingTestData(TypedDict):
 class SyncRatingsSummaryTestData(TypedDict):
     """Type definition for sync ratings summary test data."""
 
-    added: NotRequired[dict[str, int] | None]
-    removed: NotRequired[dict[str, int] | None]
+    added: NotRequired[dict[SyncCollectionKey, int] | None]
+    removed: NotRequired[dict[SyncCollectionKey, int] | None]
     not_found: dict[SyncCollectionKey, list[NotFoundItemTestData]]
 
 
