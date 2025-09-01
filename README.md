@@ -322,6 +322,38 @@ You can log out at any time using the `clear_auth` tool.
    python server.py
    ```
 
+## 🐳 Run with Docker (SSE/HTTP mode)
+
+You can also deploy this MCP server using Docker with SSE (HTTP) transport.  
+This runs the server on `http://localhost:8080` and proxies MCP requests over SSE.
+
+### Option 1: Using `docker run`
+
+```bash
+# Build the image (from project root, where the Dockerfile is located)
+docker build -t trakt_mcpserver .
+
+# Run the container using .env file
+docker run -it --rm \
+  --env-file .env \
+  -p 8080:8080 \
+  trakt_mcpserver
+
+# Or run the container setting env variables
+docker run -it --rm \
+  -e TRAKT_CLIENT_ID=your_client_id \
+  -e TRAKT_CLIENT_SECRET=your_client_secret \
+  -p 8080:8080 \
+  trakt_mcpserver
+```
+
+### Option 2: Using `docker compose`
+
+```bash
+# Builds the docker image and starts the service
+docker compose up
+```
+
 ## 🧪 Development & Testing
 
 ### Testing with MCP Inspector

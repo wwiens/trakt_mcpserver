@@ -1,0 +1,24 @@
+# Version control (git metadata & config)
+.git
+.gitignore
+
+# Python cache / compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pytest_cache/
+
+# Local / environment-specific configs
+.env
+*.env
+*.local
+*.log
+
+# Keep template env file available in image
+!.env.example
+
+# Development / editor files
+tests/
+.vscode/
+.idea/
