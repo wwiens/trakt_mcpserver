@@ -49,7 +49,7 @@ async def test_fetch_movie_comments():
         assert "This movie was groundbreaking!" in result
 
         mock_client.get_movie_comments.assert_called_once_with(
-            "1", limit=5, sort="newest"
+            "1", limit=5, sort="newest", page=None
         )
 
 
@@ -83,7 +83,7 @@ async def test_fetch_show_comments():
         assert "This show was amazing!" in result
 
         mock_client.get_show_comments.assert_called_once_with(
-            "1", limit=5, sort="newest"
+            "1", limit=5, sort="newest", page=None
         )
 
 
@@ -117,7 +117,7 @@ async def test_fetch_season_comments():
         assert "This season was amazing!" in result
 
         mock_client.get_season_comments.assert_called_once_with(
-            "1", 1, limit=5, sort="newest"
+            "1", 1, limit=5, sort="newest", page=None
         )
 
 
@@ -151,7 +151,7 @@ async def test_fetch_episode_comments():
         assert "This episode was incredible!" in result
 
         mock_client.get_episode_comments.assert_called_once_with(
-            "1", 1, 1, limit=5, sort="newest"
+            "1", 1, 1, limit=5, sort="newest", page=None
         )
 
 
@@ -230,7 +230,7 @@ async def test_fetch_comment_replies():
 
         mock_client.get_comment.assert_called_once_with("123")
         mock_client.get_comment_replies.assert_called_once_with(
-            "123", limit=5, sort="newest"
+            "123", limit=5, sort="newest", page=None
         )
 
 
@@ -250,7 +250,7 @@ async def test_fetch_movie_comments_error_handling():
             await fetch_movie_comments(movie_id="123")
 
         mock_client.get_movie_comments.assert_called_once_with(
-            "123", limit=10, sort="newest"
+            "123", limit=10, sort="newest", page=None
         )
 
 
@@ -270,7 +270,7 @@ async def test_fetch_show_comments_error_handling():
             await fetch_show_comments(show_id="123")
 
         mock_client.get_show_comments.assert_called_once_with(
-            "123", limit=10, sort="newest"
+            "123", limit=10, sort="newest", page=None
         )
 
 
@@ -290,7 +290,7 @@ async def test_fetch_season_comments_error_handling():
             await fetch_season_comments(show_id="1", season=1)
 
         mock_client.get_season_comments.assert_called_once_with(
-            "1", 1, limit=10, sort="newest"
+            "1", 1, limit=10, sort="newest", page=None
         )
 
 
@@ -312,7 +312,7 @@ async def test_fetch_episode_comments_error_handling():
             await fetch_episode_comments(show_id="1", season=1, episode=1)
 
         mock_client.get_episode_comments.assert_called_once_with(
-            "1", 1, 1, limit=10, sort="newest"
+            "1", 1, 1, limit=10, sort="newest", page=None
         )
 
 
@@ -366,7 +366,7 @@ async def test_fetch_comment_replies_string_error_handling():
         assert "Error accessing comment_replies" in str(exc_info.value)
         mock_client.get_comment.assert_called_once_with("123")
         mock_client.get_comment_replies.assert_called_once_with(
-            "123", limit=5, sort="newest"
+            "123", limit=5, sort="newest", page=None
         )
 
 
@@ -431,7 +431,7 @@ async def test_fetch_movie_comments_with_spoilers():
         assert "Neo is the one!" in result
 
         mock_client.get_movie_comments.assert_called_once_with(
-            "1", limit=10, sort="newest"
+            "1", limit=10, sort="newest", page=None
         )
 
 
@@ -465,5 +465,5 @@ async def test_fetch_show_comments_with_different_sort():
         assert "This show was amazing!" in result
 
         mock_client.get_show_comments.assert_called_once_with(
-            "1", limit=10, sort="likes"
+            "1", limit=10, sort="likes", page=None
         )

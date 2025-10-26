@@ -1,6 +1,7 @@
 """Comments formatting methods for the Trakt MCP server."""
 
 from models.types import CommentResponse
+from models.types.pagination import PaginatedResponse
 
 
 class CommentsFormatters:
@@ -8,10 +9,41 @@ class CommentsFormatters:
 
     @staticmethod
     def format_comments(
-        comments: list[CommentResponse], title: str, show_spoilers: bool = False
+        data: list[CommentResponse] | PaginatedResponse[CommentResponse],
+        title: str,
+        show_spoilers: bool = False,
     ) -> str:
-        """Format comments for MCP resource."""
+        """Format comments for MCP resource.
+
+        Args:
+            data: Either a list of all comments or a paginated response
+            title: Title to use in the formatted output
+            show_spoilers: Whether to show spoiler content
+
+        Returns:
+            Formatted markdown text with comments
+        """
         result = f"# Comments for {title}\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            comments = data.data
+        else:
+            comments = data
 
         if show_spoilers:
             result += "**Note: Showing all spoilers**\n\n"
@@ -65,10 +97,22 @@ class CommentsFormatters:
     def format_comment(
         comment: CommentResponse,
         with_replies: bool = False,
-        replies: list[CommentResponse] | None = None,
+        replies: list[CommentResponse]
+        | PaginatedResponse[CommentResponse]
+        | None = None,
         show_spoilers: bool = False,
     ) -> str:
-        """Format a single comment with optional replies."""
+        """Format a single comment with optional replies.
+
+        Args:
+            comment: The comment to format
+            with_replies: Whether to include replies in the output
+            replies: Either a list of all replies or a paginated response
+            show_spoilers: Whether to show spoiler content
+
+        Returns:
+            Formatted markdown text with the comment and optional replies
+        """
         username = comment.get("user", {}).get("username", "Anonymous")
         created_at = comment.get("created_at", "Unknown date")
         comment_text = comment.get("comment", "")
@@ -113,7 +157,29 @@ class CommentsFormatters:
         if with_replies and replies:
             result += "## Replies\n\n"
 
-            for reply in replies:
+            # Handle pagination metadata if present
+            if isinstance(replies, PaginatedResponse):
+                result += f"📄 **{replies.page_info_summary()}**\n\n"
+
+                # Add navigation hints
+                navigation_hints: list[str] = []
+                if replies.pagination.has_previous_page:
+                    navigation_hints.append(
+                        f"Previous: page {replies.pagination.previous_page}"
+                    )
+                if replies.pagination.has_next_page:
+                    navigation_hints.append(
+                        f"Next: page {replies.pagination.next_page}"
+                    )
+
+                if navigation_hints:
+                    result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+                replies_list = replies.data
+            else:
+                replies_list = replies
+
+            for reply in replies_list:
                 reply_username = reply.get("user", {}).get("username", "Anonymous")
                 reply_created_at = reply.get("created_at", "Unknown date")
                 reply_text = reply.get("comment", "")

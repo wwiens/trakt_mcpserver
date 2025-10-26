@@ -8,15 +8,45 @@ from models.types import (
     TrendingWrapper,
     WatchedMovieWrapper,
 )
+from models.types.pagination import PaginatedResponse
 
 
 class MovieFormatters:
     """Helper class for formatting movie-related data for MCP responses."""
 
     @staticmethod
-    def format_trending_movies(movies: list[TrendingWrapper]) -> str:
-        """Format trending movies data for MCP resource."""
+    def format_trending_movies(
+        data: list[TrendingWrapper] | PaginatedResponse[TrendingWrapper],
+    ) -> str:
+        """Format trending movies data for MCP resource.
+
+        Args:
+            data: Either a list of all trending movies or a paginated response
+
+        Returns:
+            Formatted markdown text with trending movies
+        """
         result = "# Trending Movies on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            movies = data.data
+        else:
+            movies = data
 
         for item in movies:
             movie = item.get("movie", {})
@@ -36,9 +66,38 @@ class MovieFormatters:
         return result
 
     @staticmethod
-    def format_popular_movies(movies: list[MovieResponse]) -> str:
-        """Format popular movies data for MCP resource."""
+    def format_popular_movies(
+        data: list[MovieResponse] | PaginatedResponse[MovieResponse],
+    ) -> str:
+        """Format popular movies data for MCP resource.
+
+        Args:
+            data: Either a list of all popular movies or a paginated response
+
+        Returns:
+            Formatted markdown text with popular movies
+        """
         result = "# Popular Movies on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            movies = data.data
+        else:
+            movies = data
 
         for movie in movies:
             title = movie.get("title", "Unknown")
@@ -55,9 +114,38 @@ class MovieFormatters:
         return result
 
     @staticmethod
-    def format_favorited_movies(movies: list[FavoritedMovieWrapper]) -> str:
-        """Format favorited movies data for MCP resource."""
+    def format_favorited_movies(
+        data: list[FavoritedMovieWrapper] | PaginatedResponse[FavoritedMovieWrapper],
+    ) -> str:
+        """Format favorited movies data for MCP resource.
+
+        Args:
+            data: Either a list of all favorited movies or a paginated response
+
+        Returns:
+            Formatted markdown text with favorited movies
+        """
         result = "# Most Favorited Movies on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            movies = data.data
+        else:
+            movies = data
 
         for item in movies:
             movie = item.get("movie", {})
@@ -78,9 +166,38 @@ class MovieFormatters:
         return result
 
     @staticmethod
-    def format_played_movies(movies: list[PlayedMovieWrapper]) -> str:
-        """Format played movies data for MCP resource."""
+    def format_played_movies(
+        data: list[PlayedMovieWrapper] | PaginatedResponse[PlayedMovieWrapper],
+    ) -> str:
+        """Format played movies data for MCP resource.
+
+        Args:
+            data: Either a list of all played movies or a paginated response
+
+        Returns:
+            Formatted markdown text with played movies
+        """
         result = "# Most Played Movies on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            movies = data.data
+        else:
+            movies = data
 
         for item in movies:
             movie = item.get("movie", {})
@@ -101,9 +218,38 @@ class MovieFormatters:
         return result
 
     @staticmethod
-    def format_watched_movies(movies: list[WatchedMovieWrapper]) -> str:
-        """Format watched movies data for MCP resource."""
+    def format_watched_movies(
+        data: list[WatchedMovieWrapper] | PaginatedResponse[WatchedMovieWrapper],
+    ) -> str:
+        """Format watched movies data for MCP resource.
+
+        Args:
+            data: Either a list of all watched movies or a paginated response
+
+        Returns:
+            Formatted markdown text with watched movies
+        """
         result = "# Most Watched Movies on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            movies = data.data
+        else:
+            movies = data
 
         for item in movies:
             movie = item.get("movie", {})

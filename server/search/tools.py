@@ -31,6 +31,11 @@ class QueryParam(BaseModel):
         le=1000,
         description="Maximum number of search results to return (1-1000)",
     )
+    page: int | None = Field(
+        default=None,
+        ge=1,
+        description="Page number for pagination (optional). If not provided, returns all results.",
+    )
 
     @field_validator("query", mode="before")
     def _validate_query(cls, v: object) -> object:
@@ -45,11 +50,13 @@ class QueryParam(BaseModel):
         return v
 
 
-def _validate_search_params(query: str, limit: int, operation: str) -> tuple[str, int]:
+def _validate_search_params(
+    query: str, limit: int, page: int | None, operation: str
+) -> tuple[str, int, int | None]:
     """Normalize and validate search parameters, mapping Pydantic errors to MCP."""
     try:
-        params = QueryParam(query=query, limit=limit)
-        return params.query, params.limit
+        params = QueryParam(query=query, limit=limit, page=page)
+        return params.query, params.limit, params.page
     except ValidationError as e:
         validation_errors: list[dict[str, Any]] = [
             {
@@ -69,12 +76,15 @@ def _validate_search_params(query: str, limit: int, operation: str) -> tuple[str
 
 
 @handle_api_errors_func
-async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
+async def search_shows(
+    query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
+) -> str:
     """Search for shows on Trakt by title.
 
     Args:
         query: Search query string
-        limit: Maximum number of results to return
+        limit: Maximum number of results to return per page
+        page: Page number (optional). If not provided, returns all results.
 
     Returns:
         Formatted search results
@@ -83,15 +93,15 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
         InvalidParamsError: If query and limit are invalid
         InternalError: If an error occurs during search
     """
-    query, limit = _validate_search_params(
-        query, limit, operation="search_shows_validation"
+    query, limit, page = _validate_search_params(
+        query, limit, page, operation="search_shows_validation"
     )
 
     client = SearchClient()
 
     try:
         # Perform the search
-        results = await client.search_shows(query, limit)
+        results = await client.search_shows(query, limit, page)
 
         # Format and return the results
         return SearchFormatters.format_show_search_results(results)
@@ -100,17 +110,20 @@ async def search_shows(query: str, limit: int = DEFAULT_LIMIT) -> str:
     except Exception as e:
         # Convert any unexpected errors to structured MCP errors
         raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="search shows", error=e, query=query, limit=limit
+            operation="search shows", error=e, query=query, limit=limit, page=page
         ) from e
 
 
 @handle_api_errors_func
-async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
+async def search_movies(
+    query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
+) -> str:
     """Search for movies on Trakt by title.
 
     Args:
         query: Search query string
-        limit: Maximum number of results to return
+        limit: Maximum number of results to return per page
+        page: Page number (optional). If not provided, returns all results.
 
     Returns:
         Formatted search results
@@ -119,21 +132,21 @@ async def search_movies(query: str, limit: int = DEFAULT_LIMIT) -> str:
         InvalidParamsError: If query and limit are invalid
         InternalError: If an error occurs during search
     """
-    query, limit = _validate_search_params(
-        query, limit, operation="search_movies_validation"
+    query, limit, page = _validate_search_params(
+        query, limit, page, operation="search_movies_validation"
     )
 
     client = SearchClient()
 
     try:
-        results = await client.search_movies(query, limit)
+        results = await client.search_movies(query, limit, page)
         return SearchFormatters.format_movie_search_results(results)
     except MCPError:
         raise
     except Exception as e:
         # Convert any unexpected errors to structured MCP errors
         raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="search movies", error=e, query=query, limit=limit
+            operation="search movies", error=e, query=query, limit=limit, page=page
         ) from e
 
 
@@ -150,15 +163,19 @@ def register_search_tools(
         name=TOOL_NAMES["search_shows"],
         description="Search for TV shows on Trakt by title",
     )
-    async def search_shows_tool(query: str, limit: int = DEFAULT_LIMIT) -> str:
-        return await search_shows(query, limit)
+    async def search_shows_tool(
+        query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
+    ) -> str:
+        return await search_shows(query, limit, page)
 
     @mcp.tool(
         name=TOOL_NAMES["search_movies"],
         description="Search for movies on Trakt by title",
     )
-    async def search_movies_tool(query: str, limit: int = DEFAULT_LIMIT) -> str:
-        return await search_movies(query, limit)
+    async def search_movies_tool(
+        query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
+    ) -> str:
+        return await search_movies(query, limit, page)
 
     # Return handlers for type checker visibility
     return (search_shows_tool, search_movies_tool)

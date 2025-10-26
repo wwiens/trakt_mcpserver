@@ -8,15 +8,45 @@ from models.types import (
     TrendingWrapper,
     WatchedShowWrapper,
 )
+from models.types.pagination import PaginatedResponse
 
 
 class ShowFormatters:
     """Helper class for formatting show-related data for MCP responses."""
 
     @staticmethod
-    def format_trending_shows(shows: list[TrendingWrapper]) -> str:
-        """Format trending shows data for MCP resource."""
+    def format_trending_shows(
+        data: list[TrendingWrapper] | PaginatedResponse[TrendingWrapper],
+    ) -> str:
+        """Format trending shows data for MCP resource.
+
+        Args:
+            data: Either a list of all trending shows or a paginated response
+
+        Returns:
+            Formatted markdown text with trending shows
+        """
         result = "# Trending Shows on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            shows = data.data
+        else:
+            shows = data
 
         for item in shows:
             show = item.get("show")
@@ -39,9 +69,38 @@ class ShowFormatters:
         return result
 
     @staticmethod
-    def format_popular_shows(shows: list[ShowResponse]) -> str:
-        """Format popular shows data for MCP resource."""
+    def format_popular_shows(
+        data: list[ShowResponse] | PaginatedResponse[ShowResponse],
+    ) -> str:
+        """Format popular shows data for MCP resource.
+
+        Args:
+            data: Either a list of all popular shows or a paginated response
+
+        Returns:
+            Formatted markdown text with popular shows
+        """
         result = "# Popular Shows on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            shows = data.data
+        else:
+            shows = data
 
         for show in shows:
             title = show.get("title", "Unknown")
@@ -58,9 +117,38 @@ class ShowFormatters:
         return result
 
     @staticmethod
-    def format_favorited_shows(shows: list[FavoritedShowWrapper]) -> str:
-        """Format favorited shows data for MCP resource."""
+    def format_favorited_shows(
+        data: list[FavoritedShowWrapper] | PaginatedResponse[FavoritedShowWrapper],
+    ) -> str:
+        """Format favorited shows data for MCP resource.
+
+        Args:
+            data: Either a list of all favorited shows or a paginated response
+
+        Returns:
+            Formatted markdown text with favorited shows
+        """
         result = "# Most Favorited Shows on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            shows = data.data
+        else:
+            shows = data
 
         for item in shows:
             show = item.get("show", {})
@@ -81,9 +169,38 @@ class ShowFormatters:
         return result
 
     @staticmethod
-    def format_played_shows(shows: list[PlayedShowWrapper]) -> str:
-        """Format played shows data for MCP resource."""
+    def format_played_shows(
+        data: list[PlayedShowWrapper] | PaginatedResponse[PlayedShowWrapper],
+    ) -> str:
+        """Format played shows data for MCP resource.
+
+        Args:
+            data: Either a list of all played shows or a paginated response
+
+        Returns:
+            Formatted markdown text with played shows
+        """
         result = "# Most Played Shows on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            shows = data.data
+        else:
+            shows = data
 
         for item in shows:
             show = item.get("show", {})
@@ -104,9 +221,38 @@ class ShowFormatters:
         return result
 
     @staticmethod
-    def format_watched_shows(shows: list[WatchedShowWrapper]) -> str:
-        """Format watched shows data for MCP resource."""
+    def format_watched_shows(
+        data: list[WatchedShowWrapper] | PaginatedResponse[WatchedShowWrapper],
+    ) -> str:
+        """Format watched shows data for MCP resource.
+
+        Args:
+            data: Either a list of all watched shows or a paginated response
+
+        Returns:
+            Formatted markdown text with watched shows
+        """
         result = "# Most Watched Shows on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += f"📄 **{data.page_info_summary()}**\n\n"
+
+            # Add navigation hints
+            navigation_hints: list[str] = []
+            if data.pagination.has_previous_page:
+                navigation_hints.append(
+                    f"Previous: page {data.pagination.previous_page}"
+                )
+            if data.pagination.has_next_page:
+                navigation_hints.append(f"Next: page {data.pagination.next_page}")
+
+            if navigation_hints:
+                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+
+            shows = data.data
+        else:
+            shows = data
 
         for item in shows:
             show = item.get("show", {})
