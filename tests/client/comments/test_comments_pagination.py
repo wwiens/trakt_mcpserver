@@ -123,7 +123,6 @@ async def test_movie_comments_with_page_returns_paginated():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        MagicMock()
         # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.get = AsyncMock(return_value=mock_response)
@@ -171,7 +170,6 @@ async def test_show_comments_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        MagicMock()
         # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.get = AsyncMock(return_value=mock_response)
@@ -215,7 +213,6 @@ async def test_season_comments_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        MagicMock()
         # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.get = AsyncMock(return_value=mock_response)
@@ -260,7 +257,6 @@ async def test_episode_comments_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        MagicMock()
         # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.get = AsyncMock(return_value=mock_response)
@@ -305,7 +301,6 @@ async def test_comment_replies_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        MagicMock()
         # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.get = AsyncMock(return_value=mock_response)
@@ -349,7 +344,6 @@ async def test_comments_pagination_metadata():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        MagicMock()
         # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.get = AsyncMock(return_value=mock_response)
@@ -365,8 +359,8 @@ async def test_comments_pagination_metadata():
         assert result.pagination.items_per_page == 10
         assert result.pagination.total_pages == 5
         assert result.pagination.total_items == 47
-        assert result.pagination.next_page == 3
-        assert result.pagination.previous_page == 1
+        assert result.pagination.next_page() == 3
+        assert result.pagination.previous_page() == 1
 
 
 @pytest.mark.asyncio
@@ -396,7 +390,6 @@ async def test_comments_sort_with_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        MagicMock()
         # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.get = AsyncMock(return_value=mock_response)

@@ -57,9 +57,9 @@ class SyncRatingsFormatters:
         # Show page navigation hints
         navigation_hints: list[str] = []
         if pagination.has_previous_page:
-            navigation_hints.append(f"Previous: page {pagination.previous_page}")
+            navigation_hints.append(f"Previous: page {pagination.previous_page()}")
         if pagination.has_next_page:
-            navigation_hints.append(f"Next: page {pagination.next_page}")
+            navigation_hints.append(f"Next: page {pagination.next_page()}")
 
         if navigation_hints:
             result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"

@@ -72,7 +72,9 @@ class BaseClient:
 
     async def __aenter__(self) -> "BaseClient":
         """Enter async context and initialize shared client."""
-        self._client = httpx.AsyncClient(timeout=self.REQUEST_TIMEOUT)
+        self._client = httpx.AsyncClient(
+            base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT
+        )
         return self
 
     async def __aexit__(
@@ -95,7 +97,7 @@ class BaseClient:
         if self._client:
             return self._client
         # Fallback for non-context-manager usage (backward compatibility)
-        return httpx.AsyncClient(timeout=self.REQUEST_TIMEOUT)
+        return httpx.AsyncClient(base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT)
 
     def _extract_pagination_headers(
         self, response: "httpx.Response"
@@ -138,8 +140,11 @@ class BaseClient:
         headers: dict[str, str] | None = None,
     ) -> Any:
         """Make an HTTP request to the Trakt API."""
-        url = f"{self.BASE_URL}{endpoint}"
-        request_headers = self.headers if headers is None else headers
+        # Ensure Authorization header is present when authenticated
+        self._update_headers_with_token()
+        request_headers = self.headers.copy()
+        if headers:
+            request_headers.update(headers)
 
         client = self._get_client()
         should_close = self._client is None  # Only close if temporary client
@@ -147,14 +152,14 @@ class BaseClient:
         try:
             if method.upper() == "GET":
                 response = await client.get(
-                    url,
+                    endpoint,
                     headers=request_headers,
                     params=params,
                     timeout=self.REQUEST_TIMEOUT,
                 )
             elif method.upper() == "POST":
                 response = await client.post(
-                    url,
+                    endpoint,
                     headers=request_headers,
                     json=data,
                     timeout=self.REQUEST_TIMEOUT,
@@ -162,7 +167,7 @@ class BaseClient:
             else:
                 response = await client.request(
                     method=method,
-                    url=url,
+                    url=endpoint,
                     headers=request_headers,
                     params=params,
                     json=data,
@@ -203,13 +208,7 @@ class BaseClient:
         headers: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """Make a POST request to the Trakt API."""
-        request_headers = self.headers.copy()
-        if headers:
-            request_headers.update(headers)
-
-        result = await self._make_request(
-            "POST", endpoint, data=data, headers=request_headers
-        )
+        result = await self._make_request("POST", endpoint, data=data, headers=headers)
         if _is_dict_response(result):
             return result
         raise ValueError(
@@ -300,7 +299,6 @@ class BaseClient:
         Raises:
             ValueError: If response format is invalid or headers missing
         """
-        url = f"{self.BASE_URL}{endpoint}"
         # Ensure Authorization header is present when authenticated
         self._update_headers_with_token()
         request_headers = self.headers
@@ -310,7 +308,7 @@ class BaseClient:
 
         try:
             response = await client.get(
-                url,
+                endpoint,
                 headers=request_headers,
                 params=params,
                 timeout=self.REQUEST_TIMEOUT,
@@ -397,7 +395,7 @@ class BaseClient:
             all_items.extend(response.data)
 
             # Use server-provided next_page instead of manual increment
-            next_page = response.pagination.next_page
+            next_page = response.pagination.next_page()
             if next_page is None:
                 break
 

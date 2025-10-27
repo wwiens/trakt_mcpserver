@@ -23,9 +23,9 @@ def format_pagination_header(results: PaginatedResponse[T]) -> str:
     if results.pagination.has_previous_page or results.pagination.has_next_page:
         nav_parts: list[str] = []
         if results.pagination.has_previous_page:
-            nav_parts.append(f"Previous: page {results.pagination.previous_page}")
+            nav_parts.append(f"Previous: page {results.pagination.previous_page()}")
         if results.pagination.has_next_page:
-            nav_parts.append(f"Next: page {results.pagination.next_page}")
+            nav_parts.append(f"Next: page {results.pagination.next_page()}")
         message += f"📍 **Navigation:** {' | '.join(nav_parts)}\n\n"
 
     return message

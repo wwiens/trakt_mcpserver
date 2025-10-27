@@ -149,7 +149,7 @@ async def fetch_favorited_movies(
             json.dumps(movies[0], indent=2),
         )
 
-    return MovieFormatters.format_favorited_movies(movies)  # type: ignore[arg-type]
+    return MovieFormatters.format_favorited_movies(movies)
 
 
 @handle_api_errors_func

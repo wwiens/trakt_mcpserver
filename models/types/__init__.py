@@ -28,13 +28,13 @@ from .api_responses import (
 )
 from .common import (
     ErrorResponse,
-    PaginatedResponse,
     T,
     TraktHeaders,
     TRequest,
     TResponse,
 )
 from .pagination import (
+    PaginatedResponse,
     PaginationMetadata,
     PaginationParams,
 )
@@ -68,9 +68,8 @@ __all__ = [
     "MovieCommentSort",
     "MovieResponse",
     "MoviesClientProtocol",
-    # Common Types
-    "PaginatedResponse",
     # Pagination Types
+    "PaginatedResponse",
     "PaginationMetadata",
     "PaginationParams",
     "PlayedMovieWrapper",

@@ -1,6 +1,6 @@
 """Common type definitions and utilities."""
 
-from typing import Generic, TypedDict, TypeVar
+from typing import TypedDict, TypeVar
 
 # Generic type variables
 T = TypeVar("T")
@@ -8,17 +8,7 @@ TRequest = TypeVar("TRequest")
 TResponse = TypeVar("TResponse")
 
 
-# Common response wrappers
-class PaginatedResponse(TypedDict, Generic[T]):
-    """Paginated API response."""
-
-    page: int
-    limit: int
-    pages: int
-    total: int
-    results: list[T]
-
-
+# Common response types
 class ErrorResponse(TypedDict):
     """API error response."""
 

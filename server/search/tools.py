@@ -14,7 +14,7 @@ from server.base import BaseToolErrorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
 # Type alias for search tool handlers
-ToolHandler = Callable[[str, int], Awaitable[str]]
+ToolHandler = Callable[[str, int, int | None], Awaitable[str]]
 
 
 class QueryParam(BaseModel):

@@ -33,6 +33,7 @@ class CommentDetailsClient(BaseClient):
         comment_id: str,
         limit: int = DEFAULT_LIMIT,
         page: None = None,
+        max_pages: int = 100,
     ) -> list[CommentResponse]: ...
 
     @overload
@@ -49,6 +50,7 @@ class CommentDetailsClient(BaseClient):
         comment_id: str,
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
+        max_pages: int = 100,
     ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
         """Get replies for a comment.
 
@@ -56,9 +58,10 @@ class CommentDetailsClient(BaseClient):
             comment_id: The Trakt comment ID
             limit: Maximum number of replies to return
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all comment replies across all pages
+            If page is None: List of all comment replies across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         endpoint = TRAKT_ENDPOINTS["comment_replies"].replace(":id", comment_id)
@@ -68,6 +71,7 @@ class CommentDetailsClient(BaseClient):
                 endpoint,
                 response_type=CommentResponse,
                 params={"limit": limit},
+                max_pages=max_pages,
             )
         else:
             # Single page with metadata

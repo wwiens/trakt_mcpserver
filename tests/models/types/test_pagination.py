@@ -65,8 +65,8 @@ class TestPaginationMetadata:
         # First page boundary conditions
         assert not metadata.has_previous_page
         assert metadata.has_next_page
-        assert metadata.previous_page is None
-        assert metadata.next_page == 2
+        assert metadata.previous_page() is None
+        assert metadata.next_page() == 2
 
     def test_last_page_properties(self) -> None:
         """Test properties when on last page."""
@@ -77,8 +77,8 @@ class TestPaginationMetadata:
         # Last page boundary conditions
         assert metadata.has_previous_page
         assert not metadata.has_next_page
-        assert metadata.previous_page == 2
-        assert metadata.next_page is None
+        assert metadata.previous_page() == 2
+        assert metadata.next_page() is None
 
     def test_middle_page_properties(self) -> None:
         """Test properties when on middle page."""
@@ -89,8 +89,8 @@ class TestPaginationMetadata:
         # Middle page conditions
         assert metadata.has_previous_page
         assert metadata.has_next_page
-        assert metadata.previous_page == 1
-        assert metadata.next_page == 3
+        assert metadata.previous_page() == 1
+        assert metadata.next_page() == 3
 
     def test_single_page_properties(self) -> None:
         """Test properties when there's only one page."""
@@ -101,8 +101,8 @@ class TestPaginationMetadata:
         # Single page boundary conditions
         assert not metadata.has_previous_page
         assert not metadata.has_next_page
-        assert metadata.previous_page is None
-        assert metadata.next_page is None
+        assert metadata.previous_page() is None
+        assert metadata.next_page() is None
 
     def test_zero_total_items(self) -> None:
         """Test handling of zero total items."""
@@ -270,14 +270,14 @@ class TestPaginatedResponse:
         assert metadata.has_previous_page == expected_has_prev
 
         if expected_has_next:
-            assert metadata.next_page == page + 1
+            assert metadata.next_page() == page + 1
         else:
-            assert metadata.next_page is None
+            assert metadata.next_page() is None
 
         if expected_has_prev:
-            assert metadata.previous_page == page - 1
+            assert metadata.previous_page() == page - 1
         else:
-            assert metadata.previous_page is None
+            assert metadata.previous_page() is None
 
     def test_page_info_calculation_edge_cases(self) -> None:
         """Test edge cases in page info calculations."""

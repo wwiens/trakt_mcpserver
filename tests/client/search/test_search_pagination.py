@@ -259,8 +259,8 @@ async def test_search_pagination_metadata():
         # Verify navigation properties
         assert result.pagination.has_previous_page
         assert result.pagination.has_next_page
-        assert result.pagination.previous_page == 2
-        assert result.pagination.next_page == 4
+        assert result.pagination.previous_page() == 2
+        assert result.pagination.next_page() == 4
 
 
 @pytest.mark.asyncio

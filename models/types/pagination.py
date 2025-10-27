@@ -52,12 +52,10 @@ class PaginationMetadata(BaseModel):
         """Check if there are previous pages available."""
         return self.current_page > 1
 
-    @property
     def next_page(self) -> int | None:
         """Get the next page number, or None if on last page."""
         return self.current_page + 1 if self.has_next_page else None
 
-    @property
     def previous_page(self) -> int | None:
         """Get the previous page number, or None if on first page."""
         return self.current_page - 1 if self.has_previous_page else None

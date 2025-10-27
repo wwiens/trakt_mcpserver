@@ -16,7 +16,11 @@ class SearchClient(BaseClient):
 
     @overload
     async def search_shows(
-        self, query: str, limit: int = DEFAULT_LIMIT, page: None = None
+        self,
+        query: str,
+        limit: int = DEFAULT_LIMIT,
+        page: None = None,
+        max_pages: int = 100,
     ) -> list[SearchResult]: ...
 
     @overload
@@ -26,7 +30,11 @@ class SearchClient(BaseClient):
 
     @handle_api_errors
     async def search_shows(
-        self, query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
+        self,
+        query: str,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = 100,
     ) -> list[SearchResult] | PaginatedResponse[SearchResult]:
         """Search for shows on Trakt.
 
@@ -34,9 +42,10 @@ class SearchClient(BaseClient):
             query: Search query string
             limit: Maximum number of results to return per page
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all search results across all pages
+            If page is None: List of all search results across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         # Construct search endpoint with 'show' type filter
@@ -47,6 +56,7 @@ class SearchClient(BaseClient):
                 search_endpoint,
                 response_type=SearchResult,
                 params={"query": query, "limit": limit},
+                max_pages=max_pages,
             )
 
         # Single page with metadata
@@ -58,7 +68,11 @@ class SearchClient(BaseClient):
 
     @overload
     async def search_movies(
-        self, query: str, limit: int = DEFAULT_LIMIT, page: None = None
+        self,
+        query: str,
+        limit: int = DEFAULT_LIMIT,
+        page: None = None,
+        max_pages: int = 100,
     ) -> list[SearchResult]: ...
 
     @overload
@@ -68,7 +82,11 @@ class SearchClient(BaseClient):
 
     @handle_api_errors
     async def search_movies(
-        self, query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
+        self,
+        query: str,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = 100,
     ) -> list[SearchResult] | PaginatedResponse[SearchResult]:
         """Search for movies on Trakt.
 
@@ -76,9 +94,10 @@ class SearchClient(BaseClient):
             query: Search query string
             limit: Maximum number of results to return per page
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all search results across all pages
+            If page is None: List of all search results across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         search_endpoint = f"{TRAKT_ENDPOINTS['search']}/movie"
@@ -88,6 +107,7 @@ class SearchClient(BaseClient):
                 search_endpoint,
                 response_type=SearchResult,
                 params={"query": query, "limit": limit},
+                max_pages=max_pages,
             )
 
         # Single page with metadata

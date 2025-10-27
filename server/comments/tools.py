@@ -82,6 +82,24 @@ class CommentsListOptionsParam(BaseModel):
     show_spoilers: bool = Field(False, description="Whether to show spoiler content")
 
 
+class PageParam(BaseModel):
+    """Parameters for tools that support pagination."""
+
+    page: int | None = Field(
+        default=None,
+        ge=1,
+        description="Optional page number for pagination (1-based, positive integer)",
+    )
+
+    @field_validator("page", mode="before")
+    @classmethod
+    def _validate_page(cls, v: object) -> object:
+        """Handle empty strings and None values."""
+        if v is None or v == "":
+            return None
+        return v
+
+
 def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
     """Handle validation errors with consistent formatting via BaseToolErrorMixin.
 
@@ -244,7 +262,9 @@ async def fetch_movie_comments(
         options = CommentsListOptionsParam(
             limit=limit, sort=sort, show_spoilers=show_spoilers
         )
+        page_params = PageParam(page=page)
         movie_id = id_params.movie_id
+        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "movie comments")
 
@@ -290,7 +310,9 @@ async def fetch_show_comments(
         options = CommentsListOptionsParam(
             limit=limit, sort=sort, show_spoilers=show_spoilers
         )
+        page_params = PageParam(page=page)
         show_id = id_params.show_id
+        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "show comments")
 
@@ -338,7 +360,9 @@ async def fetch_season_comments(
         options = CommentsListOptionsParam(
             limit=limit, sort=sort, show_spoilers=show_spoilers
         )
+        page_params = PageParam(page=page)
         show_id, season = id_params.show_id, id_params.season
+        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "season comments")
 
@@ -388,11 +412,13 @@ async def fetch_episode_comments(
         options = CommentsListOptionsParam(
             limit=limit, sort=sort, show_spoilers=show_spoilers
         )
+        page_params = PageParam(page=page)
         show_id, season, episode = (
             id_params.show_id,
             id_params.season,
             id_params.episode,
         )
+        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "episode comments")
 
@@ -464,7 +490,9 @@ async def fetch_comment_replies(
     """
     try:
         id_params = CommentIdParam(comment_id=comment_id)
+        page_params = PageParam(page=page)
         comment_id = id_params.comment_id
+        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "comment replies")
 
@@ -517,7 +545,7 @@ def register_comment_tools(
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_movie_comments"],
-        description="Fetch comments for a specific movie from Trakt",
+        description="Fetch comments for a specific movie from Trakt. Supports optional pagination with 'page' parameter.",
     )
     async def fetch_movie_comments_tool(
         movie_id: str,
@@ -530,7 +558,7 @@ def register_comment_tools(
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_comments"],
-        description="Fetch comments for a specific TV show from Trakt",
+        description="Fetch comments for a specific TV show from Trakt. Supports optional pagination with 'page' parameter.",
     )
     async def fetch_show_comments_tool(
         show_id: str,
@@ -543,7 +571,7 @@ def register_comment_tools(
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_comments"],
-        description="Fetch comments for a specific TV show season from Trakt",
+        description="Fetch comments for a specific TV show season from Trakt. Supports optional pagination with 'page' parameter.",
     )
     async def fetch_season_comments_tool(
         show_id: str,
@@ -559,7 +587,7 @@ def register_comment_tools(
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_episode_comments"],
-        description="Fetch comments for a specific TV show episode from Trakt",
+        description="Fetch comments for a specific TV show episode from Trakt. Supports optional pagination with 'page' parameter.",
     )
     async def fetch_episode_comments_tool(
         show_id: str,
@@ -583,7 +611,7 @@ def register_comment_tools(
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_comment_replies"],
-        description="Fetch replies for a specific comment from Trakt",
+        description="Fetch replies for a specific comment from Trakt. Supports optional pagination with 'page' parameter.",
     )
     async def fetch_comment_replies_tool(
         comment_id: str,

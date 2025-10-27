@@ -16,7 +16,7 @@ class PopularShowsClient(BaseClient):
 
     @overload
     async def get_popular_shows(
-        self, limit: int = DEFAULT_LIMIT, page: None = None
+        self, limit: int = DEFAULT_LIMIT, page: None = None, max_pages: int = 100
     ) -> list[ShowResponse]: ...
 
     @overload
@@ -26,16 +26,17 @@ class PopularShowsClient(BaseClient):
 
     @handle_api_errors
     async def get_popular_shows(
-        self, limit: int = DEFAULT_LIMIT, page: int | None = None
+        self, limit: int = DEFAULT_LIMIT, page: int | None = None, max_pages: int = 100
     ) -> list[ShowResponse] | PaginatedResponse[ShowResponse]:
         """Get popular shows from Trakt.
 
         Args:
-            limit: Items per page (default: 10)
+            limit: Items per page (default: DEFAULT_LIMIT)
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all popular shows across all pages
+            If page is None: List of all popular shows across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         if page is None:
@@ -43,6 +44,7 @@ class PopularShowsClient(BaseClient):
                 TRAKT_ENDPOINTS["shows_popular"],
                 response_type=ShowResponse,
                 params={"limit": limit},
+                max_pages=max_pages,
             )
         else:
             # Single page with metadata

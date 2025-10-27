@@ -354,8 +354,20 @@ class TestSyncRatingsClient:
                 await authenticated_client.add_sync_ratings(request)
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "rating_type,rating,expected_endpoint",
+        [
+            ("movies", None, "/sync/ratings/movies"),
+            ("shows", 8, "/sync/ratings/shows/8"),
+            ("episodes", 5, "/sync/ratings/episodes/5"),
+        ],
+    )
     async def test_endpoint_url_construction(
-        self, authenticated_client: SyncRatingsClient
+        self,
+        authenticated_client: SyncRatingsClient,
+        rating_type: str,
+        rating: int | None,
+        expected_endpoint: str,
     ) -> None:
         """Test correct endpoint URL construction."""
         with patch.object(
@@ -370,18 +382,9 @@ class TestSyncRatingsClient:
             )
             mock_request.return_value = empty_paginated_response
 
-            # Test different endpoint constructions
-            await authenticated_client.get_sync_ratings("movies")
-            first_call = mock_request.call_args_list[0]
-            assert "/sync/ratings/movies" in first_call[0][0]
-
-            await authenticated_client.get_sync_ratings("shows", rating=8)
-            second_call = mock_request.call_args_list[1]
-            assert "/sync/ratings/shows/8" in second_call[0][0]
-
-            await authenticated_client.get_sync_ratings("episodes", rating=5)
-            third_call = mock_request.call_args_list[2]
-            assert "/sync/ratings/episodes/5" in third_call[0][0]
+            # Test endpoint construction
+            await authenticated_client.get_sync_ratings(rating_type, rating=rating)
+            assert expected_endpoint in mock_request.call_args[0][0]
 
     @pytest.mark.asyncio
     async def test_get_sync_ratings_success(
@@ -527,8 +530,8 @@ class TestSyncRatingsClient:
             pagination = result.pagination
             assert pagination.has_previous_page
             assert pagination.has_next_page
-            assert pagination.previous_page == 1
-            assert pagination.next_page == 3
+            assert pagination.previous_page() == 1
+            assert pagination.next_page() == 3
             assert not result.is_empty
             assert not result.is_single_page
 

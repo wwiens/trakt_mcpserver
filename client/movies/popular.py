@@ -16,7 +16,7 @@ class PopularMoviesClient(BaseClient):
 
     @overload
     async def get_popular_movies(
-        self, limit: int = DEFAULT_LIMIT, page: None = None
+        self, limit: int = DEFAULT_LIMIT, page: None = None, max_pages: int = 100
     ) -> list[MovieResponse]: ...
 
     @overload
@@ -26,16 +26,17 @@ class PopularMoviesClient(BaseClient):
 
     @handle_api_errors
     async def get_popular_movies(
-        self, limit: int = DEFAULT_LIMIT, page: int | None = None
+        self, limit: int = DEFAULT_LIMIT, page: int | None = None, max_pages: int = 100
     ) -> list[MovieResponse] | PaginatedResponse[MovieResponse]:
         """Get popular movies from Trakt.
 
         Args:
-            limit: Items per page (default: 10)
+            limit: Items per page (default: DEFAULT_LIMIT)
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all popular movies across all pages
+            If page is None: List of all popular movies across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         if page is None:
@@ -43,6 +44,7 @@ class PopularMoviesClient(BaseClient):
                 TRAKT_ENDPOINTS["movies_popular"],
                 response_type=MovieResponse,
                 params={"limit": limit},
+                max_pages=max_pages,
             )
         else:
             # Single page with metadata

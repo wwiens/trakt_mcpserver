@@ -188,8 +188,8 @@ async def test_trending_movies_navigation_properties():
         # Check navigation properties
         assert result.pagination.has_previous_page
         assert result.pagination.has_next_page
-        assert result.pagination.previous_page == 1
-        assert result.pagination.next_page == 3
+        assert result.pagination.previous_page() == 1
+        assert result.pagination.next_page() == 3
 
 
 @pytest.mark.asyncio

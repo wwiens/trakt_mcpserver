@@ -22,6 +22,7 @@ class ShowCommentsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         page: None = None,
         sort: ShowCommentSort = "newest",
+        max_pages: int = 100,
     ) -> list[CommentResponse]: ...
 
     @overload
@@ -40,6 +41,7 @@ class ShowCommentsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
         sort: ShowCommentSort = "newest",
+        max_pages: int = 100,
     ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
         """Get comments for a show.
 
@@ -48,9 +50,10 @@ class ShowCommentsClient(BaseClient):
             limit: Maximum number of comments to return
             page: Page number (optional). If None, returns all results via auto-pagination.
             sort: Sort order for comments
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all show comments across all pages
+            If page is None: List of all show comments across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         endpoint = (
@@ -64,6 +67,7 @@ class ShowCommentsClient(BaseClient):
                 endpoint,
                 response_type=CommentResponse,
                 params={"limit": limit},
+                max_pages=max_pages,
             )
         else:
             # Single page with metadata
