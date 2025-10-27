@@ -56,7 +56,6 @@ def _validate_search_params(
     """Normalize and validate search parameters, mapping Pydantic errors to MCP."""
     try:
         params = QueryParam(query=query, limit=limit, page=page)
-        return params.query, params.limit, params.page
     except ValidationError as e:
         validation_errors: list[dict[str, Any]] = [
             {
@@ -73,6 +72,8 @@ def _validate_search_params(
         raise BaseToolErrorMixin.handle_validation_error(
             summary, validation_errors=validation_errors, operation=operation
         ) from e
+    else:
+        return params.query, params.limit, params.page
 
 
 @handle_api_errors_func

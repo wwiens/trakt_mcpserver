@@ -191,12 +191,18 @@ class VideoFormatters:
 
             # Country TLD patterns: youtube.[cc], youtube.com.[cc], youtube.co.[cc]
             country_patterns = [
-                r"^youtube\.(?!co$)[a-z]{2}$",  # youtube.de, youtube.fr (exclude youtube.co)
-                r"^youtube\.com\.[a-z]{2}$",  # youtube.com.au, youtube.com.mx
-                r"^youtube\.co\.[a-z]{2}$",  # youtube.co.uk, youtube.co.jp (requires country code)
-                r"^[a-z0-9-]+\.youtube\.(?!co$)[a-z]{2}$",  # www.youtube.de (exclude .co)
-                r"^[a-z0-9-]+\.youtube\.com\.[a-z]{2}$",  # www.youtube.com.au
-                r"^[a-z0-9-]+\.youtube\.co\.[a-z]{2}$",  # www.youtube.co.uk
+                # youtube.de, youtube.fr (exclude youtube.co)
+                r"^youtube\.(?!co$)[a-z]{2}$",
+                # youtube.com.au, youtube.com.mx
+                r"^youtube\.com\.[a-z]{2}$",
+                # youtube.co.uk, youtube.co.jp (requires country code)
+                r"^youtube\.co\.[a-z]{2}$",
+                # www.youtube.de (exclude .co)
+                r"^[a-z0-9-]+\.youtube\.(?!co$)[a-z]{2}$",
+                # www.youtube.com.au
+                r"^[a-z0-9-]+\.youtube\.com\.[a-z]{2}$",
+                # www.youtube.co.uk
+                r"^[a-z0-9-]+\.youtube\.co\.[a-z]{2}$",
             ]
 
             return any(re.match(pattern, domain) for pattern in country_patterns)
@@ -296,7 +302,8 @@ class VideoFormatters:
             videos: List of video response data
             title: Title of the movie/show for context
             embed_markdown: Use embedded markdown syntax for videos (default: True)
-            validate_input: Whether to validate input data with Pydantic models (default: True)
+            validate_input: Whether to validate input data with Pydantic models
+                (default: True)
 
         Returns:
             Formatted markdown text with videos grouped by type
@@ -304,7 +311,8 @@ class VideoFormatters:
         Raises:
             ValueError: If validate_input=True and video data is invalid
         """
-        # Validate inputs if requested (follows project guideline: "Validate all inputs with Pydantic models")
+        # Validate inputs if requested
+        # (follows project guideline: "Validate all inputs with Pydantic models")
         if validate_input and videos:
             try:
                 # Convert VideoResponse TypedDicts to plain dicts for validation
@@ -317,7 +325,8 @@ class VideoFormatters:
 
         lines = [f"# Videos for {title}\n"]
 
-        # Check if any YouTube videos will generate iframes (only when embed_markdown=True)
+        # Check if any YouTube videos will generate iframes
+        # (only when embed_markdown=True)
         will_have_iframes = embed_markdown and any(
             (video.get("site") or "").lower() == "youtube"
             and VideoFormatters.get_youtube_embed_url(video.get("url") or "")
@@ -326,9 +335,11 @@ class VideoFormatters:
         )
 
         if will_have_iframes:
-            lines.append(
-                "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response\n"
+            message = (
+                "**ALWAYS:** Preserve iframe HTML below exactly as provided "
+                "so videos embed and display properly in the response\n"
             )
+            lines.append(message)
 
         by_type: dict[str, list[VideoResponse]] = {}
         for video in videos:
@@ -358,16 +369,20 @@ class VideoFormatters:
                 site = video.get("site") or "unknown"
 
                 if embed_markdown:
-                    # Generate HTML iframe for YouTube videos, fallback to markdown for others
+                    # Generate HTML iframe for YouTube videos,
+                    # fallback to markdown for others
                     if (site or "").lower() == "youtube":
                         embed_url = VideoFormatters.get_youtube_embed_url(url)
                         if embed_url:
                             iframe_html = (
-                                f'<iframe width="560" height="315" src="{escape(embed_url, quote=True)}" '
+                                f'<iframe width="560" height="315" '
+                                f'src="{escape(embed_url, quote=True)}" '
                                 f'title="YouTube video player" frameborder="0" '
-                                f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; '
-                                f'gyroscope; picture-in-picture; web-share" '
-                                f'referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>'
+                                f'allow="accelerometer; autoplay; clipboard-write; '
+                                f"encrypted-media; gyroscope; picture-in-picture; "
+                                f'web-share" '
+                                f'referrerpolicy="strict-origin-when-cross-origin" '
+                                f"allowfullscreen></iframe>"
                             )
                             lines.append(iframe_html)
                         else:

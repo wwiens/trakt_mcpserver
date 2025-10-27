@@ -1,5 +1,5 @@
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -40,9 +40,12 @@ async def test_get_show_comments():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = CommentsClient()
         result = await client.get_show_comments("1", limit=10, sort="newest")
@@ -78,9 +81,12 @@ async def test_get_movie_comments():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = CommentsClient()
         result = await client.get_movie_comments("1", limit=10, sort="likes")
@@ -126,12 +132,15 @@ async def test_get_comment_replies():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = CommentsClient()
-        result = await client.get_comment_replies("456", limit=10, sort="newest")
+        result = await client.get_comment_replies("456", limit=10)
 
         assert len(result) == 2
         assert result[0]["id"] == "789"

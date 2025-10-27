@@ -1,5 +1,6 @@
 """Search formatting methods for the Trakt MCP server."""
 
+from models.formatters.utils import format_pagination_header
 from models.types import SearchResult
 from models.types.pagination import PaginatedResponse
 
@@ -23,22 +24,14 @@ class SearchFormatters:
         if isinstance(results, PaginatedResponse):
             # Paginated response - format with pagination info
             message = "# Show Search Results\n\n"
-            message += f"📄 **{results.page_info_summary()}**\n\n"
-
-            # Add navigation hints
-            if results.pagination.has_previous_page or results.pagination.has_next_page:
-                message += "📍 **Navigation:** "
-                if results.pagination.has_previous_page:
-                    message += f"Previous: page {results.pagination.previous_page} | "
-                if results.pagination.has_next_page:
-                    message += f"Next: page {results.pagination.next_page}"
-                message += "\n\n"
+            message += format_pagination_header(results)
 
             items = results.data
             if not items:
                 return (
                     message
-                    + "No shows found on this page. Try a different page or search query."
+                    + "No shows found on this page. "
+                    + "Try a different page or search query."
                 )
         else:
             # Non-paginated response - all results
@@ -76,7 +69,10 @@ class SearchFormatters:
             message += f"  *Use this ID for check-ins: `{trakt_id}`*\n\n"
 
         # Add a tip for using the search results
-        message += "\nTo check in to a show, use the `checkin_to_show` tool with the show ID, season number, and episode number."
+        message += (
+            "\nTo check in to a show, use the `checkin_to_show` tool with the "
+            "show ID, season number, and episode number."
+        )
 
         return message
 
@@ -96,22 +92,14 @@ class SearchFormatters:
         if isinstance(results, PaginatedResponse):
             # Paginated response - format with pagination info
             message = "# Movie Search Results\n\n"
-            message += f"📄 **{results.page_info_summary()}**\n\n"
-
-            # Add navigation hints
-            if results.pagination.has_previous_page or results.pagination.has_next_page:
-                message += "📍 **Navigation:** "
-                if results.pagination.has_previous_page:
-                    message += f"Previous: page {results.pagination.previous_page} | "
-                if results.pagination.has_next_page:
-                    message += f"Next: page {results.pagination.next_page}"
-                message += "\n\n"
+            message += format_pagination_header(results)
 
             items = results.data
             if not items:
                 return (
                     message
-                    + "No movies found on this page. Try a different page or search query."
+                    + "No movies found on this page. "
+                    + "Try a different page or search query."
                 )
         else:
             # Non-paginated response - all results
@@ -142,6 +130,9 @@ class SearchFormatters:
 
             message += f"  *Use this ID for comments: `{trakt_id}`*\n\n"
 
-        message += "\nTo view comments for a movie, use the `fetch_movie_comments` tool with the movie ID."
+        message += (
+            "\nTo view comments for a movie, use the `fetch_movie_comments` "
+            "tool with the movie ID."
+        )
 
         return message

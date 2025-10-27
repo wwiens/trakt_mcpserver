@@ -46,6 +46,12 @@ from .protocols import (
     ShowsClientProtocol,
     UserClientProtocol,
 )
+from .sort import (
+    EpisodeCommentSort,
+    MovieCommentSort,
+    SeasonCommentSort,
+    ShowCommentSort,
+)
 
 __all__ = [
     # Protocol Types
@@ -54,10 +60,12 @@ __all__ = [
     "CheckinResponse",
     "CommentResponse",
     "DeviceCodeResponse",
+    "EpisodeCommentSort",
     "EpisodeResponse",
     "ErrorResponse",
     "FavoritedMovieWrapper",
     "FavoritedShowWrapper",
+    "MovieCommentSort",
     "MovieResponse",
     "MoviesClientProtocol",
     # Common Types
@@ -69,9 +77,12 @@ __all__ = [
     "PlayedShowWrapper",
     "SearchClientProtocol",
     "SearchResult",
+    "SeasonCommentSort",
     "SeasonResponse",
+    "ShowCommentSort",
     "ShowResponse",
     "ShowsClientProtocol",
+    # Sort Types
     "StatsResponse",
     "T",
     "TRequest",

@@ -1,7 +1,7 @@
 """Tests for search client pagination functionality."""
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -47,13 +47,14 @@ async def test_search_shows_no_page_returns_all():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Set up mock to return different responses for each call
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.side_effect = [
-            mock_response_page1,
-            mock_response_page2,
-        ]
-        mock_client.return_value = mock_async_client
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(
+            side_effect=[mock_response_page1, mock_response_page2]
+        )
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = SearchClient()
         result = await client.search_shows(query="breaking", limit=2, page=None)
@@ -61,8 +62,12 @@ async def test_search_shows_no_page_returns_all():
         # Should return a plain list with all 4 shows
         assert isinstance(result, list)
         assert len(result) == 4
-        assert result[0]["show"]["title"] == "Breaking Bad"
-        assert result[3]["show"]["title"] == "Breakthrough"
+        show_0 = result[0].get("show")
+        assert show_0 is not None
+        assert show_0["title"] == "Breaking Bad"
+        show_3 = result[3].get("show")
+        assert show_3 is not None
+        assert show_3["title"] == "Breakthrough"
 
 
 @pytest.mark.asyncio
@@ -88,9 +93,12 @@ async def test_search_shows_with_page_returns_paginated():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = SearchClient()
         result = await client.search_shows(query="breaking", limit=2, page=1)
@@ -101,7 +109,9 @@ async def test_search_shows_with_page_returns_paginated():
         assert result.pagination.current_page == 1
         assert result.pagination.total_pages == 3
         assert result.pagination.total_items == 6
-        assert result.data[0]["show"]["title"] == "Breaking Bad"
+        show_0 = result.data[0].get("show")
+        assert show_0 is not None
+        assert show_0["title"] == "Breaking Bad"
 
 
 @pytest.mark.asyncio
@@ -141,13 +151,14 @@ async def test_search_movies_no_page_returns_all():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Set up mock to return different responses for each call
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.side_effect = [
-            mock_response_page1,
-            mock_response_page2,
-        ]
-        mock_client.return_value = mock_async_client
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(
+            side_effect=[mock_response_page1, mock_response_page2]
+        )
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = SearchClient()
         result = await client.search_movies(query="in", limit=2, page=None)
@@ -155,8 +166,12 @@ async def test_search_movies_no_page_returns_all():
         # Should return a plain list with all 3 movies
         assert isinstance(result, list)
         assert len(result) == 3
-        assert result[0]["movie"]["title"] == "Inception"
-        assert result[2]["movie"]["title"] == "Insidious"
+        movie_0 = result[0].get("movie")
+        assert movie_0 is not None
+        assert movie_0["title"] == "Inception"
+        movie_2 = result[2].get("movie")
+        assert movie_2 is not None
+        assert movie_2["title"] == "Insidious"
 
 
 @pytest.mark.asyncio
@@ -182,9 +197,12 @@ async def test_search_movies_with_page_returns_paginated():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = SearchClient()
         result = await client.search_movies(query="in", limit=2, page=2)
@@ -195,7 +213,9 @@ async def test_search_movies_with_page_returns_paginated():
         assert result.pagination.current_page == 2
         assert result.pagination.total_pages == 5
         assert result.pagination.total_items == 10
-        assert result.data[0]["movie"]["title"] == "Inception"
+        movie_0 = result.data[0].get("movie")
+        assert movie_0 is not None
+        assert movie_0["title"] == "Inception"
 
 
 @pytest.mark.asyncio
@@ -220,9 +240,12 @@ async def test_search_pagination_metadata():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = SearchClient()
         result = await client.search_shows(query="show", limit=1, page=3)
@@ -234,8 +257,8 @@ async def test_search_pagination_metadata():
         assert result.pagination.total_items == 5
 
         # Verify navigation properties
-        assert result.pagination.has_previous_page is True
-        assert result.pagination.has_next_page is True
+        assert result.pagination.has_previous_page
+        assert result.pagination.has_next_page
         assert result.pagination.previous_page == 2
         assert result.pagination.next_page == 4
 
@@ -260,9 +283,12 @@ async def test_search_empty_results():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = SearchClient()
 
@@ -275,7 +301,7 @@ async def test_search_empty_results():
         assert result_paginated.pagination.total_items == 0
 
         # Reset mock for next test
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
+        mock_instance.get.return_value = mock_response
 
         # Test without page parameter (auto-paginate)
         result_list = await client.search_movies(

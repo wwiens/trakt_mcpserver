@@ -120,7 +120,7 @@ class TestEndpointUrlFormats:
             "comments_season": [":id", ":season", ":sort"],
             "comments_episode": [":id", ":season", ":episode", ":sort"],
             "comment": [":id"],
-            "comment_replies": [":id", ":sort"],
+            "comment_replies": [":id"],
             "show_ratings": [":id"],
             "movie_ratings": [":id"],
         }

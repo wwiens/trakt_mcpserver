@@ -1,6 +1,6 @@
 import os
 import time
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import httpx
 import pytest
@@ -50,8 +50,12 @@ async def test_complete_device_auth_flow():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-        mock_instance.post.side_effect = mock_responses
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(side_effect=mock_responses)
+        mock_instance.get = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = AuthClient()
 
@@ -129,9 +133,12 @@ async def test_device_token_pending_authorization():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.post.return_value = (
-            mock_error_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=mock_error_response)
+        mock_instance.get = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = AuthClient()
 
@@ -170,9 +177,12 @@ async def test_device_token_expired():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.post.return_value = (
-            mock_error_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=mock_error_response)
+        mock_instance.get = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = AuthClient()
 

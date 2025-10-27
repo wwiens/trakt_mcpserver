@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -105,15 +105,17 @@ async def test_fetch_user_ratings_integration(
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Configure the mock HTTP client
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
         # Mock for ratings request
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = SAMPLE_USER_RATINGS_RESPONSE
         ratings_mock.raise_for_status = MagicMock()
 
-        mock_instance.get.return_value = ratings_mock
+        # Configure the mock HTTP client
+        mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock(return_value=ratings_mock)
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock(return_value=ratings_mock)
 
         with patch(
             "server.sync.tools.SyncClient", return_value=authenticated_sync_client
@@ -156,6 +158,10 @@ async def test_fetch_user_ratings_with_rating_filter_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = high_rated_response
@@ -195,6 +201,10 @@ async def test_add_user_ratings_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.post = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.post = AsyncMock()
 
         # Mock for add ratings POST request
         add_mock = MagicMock()
@@ -241,6 +251,10 @@ async def test_remove_user_ratings_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.post = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.post = AsyncMock()
 
         # Mock for remove ratings POST request
         remove_mock = MagicMock()
@@ -333,6 +347,10 @@ async def test_error_propagation_integration(
     ):
         # Configure mock to raise HTTP errors
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
         mock_instance.get.side_effect = Exception("API connection error")
 
         with patch(
@@ -362,6 +380,10 @@ async def test_empty_ratings_response_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         # Mock empty response
         empty_mock = MagicMock()
@@ -396,6 +418,10 @@ async def test_mixed_content_types_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         # Mock different responses for different content types
         movies_response = [
@@ -482,6 +508,10 @@ async def test_rating_grouping_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = mixed_ratings_response
@@ -525,6 +555,10 @@ async def test_fetch_user_ratings_paginated_integration(
     ):
         # Configure the mock HTTP client
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         # Mock paginated response - first page of results
         ratings_mock = MagicMock()
@@ -586,6 +620,10 @@ async def test_fetch_user_ratings_paginated_last_page_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         # Mock last page response
         ratings_mock = MagicMock()
@@ -638,6 +676,10 @@ async def test_fetch_user_ratings_paginated_with_rating_filter_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = high_rated_response
@@ -685,6 +727,10 @@ async def test_fetch_user_ratings_paginated_empty_result_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         # Mock empty paginated response
         empty_mock = MagicMock()
@@ -731,6 +777,10 @@ async def test_fetch_user_ratings_backward_compatibility_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         # Mock non-paginated response (no pagination headers)
         ratings_mock = MagicMock()
@@ -774,6 +824,10 @@ async def test_fetch_user_ratings_pagination_error_handling_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         # Mock HTTP error during paginated request
         mock_instance.get.side_effect = Exception("Pagination API error")
@@ -834,6 +888,10 @@ async def test_fetch_user_ratings_pagination_headers_extraction_integration(
         ),
     ):
         mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
 
         # Mock response with specific pagination headers
         ratings_mock = MagicMock()

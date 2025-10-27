@@ -212,9 +212,7 @@ EpisodeCommentsToolType = Callable[
     [str, int, int, int, bool, CommentSort, int | None], Awaitable[str]
 ]
 CommentToolType = Callable[[str, bool], Awaitable[str]]
-CommentRepliesToolType = Callable[
-    [str, int, bool, CommentSort, int | None], Awaitable[str]
-]
+CommentRepliesToolType = Callable[[str, int, bool, int | None], Awaitable[str]]
 
 
 @handle_api_errors_func
@@ -447,7 +445,6 @@ async def fetch_comment_replies(
     comment_id: str,
     limit: int = DEFAULT_LIMIT,
     show_spoilers: bool = False,
-    sort: CommentSort = "newest",
     page: int | None = None,
 ) -> str:
     """Fetch replies for a comment from Trakt.
@@ -456,7 +453,6 @@ async def fetch_comment_replies(
         comment_id: Trakt ID of the comment
         limit: Maximum number of replies to return
         show_spoilers: Whether to show spoilers by default
-        sort: How to sort replies (newest, oldest, likes, replies)
         page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
@@ -468,9 +464,6 @@ async def fetch_comment_replies(
     """
     try:
         id_params = CommentIdParam(comment_id=comment_id)
-        options = CommentsListOptionsParam(
-            limit=limit, sort=sort, show_spoilers=show_spoilers
-        )
         comment_id = id_params.comment_id
     except ValidationError as e:
         _handle_validation_error(e, "comment replies")
@@ -487,9 +480,7 @@ async def fetch_comment_replies(
     )
 
     # Fetch replies data
-    replies = await client.get_comment_replies(
-        comment_id, limit=options.limit, sort=options.sort, page=page
-    )
+    replies = await client.get_comment_replies(comment_id, limit=limit, page=page)
     _ensure_not_error_string(
         replies,
         resource_type="comment_replies",
@@ -501,7 +492,7 @@ async def fetch_comment_replies(
         comment,
         with_replies=True,
         replies=replies,
-        show_spoilers=options.show_spoilers,
+        show_spoilers=show_spoilers,
     )
 
 
@@ -598,10 +589,9 @@ def register_comment_tools(
         comment_id: str,
         limit: int = DEFAULT_LIMIT,
         show_spoilers: bool = False,
-        sort: CommentSort = "newest",
         page: int | None = None,
     ) -> str:
-        return await fetch_comment_replies(comment_id, limit, show_spoilers, sort, page)
+        return await fetch_comment_replies(comment_id, limit, show_spoilers, page)
 
     # Return handlers for type checker visibility
     return (

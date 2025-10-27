@@ -1,5 +1,7 @@
 """Show statistics functionality (favorited, played, watched)."""
 
+from typing import overload
+
 from config.api import DEFAULT_LIMIT
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import FavoritedShowWrapper, PlayedShowWrapper, WatchedShowWrapper
@@ -11,6 +13,22 @@ from ..base import BaseClient
 
 class ShowStatsClient(BaseClient):
     """Client for show statistics operations."""
+
+    @overload
+    async def get_favorited_shows(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: None = None,
+    ) -> list[FavoritedShowWrapper]: ...
+
+    @overload
+    async def get_favorited_shows(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: int = ...,
+    ) -> PaginatedResponse[FavoritedShowWrapper]: ...
 
     @handle_api_errors
     async def get_favorited_shows(
@@ -31,32 +49,34 @@ class ShowStatsClient(BaseClient):
             If page specified: Paginated response with metadata for that page
         """
         if page is None:
-            # Auto-paginate: fetch all pages
-            all_items: list[FavoritedShowWrapper] = []
-            current_page = 1
-
-            while True:
-                response = await self._make_paginated_request(
-                    TRAKT_ENDPOINTS["shows_favorited"],
-                    response_type=FavoritedShowWrapper,
-                    params={"page": current_page, "limit": limit, "period": period},
-                )
-
-                all_items.extend(response.data)
-
-                if not response.pagination.has_next_page:
-                    break
-
-                current_page += 1
-
-            return all_items
-        else:
-            # Single page with metadata
-            return await self._make_paginated_request(
+            return await self.auto_paginate(
                 TRAKT_ENDPOINTS["shows_favorited"],
                 response_type=FavoritedShowWrapper,
-                params={"page": page, "limit": limit, "period": period},
+                params={"limit": limit, "period": period},
             )
+
+        # Single page with metadata
+        return await self._make_paginated_request(
+            TRAKT_ENDPOINTS["shows_favorited"],
+            response_type=FavoritedShowWrapper,
+            params={"page": page, "limit": limit, "period": period},
+        )
+
+    @overload
+    async def get_played_shows(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: None = None,
+    ) -> list[PlayedShowWrapper]: ...
+
+    @overload
+    async def get_played_shows(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: int = ...,
+    ) -> PaginatedResponse[PlayedShowWrapper]: ...
 
     @handle_api_errors
     async def get_played_shows(
@@ -77,32 +97,34 @@ class ShowStatsClient(BaseClient):
             If page specified: Paginated response with metadata for that page
         """
         if page is None:
-            # Auto-paginate: fetch all pages
-            all_items: list[PlayedShowWrapper] = []
-            current_page = 1
-
-            while True:
-                response = await self._make_paginated_request(
-                    TRAKT_ENDPOINTS["shows_played"],
-                    response_type=PlayedShowWrapper,
-                    params={"page": current_page, "limit": limit, "period": period},
-                )
-
-                all_items.extend(response.data)
-
-                if not response.pagination.has_next_page:
-                    break
-
-                current_page += 1
-
-            return all_items
-        else:
-            # Single page with metadata
-            return await self._make_paginated_request(
+            return await self.auto_paginate(
                 TRAKT_ENDPOINTS["shows_played"],
                 response_type=PlayedShowWrapper,
-                params={"page": page, "limit": limit, "period": period},
+                params={"limit": limit, "period": period},
             )
+
+        # Single page with metadata
+        return await self._make_paginated_request(
+            TRAKT_ENDPOINTS["shows_played"],
+            response_type=PlayedShowWrapper,
+            params={"page": page, "limit": limit, "period": period},
+        )
+
+    @overload
+    async def get_watched_shows(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: None = None,
+    ) -> list[WatchedShowWrapper]: ...
+
+    @overload
+    async def get_watched_shows(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: int = ...,
+    ) -> PaginatedResponse[WatchedShowWrapper]: ...
 
     @handle_api_errors
     async def get_watched_shows(
@@ -123,29 +145,15 @@ class ShowStatsClient(BaseClient):
             If page specified: Paginated response with metadata for that page
         """
         if page is None:
-            # Auto-paginate: fetch all pages
-            all_items: list[WatchedShowWrapper] = []
-            current_page = 1
-
-            while True:
-                response = await self._make_paginated_request(
-                    TRAKT_ENDPOINTS["shows_watched"],
-                    response_type=WatchedShowWrapper,
-                    params={"page": current_page, "limit": limit, "period": period},
-                )
-
-                all_items.extend(response.data)
-
-                if not response.pagination.has_next_page:
-                    break
-
-                current_page += 1
-
-            return all_items
-        else:
-            # Single page with metadata
-            return await self._make_paginated_request(
+            return await self.auto_paginate(
                 TRAKT_ENDPOINTS["shows_watched"],
                 response_type=WatchedShowWrapper,
-                params={"page": page, "limit": limit, "period": period},
+                params={"limit": limit, "period": period},
             )
+
+        # Single page with metadata
+        return await self._make_paginated_request(
+            TRAKT_ENDPOINTS["shows_watched"],
+            response_type=WatchedShowWrapper,
+            params={"page": page, "limit": limit, "period": period},
+        )

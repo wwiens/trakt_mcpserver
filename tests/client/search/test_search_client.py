@@ -1,5 +1,5 @@
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -38,9 +38,12 @@ async def test_search_shows():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = SearchClient()
         result = await client.search_shows("Breaking Bad", limit=10)
@@ -84,9 +87,12 @@ async def test_search_movies():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = SearchClient()
         result = await client.search_movies("Shawshank", limit=10)

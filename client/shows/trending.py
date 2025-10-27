@@ -1,5 +1,7 @@
 """Trending shows functionality."""
 
+from typing import overload
+
 from config.api import DEFAULT_LIMIT
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import TrendingWrapper
@@ -11,6 +13,16 @@ from ..base import BaseClient
 
 class TrendingShowsClient(BaseClient):
     """Client for trending shows operations."""
+
+    @overload
+    async def get_trending_shows(
+        self, limit: int = DEFAULT_LIMIT, page: None = None
+    ) -> list[TrendingWrapper]: ...
+
+    @overload
+    async def get_trending_shows(
+        self, limit: int = DEFAULT_LIMIT, page: int = ...
+    ) -> PaginatedResponse[TrendingWrapper]: ...
 
     @handle_api_errors
     async def get_trending_shows(
@@ -27,25 +39,11 @@ class TrendingShowsClient(BaseClient):
             If page specified: Paginated response with metadata for that page
         """
         if page is None:
-            # Auto-paginate: fetch all pages
-            all_items: list[TrendingWrapper] = []
-            current_page = 1
-
-            while True:
-                response = await self._make_paginated_request(
-                    TRAKT_ENDPOINTS["shows_trending"],
-                    response_type=TrendingWrapper,
-                    params={"page": current_page, "limit": limit},
-                )
-
-                all_items.extend(response.data)
-
-                if not response.pagination.has_next_page:
-                    break
-
-                current_page += 1
-
-            return all_items
+            return await self.auto_paginate(
+                TRAKT_ENDPOINTS["shows_trending"],
+                response_type=TrendingWrapper,
+                params={"limit": limit},
+            )
         else:
             # Single page with metadata
             return await self._make_paginated_request(

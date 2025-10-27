@@ -90,12 +90,9 @@ async def fetch_trending_shows(
     params = LimitOnly(limit=limit, page=page)
     limit, page = params.limit, params.page
 
-    try:
-        client = TrendingShowsClient()
-        shows = await client.get_trending_shows(limit=limit, page=page)
-        return ShowFormatters.format_trending_shows(shows)
-    except MCPError:
-        raise
+    client = TrendingShowsClient()
+    shows = await client.get_trending_shows(limit=limit, page=page)
+    return ShowFormatters.format_trending_shows(shows)
 
 
 @handle_api_errors_func
@@ -116,12 +113,9 @@ async def fetch_popular_shows(
     params = LimitOnly(limit=limit, page=page)
     limit, page = params.limit, params.page
 
-    try:
-        client = PopularShowsClient()
-        shows = await client.get_popular_shows(limit=limit, page=page)
-        return ShowFormatters.format_popular_shows(shows)
-    except MCPError:
-        raise
+    client = PopularShowsClient()
+    shows = await client.get_popular_shows(limit=limit, page=page)
+    return ShowFormatters.format_popular_shows(shows)
 
 
 @handle_api_errors_func
@@ -145,20 +139,17 @@ async def fetch_favorited_shows(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client = ShowStatsClient()
-        shows = await client.get_favorited_shows(limit=limit, period=period, page=page)
+    client = ShowStatsClient()
+    shows = await client.get_favorited_shows(limit=limit, period=period, page=page)
 
-        # Trace structure in debug only (only for list responses to avoid pagination object)
-        if shows and isinstance(shows, list):
-            logger.debug(
-                "Favorited shows API response structure: %s",
-                json.dumps(shows[0], indent=2),
-            )
+    # Trace structure in debug only (only for list responses to avoid pagination object)
+    if shows and isinstance(shows, list):
+        logger.debug(
+            "Favorited shows API response structure: %s",
+            json.dumps(shows[0], indent=2),
+        )
 
-        return ShowFormatters.format_favorited_shows(shows)  # type: ignore[arg-type]
-    except MCPError:
-        raise
+    return ShowFormatters.format_favorited_shows(shows)
 
 
 @handle_api_errors_func
@@ -182,12 +173,9 @@ async def fetch_played_shows(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client = ShowStatsClient()
-        shows = await client.get_played_shows(limit=limit, period=period, page=page)
-        return ShowFormatters.format_played_shows(shows)
-    except MCPError:
-        raise
+    client = ShowStatsClient()
+    shows = await client.get_played_shows(limit=limit, period=period, page=page)
+    return ShowFormatters.format_played_shows(shows)
 
 
 @handle_api_errors_func
@@ -211,12 +199,9 @@ async def fetch_watched_shows(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client = ShowStatsClient()
-        shows = await client.get_watched_shows(limit=limit, period=period, page=page)
-        return ShowFormatters.format_watched_shows(shows)
-    except MCPError:
-        raise
+    client = ShowStatsClient()
+    shows = await client.get_watched_shows(limit=limit, period=period, page=page)
+    return ShowFormatters.format_watched_shows(shows)
 
 
 @handle_api_errors_func

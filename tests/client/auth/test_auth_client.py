@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import httpx
 import pytest
@@ -14,28 +14,28 @@ from utils.api.errors import handle_api_errors_func
 
 
 @pytest.mark.asyncio
-async def test_auth_client_init_with_credentials():
-    with patch.dict(
-        os.environ, {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"}
-    ):
-        client = AuthClient()
-        assert client.client_id == "test_id"
-        assert client.client_secret == "test_secret"
-        assert "trakt-api-key" in client.headers
-        assert client.headers["trakt-api-key"] == "test_id"
+async def test_auth_client_init_with_credentials(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    client = AuthClient()
+    assert client.client_id == "test_id"
+    assert client.client_secret == "test_secret"
+    assert "trakt-api-key" in client.headers
+    assert client.headers["trakt-api-key"] == "test_id"
 
 
 @pytest.mark.asyncio
-async def test_auth_client_init_without_credentials():
-    with (
-        patch.dict(os.environ, {"TRAKT_CLIENT_ID": "", "TRAKT_CLIENT_SECRET": ""}),
-        pytest.raises(ValueError, match="Trakt API credentials not found"),
-    ):
+async def test_auth_client_init_without_credentials(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "")
+
+    with pytest.raises(ValueError, match="Trakt API credentials not found"):
         AuthClient()
 
 
 @pytest.mark.asyncio
-async def test_auth_client_load_auth_token_success():
+async def test_auth_client_load_auth_token_success(monkeypatch: pytest.MonkeyPatch):
     mock_token_data = {
         "access_token": "test_access_token",
         "refresh_token": "test_refresh_token",
@@ -45,12 +45,11 @@ async def test_auth_client_load_auth_token_success():
         "token_type": "bearer",
     }
 
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
     with (
         patch("dotenv.load_dotenv"),
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
         patch("os.path.exists", return_value=True),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_token_data))),
     ):
@@ -63,16 +62,17 @@ async def test_auth_client_load_auth_token_success():
 
 
 @pytest.mark.asyncio
-async def test_auth_client_load_auth_token_file_not_exists():
+async def test_auth_client_load_auth_token_file_not_exists(
+    monkeypatch: pytest.MonkeyPatch,
+):
     def path_exists_side_effect(path: str) -> bool:
         return path != "auth_token.json"
 
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
     with (
         patch("dotenv.load_dotenv"),
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
         patch("os.path.exists", side_effect=path_exists_side_effect),
     ):
         client = AuthClient()
@@ -81,16 +81,15 @@ async def test_auth_client_load_auth_token_file_not_exists():
 
 
 @pytest.mark.asyncio
-async def test_auth_client_is_authenticated_with_valid_token():
+async def test_auth_client_is_authenticated_with_valid_token(
+    monkeypatch: pytest.MonkeyPatch,
+):
     current_time = int(time.time())
 
-    with (
-        patch("dotenv.load_dotenv"),
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
-    ):
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    with patch("dotenv.load_dotenv"):
         client = AuthClient()
         client.auth_token = TraktAuthToken(
             access_token="test_token",
@@ -105,16 +104,15 @@ async def test_auth_client_is_authenticated_with_valid_token():
 
 
 @pytest.mark.asyncio
-async def test_auth_client_is_authenticated_with_expired_token():
+async def test_auth_client_is_authenticated_with_expired_token(
+    monkeypatch: pytest.MonkeyPatch,
+):
     current_time = int(time.time())
 
-    with (
-        patch("dotenv.load_dotenv"),
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
-    ):
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    with patch("dotenv.load_dotenv"):
         client = AuthClient()
         client.auth_token = TraktAuthToken(
             access_token="test_token",
@@ -130,7 +128,7 @@ async def test_auth_client_is_authenticated_with_expired_token():
 
 
 @pytest.mark.asyncio
-async def test_auth_client_get_device_code():
+async def test_auth_client_get_device_code(monkeypatch: pytest.MonkeyPatch):
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "device_code": "device_code_123",
@@ -141,16 +139,16 @@ async def test_auth_client_get_device_code():
     }
     mock_response.raise_for_status = MagicMock()
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
-    ):
-        mock_client.return_value.__aenter__.return_value.post.return_value = (
-            mock_response
-        )
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    with patch("httpx.AsyncClient") as mock_client:
+        # Mock async methods for new shared client pattern
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=mock_response)
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = AuthClient()
         result = await client.get_device_code()
@@ -162,7 +160,7 @@ async def test_auth_client_get_device_code():
 
 
 @pytest.mark.asyncio
-async def test_auth_client_get_device_token_success():
+async def test_auth_client_get_device_token_success(monkeypatch: pytest.MonkeyPatch):
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "access_token": "access_token_123",
@@ -174,20 +172,22 @@ async def test_auth_client_get_device_token_success():
     }
     mock_response.raise_for_status = MagicMock()
 
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
     with (
         patch("httpx.AsyncClient") as mock_client,
         patch("dotenv.load_dotenv"),
         patch("os.open") as mock_os_open,
         patch("os.fdopen") as mock_fdopen,
         patch("os.replace") as mock_replace,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
     ):
-        mock_client.return_value.__aenter__.return_value.post.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=mock_response)
+        mock_instance.get = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         # Set up the os.open and os.fdopen mocks
         mock_fd = 3
@@ -217,13 +217,12 @@ async def test_auth_client_get_device_token_success():
         mock_fdopen.return_value.write.assert_called()
 
 
-def test_clear_auth_token():
+def test_clear_auth_token(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
     with (
         patch("dotenv.load_dotenv"),
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
         patch("os.path.exists", return_value=True),
         patch("os.remove") as mock_remove,
     ):
@@ -247,17 +246,16 @@ def test_clear_auth_token():
         mock_remove.assert_called_once_with("auth_token.json")
 
 
-def test_clear_auth_token_no_file():
+def test_clear_auth_token_no_file(monkeypatch: pytest.MonkeyPatch):
     def path_exists_side_effect(path: str) -> bool:
         # Only return False for auth_token.json
         return path != "auth_token.json"
 
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
     with (
         patch("dotenv.load_dotenv"),
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
         patch("os.path.exists", side_effect=path_exists_side_effect),
     ):
         client = AuthClient()
@@ -267,7 +265,9 @@ def test_clear_auth_token_no_file():
         assert client.auth_token is None
 
 
-def test_clear_auth_token_remove_error(caplog: LogCaptureFixture) -> None:
+def test_clear_auth_token_remove_error(
+    monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture
+) -> None:
     # Use a list to track call count (mutable in closure)
     call_count = [0]
 
@@ -282,12 +282,11 @@ def test_clear_auth_token_remove_error(caplog: LogCaptureFixture) -> None:
             return call_count[0] > 1
         return True
 
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
     with (
         patch("dotenv.load_dotenv"),
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
         patch("os.path.exists", side_effect=path_exists_side_effect),
         patch("os.remove", side_effect=OSError("Permission denied")),
     ):

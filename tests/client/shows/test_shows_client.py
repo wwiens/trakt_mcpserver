@@ -1,5 +1,5 @@
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -24,9 +24,12 @@ async def test_shows_client_get_trending_shows():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = ShowsClient()
         result = await client.get_trending_shows(limit=1)
@@ -64,9 +67,12 @@ async def test_get_show_ratings():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = ShowsClient()
         result = await client.get_show_ratings("1")
@@ -132,16 +138,19 @@ async def test_get_show_extended():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = ShowsClient()
         result = await client.get_show_extended("1")
 
         # Verify the request was made with extended parameter
-        mock_client.return_value.__aenter__.return_value.get.assert_called_once()
-        call_args = mock_client.return_value.__aenter__.return_value.get.call_args
+        mock_instance.get.assert_called_once()
+        call_args = mock_instance.get.call_args
         assert call_args[1]["params"] == {"extended": "full"}
 
         # Verify response data

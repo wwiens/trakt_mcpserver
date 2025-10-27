@@ -230,7 +230,7 @@ async def test_fetch_comment_replies():
 
         mock_client.get_comment.assert_called_once_with("123")
         mock_client.get_comment_replies.assert_called_once_with(
-            "123", limit=5, sort="newest", page=None
+            "123", limit=5, page=None
         )
 
 
@@ -366,7 +366,7 @@ async def test_fetch_comment_replies_string_error_handling():
         assert "Error accessing comment_replies" in str(exc_info.value)
         mock_client.get_comment.assert_called_once_with("123")
         mock_client.get_comment_replies.assert_called_once_with(
-            "123", limit=5, sort="newest", page=None
+            "123", limit=5, page=None
         )
 
 

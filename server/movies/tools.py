@@ -90,12 +90,9 @@ async def fetch_trending_movies(
     params = LimitOnly(limit=limit, page=page)
     limit, page = params.limit, params.page
 
-    try:
-        client = TrendingMoviesClient()
-        movies = await client.get_trending_movies(limit=limit, page=page)
-        return MovieFormatters.format_trending_movies(movies)
-    except MCPError:
-        raise
+    client = TrendingMoviesClient()
+    movies = await client.get_trending_movies(limit=limit, page=page)
+    return MovieFormatters.format_trending_movies(movies)
 
 
 @handle_api_errors_func
@@ -116,12 +113,9 @@ async def fetch_popular_movies(
     params = LimitOnly(limit=limit, page=page)
     limit, page = params.limit, params.page
 
-    try:
-        client = PopularMoviesClient()
-        movies = await client.get_popular_movies(limit=limit, page=page)
-        return MovieFormatters.format_popular_movies(movies)
-    except MCPError:
-        raise
+    client = PopularMoviesClient()
+    movies = await client.get_popular_movies(limit=limit, page=page)
+    return MovieFormatters.format_popular_movies(movies)
 
 
 @handle_api_errors_func
@@ -145,22 +139,17 @@ async def fetch_favorited_movies(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client = MovieStatsClient()
-        movies = await client.get_favorited_movies(
-            limit=limit, period=period, page=page
+    client = MovieStatsClient()
+    movies = await client.get_favorited_movies(limit=limit, period=period, page=page)
+
+    # Trace structure in debug only (only for list responses to avoid pagination object)
+    if movies and isinstance(movies, list):
+        logger.debug(
+            "Favorited movies API response structure: %s",
+            json.dumps(movies[0], indent=2),
         )
 
-        # Trace structure in debug only (only for list responses to avoid pagination object)
-        if movies and isinstance(movies, list):
-            logger.debug(
-                "Favorited movies API response structure: %s",
-                json.dumps(movies[0], indent=2),
-            )
-
-        return MovieFormatters.format_favorited_movies(movies)  # type: ignore[arg-type]
-    except MCPError:
-        raise
+    return MovieFormatters.format_favorited_movies(movies)  # type: ignore[arg-type]
 
 
 @handle_api_errors_func
@@ -184,12 +173,9 @@ async def fetch_played_movies(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client = MovieStatsClient()
-        movies = await client.get_played_movies(limit=limit, period=period, page=page)
-        return MovieFormatters.format_played_movies(movies)
-    except MCPError:
-        raise
+    client = MovieStatsClient()
+    movies = await client.get_played_movies(limit=limit, period=period, page=page)
+    return MovieFormatters.format_played_movies(movies)
 
 
 @handle_api_errors_func
@@ -213,12 +199,9 @@ async def fetch_watched_movies(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client = MovieStatsClient()
-        movies = await client.get_watched_movies(limit=limit, period=period, page=page)
-        return MovieFormatters.format_watched_movies(movies)
-    except MCPError:
-        raise
+    client = MovieStatsClient()
+    movies = await client.get_watched_movies(limit=limit, period=period, page=page)
+    return MovieFormatters.format_watched_movies(movies)
 
 
 @handle_api_errors_func

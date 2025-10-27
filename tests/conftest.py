@@ -5,6 +5,7 @@ from collections.abc import Generator
 from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -21,6 +22,21 @@ if project_root not in sys.path:
 project_root_pathlib = str(Path(__file__).parent.parent.resolve())
 if project_root_pathlib not in sys.path:
     sys.path.insert(0, project_root_pathlib)
+
+
+@pytest.fixture
+def mock_httpx_client():
+    """Create a mock httpx.AsyncClient for testing with shared client pattern.
+
+    Returns a mock instance that properly supports async methods like
+    get(), post(), and aclose() for use with the new shared HTTP client pattern.
+    """
+    mock_instance = MagicMock()
+    mock_instance.get = AsyncMock()
+    mock_instance.post = AsyncMock()
+    mock_instance.request = AsyncMock()
+    mock_instance.aclose = AsyncMock()
+    return mock_instance
 
 
 @pytest.fixture

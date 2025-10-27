@@ -1,7 +1,7 @@
 """Tests for show client pagination functionality."""
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -49,13 +49,14 @@ async def test_trending_shows_no_page_returns_all():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Set up mock to return different responses for each call
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.side_effect = [
-            mock_response_page1,
-            mock_response_page2,
-        ]
-        mock_client.return_value = mock_async_client
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(
+            side_effect=[mock_response_page1, mock_response_page2]
+        )
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=2, page=None)
@@ -63,8 +64,12 @@ async def test_trending_shows_no_page_returns_all():
         # Should return a plain list with all 4 shows
         assert isinstance(result, list)
         assert len(result) == 4
-        assert result[0]["show"]["title"] == "Show 1"
-        assert result[3]["show"]["title"] == "Show 4"
+        show_0 = result[0].get("show")
+        assert show_0 is not None
+        assert show_0["title"] == "Show 1"
+        show_3 = result[3].get("show")
+        assert show_3 is not None
+        assert show_3["title"] == "Show 4"
 
 
 @pytest.mark.asyncio
@@ -90,9 +95,12 @@ async def test_trending_shows_with_page_returns_paginated():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=2, page=1)
@@ -128,9 +136,12 @@ async def test_trending_shows_pagination_metadata():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=2, page=2)
@@ -164,16 +175,19 @@ async def test_trending_shows_navigation_properties():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=1, page=2)
 
         # Check navigation properties
-        assert result.pagination.has_previous_page is True
-        assert result.pagination.has_next_page is True
+        assert result.pagination.has_previous_page
+        assert result.pagination.has_next_page
         assert result.pagination.previous_page == 1
         assert result.pagination.next_page == 3
 
@@ -202,9 +216,12 @@ async def test_popular_shows_no_page_returns_all():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = PopularShowsClient()
         result = await client.get_popular_shows(limit=2, page=None)
@@ -237,9 +254,12 @@ async def test_popular_shows_with_page_returns_paginated():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = PopularShowsClient()
         result = await client.get_popular_shows(limit=1, page=1)
@@ -271,16 +291,21 @@ async def test_favorited_shows_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = ShowStatsClient()
         result = await client.get_favorited_shows(limit=1, period="weekly", page=1)
 
         assert isinstance(result, PaginatedResponse)
         assert len(result.data) == 1
-        assert result.data[0]["show"]["title"] == "Favorited 1"
+        show_0 = result.data[0].get("show")
+        assert show_0 is not None
+        assert show_0["title"] == "Favorited 1"
 
 
 @pytest.mark.asyncio
@@ -309,9 +334,12 @@ async def test_played_shows_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = ShowStatsClient()
         result = await client.get_played_shows(limit=1, period="weekly", page=1)
@@ -342,9 +370,12 @@ async def test_watched_shows_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = ShowStatsClient()
         result = await client.get_watched_shows(limit=1, period="weekly", page=1)
@@ -375,17 +406,20 @@ async def test_single_page_result():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=10, page=1)
 
         assert isinstance(result, PaginatedResponse)
-        assert result.is_single_page is True
-        assert result.pagination.has_next_page is False
-        assert result.pagination.has_previous_page is False
+        assert result.is_single_page
+        assert not result.pagination.has_next_page
+        assert not result.pagination.has_previous_page
 
 
 @pytest.mark.asyncio
@@ -409,9 +443,12 @@ async def test_empty_result():
         ),
     ):
         # For auto-pagination (page=None), mock should return empty result on first call
-        mock_client.return_value.__aenter__.return_value.get.return_value = (
-            mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=10, page=None)
@@ -425,7 +462,7 @@ async def test_empty_result():
 async def test_multiple_pages_auto_paginate():
     """Test auto-pagination fetches all pages correctly."""
     # Create 3 pages of mock responses
-    responses = []
+    responses: list[MagicMock] = []
     for page_num in range(1, 4):
         mock_response = MagicMock()
         mock_response.json.return_value = [
@@ -450,9 +487,12 @@ async def test_multiple_pages_auto_paginate():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.side_effect = responses
-        mock_client.return_value = mock_async_client
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(side_effect=responses)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=1, page=None)
@@ -460,6 +500,12 @@ async def test_multiple_pages_auto_paginate():
         # Should fetch all 3 pages and return flat list
         assert isinstance(result, list)
         assert len(result) == 3
-        assert result[0]["show"]["title"] == "Show 1"
-        assert result[1]["show"]["title"] == "Show 2"
-        assert result[2]["show"]["title"] == "Show 3"
+        show_0 = result[0].get("show")
+        assert show_0 is not None
+        assert show_0["title"] == "Show 1"
+        show_1 = result[1].get("show")
+        assert show_1 is not None
+        assert show_1["title"] == "Show 2"
+        show_2 = result[2].get("show")
+        assert show_2 is not None
+        assert show_2["title"] == "Show 3"

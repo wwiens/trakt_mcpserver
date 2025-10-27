@@ -1,5 +1,6 @@
 """Movie formatting methods for the Trakt MCP server."""
 
+from models.formatters.utils import format_pagination_header
 from models.types import (
     FavoritedMovieWrapper,
     MovieResponse,
@@ -30,20 +31,7 @@ class MovieFormatters:
 
         # Handle pagination metadata if present
         if isinstance(data, PaginatedResponse):
-            result += f"📄 **{data.page_info_summary()}**\n\n"
-
-            # Add navigation hints
-            navigation_hints: list[str] = []
-            if data.pagination.has_previous_page:
-                navigation_hints.append(
-                    f"Previous: page {data.pagination.previous_page}"
-                )
-            if data.pagination.has_next_page:
-                navigation_hints.append(f"Next: page {data.pagination.next_page}")
-
-            if navigation_hints:
-                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
-
+            result += format_pagination_header(data)
             movies = data.data
         else:
             movies = data
@@ -59,6 +47,8 @@ class MovieFormatters:
             result += f"- **{title}{year_str}** - {watchers} watchers\n"
 
             if overview := movie.get("overview"):
+                if len(overview) > 200:
+                    overview = overview[:197] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -81,20 +71,7 @@ class MovieFormatters:
 
         # Handle pagination metadata if present
         if isinstance(data, PaginatedResponse):
-            result += f"📄 **{data.page_info_summary()}**\n\n"
-
-            # Add navigation hints
-            navigation_hints: list[str] = []
-            if data.pagination.has_previous_page:
-                navigation_hints.append(
-                    f"Previous: page {data.pagination.previous_page}"
-                )
-            if data.pagination.has_next_page:
-                navigation_hints.append(f"Next: page {data.pagination.next_page}")
-
-            if navigation_hints:
-                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
-
+            result += format_pagination_header(data)
             movies = data.data
         else:
             movies = data
@@ -107,6 +84,8 @@ class MovieFormatters:
             result += f"- **{title}{year_str}**\n"
 
             if overview := movie.get("overview"):
+                if len(overview) > 200:
+                    overview = overview[:197] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -129,20 +108,7 @@ class MovieFormatters:
 
         # Handle pagination metadata if present
         if isinstance(data, PaginatedResponse):
-            result += f"📄 **{data.page_info_summary()}**\n\n"
-
-            # Add navigation hints
-            navigation_hints: list[str] = []
-            if data.pagination.has_previous_page:
-                navigation_hints.append(
-                    f"Previous: page {data.pagination.previous_page}"
-                )
-            if data.pagination.has_next_page:
-                navigation_hints.append(f"Next: page {data.pagination.next_page}")
-
-            if navigation_hints:
-                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
-
+            result += format_pagination_header(data)
             movies = data.data
         else:
             movies = data
@@ -159,6 +125,8 @@ class MovieFormatters:
             result += f"- **{title}{year_str}** - Favorited by {user_count} users\n"
 
             if overview := movie.get("overview"):
+                if len(overview) > 200:
+                    overview = overview[:197] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -181,20 +149,7 @@ class MovieFormatters:
 
         # Handle pagination metadata if present
         if isinstance(data, PaginatedResponse):
-            result += f"📄 **{data.page_info_summary()}**\n\n"
-
-            # Add navigation hints
-            navigation_hints: list[str] = []
-            if data.pagination.has_previous_page:
-                navigation_hints.append(
-                    f"Previous: page {data.pagination.previous_page}"
-                )
-            if data.pagination.has_next_page:
-                navigation_hints.append(f"Next: page {data.pagination.next_page}")
-
-            if navigation_hints:
-                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
-
+            result += format_pagination_header(data)
             movies = data.data
         else:
             movies = data
@@ -208,9 +163,14 @@ class MovieFormatters:
             year = movie.get("year", "")
             year_str = f" ({year})" if year else ""
 
-            result += f"- **{title}{year_str}** - {watcher_count} watchers, {play_count} plays\n"
+            result += (
+                f"- **{title}{year_str}** - "
+                f"{watcher_count} watchers, {play_count} plays\n"
+            )
 
             if overview := movie.get("overview"):
+                if len(overview) > 200:
+                    overview = overview[:197] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -233,20 +193,7 @@ class MovieFormatters:
 
         # Handle pagination metadata if present
         if isinstance(data, PaginatedResponse):
-            result += f"📄 **{data.page_info_summary()}**\n\n"
-
-            # Add navigation hints
-            navigation_hints: list[str] = []
-            if data.pagination.has_previous_page:
-                navigation_hints.append(
-                    f"Previous: page {data.pagination.previous_page}"
-                )
-            if data.pagination.has_next_page:
-                navigation_hints.append(f"Next: page {data.pagination.next_page}")
-
-            if navigation_hints:
-                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
-
+            result += format_pagination_header(data)
             movies = data.data
         else:
             movies = data
@@ -262,6 +209,8 @@ class MovieFormatters:
             result += f"- **{title}{year_str}** - Watched by {watcher_count} users\n"
 
             if overview := movie.get("overview"):
+                if len(overview) > 200:
+                    overview = overview[:197] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"

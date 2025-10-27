@@ -1,5 +1,6 @@
 """Check-in formatting methods for the Trakt MCP server."""
 
+from models.formatters.utils import format_display_time
 from models.types import CheckinResponse
 
 
@@ -28,19 +29,15 @@ class CheckinFormatters:
 
             # Format the success message
             message = "# Successfully Checked In\n\n"
-            message += f"You are now checked in to **{show_title}** - S{season:02d}E{number:02d}: {episode_title}\n\n"
+            message += (
+                f"You are now checked in to **{show_title}** - "
+                f"S{season:02d}E{number:02d}: {episode_title}\n\n"
+            )
 
             # Add watched_at time if available
             if watched_at := response.get("watched_at"):
-                # Try to format the timestamp for better readability
-                try:
-                    # Format the timestamp (removing the 'Z' and truncating milliseconds)
-                    watched_time = (
-                        watched_at.replace("Z", "").split(".")[0].replace("T", " ")
-                    )
-                    message += f"Watched at: {watched_time} UTC\n\n"
-                except Exception:
-                    message += f"Watched at: {watched_at}\n\n"
+                watched_time = format_display_time(watched_at)
+                message += f"Watched at: {watched_time} UTC\n\n"
 
             # Add sharing info if available
             if sharing := response.get("sharing", {}):

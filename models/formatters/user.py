@@ -14,7 +14,8 @@ class UserFormatters:
         if not shows:
             return (
                 result
-                + "You haven't watched any shows yet, or you need to authenticate first."
+                + "You haven't watched any shows yet, "
+                + "or you need to authenticate first."
             )
 
         for item in shows:
@@ -45,7 +46,8 @@ class UserFormatters:
         if not movies:
             return (
                 result
-                + "You haven't watched any movies yet, or you need to authenticate first."
+                + "You haven't watched any movies yet, "
+                + "or you need to authenticate first."
             )
 
         for item in movies:

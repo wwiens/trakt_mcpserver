@@ -1,5 +1,7 @@
 """Movie statistics functionality (favorited, played, watched)."""
 
+from typing import overload
+
 from config.api import DEFAULT_LIMIT
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import FavoritedMovieWrapper, PlayedMovieWrapper, WatchedMovieWrapper
@@ -11,6 +13,22 @@ from ..base import BaseClient
 
 class MovieStatsClient(BaseClient):
     """Client for movie statistics operations."""
+
+    @overload
+    async def get_favorited_movies(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: None = None,
+    ) -> list[FavoritedMovieWrapper]: ...
+
+    @overload
+    async def get_favorited_movies(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: int = ...,
+    ) -> PaginatedResponse[FavoritedMovieWrapper]: ...
 
     @handle_api_errors
     async def get_favorited_movies(
@@ -31,32 +49,34 @@ class MovieStatsClient(BaseClient):
             If page specified: Paginated response with metadata for that page
         """
         if page is None:
-            # Auto-paginate: fetch all pages
-            all_items: list[FavoritedMovieWrapper] = []
-            current_page = 1
-
-            while True:
-                response = await self._make_paginated_request(
-                    TRAKT_ENDPOINTS["movies_favorited"],
-                    response_type=FavoritedMovieWrapper,
-                    params={"page": current_page, "limit": limit, "period": period},
-                )
-
-                all_items.extend(response.data)
-
-                if not response.pagination.has_next_page:
-                    break
-
-                current_page += 1
-
-            return all_items
-        else:
-            # Single page with metadata
-            return await self._make_paginated_request(
+            return await self.auto_paginate(
                 TRAKT_ENDPOINTS["movies_favorited"],
                 response_type=FavoritedMovieWrapper,
-                params={"page": page, "limit": limit, "period": period},
+                params={"limit": limit, "period": period},
             )
+
+        # Single page with metadata
+        return await self._make_paginated_request(
+            TRAKT_ENDPOINTS["movies_favorited"],
+            response_type=FavoritedMovieWrapper,
+            params={"page": page, "limit": limit, "period": period},
+        )
+
+    @overload
+    async def get_played_movies(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: None = None,
+    ) -> list[PlayedMovieWrapper]: ...
+
+    @overload
+    async def get_played_movies(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: int = ...,
+    ) -> PaginatedResponse[PlayedMovieWrapper]: ...
 
     @handle_api_errors
     async def get_played_movies(
@@ -77,32 +97,34 @@ class MovieStatsClient(BaseClient):
             If page specified: Paginated response with metadata for that page
         """
         if page is None:
-            # Auto-paginate: fetch all pages
-            all_items: list[PlayedMovieWrapper] = []
-            current_page = 1
-
-            while True:
-                response = await self._make_paginated_request(
-                    TRAKT_ENDPOINTS["movies_played"],
-                    response_type=PlayedMovieWrapper,
-                    params={"page": current_page, "limit": limit, "period": period},
-                )
-
-                all_items.extend(response.data)
-
-                if not response.pagination.has_next_page:
-                    break
-
-                current_page += 1
-
-            return all_items
-        else:
-            # Single page with metadata
-            return await self._make_paginated_request(
+            return await self.auto_paginate(
                 TRAKT_ENDPOINTS["movies_played"],
                 response_type=PlayedMovieWrapper,
-                params={"page": page, "limit": limit, "period": period},
+                params={"limit": limit, "period": period},
             )
+
+        # Single page with metadata
+        return await self._make_paginated_request(
+            TRAKT_ENDPOINTS["movies_played"],
+            response_type=PlayedMovieWrapper,
+            params={"page": page, "limit": limit, "period": period},
+        )
+
+    @overload
+    async def get_watched_movies(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: None = None,
+    ) -> list[WatchedMovieWrapper]: ...
+
+    @overload
+    async def get_watched_movies(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        period: str = "weekly",
+        page: int = ...,
+    ) -> PaginatedResponse[WatchedMovieWrapper]: ...
 
     @handle_api_errors
     async def get_watched_movies(
@@ -123,29 +145,15 @@ class MovieStatsClient(BaseClient):
             If page specified: Paginated response with metadata for that page
         """
         if page is None:
-            # Auto-paginate: fetch all pages
-            all_items: list[WatchedMovieWrapper] = []
-            current_page = 1
-
-            while True:
-                response = await self._make_paginated_request(
-                    TRAKT_ENDPOINTS["movies_watched"],
-                    response_type=WatchedMovieWrapper,
-                    params={"page": current_page, "limit": limit, "period": period},
-                )
-
-                all_items.extend(response.data)
-
-                if not response.pagination.has_next_page:
-                    break
-
-                current_page += 1
-
-            return all_items
-        else:
-            # Single page with metadata
-            return await self._make_paginated_request(
+            return await self.auto_paginate(
                 TRAKT_ENDPOINTS["movies_watched"],
                 response_type=WatchedMovieWrapper,
-                params={"page": page, "limit": limit, "period": period},
+                params={"limit": limit, "period": period},
             )
+
+        # Single page with metadata
+        return await self._make_paginated_request(
+            TRAKT_ENDPOINTS["movies_watched"],
+            response_type=WatchedMovieWrapper,
+            params={"page": page, "limit": limit, "period": period},
+        )

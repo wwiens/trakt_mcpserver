@@ -1,7 +1,7 @@
 """Tests for comment client pagination functionality."""
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -71,13 +71,14 @@ async def test_movie_comments_no_page_returns_all():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Set up mock to return different responses for each call
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.side_effect = [
-            mock_response_page1,
-            mock_response_page2,
-        ]
-        mock_client.return_value = mock_async_client
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(
+            side_effect=[mock_response_page1, mock_response_page2]
+        )
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = MovieCommentsClient()
         result = await client.get_movie_comments("test-movie", limit=2, page=None)
@@ -122,9 +123,13 @@ async def test_movie_comments_with_page_returns_paginated():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        MagicMock()
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = MovieCommentsClient()
         result = await client.get_movie_comments("test-movie", limit=2, page=1)
@@ -135,8 +140,8 @@ async def test_movie_comments_with_page_returns_paginated():
         assert result.pagination.current_page == 1
         assert result.pagination.total_pages == 3
         assert result.pagination.total_items == 6
-        assert result.pagination.has_next_page is True
-        assert result.pagination.has_previous_page is False
+        assert result.pagination.has_next_page
+        assert not result.pagination.has_previous_page
 
 
 @pytest.mark.asyncio
@@ -166,17 +171,21 @@ async def test_show_comments_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        MagicMock()
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = ShowCommentsClient()
         result = await client.get_show_comments("test-show", limit=10, page=2)
 
         assert isinstance(result, PaginatedResponse)
         assert result.pagination.current_page == 2
-        assert result.pagination.has_previous_page is True
-        assert result.pagination.has_next_page is True
+        assert result.pagination.has_previous_page
+        assert result.pagination.has_next_page
 
 
 @pytest.mark.asyncio
@@ -206,9 +215,13 @@ async def test_season_comments_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        MagicMock()
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = SeasonCommentsClient()
         result = await client.get_season_comments("test-show", 1, limit=10, page=1)
@@ -216,8 +229,8 @@ async def test_season_comments_pagination():
         assert isinstance(result, PaginatedResponse)
         assert result.pagination.current_page == 1
         assert result.pagination.total_pages == 1
-        assert result.pagination.has_next_page is False
-        assert result.pagination.has_previous_page is False
+        assert not result.pagination.has_next_page
+        assert not result.pagination.has_previous_page
 
 
 @pytest.mark.asyncio
@@ -247,9 +260,13 @@ async def test_episode_comments_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        MagicMock()
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = EpisodeCommentsClient()
         result = await client.get_episode_comments("test-show", 1, 1, limit=10, page=3)
@@ -257,8 +274,8 @@ async def test_episode_comments_pagination():
         assert isinstance(result, PaginatedResponse)
         assert result.pagination.current_page == 3
         assert result.pagination.total_pages == 3
-        assert result.pagination.has_next_page is False
-        assert result.pagination.has_previous_page is True
+        assert not result.pagination.has_next_page
+        assert result.pagination.has_previous_page
 
 
 @pytest.mark.asyncio
@@ -288,9 +305,13 @@ async def test_comment_replies_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        MagicMock()
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = CommentDetailsClient()
         result = await client.get_comment_replies("test-comment", limit=10, page=1)
@@ -298,7 +319,7 @@ async def test_comment_replies_pagination():
         assert isinstance(result, PaginatedResponse)
         assert result.pagination.current_page == 1
         assert result.pagination.total_pages == 2
-        assert result.pagination.has_next_page is True
+        assert result.pagination.has_next_page
 
 
 @pytest.mark.asyncio
@@ -328,9 +349,13 @@ async def test_comments_pagination_metadata():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        MagicMock()
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = MovieCommentsClient()
         result = await client.get_movie_comments("test-movie", limit=10, page=2)
@@ -371,9 +396,13 @@ async def test_comments_sort_with_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_async_client = MagicMock()
-        mock_async_client.__aenter__.return_value.get.return_value = mock_response
-        mock_client.return_value = mock_async_client
+        MagicMock()
+        # Create mock instance with async methods
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = MovieCommentsClient()
         result = await client.get_movie_comments(

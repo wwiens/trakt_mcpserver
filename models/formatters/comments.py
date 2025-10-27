@@ -1,5 +1,6 @@
 """Comments formatting methods for the Trakt MCP server."""
 
+from models.formatters.utils import format_display_time, format_pagination_header
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
 
@@ -27,20 +28,7 @@ class CommentsFormatters:
 
         # Handle pagination metadata if present
         if isinstance(data, PaginatedResponse):
-            result += f"📄 **{data.page_info_summary()}**\n\n"
-
-            # Add navigation hints
-            navigation_hints: list[str] = []
-            if data.pagination.has_previous_page:
-                navigation_hints.append(
-                    f"Previous: page {data.pagination.previous_page}"
-                )
-            if data.pagination.has_next_page:
-                navigation_hints.append(f"Next: page {data.pagination.next_page}")
-
-            if navigation_hints:
-                result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
-
+            result += format_pagination_header(data)
             comments = data.data
         else:
             comments = data
@@ -48,7 +36,10 @@ class CommentsFormatters:
         if show_spoilers:
             result += "**Note: Showing all spoilers**\n\n"
         else:
-            result += "**Note: Spoilers are hidden. Use `show_spoilers=True` to view them.**\n\n"
+            result += (
+                "**Note: Spoilers are hidden. "
+                "Use `show_spoilers=True` to view them.**\n\n"
+            )
 
         if not comments:
             return result + "No comments found."
@@ -63,12 +54,7 @@ class CommentsFormatters:
             likes = comment.get("likes", 0)
             comment_id = comment.get("id", "")
 
-            try:
-                created_time = (
-                    created_at.replace("Z", "").split(".")[0].replace("T", " ")
-                )
-            except Exception:
-                created_time = created_at
+            created_time = format_display_time(created_at)
 
             comment_type = ""
             if review:
@@ -80,7 +66,10 @@ class CommentsFormatters:
 
             if (spoiler or "[spoiler]" in comment_text) and not show_spoilers:
                 result += "**⚠️ SPOILER WARNING ⚠️**\n\n"
-                result += "*This comment contains spoilers. Use `show_spoilers=True` to view it.*\n\n"
+                result += (
+                    "*This comment contains spoilers. "
+                    "Use `show_spoilers=True` to view it.*\n\n"
+                )
             else:
                 if show_spoilers:
                     comment_text = comment_text.replace("[spoiler]", "")
@@ -122,10 +111,7 @@ class CommentsFormatters:
         likes = comment.get("likes", 0)
         comment_id = comment.get("id", "")
 
-        try:
-            created_time = created_at.replace("Z", "").split(".")[0].replace("T", " ")
-        except Exception:
-            created_time = created_at
+        created_time = format_display_time(created_at)
 
         comment_type = ""
         if review:
@@ -138,13 +124,19 @@ class CommentsFormatters:
         if show_spoilers:
             result += "**Note: Showing all spoilers**\n\n"
         else:
-            result += "**Note: Spoilers are hidden. Use `show_spoilers=True` to view them.**\n\n"
+            result += (
+                "**Note: Spoilers are hidden. "
+                "Use `show_spoilers=True` to view them.**\n\n"
+            )
 
         result += f"**Posted:** {created_time}\n\n"
 
         if (spoiler or "[spoiler]" in comment_text) and not show_spoilers:
             result += "**⚠️ SPOILER WARNING ⚠️**\n\n"
-            result += "*This comment contains spoilers. Use `show_spoilers=True` to view it.*\n\n"
+            result += (
+                "*This comment contains spoilers. "
+                "Use `show_spoilers=True` to view it.*\n\n"
+            )
         else:
             if show_spoilers:
                 comment_text = comment_text.replace("[spoiler]", "")
@@ -159,22 +151,7 @@ class CommentsFormatters:
 
             # Handle pagination metadata if present
             if isinstance(replies, PaginatedResponse):
-                result += f"📄 **{replies.page_info_summary()}**\n\n"
-
-                # Add navigation hints
-                navigation_hints: list[str] = []
-                if replies.pagination.has_previous_page:
-                    navigation_hints.append(
-                        f"Previous: page {replies.pagination.previous_page}"
-                    )
-                if replies.pagination.has_next_page:
-                    navigation_hints.append(
-                        f"Next: page {replies.pagination.next_page}"
-                    )
-
-                if navigation_hints:
-                    result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
-
+                result += format_pagination_header(replies)
                 replies_list = replies.data
             else:
                 replies_list = replies
@@ -186,14 +163,7 @@ class CommentsFormatters:
                 reply_spoiler = reply.get("spoiler", False)
                 reply_id = reply.get("id", "")
 
-                try:
-                    reply_time = (
-                        reply_created_at.replace("Z", "")
-                        .split(".")[0]
-                        .replace("T", " ")
-                    )
-                except Exception:
-                    reply_time = reply_created_at
+                reply_time = format_display_time(reply_created_at)
 
                 reply_type = ""
                 if reply.get("review", False):
@@ -205,7 +175,10 @@ class CommentsFormatters:
 
                 if (reply_spoiler or "[spoiler]" in reply_text) and not show_spoilers:
                     result += "**⚠️ SPOILER WARNING ⚠️**\n\n"
-                    result += "*This reply contains spoilers. Use `show_spoilers=True` to view it.*\n\n"
+                    result += (
+                        "*This reply contains spoilers. "
+                        "Use `show_spoilers=True` to view it.*\n\n"
+                    )
                 else:
                     if show_spoilers:
                         reply_text = reply_text.replace("[spoiler]", "")

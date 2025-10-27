@@ -15,6 +15,7 @@ from .api_responses import (
     UserWatchedMovie,
     UserWatchedShow,
 )
+from .pagination import PaginatedResponse
 
 
 @runtime_checkable
@@ -136,11 +137,15 @@ class CheckinClientProtocol(Protocol):
 class SearchClientProtocol(Protocol):
     """Protocol for search operations."""
 
-    async def search_shows(self, query: str, limit: int = 10) -> list[SearchResult]:
+    async def search_shows(
+        self, query: str, limit: int = 10, page: int | None = None
+    ) -> list[SearchResult] | PaginatedResponse[SearchResult]:
         """Search for shows."""
         ...
 
-    async def search_movies(self, query: str, limit: int = 10) -> list[SearchResult]:
+    async def search_movies(
+        self, query: str, limit: int = 10, page: int | None = None
+    ) -> list[SearchResult] | PaginatedResponse[SearchResult]:
         """Search for movies."""
         ...
 

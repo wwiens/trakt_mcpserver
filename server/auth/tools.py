@@ -132,14 +132,6 @@ If you want to log out at any point, you can use the `clear_auth` tool."""
     # Try to get token (release lock during network call)
     try:
         await client.get_device_token(device_code)
-        # Authentication successful
-        async with auth_flow_lock:
-            active_auth_flow = {}
-        return """# Authentication Successful!
-
-You have successfully authorized the Trakt MCP application. You can now access your personal Trakt data using tools like `fetch_user_watched_shows` and `fetch_user_watched_movies`.
-
-If you want to log out at any point, you can use the `clear_auth` tool."""
     except AuthorizationPendingError:
         # Still waiting for user to authorize
         return """# Authorization Pending
@@ -159,6 +151,15 @@ If you've already done this and are still seeing this message, please wait a few
 Unable to check authorization status due to a server error. This sometimes happens during the authorization process. Please wait a moment and try again by telling me "Please check my authorization status".
 
 If this error persists, you may need to restart the authentication process."""
+    else:
+        # Authentication successful
+        async with auth_flow_lock:
+            active_auth_flow = {}
+        return """# Authentication Successful!
+
+You have successfully authorized the Trakt MCP application. You can now access your personal Trakt data using tools like `fetch_user_watched_shows` and `fetch_user_watched_movies`.
+
+If you want to log out at any point, you can use the `clear_auth` tool."""
 
 
 async def clear_auth() -> str:

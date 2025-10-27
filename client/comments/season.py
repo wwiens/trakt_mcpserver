@@ -1,9 +1,12 @@
 """Season comments functionality."""
 
+from typing import overload
+
 from config.api import DEFAULT_LIMIT
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
+from models.types.sort import SeasonCommentSort
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
@@ -12,6 +15,26 @@ from ..base import BaseClient
 class SeasonCommentsClient(BaseClient):
     """Client for season comments operations."""
 
+    @overload
+    async def get_season_comments(
+        self,
+        show_id: str,
+        season: int,
+        limit: int = DEFAULT_LIMIT,
+        page: None = None,
+        sort: SeasonCommentSort = "newest",
+    ) -> list[CommentResponse]: ...
+
+    @overload
+    async def get_season_comments(
+        self,
+        show_id: str,
+        season: int,
+        limit: int = DEFAULT_LIMIT,
+        page: int = ...,
+        sort: SeasonCommentSort = "newest",
+    ) -> PaginatedResponse[CommentResponse]: ...
+
     @handle_api_errors
     async def get_season_comments(
         self,
@@ -19,7 +42,7 @@ class SeasonCommentsClient(BaseClient):
         season: int,
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
-        sort: str = "newest",
+        sort: SeasonCommentSort = "newest",
     ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
         """Get comments for a season.
 
@@ -42,25 +65,11 @@ class SeasonCommentsClient(BaseClient):
         )
 
         if page is None:
-            # Auto-paginate: fetch all pages
-            all_items: list[CommentResponse] = []
-            current_page = 1
-
-            while True:
-                response = await self._make_paginated_request(
-                    endpoint,
-                    response_type=CommentResponse,
-                    params={"page": current_page, "limit": limit},
-                )
-
-                all_items.extend(response.data)
-
-                if not response.pagination.has_next_page:
-                    break
-
-                current_page += 1
-
-            return all_items
+            return await self.auto_paginate(
+                endpoint,
+                response_type=CommentResponse,
+                params={"limit": limit},
+            )
         else:
             # Single page with metadata
             return await self._make_paginated_request(
