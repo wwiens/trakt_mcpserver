@@ -13,6 +13,26 @@ from client.comments.show import ShowCommentsClient
 from models.types.pagination import PaginatedResponse
 
 
+def _make_httpx_mock(*responses: MagicMock) -> MagicMock:
+    """Create a mock httpx.AsyncClient with standard async methods.
+
+    Args:
+        *responses: Mock response objects to return. If multiple, uses side_effect.
+                   If single, behaves like return_value for first call.
+
+    Returns:
+        Configured mock instance with get, post, and aclose methods.
+    """
+    mock_instance = MagicMock()
+    if responses:
+        mock_instance.get = AsyncMock(side_effect=list(responses))
+    else:
+        mock_instance.get = AsyncMock()
+    mock_instance.post = AsyncMock()
+    mock_instance.aclose = AsyncMock()
+    return mock_instance
+
+
 @pytest.mark.asyncio
 async def test_movie_comments_no_page_returns_all():
     """Test that movie comments with no page parameter auto-paginates all results."""
@@ -20,13 +40,13 @@ async def test_movie_comments_no_page_returns_all():
     mock_response_page1 = MagicMock()
     mock_response_page1.json.return_value = [
         {
-            "id": "1",
+            "id": 1,
             "comment": "Great movie!",
             "user": {"username": "user1"},
             "created_at": "2024-01-01T00:00:00Z",
         },
         {
-            "id": "2",
+            "id": 2,
             "comment": "Amazing!",
             "user": {"username": "user2"},
             "created_at": "2024-01-02T00:00:00Z",
@@ -44,13 +64,13 @@ async def test_movie_comments_no_page_returns_all():
     mock_response_page2 = MagicMock()
     mock_response_page2.json.return_value = [
         {
-            "id": "3",
+            "id": 3,
             "comment": "Good movie",
             "user": {"username": "user3"},
             "created_at": "2024-01-03T00:00:00Z",
         },
         {
-            "id": "4",
+            "id": 4,
             "comment": "Nice!",
             "user": {"username": "user4"},
             "created_at": "2024-01-04T00:00:00Z",
@@ -71,13 +91,7 @@ async def test_movie_comments_no_page_returns_all():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
-        mock_instance = MagicMock()
-        mock_instance.get = AsyncMock(
-            side_effect=[mock_response_page1, mock_response_page2]
-        )
-        mock_instance.post = AsyncMock()
-        mock_instance.aclose = AsyncMock()
+        mock_instance = _make_httpx_mock(mock_response_page1, mock_response_page2)
         mock_client.return_value = mock_instance
 
         client = MovieCommentsClient()
@@ -86,8 +100,8 @@ async def test_movie_comments_no_page_returns_all():
         # Should return a plain list with all 4 comments
         assert isinstance(result, list)
         assert len(result) == 4
-        assert result[0]["id"] == "1"
-        assert result[3]["id"] == "4"
+        assert result[0]["id"] == 1
+        assert result[3]["id"] == 4
 
 
 @pytest.mark.asyncio
@@ -96,13 +110,13 @@ async def test_movie_comments_with_page_returns_paginated():
     mock_response = MagicMock()
     mock_response.json.return_value = [
         {
-            "id": "1",
+            "id": 1,
             "comment": "Great movie!",
             "user": {"username": "user1"},
             "created_at": "2024-01-01T00:00:00Z",
         },
         {
-            "id": "2",
+            "id": 2,
             "comment": "Amazing!",
             "user": {"username": "user2"},
             "created_at": "2024-01-02T00:00:00Z",
@@ -123,11 +137,7 @@ async def test_movie_comments_with_page_returns_paginated():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
-        mock_instance = MagicMock()
-        mock_instance.get = AsyncMock(return_value=mock_response)
-        mock_instance.post = AsyncMock()
-        mock_instance.aclose = AsyncMock()
+        mock_instance = _make_httpx_mock(mock_response)
         mock_client.return_value = mock_instance
 
         client = MovieCommentsClient()
@@ -149,7 +159,7 @@ async def test_show_comments_pagination():
     mock_response = MagicMock()
     mock_response.json.return_value = [
         {
-            "id": "1",
+            "id": 1,
             "comment": "Great show!",
             "user": {"username": "user1"},
             "created_at": "2024-01-01T00:00:00Z",
@@ -170,11 +180,7 @@ async def test_show_comments_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
-        mock_instance = MagicMock()
-        mock_instance.get = AsyncMock(return_value=mock_response)
-        mock_instance.post = AsyncMock()
-        mock_instance.aclose = AsyncMock()
+        mock_instance = _make_httpx_mock(mock_response)
         mock_client.return_value = mock_instance
 
         client = ShowCommentsClient()
@@ -192,7 +198,7 @@ async def test_season_comments_pagination():
     mock_response = MagicMock()
     mock_response.json.return_value = [
         {
-            "id": "1",
+            "id": 1,
             "comment": "Great season!",
             "user": {"username": "user1"},
             "created_at": "2024-01-01T00:00:00Z",
@@ -213,11 +219,7 @@ async def test_season_comments_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
-        mock_instance = MagicMock()
-        mock_instance.get = AsyncMock(return_value=mock_response)
-        mock_instance.post = AsyncMock()
-        mock_instance.aclose = AsyncMock()
+        mock_instance = _make_httpx_mock(mock_response)
         mock_client.return_value = mock_instance
 
         client = SeasonCommentsClient()
@@ -236,7 +238,7 @@ async def test_episode_comments_pagination():
     mock_response = MagicMock()
     mock_response.json.return_value = [
         {
-            "id": "1",
+            "id": 1,
             "comment": "Great episode!",
             "user": {"username": "user1"},
             "created_at": "2024-01-01T00:00:00Z",
@@ -257,11 +259,7 @@ async def test_episode_comments_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
-        mock_instance = MagicMock()
-        mock_instance.get = AsyncMock(return_value=mock_response)
-        mock_instance.post = AsyncMock()
-        mock_instance.aclose = AsyncMock()
+        mock_instance = _make_httpx_mock(mock_response)
         mock_client.return_value = mock_instance
 
         client = EpisodeCommentsClient()
@@ -280,7 +278,7 @@ async def test_comment_replies_pagination():
     mock_response = MagicMock()
     mock_response.json.return_value = [
         {
-            "id": "1",
+            "id": 1,
             "comment": "I agree!",
             "user": {"username": "user1"},
             "created_at": "2024-01-01T00:00:00Z",
@@ -301,11 +299,7 @@ async def test_comment_replies_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
-        mock_instance = MagicMock()
-        mock_instance.get = AsyncMock(return_value=mock_response)
-        mock_instance.post = AsyncMock()
-        mock_instance.aclose = AsyncMock()
+        mock_instance = _make_httpx_mock(mock_response)
         mock_client.return_value = mock_instance
 
         client = CommentDetailsClient()
@@ -323,7 +317,7 @@ async def test_comments_pagination_metadata():
     mock_response = MagicMock()
     mock_response.json.return_value = [
         {
-            "id": "1",
+            "id": 1,
             "comment": "Test comment",
             "user": {"username": "user1"},
             "created_at": "2024-01-01T00:00:00Z",
@@ -344,11 +338,7 @@ async def test_comments_pagination_metadata():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
-        mock_instance = MagicMock()
-        mock_instance.get = AsyncMock(return_value=mock_response)
-        mock_instance.post = AsyncMock()
-        mock_instance.aclose = AsyncMock()
+        mock_instance = _make_httpx_mock(mock_response)
         mock_client.return_value = mock_instance
 
         client = MovieCommentsClient()
@@ -369,7 +359,7 @@ async def test_comments_sort_with_pagination():
     mock_response = MagicMock()
     mock_response.json.return_value = [
         {
-            "id": "1",
+            "id": 1,
             "comment": "Oldest comment",
             "user": {"username": "user1"},
             "created_at": "2024-01-01T00:00:00Z",
@@ -390,11 +380,7 @@ async def test_comments_sort_with_pagination():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
-        mock_instance = MagicMock()
-        mock_instance.get = AsyncMock(return_value=mock_response)
-        mock_instance.post = AsyncMock()
-        mock_instance.aclose = AsyncMock()
+        mock_instance = _make_httpx_mock(mock_response)
         mock_client.return_value = mock_instance
 
         client = MovieCommentsClient()

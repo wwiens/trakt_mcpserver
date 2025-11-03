@@ -76,6 +76,44 @@ def _validate_search_params(
         return params.query, params.limit, params.page
 
 
+async def _run_search(
+    op: str,
+    fetch: Callable[..., Awaitable[Any]],
+    fmt: Callable[[Any], str],
+    query: str,
+    limit: int,
+    page: int | None,
+) -> str:
+    """Run a search operation with validation, fetch, and formatting.
+
+    Args:
+        op: Operation name for error handling
+        fetch: Client method to fetch results (accepts query, limit, page)
+        fmt: Formatter function to format results
+        query: Search query string
+        limit: Maximum number of results to return
+        page: Page number (optional)
+
+    Returns:
+        Formatted search results
+
+    Raises:
+        MCPError: If validation or API errors occur
+    """
+    q, lim, p = _validate_search_params(
+        query, limit, page, operation=f"{op}_validation"
+    )
+    try:
+        results = await fetch(q, lim, p)
+        return fmt(results)
+    except MCPError:
+        raise
+    except Exception as e:
+        raise BaseToolErrorMixin.handle_unexpected_error(
+            operation=op, error=e, query=q, limit=lim, page=p
+        ) from e
+
+
 @handle_api_errors_func
 async def search_shows(
     query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
@@ -94,25 +132,15 @@ async def search_shows(
         InvalidParamsError: If query and limit are invalid
         InternalError: If an error occurs during search
     """
-    query, limit, page = _validate_search_params(
-        query, limit, page, operation="search_shows_validation"
-    )
-
     client = SearchClient()
-
-    try:
-        # Perform the search
-        results = await client.search_shows(query, limit, page)
-
-        # Format and return the results
-        return SearchFormatters.format_show_search_results(results)
-    except MCPError:
-        raise
-    except Exception as e:
-        # Convert any unexpected errors to structured MCP errors
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="search shows", error=e, query=query, limit=limit, page=page
-        ) from e
+    return await _run_search(
+        op="search shows",
+        fetch=client.search_shows,
+        fmt=SearchFormatters.format_show_search_results,
+        query=query,
+        limit=limit,
+        page=page,
+    )
 
 
 @handle_api_errors_func
@@ -133,22 +161,15 @@ async def search_movies(
         InvalidParamsError: If query and limit are invalid
         InternalError: If an error occurs during search
     """
-    query, limit, page = _validate_search_params(
-        query, limit, page, operation="search_movies_validation"
-    )
-
     client = SearchClient()
-
-    try:
-        results = await client.search_movies(query, limit, page)
-        return SearchFormatters.format_movie_search_results(results)
-    except MCPError:
-        raise
-    except Exception as e:
-        # Convert any unexpected errors to structured MCP errors
-        raise BaseToolErrorMixin.handle_unexpected_error(
-            operation="search movies", error=e, query=query, limit=limit, page=page
-        ) from e
+    return await _run_search(
+        op="search movies",
+        fetch=client.search_movies,
+        fmt=SearchFormatters.format_movie_search_results,
+        query=query,
+        limit=limit,
+        page=page,
+    )
 
 
 def register_search_tools(

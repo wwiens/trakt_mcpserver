@@ -1,8 +1,9 @@
 """Comment details functionality."""
 
 from typing import overload
+from urllib.parse import quote
 
-from config.api import DEFAULT_LIMIT
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
@@ -24,7 +25,7 @@ class CommentDetailsClient(BaseClient):
         Returns:
             Comment details data
         """
-        endpoint = TRAKT_ENDPOINTS["comment"].replace(":id", comment_id)
+        endpoint = TRAKT_ENDPOINTS["comment"].replace(":id", quote(comment_id, safe=""))
         return await self._make_typed_request(endpoint, response_type=CommentResponse)
 
     @overload
@@ -33,7 +34,7 @@ class CommentDetailsClient(BaseClient):
         comment_id: str,
         limit: int = DEFAULT_LIMIT,
         page: None = None,
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[CommentResponse]: ...
 
     @overload
@@ -42,6 +43,7 @@ class CommentDetailsClient(BaseClient):
         comment_id: str,
         limit: int = DEFAULT_LIMIT,
         page: int = ...,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> PaginatedResponse[CommentResponse]: ...
 
     @handle_api_errors
@@ -50,7 +52,7 @@ class CommentDetailsClient(BaseClient):
         comment_id: str,
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
         """Get replies for a comment.
 
@@ -63,8 +65,13 @@ class CommentDetailsClient(BaseClient):
         Returns:
             If page is None: List of all comment replies across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
+
+        Raises:
+            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
-        endpoint = TRAKT_ENDPOINTS["comment_replies"].replace(":id", comment_id)
+        endpoint = TRAKT_ENDPOINTS["comment_replies"].replace(
+            ":id", quote(comment_id, safe="")
+        )
 
         if page is None:
             return await self.auto_paginate(

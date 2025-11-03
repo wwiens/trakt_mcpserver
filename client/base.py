@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, TypeVar, overload
 import httpx
 from dotenv import load_dotenv
 
+from config.api import DEFAULT_MAX_PAGES
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 from utils.api.errors import handle_api_errors
 
@@ -359,7 +360,7 @@ class BaseClient:
         *,
         response_type: type[T],
         params: dict[str, Any] | None = None,
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[T]:
         """Auto-paginate through all pages of a paginated endpoint.
 
@@ -370,7 +371,7 @@ class BaseClient:
             endpoint: API endpoint to paginate
             response_type: Type for individual items in response
             params: Base query parameters (page will be added/overridden)
-            max_pages: Maximum number of pages to fetch (safety guard, default: 100)
+            max_pages: Maximum number of pages to fetch (safety guard)
 
         Returns:
             List of all items across all pages (up to max_pages)

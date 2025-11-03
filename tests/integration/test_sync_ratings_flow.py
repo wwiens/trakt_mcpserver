@@ -551,6 +551,7 @@ async def test_fetch_user_ratings_paginated_integration(
 
         # Create mock HTTP client
         mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
         mock_http_client.get.return_value = ratings_mock
 
         with (
@@ -782,7 +783,7 @@ async def test_fetch_user_ratings_backward_compatibility_integration(
             # Verify NO pagination parameters were sent (following "Pagination Optional" pattern)
             call_args = mock_http_client.get.call_args
             call_kwargs = call_args[1]
-            assert "params" not in call_kwargs or not call_kwargs["params"]
+            assert not call_kwargs.get("params")
 
 
 @pytest.mark.asyncio
@@ -800,7 +801,9 @@ async def test_fetch_user_ratings_pagination_error_handling_integration(
         mock_http_client.aclose = AsyncMock()
         mock_http_client.get = AsyncMock()
         # Mock HTTP error during paginated request
-        mock_http_client.get.side_effect = Exception("Pagination API error")
+        import httpx
+
+        mock_http_client.get.side_effect = httpx.RequestError("Pagination API error")
 
         with (
             patch.object(
@@ -817,7 +820,7 @@ async def test_fetch_user_ratings_pagination_error_handling_integration(
             with pytest.raises(InternalError) as exc_info:
                 await fetch_user_ratings(rating_type="movies", page=1)
 
-            assert "unexpected error occurred" in str(exc_info.value).lower()
+            assert "unable to connect to trakt api" in str(exc_info.value).lower()
             # Verify page parameter was attempted
             call_args = mock_http_client.get.call_args
             assert call_args[1]["params"]["page"] == 1

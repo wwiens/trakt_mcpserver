@@ -1,8 +1,9 @@
 """Season comments functionality."""
 
 from typing import overload
+from urllib.parse import quote
 
-from config.api import DEFAULT_LIMIT
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
@@ -23,7 +24,7 @@ class SeasonCommentsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         page: None = None,
         sort: SeasonCommentSort = "newest",
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[CommentResponse]: ...
 
     @overload
@@ -34,6 +35,7 @@ class SeasonCommentsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         page: int = ...,
         sort: SeasonCommentSort = "newest",
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> PaginatedResponse[CommentResponse]: ...
 
     @handle_api_errors
@@ -44,7 +46,7 @@ class SeasonCommentsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
         sort: SeasonCommentSort = "newest",
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
         """Get comments for a season.
 
@@ -59,10 +61,13 @@ class SeasonCommentsClient(BaseClient):
         Returns:
             If page is None: List of all season comments across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
+
+        Raises:
+            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         endpoint = (
             TRAKT_ENDPOINTS["comments_season"]
-            .replace(":id", show_id)
+            .replace(":id", quote(show_id, safe=""))
             .replace(":season", str(season))
             .replace(":sort", sort)
         )

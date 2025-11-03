@@ -2,7 +2,7 @@
 
 from typing import Protocol, runtime_checkable
 
-from config.api import DEFAULT_LIMIT
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from models.auth import TraktAuthToken, TraktDeviceCode
 
 from .api_responses import (
@@ -17,7 +17,12 @@ from .api_responses import (
     UserWatchedShow,
 )
 from .pagination import PaginatedResponse
-from .sort import MovieCommentSort, SeasonCommentSort, ShowCommentSort
+from .sort import (
+    EpisodeCommentSort,
+    MovieCommentSort,
+    SeasonCommentSort,
+    ShowCommentSort,
+)
 
 
 @runtime_checkable
@@ -46,31 +51,39 @@ class ShowsClientProtocol(Protocol):
     """Protocol for show clients."""
 
     async def get_trending_shows(
-        self, limit: int = DEFAULT_LIMIT, page: int | None = None
+        self,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[TrendingWrapper] | PaginatedResponse[TrendingWrapper]:
         """Get trending shows.
 
         Args:
             limit: Items per page
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all trending shows across all pages
+            If page is None: List of all trending shows across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
 
     async def get_popular_shows(
-        self, limit: int = DEFAULT_LIMIT, page: int | None = None
+        self,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[ShowResponse] | PaginatedResponse[ShowResponse]:
         """Get popular shows.
 
         Args:
             limit: Items per page
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all popular shows across all pages
+            If page is None: List of all popular shows across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
@@ -91,6 +104,7 @@ class ShowsClientProtocol(Protocol):
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
         sort: ShowCommentSort = "newest",
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
         """Get show comments."""
         ...
@@ -101,31 +115,39 @@ class MoviesClientProtocol(Protocol):
     """Protocol for movie clients."""
 
     async def get_trending_movies(
-        self, limit: int = DEFAULT_LIMIT, page: int | None = None
+        self,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[TrendingWrapper] | PaginatedResponse[TrendingWrapper]:
         """Get trending movies.
 
         Args:
             limit: Items per page
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all trending movies across all pages
+            If page is None: List of all trending movies across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
 
     async def get_popular_movies(
-        self, limit: int = DEFAULT_LIMIT, page: int | None = None
+        self,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[MovieResponse] | PaginatedResponse[MovieResponse]:
         """Get popular movies.
 
         Args:
             limit: Items per page
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all popular movies across all pages
+            If page is None: List of all popular movies across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
@@ -146,6 +168,7 @@ class MoviesClientProtocol(Protocol):
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
         sort: MovieCommentSort = "newest",
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
         """Get movie comments."""
         ...
@@ -162,8 +185,46 @@ class SeasonCommentsClientProtocol(Protocol):
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
         sort: SeasonCommentSort = "newest",
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
         """Get season comments."""
+        ...
+
+
+@runtime_checkable
+class EpisodeCommentsClientProtocol(Protocol):
+    """Protocol for episode comments operations."""
+
+    async def get_episode_comments(
+        self,
+        show_id: str,
+        season: int,
+        episode: int,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        sort: EpisodeCommentSort = "newest",
+        max_pages: int = DEFAULT_MAX_PAGES,
+    ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
+        """Get episode comments."""
+        ...
+
+
+@runtime_checkable
+class CommentDetailsClientProtocol(Protocol):
+    """Protocol for comment details operations."""
+
+    async def get_comment(self, comment_id: str) -> CommentResponse:
+        """Get a specific comment."""
+        ...
+
+    async def get_comment_replies(
+        self,
+        comment_id: str,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
+    ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
+        """Get replies for a comment."""
         ...
 
 
@@ -192,7 +253,11 @@ class SearchClientProtocol(Protocol):
     """Protocol for search operations."""
 
     async def search_shows(
-        self, query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
+        self,
+        query: str,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[SearchResult] | PaginatedResponse[SearchResult]:
         """Search for shows.
 
@@ -200,15 +265,20 @@ class SearchClientProtocol(Protocol):
             query: Search query string
             limit: Items per page
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all search results across all pages
+            If page is None: List of all search results across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
 
     async def search_movies(
-        self, query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
+        self,
+        query: str,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[SearchResult] | PaginatedResponse[SearchResult]:
         """Search for movies.
 
@@ -216,9 +286,10 @@ class SearchClientProtocol(Protocol):
             query: Search query string
             limit: Items per page
             page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all search results across all pages
+            If page is None: List of all search results across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...

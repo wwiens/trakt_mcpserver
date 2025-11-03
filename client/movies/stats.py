@@ -2,7 +2,7 @@
 
 from typing import Literal, overload
 
-from config.api import DEFAULT_LIMIT
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import FavoritedMovieWrapper, PlayedMovieWrapper, WatchedMovieWrapper
 from models.types.pagination import PaginatedResponse
@@ -20,7 +20,7 @@ class MovieStatsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: None = None,
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[FavoritedMovieWrapper]: ...
 
     @overload
@@ -29,6 +29,7 @@ class MovieStatsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int = ...,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> PaginatedResponse[FavoritedMovieWrapper]: ...
 
     @handle_api_errors
@@ -37,19 +38,22 @@ class MovieStatsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[FavoritedMovieWrapper] | PaginatedResponse[FavoritedMovieWrapper]:
         """Get favorited movies from Trakt.
 
         Args:
-            limit: Items per page (default: 10)
+            limit: Items per page
             period: Time period for favorited movies
             page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            max_pages: Maximum number of pages to fetch when auto-paginating
 
         Returns:
             If page is None: List of all favorited movies across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
+
+        Raises:
+            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         if page is None:
             return await self.auto_paginate(
@@ -72,7 +76,7 @@ class MovieStatsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: None = None,
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[PlayedMovieWrapper]: ...
 
     @overload
@@ -81,6 +85,7 @@ class MovieStatsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int = ...,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> PaginatedResponse[PlayedMovieWrapper]: ...
 
     @handle_api_errors
@@ -89,19 +94,22 @@ class MovieStatsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[PlayedMovieWrapper] | PaginatedResponse[PlayedMovieWrapper]:
         """Get played movies from Trakt.
 
         Args:
-            limit: Items per page (default: 10)
+            limit: Items per page
             period: Time period for played movies
             page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            max_pages: Maximum number of pages to fetch when auto-paginating
 
         Returns:
             If page is None: List of all played movies across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
+
+        Raises:
+            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         if page is None:
             return await self.auto_paginate(
@@ -124,7 +132,7 @@ class MovieStatsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: None = None,
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[WatchedMovieWrapper]: ...
 
     @overload
@@ -133,6 +141,7 @@ class MovieStatsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int = ...,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> PaginatedResponse[WatchedMovieWrapper]: ...
 
     @handle_api_errors
@@ -141,19 +150,22 @@ class MovieStatsClient(BaseClient):
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
-        max_pages: int = 100,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[WatchedMovieWrapper] | PaginatedResponse[WatchedMovieWrapper]:
         """Get watched movies from Trakt.
 
         Args:
-            limit: Items per page (default: 10)
+            limit: Items per page
             period: Time period for watched movies
             page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            max_pages: Maximum number of pages to fetch when auto-paginating
 
         Returns:
             If page is None: List of all watched movies across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
+
+        Raises:
+            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         if page is None:
             return await self.auto_paginate(

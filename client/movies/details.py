@@ -1,5 +1,7 @@
 """Movie details functionality."""
 
+from urllib.parse import quote
+
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import MovieResponse, TraktRating
 from utils.api.errors import handle_api_errors
@@ -20,7 +22,7 @@ class MovieDetailsClient(BaseClient):
         Returns:
             Movie details data
         """
-        endpoint = f"/movies/{movie_id}"
+        endpoint = f"/movies/{quote(movie_id, safe='')}"
         return await self._make_typed_request(endpoint, response_type=MovieResponse)
 
     @handle_api_errors
@@ -33,7 +35,7 @@ class MovieDetailsClient(BaseClient):
         Returns:
             Extended movie details data including status, enhanced overview, and metadata
         """
-        endpoint = f"/movies/{movie_id}"
+        endpoint = f"/movies/{quote(movie_id, safe='')}"
         params = {"extended": "full"}
         return await self._make_typed_request(
             endpoint, response_type=MovieResponse, params=params
@@ -49,5 +51,7 @@ class MovieDetailsClient(BaseClient):
         Returns:
             Movie ratings data
         """
-        endpoint = TRAKT_ENDPOINTS["movie_ratings"].replace(":id", movie_id)
+        endpoint = TRAKT_ENDPOINTS["movie_ratings"].replace(
+            ":id", quote(movie_id, safe="")
+        )
         return await self._make_typed_request(endpoint, response_type=TraktRating)
