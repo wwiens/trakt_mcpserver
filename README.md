@@ -148,8 +148,11 @@ The hottest movies right now:
 
 ### Show Tools
 ```python
-# Get trending shows with optional limit parameter
+# Get trending shows: auto-paginate all results (omit page parameter)
 fetch_trending_shows(limit=10)
+
+# Get trending shows: single page with pagination metadata
+fetch_trending_shows(limit=10, page=1)
 
 # Get popular shows with optional limit parameter
 fetch_popular_shows(limit=10)
@@ -184,8 +187,11 @@ fetch_show_videos(show_id="game-of-thrones")
 # Get videos for a show (simple text links)
 fetch_show_videos(show_id="game-of-thrones", embed_markdown=False)
 
-# Search for movies by title to get movie IDs and details
+# Search for movies: auto-paginate all results (omit page parameter)
 search_movies(query="The Godfather", limit=5)
+
+# Search for movies: single page with pagination metadata
+search_movies(query="The Godfather", limit=5, page=1)
 ```
 
 ### Movie Tools
@@ -285,8 +291,11 @@ fetch_movie_comments(movie_id="123", limit=10, show_spoilers=False)
 # Get comments for a movie: single page with pagination metadata
 fetch_movie_comments(movie_id="123", limit=10, show_spoilers=False, page=1)
 
-# Get comments for a show sorted by most likes
+# Get comments for a show: auto-paginate all results (omit page parameter)
 fetch_show_comments(show_id="456", limit=10, show_spoilers=False, sort="likes")
+
+# Get comments for a show: single page with pagination metadata
+fetch_show_comments(show_id="456", limit=10, show_spoilers=False, sort="likes", page=1)
 
 # Get comments for a specific season sorted by highest rating
 fetch_season_comments(show_id="456", season=1, limit=10, show_spoilers=False, sort="highest")
