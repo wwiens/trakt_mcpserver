@@ -13,6 +13,17 @@ from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
 
+WatchlistSortField = Literal[
+    "rank",
+    "added",
+    "title",
+    "released",
+    "runtime",
+    "popularity",
+    "percentage",
+    "votes",
+]
+
 
 class SyncWatchlistClient(AuthClient):
     """Client for sync watchlist operations."""
@@ -23,7 +34,7 @@ class SyncWatchlistClient(AuthClient):
         watchlist_type: Literal[
             "all", "movies", "shows", "seasons", "episodes"
         ] = "all",
-        sort_by: str = "rank",
+        sort_by: WatchlistSortField = "rank",
         sort_how: Literal["asc", "desc"] = "asc",
         pagination: PaginationParams | None = None,
     ) -> PaginatedResponse[TraktWatchlistItem]:

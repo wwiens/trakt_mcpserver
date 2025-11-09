@@ -141,7 +141,7 @@ class TestSyncWatchlistFormatters:
         )
 
         # Verify grouping by type
-        assert "# Your All Watchlist (sorted by rank, asc)" in result
+        assert "# Your Watchlist Watchlist (sorted by rank, asc)" in result
         assert "## Episodes" in result
         assert "## Movies" in result
         assert "## Shows" in result

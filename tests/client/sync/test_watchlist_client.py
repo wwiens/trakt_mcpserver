@@ -593,6 +593,69 @@ class TestSyncWatchlistClient:
             assert result.pagination.total_items == 0
 
 
+class TestSyncWatchlistSecurity:
+    """Security tests for watchlist functionality."""
+
+    def test_sort_by_path_traversal_prevention(self) -> None:
+        """Test that path traversal attempts in sort_by are prevented."""
+        from pydantic import ValidationError
+
+        from server.sync.tools import UserWatchlistParams
+
+        # Test various path traversal attempts
+        invalid_sort_by_values = [
+            "../../users/settings",
+            "../../../admin",
+            "rank/../../../secrets",
+            "rank/../../etc/passwd",
+            "..",
+            ".",
+            "/etc/passwd",
+            "\\windows\\system32",
+        ]
+
+        for invalid_value in invalid_sort_by_values:
+            with pytest.raises(ValidationError) as exc_info:
+                UserWatchlistParams(sort_by=invalid_value)  # type: ignore[arg-type]
+
+            # Verify the error mentions the invalid value
+            error = exc_info.value
+            assert "sort_by" in str(error).lower()
+
+    def test_valid_sort_by_values(self) -> None:
+        """Test that valid sort_by values are accepted."""
+        from typing import Literal
+
+        from server.sync.tools import UserWatchlistParams
+
+        valid_sort_by_values: list[
+            Literal[
+                "rank",
+                "added",
+                "title",
+                "released",
+                "runtime",
+                "popularity",
+                "percentage",
+                "votes",
+            ]
+        ] = [
+            "rank",
+            "added",
+            "title",
+            "released",
+            "runtime",
+            "popularity",
+            "percentage",
+            "votes",
+        ]
+
+        for valid_value in valid_sort_by_values:
+            # Should not raise any exception
+            params = UserWatchlistParams(sort_by=valid_value)
+            assert params.sort_by == valid_value
+
+
 class TestSyncClient:
     """Tests for the main SyncClient with watchlist support."""
 

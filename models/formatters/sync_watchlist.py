@@ -29,10 +29,18 @@ class SyncWatchlistFormatters:
         items = paginated_items.data
         pagination = paginated_items.pagination
 
+        # Determine display label and item noun based on watchlist_type
+        if watchlist_type == "all":
+            display_label = "Watchlist"
+            item_noun = "items"
+        else:
+            display_label = watchlist_type
+            item_noun = None  # Will be computed later based on count
+
         # Handle empty state
         if not items:
-            result = f"# Your {watchlist_type.title()} Watchlist\n\n"
-            result += f"Your {watchlist_type} watchlist is empty. "
+            result = f"# Your {display_label.title()} Watchlist\n\n"
+            result += f"Your {display_label} watchlist is empty. "
             result += (
                 "Use the `add_user_watchlist` tool to add items to your watchlist.\n\n"
             )
@@ -43,7 +51,7 @@ class SyncWatchlistFormatters:
 
         # Title with sort info
         sort_desc = f" (sorted by {sort_by}, {sort_how})"
-        result = f"# Your {watchlist_type.title()} Watchlist{sort_desc}\n\n"
+        result = f"# Your {display_label.title()} Watchlist{sort_desc}\n\n"
 
         # Show pagination summary at the top
         result += f"📄 **{paginated_items.page_info_summary()}**\n\n"
@@ -60,11 +68,11 @@ class SyncWatchlistFormatters:
 
         # Handle pluralization
         count = len(items)
-        noun = (
-            watchlist_type[:-1]
-            if count == 1 and watchlist_type != "all"
-            else watchlist_type
-        )
+        if watchlist_type == "all":
+            noun = item_noun  # Use "items" for "all" case
+        else:
+            # Existing singular/plural derivation
+            noun = watchlist_type[:-1] if count == 1 else watchlist_type
         result += f"Found {count} {noun} on this page:\n\n"
 
         # Group by type if "all" is selected

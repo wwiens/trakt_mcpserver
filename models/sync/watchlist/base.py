@@ -53,7 +53,7 @@ class TraktWatchlistItem(BaseModel):
     """Individual watchlist item from sync API."""
 
     rank: int = Field(ge=1, description="Position in watchlist")
-    id: int = Field(description="Watchlist item ID")
+    id: int = Field(ge=1, description="Watchlist item ID")
     listed_at: datetime = Field(description="Timestamp when added (UTC)")
     notes: str | None = Field(
         default=None, max_length=500, description="User notes (VIP only)"

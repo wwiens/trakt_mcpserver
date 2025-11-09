@@ -25,11 +25,6 @@ class SyncWatchlistNotFound(BaseModel):
     episodes: Annotated[list[TraktSyncWatchlistItem], Field(default_factory=list)]
 
 
-def _create_sync_watchlist_not_found() -> SyncWatchlistNotFound:
-    """Factory function to create SyncWatchlistNotFound instance."""
-    return SyncWatchlistNotFound(movies=[], shows=[], seasons=[], episodes=[])
-
-
 class SyncWatchlistSummary(BaseModel):
     """Add/remove operation summary with counts and errors."""
 
@@ -37,5 +32,7 @@ class SyncWatchlistSummary(BaseModel):
     existing: SyncWatchlistSummaryCount | None = None
     removed: SyncWatchlistSummaryCount | None = None
     not_found: SyncWatchlistNotFound = Field(
-        default_factory=_create_sync_watchlist_not_found
+        default_factory=lambda: SyncWatchlistNotFound(
+            movies=[], shows=[], seasons=[], episodes=[]
+        )
     )

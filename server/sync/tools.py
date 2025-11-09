@@ -30,6 +30,17 @@ from utils.api.errors import MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
 
+WatchlistSortField = Literal[
+    "rank",
+    "added",
+    "title",
+    "released",
+    "runtime",
+    "popularity",
+    "percentage",
+    "votes",
+]
+
 # Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
 
@@ -163,7 +174,7 @@ class UserWatchlistParams(BaseModel):
     """Parameters for fetching user watchlist."""
 
     watchlist_type: Literal["all", "movies", "shows", "seasons", "episodes"] = "all"
-    sort_by: str = "rank"
+    sort_by: WatchlistSortField = "rank"
     sort_how: Literal["asc", "desc"] = "asc"
     page: int | None = Field(
         default=None, ge=1, description="Optional page number for pagination (1-based)"
@@ -486,7 +497,7 @@ async def remove_user_ratings(
 @handle_api_errors_func
 async def fetch_user_watchlist(
     watchlist_type: Literal["all", "movies", "shows", "seasons", "episodes"] = "all",
-    sort_by: str = "rank",
+    sort_by: WatchlistSortField = "rank",
     sort_how: Literal["asc", "desc"] = "asc",
     page: int | None = None,
 ) -> str:
@@ -756,7 +767,7 @@ def register_sync_tools(
         watchlist_type: Literal[
             "all", "movies", "shows", "seasons", "episodes"
         ] = "all",
-        sort_by: str = "rank",
+        sort_by: WatchlistSortField = "rank",
         sort_how: Literal["asc", "desc"] = "asc",
         page: int | None = None,
     ) -> str:
