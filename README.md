@@ -100,6 +100,7 @@ This multi-tool approach demonstrates:
 - Provides tools for fetching real-time entertainment information
 - Enables AI models to offer personalized entertainment recommendations
 - Simple authentication and logout process
+- **Pagination support** for list endpoints (trending, popular, search, comments) - use `page` parameter for manual pagination or omit for auto-fetch all results
 
 ### 📺 Currently Trending Shows
 
@@ -165,6 +166,9 @@ fetch_watched_shows(limit=10, period="weekly")
 # Search for shows by title to get show IDs and details
 search_shows(query="Breaking Bad", limit=5)
 
+# Search with pagination
+search_shows(query="Breaking Bad", limit=5, page=1)
+
 # Get ratings for a show
 fetch_show_ratings(show_id="game-of-thrones")
 
@@ -188,6 +192,9 @@ search_movies(query="The Godfather", limit=5)
 ```python
 # Get trending movies with optional limit parameter
 fetch_trending_movies(limit=10)
+
+# Get trending movies with pagination
+fetch_trending_movies(limit=10, page=1)
 
 # Get popular movies with optional limit parameter
 fetch_popular_movies(limit=10)
@@ -274,6 +281,9 @@ checkin_to_show(
 ```python
 # Get comments for a movie (sorted by newest by default)
 fetch_movie_comments(movie_id="123", limit=10, show_spoilers=False)
+
+# Get comments with pagination
+fetch_movie_comments(movie_id="123", limit=10, show_spoilers=False, page=1)
 
 # Get comments for a show sorted by most likes
 fetch_show_comments(show_id="456", limit=10, show_spoilers=False, sort="likes")
