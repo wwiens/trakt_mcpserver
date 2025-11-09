@@ -391,3 +391,40 @@ async def test_comments_sort_with_pagination():
         assert isinstance(result, PaginatedResponse)
         assert len(result.data) == 1
         assert result.data[0]["comment"] == "Oldest comment"
+
+
+@pytest.mark.asyncio
+async def test_empty_comments_zero_pages():
+    """Test handling of empty result set with total_pages=0."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = []
+    mock_response.headers = {
+        "X-Pagination-Page": "1",
+        "X-Pagination-Limit": "10",
+        "X-Pagination-Page-Count": "0",  # Zero pages for empty results
+        "X-Pagination-Item-Count": "0",
+    }
+    mock_response.raise_for_status = MagicMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = _make_httpx_mock(mock_response)
+        mock_client.return_value = mock_instance
+
+        client = ShowCommentsClient()
+        result = await client.get_show_comments("show-with-no-comments", page=1)
+
+        # Should successfully return empty PaginatedResponse
+        assert isinstance(result, PaginatedResponse)
+        assert len(result.data) == 0
+        assert result.pagination.total_pages == 0
+        assert result.pagination.total_items == 0
+        assert not result.pagination.has_next_page
+        assert not result.pagination.has_previous_page
+        assert result.pagination.next_page() is None
+        assert result.is_empty

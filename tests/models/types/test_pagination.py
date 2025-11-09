@@ -113,6 +113,44 @@ class TestPaginationMetadata:
         assert not metadata.has_next_page
         assert not metadata.has_previous_page
 
+    def test_zero_total_pages(self) -> None:
+        """Test handling of zero total pages (empty result set)."""
+        metadata = PaginationMetadata(
+            current_page=1, items_per_page=10, total_pages=0, total_items=0
+        )
+        assert metadata.total_pages == 0
+        assert metadata.total_items == 0
+        assert not metadata.has_next_page
+        assert not metadata.has_previous_page
+        assert metadata.next_page() is None
+        assert metadata.previous_page() is None
+
+    def test_validation_constraints(self) -> None:
+        """Test that validation constraints work correctly."""
+        # Valid: total_pages=0 should be allowed
+        metadata = PaginationMetadata(
+            current_page=1, items_per_page=10, total_pages=0, total_items=0
+        )
+        assert metadata.total_pages == 0
+
+        # Invalid: current_page must be >= 1
+        with pytest.raises(ValidationError):
+            PaginationMetadata(
+                current_page=0, items_per_page=10, total_pages=1, total_items=10
+            )
+
+        # Invalid: items_per_page must be >= 1
+        with pytest.raises(ValidationError):
+            PaginationMetadata(
+                current_page=1, items_per_page=0, total_pages=1, total_items=10
+            )
+
+        # Invalid: total_pages must be >= 0
+        with pytest.raises(ValidationError):
+            PaginationMetadata(
+                current_page=1, items_per_page=10, total_pages=-1, total_items=0
+            )
+
 
 class TestPaginatedResponse:
     """Test cases for PaginatedResponse model."""
@@ -306,6 +344,19 @@ class TestPaginatedResponse:
 
         assert response.is_empty
         assert response.is_single_page
+        summary = response.page_info_summary()
+        assert summary == "0 total items"
+
+    def test_zero_total_pages_response(self) -> None:
+        """Test PaginatedResponse with zero total pages (truly empty result set)."""
+        metadata = PaginationMetadata(
+            current_page=1, items_per_page=10, total_pages=0, total_items=0
+        )
+
+        response = PaginatedResponse[str](data=[], pagination=metadata)
+
+        assert response.is_empty
+        assert response.is_single_page  # total_pages <= 1
         summary = response.page_info_summary()
         assert summary == "0 total items"
 

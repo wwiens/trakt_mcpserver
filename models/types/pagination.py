@@ -34,9 +34,9 @@ class PaginationMetadata(BaseModel):
     - X-Pagination-Item-Count -> total_items
     """
 
-    current_page: PositiveInt = Field(description="Current page number")
-    items_per_page: PositiveInt = Field(description="Items returned per page")
-    total_pages: PositiveInt = Field(description="Total number of pages")
+    current_page: int = Field(ge=1, description="Current page number")
+    items_per_page: int = Field(ge=1, description="Items returned per page")
+    total_pages: int = Field(ge=0, description="Total number of pages")
     total_items: int = Field(
         ge=0,
         description="Total number of items across all pages",
