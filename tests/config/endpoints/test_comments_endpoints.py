@@ -39,7 +39,7 @@ class TestCommentsEndpoints:
             == "/shows/:id/seasons/:season/episodes/:episode/comments/:sort"
         )
         assert COMMENTS_ENDPOINTS["comment"] == "/comments/:id"
-        assert COMMENTS_ENDPOINTS["comment_replies"] == "/comments/:id/replies/:sort"
+        assert COMMENTS_ENDPOINTS["comment_replies"] == "/comments/:id/replies"
 
     def test_parameterized_endpoints_contain_placeholders(self) -> None:
         """Test parameterized endpoints contain proper placeholders."""
@@ -49,7 +49,7 @@ class TestCommentsEndpoints:
             "comments_season": [":id", ":season", ":sort"],
             "comments_episode": [":id", ":season", ":episode", ":sort"],
             "comment": [":id"],
-            "comment_replies": [":id", ":sort"],
+            "comment_replies": [":id"],
         }
 
         for endpoint_key, expected_params in parameterized_endpoints.items():

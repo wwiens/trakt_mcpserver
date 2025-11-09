@@ -10,9 +10,17 @@ class AuthFormatters:
     ) -> str:
         """Format authentication status for MCP resource."""
         if is_authenticated:
-            return f"# Authentication Status\n\nYou are authenticated with Trakt.\nToken expires at: {expires_at}"
+            return (
+                "# Authentication Status\n\n"
+                f"You are authenticated with Trakt.\n"
+                f"Token expires at: {expires_at}"
+            )
         else:
-            return "# Authentication Status\n\nYou are not authenticated with Trakt.\nUse the `start_device_auth` tool to authenticate."
+            return (
+                "# Authentication Status\n\n"
+                "You are not authenticated with Trakt.\n"
+                "Use the `start_device_auth` tool to authenticate."
+            )
 
     @staticmethod
     def format_device_auth_instructions(
@@ -27,7 +35,10 @@ To access your personal Trakt data, you need to authenticate with Trakt.
 1. Visit: **{verification_url}**
 2. Enter code: **{user_code}**
 3. Complete the authorization process on the Trakt website
-4. **Important**: After authorizing on the Trakt website, please tell me "I've completed the authorization" so I can check your authentication status.
+4. **Important**: After authorizing on the Trakt website, please tell me
+   "I've completed the authorization" so I can check your authentication
+   status.
 
-This code will expire in {minutes} minutes. I'll wait for your confirmation that you've completed the authorization step before checking.
+This code will expire in {minutes} minutes. I'll wait for your confirmation
+that you've completed the authorization step before checking.
 """

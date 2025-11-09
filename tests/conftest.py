@@ -5,6 +5,7 @@ from collections.abc import Generator
 from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -21,6 +22,54 @@ if project_root not in sys.path:
 project_root_pathlib = str(Path(__file__).parent.parent.resolve())
 if project_root_pathlib not in sys.path:
     sys.path.insert(0, project_root_pathlib)
+
+
+@pytest.fixture
+def trakt_env() -> Generator[None, None, None]:
+    """Patch environment variables with test Trakt credentials.
+
+    This fixture patches the environment with test credentials for
+    TRAKT_CLIENT_ID and TRAKT_CLIENT_SECRET.
+    """
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+    ):
+        yield
+
+
+@pytest.fixture
+def mock_httpx_client() -> MagicMock:
+    """Create a mock httpx.AsyncClient for testing with shared client pattern.
+
+    Returns a mock instance that properly supports async methods like
+    get(), post(), and aclose() for use with the new shared HTTP client pattern.
+    """
+    mock_instance = MagicMock()
+    mock_instance.get = AsyncMock()
+    mock_instance.post = AsyncMock()
+    mock_instance.request = AsyncMock()
+    mock_instance.aclose = AsyncMock()
+    return mock_instance
+
+
+@pytest.fixture
+def patched_httpx_client(
+    mock_httpx_client: MagicMock,
+) -> Generator[MagicMock, None, None]:
+    """Patch httpx.AsyncClient and return the mock instance.
+
+    This fixture patches httpx.AsyncClient to return the mock_httpx_client
+    instance, making it easy to configure mock responses in tests.
+
+    Usage:
+        async def test_something(trakt_env: None, patched_httpx_client: MagicMock):
+            patched_httpx_client.get.return_value = mock_response
+            # Your test code here
+    """
+    with patch("httpx.AsyncClient") as mock_client:
+        mock_client.return_value = mock_httpx_client
+        yield mock_httpx_client
 
 
 @pytest.fixture

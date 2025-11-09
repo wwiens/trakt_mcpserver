@@ -1,6 +1,5 @@
 """Tests for the client.sync.ratings_client module."""
 
-import os
 from datetime import datetime
 from unittest.mock import patch
 
@@ -106,24 +105,32 @@ class TestSyncRatingsClient:
         }
 
     @pytest.fixture
-    def authenticated_client(self, mock_env: dict[str, str]) -> SyncRatingsClient:
+    def authenticated_client(
+        self, mock_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+    ) -> SyncRatingsClient:
         """Create an authenticated sync ratings client for testing."""
-        with patch.dict(os.environ, mock_env):
-            client = SyncRatingsClient()
-            # Mock authentication status
-            client.auth_token = create_mock_auth_token()
-            # Mock the is_authenticated method to return True
-            client.is_authenticated = lambda: True
-            return client
+        for key, value in mock_env.items():
+            monkeypatch.setenv(key, value)
+
+        client = SyncRatingsClient()
+        # Mock authentication status
+        client.auth_token = create_mock_auth_token()
+        # Mock the is_authenticated method to return True
+        client.is_authenticated = lambda: True
+        return client
 
     @pytest.fixture
-    def unauthenticated_client(self, mock_env: dict[str, str]) -> SyncRatingsClient:
+    def unauthenticated_client(
+        self, mock_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+    ) -> SyncRatingsClient:
         """Create an unauthenticated sync ratings client for testing."""
-        with patch.dict(os.environ, mock_env):
-            client = SyncRatingsClient()
-            # Explicitly mock is_authenticated to return False
-            client.is_authenticated = lambda: False
-            return client
+        for key, value in mock_env.items():
+            monkeypatch.setenv(key, value)
+
+        client = SyncRatingsClient()
+        # Explicitly mock is_authenticated to return False
+        client.is_authenticated = lambda: False
+        return client
 
     @pytest.mark.asyncio
     async def test_get_sync_ratings_movies_success(
@@ -347,8 +354,20 @@ class TestSyncRatingsClient:
                 await authenticated_client.add_sync_ratings(request)
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "rating_type,rating,expected_endpoint",
+        [
+            ("movies", None, "/sync/ratings/movies"),
+            ("shows", 8, "/sync/ratings/shows/8"),
+            ("episodes", 5, "/sync/ratings/episodes/5"),
+        ],
+    )
     async def test_endpoint_url_construction(
-        self, authenticated_client: SyncRatingsClient
+        self,
+        authenticated_client: SyncRatingsClient,
+        rating_type: str,
+        rating: int | None,
+        expected_endpoint: str,
     ) -> None:
         """Test correct endpoint URL construction."""
         with patch.object(
@@ -363,18 +382,9 @@ class TestSyncRatingsClient:
             )
             mock_request.return_value = empty_paginated_response
 
-            # Test different endpoint constructions
-            await authenticated_client.get_sync_ratings("movies")
-            first_call = mock_request.call_args_list[0]
-            assert "/sync/ratings/movies" in first_call[0][0]
-
-            await authenticated_client.get_sync_ratings("shows", rating=8)
-            second_call = mock_request.call_args_list[1]
-            assert "/sync/ratings/shows/8" in second_call[0][0]
-
-            await authenticated_client.get_sync_ratings("episodes", rating=5)
-            third_call = mock_request.call_args_list[2]
-            assert "/sync/ratings/episodes/5" in third_call[0][0]
+            # Test endpoint construction
+            await authenticated_client.get_sync_ratings(rating_type, rating=rating)
+            assert expected_endpoint in mock_request.call_args[0][0]
 
     @pytest.mark.asyncio
     async def test_get_sync_ratings_success(
@@ -520,8 +530,8 @@ class TestSyncRatingsClient:
             pagination = result.pagination
             assert pagination.has_previous_page
             assert pagination.has_next_page
-            assert pagination.previous_page == 1
-            assert pagination.next_page == 3
+            assert pagination.previous_page() == 1
+            assert pagination.next_page() == 3
             assert not result.is_empty
             assert not result.is_single_page
 
@@ -566,45 +576,51 @@ class TestSyncClient:
         }
 
     @pytest.mark.asyncio
-    async def test_sync_client_inheritance(self, mock_env: dict[str, str]) -> None:
+    async def test_sync_client_inheritance(
+        self, mock_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test that SyncClient properly inherits SyncRatingsClient methods."""
-        with patch.dict(os.environ, mock_env):
-            client = SyncClient()
+        for key, value in mock_env.items():
+            monkeypatch.setenv(key, value)
 
-            # Verify it has the ratings methods
-            assert hasattr(client, "get_sync_ratings")
-            assert hasattr(client, "add_sync_ratings")
-            assert hasattr(client, "remove_sync_ratings")
+        client = SyncClient()
 
-            # Verify it inherits authentication
-            assert hasattr(client, "is_authenticated")
-            assert hasattr(client, "auth_token")
+        # Verify it has the ratings methods
+        assert hasattr(client, "get_sync_ratings")
+        assert hasattr(client, "add_sync_ratings")
+        assert hasattr(client, "remove_sync_ratings")
+
+        # Verify it inherits authentication
+        assert hasattr(client, "is_authenticated")
+        assert hasattr(client, "auth_token")
 
     @pytest.mark.asyncio
     async def test_sync_client_ratings_functionality(
-        self, mock_env: dict[str, str]
+        self, mock_env: dict[str, str], monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test that SyncClient can perform rating operations."""
-        with patch.dict(os.environ, mock_env):
-            client = SyncClient()
-            client.auth_token = create_mock_auth_token()
-            # Mock the is_authenticated method to return True
-            client.is_authenticated = lambda: True
+        for key, value in mock_env.items():
+            monkeypatch.setenv(key, value)
 
-            with patch.object(client, "_make_paginated_request") as mock_request:
-                # Mock empty paginated response
-                mock_pagination = PaginationMetadata(
-                    current_page=1, items_per_page=10, total_pages=1, total_items=0
-                )
-                empty_paginated_response = PaginatedResponse[TraktSyncRating](
-                    data=[], pagination=mock_pagination
-                )
-                mock_request.return_value = empty_paginated_response
+        client = SyncClient()
+        client.auth_token = create_mock_auth_token()
+        # Mock the is_authenticated method to return True
+        client.is_authenticated = lambda: True
 
-                result = await client.get_sync_ratings("movies")
-                assert result.data == []
+        with patch.object(client, "_make_paginated_request") as mock_request:
+            # Mock empty paginated response
+            mock_pagination = PaginationMetadata(
+                current_page=1, items_per_page=10, total_pages=1, total_items=0
+            )
+            empty_paginated_response = PaginatedResponse[TraktSyncRating](
+                data=[], pagination=mock_pagination
+            )
+            mock_request.return_value = empty_paginated_response
 
-                mock_request.assert_called_once()
+            result = await client.get_sync_ratings("movies")
+            assert result.data == []
+
+            mock_request.assert_called_once()
 
 
 def create_mock_auth_token() -> TraktAuthToken:

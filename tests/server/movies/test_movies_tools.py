@@ -8,6 +8,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
+from config.api import DEFAULT_MAX_PAGES
 from server.comments.tools import fetch_movie_comments
 from server.movies.tools import (
     fetch_movie_ratings,
@@ -47,7 +48,7 @@ async def test_fetch_trending_movies():
         assert "Inception (2010)" in result
         assert "150 watchers" in result
 
-        mock_client.get_trending_movies.assert_called_once_with(limit=5)
+        mock_client.get_trending_movies.assert_called_once_with(limit=5, page=None)
 
 
 @pytest.mark.asyncio
@@ -79,7 +80,7 @@ async def test_fetch_movie_comments():
         assert "This is a great movie!" in result
 
         mock_client.get_movie_comments.assert_called_once_with(
-            "1", limit=5, sort="newest"
+            "1", limit=5, sort="newest", page=None, max_pages=DEFAULT_MAX_PAGES
         )
 
 
@@ -166,7 +167,7 @@ async def test_fetch_movie_comments_string_error_handling():
 
         # Verify the client methods were called
         mock_client.get_movie_comments.assert_called_once_with(
-            "1", limit=5, sort="newest"
+            "1", limit=5, sort="newest", page=None, max_pages=DEFAULT_MAX_PAGES
         )
 
 

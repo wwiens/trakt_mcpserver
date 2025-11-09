@@ -21,7 +21,7 @@ from server.base import BaseToolErrorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
 if TYPE_CHECKING:
-    from models.types import MovieResponse, TraktRating, TrendingWrapper
+    from models.types import MovieResponse, TraktRating
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -34,6 +34,9 @@ class LimitOnly(BaseModel):
     """Parameters for tools that only require a limit."""
 
     limit: PositiveInt = DEFAULT_LIMIT
+    page: int | None = Field(
+        default=None, ge=1, description="Page number for pagination (optional)"
+    )
 
 
 class PeriodParams(BaseModel):
@@ -41,6 +44,9 @@ class PeriodParams(BaseModel):
 
     limit: PositiveInt = DEFAULT_LIMIT
     period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly"
+    page: int | None = Field(
+        default=None, ge=1, description="Page number for pagination (optional)"
+    )
 
 
 class MovieIdParam(BaseModel):
@@ -67,133 +73,135 @@ class MovieVideoParams(MovieIdParam):
 
 
 @handle_api_errors_func
-async def fetch_trending_movies(limit: int = DEFAULT_LIMIT) -> str:
+async def fetch_trending_movies(
+    limit: int = DEFAULT_LIMIT, page: int | None = None
+) -> str:
     """Fetch trending movies from Trakt.
 
     Args:
-        limit: Maximum number of movies to return
+        limit: Items per page (default: 10)
+        page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
-        Information about trending movies
+        Information about trending movies. When page is None, returns all movies.
+        When page is specified, returns movies from that page with pagination metadata.
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = LimitOnly(limit=limit)
-    limit = params.limit
+    params = LimitOnly(limit=limit, page=page)
+    limit, page = params.limit, params.page
 
-    try:
-        client = TrendingMoviesClient()
-        movies: list[TrendingWrapper] = await client.get_trending_movies(limit=limit)
-        return MovieFormatters.format_trending_movies(movies)
-    except MCPError:
-        raise
+    client = TrendingMoviesClient()
+    movies = await client.get_trending_movies(limit=limit, page=page)
+    return MovieFormatters.format_trending_movies(movies)
 
 
 @handle_api_errors_func
-async def fetch_popular_movies(limit: int = DEFAULT_LIMIT) -> str:
+async def fetch_popular_movies(
+    limit: int = DEFAULT_LIMIT, page: int | None = None
+) -> str:
     """Fetch popular movies from Trakt.
 
     Args:
-        limit: Maximum number of movies to return
+        limit: Items per page (default: 10)
+        page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
-        Information about popular movies
+        Information about popular movies. When page is None, returns all movies.
+        When page is specified, returns movies from that page with pagination metadata.
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = LimitOnly(limit=limit)
-    limit = params.limit
+    params = LimitOnly(limit=limit, page=page)
+    limit, page = params.limit, params.page
 
-    try:
-        client = PopularMoviesClient()
-        movies: list[MovieResponse] = await client.get_popular_movies(limit=limit)
-        return MovieFormatters.format_popular_movies(movies)
-    except MCPError:
-        raise
+    client = PopularMoviesClient()
+    movies = await client.get_popular_movies(limit=limit, page=page)
+    return MovieFormatters.format_popular_movies(movies)
 
 
 @handle_api_errors_func
 async def fetch_favorited_movies(
     limit: int = DEFAULT_LIMIT,
     period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+    page: int | None = None,
 ) -> str:
     """Fetch most favorited movies from Trakt.
 
     Args:
-        limit: Maximum number of movies to return
+        limit: Items per page (default: 10)
         period: Time period for favorite calculation (daily, weekly, monthly, yearly, all)
+        page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
-        Information about most favorited movies
+        Information about most favorited movies. When page is None, returns all movies.
+        When page is specified, returns movies from that page with pagination metadata.
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = PeriodParams(limit=limit, period=period)
-    limit, period = params.limit, params.period
+    params = PeriodParams(limit=limit, period=period, page=page)
+    limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client = MovieStatsClient()
-        movies = await client.get_favorited_movies(limit=limit, period=period)
+    client = MovieStatsClient()
+    movies = await client.get_favorited_movies(limit=limit, period=period, page=page)
 
-        # Trace structure in debug only
-        if movies:
-            logger.debug(
-                "Favorited movies API response structure: %s",
-                json.dumps(movies[0], indent=2),
-            )
+    # Trace structure in debug only (only for list responses to avoid pagination object)
+    if movies and isinstance(movies, list):
+        logger.debug(
+            "Favorited movies API response structure: %s",
+            json.dumps(movies[0], indent=2),
+        )
 
-        return MovieFormatters.format_favorited_movies(movies)
-    except MCPError:
-        raise
+    return MovieFormatters.format_favorited_movies(movies)
 
 
 @handle_api_errors_func
 async def fetch_played_movies(
     limit: int = DEFAULT_LIMIT,
     period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+    page: int | None = None,
 ) -> str:
     """Fetch most played movies from Trakt.
 
     Args:
-        limit: Maximum number of movies to return
+        limit: Items per page (default: 10)
         period: Time period for most played (daily, weekly, monthly, yearly, all)
+        page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
-        Information about most played movies
+        Information about most played movies. When page is None, returns all movies.
+        When page is specified, returns movies from that page with pagination metadata.
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = PeriodParams(limit=limit, period=period)
-    limit, period = params.limit, params.period
+    params = PeriodParams(limit=limit, period=period, page=page)
+    limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client = MovieStatsClient()
-        movies = await client.get_played_movies(limit=limit, period=period)
-        return MovieFormatters.format_played_movies(movies)
-    except MCPError:
-        raise
+    client = MovieStatsClient()
+    movies = await client.get_played_movies(limit=limit, period=period, page=page)
+    return MovieFormatters.format_played_movies(movies)
 
 
 @handle_api_errors_func
 async def fetch_watched_movies(
     limit: int = DEFAULT_LIMIT,
     period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+    page: int | None = None,
 ) -> str:
     """Fetch most watched movies from Trakt.
 
     Args:
-        limit: Maximum number of movies to return
+        limit: Items per page (default: 10)
         period: Time period for most watched (daily, weekly, monthly, yearly, all)
+        page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
-        Information about most watched movies
+        Information about most watched movies. When page is None, returns all movies.
+        When page is specified, returns movies from that page with pagination metadata.
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = PeriodParams(limit=limit, period=period)
-    limit, period = params.limit, params.period
+    params = PeriodParams(limit=limit, period=period, page=page)
+    limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client = MovieStatsClient()
-        movies = await client.get_watched_movies(limit=limit, period=period)
-        return MovieFormatters.format_watched_movies(movies)
-    except MCPError:
-        raise
+    client = MovieStatsClient()
+    movies = await client.get_watched_movies(limit=limit, period=period, page=page)
+    return MovieFormatters.format_watched_movies(movies)
 
 
 @handle_api_errors_func
@@ -364,62 +372,69 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_trending_movies"],
-        description="Fetch trending movies from Trakt",
+        description="Fetch trending movies from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
     @handle_api_errors_func
-    async def fetch_trending_movies_tool(limit: int = DEFAULT_LIMIT) -> str:
+    async def fetch_trending_movies_tool(
+        limit: int = DEFAULT_LIMIT, page: int | None = None
+    ) -> str:
         # Validate parameters with Pydantic
-        params = LimitOnly(limit=limit)
-        return await fetch_trending_movies(params.limit)
+        params = LimitOnly(limit=limit, page=page)
+        return await fetch_trending_movies(params.limit, params.page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_popular_movies"],
-        description="Fetch popular movies from Trakt",
+        description="Fetch popular movies from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
     @handle_api_errors_func
-    async def fetch_popular_movies_tool(limit: int = DEFAULT_LIMIT) -> str:
+    async def fetch_popular_movies_tool(
+        limit: int = DEFAULT_LIMIT, page: int | None = None
+    ) -> str:
         # Validate parameters with Pydantic
-        params = LimitOnly(limit=limit)
-        return await fetch_popular_movies(params.limit)
+        params = LimitOnly(limit=limit, page=page)
+        return await fetch_popular_movies(params.limit, params.page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_favorited_movies"],
-        description="Fetch most favorited movies from Trakt",
+        description="Fetch most favorited movies from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
     @handle_api_errors_func
     async def fetch_favorited_movies_tool(
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        page: int | None = None,
     ) -> str:
         # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period)
-        return await fetch_favorited_movies(params.limit, params.period)
+        params = PeriodParams(limit=limit, period=period, page=page)
+        return await fetch_favorited_movies(params.limit, params.period, params.page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_played_movies"],
-        description="Fetch most played movies from Trakt",
+        description="Fetch most played movies from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
     @handle_api_errors_func
     async def fetch_played_movies_tool(
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        page: int | None = None,
     ) -> str:
         # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period)
-        return await fetch_played_movies(params.limit, params.period)
+        params = PeriodParams(limit=limit, period=period, page=page)
+        return await fetch_played_movies(params.limit, params.period, params.page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_watched_movies"],
-        description="Fetch most watched movies from Trakt",
+        description="Fetch most watched movies from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
     @handle_api_errors_func
     async def fetch_watched_movies_tool(
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        page: int | None = None,
     ) -> str:
         # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period)
-        return await fetch_watched_movies(params.limit, params.period)
+        params = PeriodParams(limit=limit, period=period, page=page)
+        return await fetch_watched_movies(params.limit, params.period, params.page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_movie_ratings"],

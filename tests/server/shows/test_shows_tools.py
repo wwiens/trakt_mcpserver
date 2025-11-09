@@ -6,6 +6,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
+from config.api import DEFAULT_MAX_PAGES
 from server.comments.tools import (
     fetch_episode_comments,
     fetch_season_comments,
@@ -50,7 +51,7 @@ async def test_fetch_trending_shows():
         assert "Breaking Bad (2008)" in result
         assert "100 watchers" in result
 
-        mock_client.get_trending_shows.assert_called_once_with(limit=5)
+        mock_client.get_trending_shows.assert_called_once_with(limit=5, page=None)
 
 
 @pytest.mark.asyncio
@@ -99,7 +100,7 @@ async def test_fetch_favorited_shows():
         assert "Breaking Bad (2008)" in result
 
         mock_client.get_favorited_shows.assert_called_once_with(
-            limit=5, period="weekly"
+            limit=5, period="weekly", page=None
         )
 
 
@@ -124,7 +125,9 @@ async def test_fetch_played_shows():
         assert "# Most Played Shows on Trakt" in result
         assert "Breaking Bad (2008)" in result
 
-        mock_client.get_played_shows.assert_called_once_with(limit=5, period="weekly")
+        mock_client.get_played_shows.assert_called_once_with(
+            limit=5, period="weekly", page=None
+        )
 
 
 @pytest.mark.asyncio
@@ -148,7 +151,9 @@ async def test_fetch_watched_shows():
         assert "# Most Watched Shows on Trakt" in result
         assert "Breaking Bad (2008)" in result
 
-        mock_client.get_watched_shows.assert_called_once_with(limit=5, period="weekly")
+        mock_client.get_watched_shows.assert_called_once_with(
+            limit=5, period="weekly", page=None
+        )
 
 
 @pytest.mark.asyncio
@@ -179,7 +184,7 @@ async def test_fetch_show_comments():
         assert "This is a great show!" in result
 
         mock_client.get_show_comments.assert_called_once_with(
-            "1", limit=5, sort="newest"
+            "1", limit=5, sort="newest", page=None, max_pages=DEFAULT_MAX_PAGES
         )
 
 
@@ -252,7 +257,7 @@ async def test_fetch_show_comments_not_found_propagation():
 
         # Verify the client methods were called
         mock_client.get_show_comments.assert_called_once_with(
-            "1", limit=5, sort="newest"
+            "1", limit=5, sort="newest", page=None, max_pages=DEFAULT_MAX_PAGES
         )
 
 
@@ -278,7 +283,7 @@ async def test_fetch_season_comments_not_found_propagation():
 
         # Verify the client methods were called
         mock_client.get_season_comments.assert_called_once_with(
-            "1", 1, limit=5, sort="newest"
+            "1", 1, limit=5, sort="newest", page=None, max_pages=DEFAULT_MAX_PAGES
         )
 
 
@@ -309,7 +314,7 @@ async def test_fetch_episode_comments_not_found_propagation():
 
         # Verify the client methods were called
         mock_client.get_episode_comments.assert_called_once_with(
-            "1", 1, 1, limit=5, sort="newest"
+            "1", 1, 1, limit=5, sort="newest", page=None, max_pages=DEFAULT_MAX_PAGES
         )
 
 

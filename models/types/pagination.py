@@ -34,9 +34,9 @@ class PaginationMetadata(BaseModel):
     - X-Pagination-Item-Count -> total_items
     """
 
-    current_page: PositiveInt = Field(description="Current page number")
-    items_per_page: PositiveInt = Field(description="Items returned per page")
-    total_pages: PositiveInt = Field(description="Total number of pages")
+    current_page: int = Field(ge=1, description="Current page number")
+    items_per_page: int = Field(ge=1, description="Items returned per page")
+    total_pages: int = Field(ge=0, description="Total number of pages")
     total_items: int = Field(
         ge=0,
         description="Total number of items across all pages",
@@ -52,12 +52,10 @@ class PaginationMetadata(BaseModel):
         """Check if there are previous pages available."""
         return self.current_page > 1
 
-    @property
     def next_page(self) -> int | None:
         """Get the next page number, or None if on last page."""
         return self.current_page + 1 if self.has_next_page else None
 
-    @property
     def previous_page(self) -> int | None:
         """Get the previous page number, or None if on first page."""
         return self.current_page - 1 if self.has_previous_page else None

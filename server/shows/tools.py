@@ -21,7 +21,7 @@ from server.base import BaseToolErrorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
 if TYPE_CHECKING:
-    from models.types import ShowResponse, TraktRating, TrendingWrapper
+    from models.types import ShowResponse, TraktRating
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -34,6 +34,9 @@ class LimitOnly(BaseModel):
     """Parameters for tools that only require a limit."""
 
     limit: PositiveInt = DEFAULT_LIMIT
+    page: int | None = Field(
+        default=None, ge=1, description="Page number for pagination (optional)"
+    )
 
 
 class PeriodParams(BaseModel):
@@ -41,6 +44,9 @@ class PeriodParams(BaseModel):
 
     limit: PositiveInt = DEFAULT_LIMIT
     period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly"
+    page: int | None = Field(
+        default=None, ge=1, description="Page number for pagination (optional)"
+    )
 
 
 class ShowIdParam(BaseModel):
@@ -67,133 +73,135 @@ class ShowVideoParams(ShowIdParam):
 
 
 @handle_api_errors_func
-async def fetch_trending_shows(limit: int = DEFAULT_LIMIT) -> str:
+async def fetch_trending_shows(
+    limit: int = DEFAULT_LIMIT, page: int | None = None
+) -> str:
     """Fetch trending shows from Trakt.
 
     Args:
-        limit: Maximum number of shows to return
+        limit: Items per page (default: 10)
+        page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
-        Information about trending shows
+        Information about trending shows. When page is None, returns all shows.
+        When page is specified, returns shows from that page with pagination metadata.
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = LimitOnly(limit=limit)
-    limit = params.limit
+    params = LimitOnly(limit=limit, page=page)
+    limit, page = params.limit, params.page
 
-    try:
-        client: TrendingShowsClient = TrendingShowsClient()
-        shows: list[TrendingWrapper] = await client.get_trending_shows(limit=limit)
-        return ShowFormatters.format_trending_shows(shows)
-    except MCPError:
-        raise
+    client = TrendingShowsClient()
+    shows = await client.get_trending_shows(limit=limit, page=page)
+    return ShowFormatters.format_trending_shows(shows)
 
 
 @handle_api_errors_func
-async def fetch_popular_shows(limit: int = DEFAULT_LIMIT) -> str:
+async def fetch_popular_shows(
+    limit: int = DEFAULT_LIMIT, page: int | None = None
+) -> str:
     """Fetch popular shows from Trakt.
 
     Args:
-        limit: Maximum number of shows to return
+        limit: Items per page (default: 10)
+        page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
-        Information about popular shows
+        Information about popular shows. When page is None, returns all shows.
+        When page is specified, returns shows from that page with pagination metadata.
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = LimitOnly(limit=limit)
-    limit = params.limit
+    params = LimitOnly(limit=limit, page=page)
+    limit, page = params.limit, params.page
 
-    try:
-        client: PopularShowsClient = PopularShowsClient()
-        shows: list[ShowResponse] = await client.get_popular_shows(limit=limit)
-        return ShowFormatters.format_popular_shows(shows)
-    except MCPError:
-        raise
+    client = PopularShowsClient()
+    shows = await client.get_popular_shows(limit=limit, page=page)
+    return ShowFormatters.format_popular_shows(shows)
 
 
 @handle_api_errors_func
 async def fetch_favorited_shows(
     limit: int = DEFAULT_LIMIT,
     period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+    page: int | None = None,
 ) -> str:
     """Fetch most favorited shows from Trakt.
 
     Args:
-        limit: Maximum number of shows to return
+        limit: Items per page (default: 10)
         period: Time period for favorite calculation (daily, weekly, monthly, yearly, all)
+        page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
-        Information about most favorited shows
+        Information about most favorited shows. When page is None, returns all shows.
+        When page is specified, returns shows from that page with pagination metadata.
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = PeriodParams(limit=limit, period=period)
-    limit, period = params.limit, params.period
+    params = PeriodParams(limit=limit, period=period, page=page)
+    limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client: ShowStatsClient = ShowStatsClient()
-        shows = await client.get_favorited_shows(limit=limit, period=period)
+    client = ShowStatsClient()
+    shows = await client.get_favorited_shows(limit=limit, period=period, page=page)
 
-        # Trace structure in debug only
-        if shows:
-            logger.debug(
-                "Favorited shows API response structure: %s",
-                json.dumps(shows[0], indent=2),
-            )
+    # Trace structure in debug only (only for list responses to avoid pagination object)
+    if shows and isinstance(shows, list):
+        logger.debug(
+            "Favorited shows API response structure: %s",
+            json.dumps(shows[0], indent=2),
+        )
 
-        return ShowFormatters.format_favorited_shows(shows)
-    except MCPError:
-        raise
+    return ShowFormatters.format_favorited_shows(shows)
 
 
 @handle_api_errors_func
 async def fetch_played_shows(
     limit: int = DEFAULT_LIMIT,
     period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+    page: int | None = None,
 ) -> str:
     """Fetch most played shows from Trakt.
 
     Args:
-        limit: Maximum number of shows to return
+        limit: Items per page (default: 10)
         period: Time period for most played (daily, weekly, monthly, yearly, all)
+        page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
-        Information about most played shows
+        Information about most played shows. When page is None, returns all shows.
+        When page is specified, returns shows from that page with pagination metadata.
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = PeriodParams(limit=limit, period=period)
-    limit, period = params.limit, params.period
+    params = PeriodParams(limit=limit, period=period, page=page)
+    limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client: ShowStatsClient = ShowStatsClient()
-        shows = await client.get_played_shows(limit=limit, period=period)
-        return ShowFormatters.format_played_shows(shows)
-    except MCPError:
-        raise
+    client = ShowStatsClient()
+    shows = await client.get_played_shows(limit=limit, period=period, page=page)
+    return ShowFormatters.format_played_shows(shows)
 
 
 @handle_api_errors_func
 async def fetch_watched_shows(
     limit: int = DEFAULT_LIMIT,
     period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+    page: int | None = None,
 ) -> str:
     """Fetch most watched shows from Trakt.
 
     Args:
-        limit: Maximum number of shows to return
+        limit: Items per page (default: 10)
         period: Time period for most watched (daily, weekly, monthly, yearly, all)
+        page: Page number (optional). If None, returns all results via auto-pagination.
 
     Returns:
-        Information about most watched shows
+        Information about most watched shows. When page is None, returns all shows.
+        When page is specified, returns shows from that page with pagination metadata.
     """
     # Validate parameters with Pydantic for normalization and constraints
-    params = PeriodParams(limit=limit, period=period)
-    limit, period = params.limit, params.period
+    params = PeriodParams(limit=limit, period=period, page=page)
+    limit, period, page = params.limit, params.period, params.page
 
-    try:
-        client: ShowStatsClient = ShowStatsClient()
-        shows = await client.get_watched_shows(limit=limit, period=period)
-        return ShowFormatters.format_watched_shows(shows)
-    except MCPError:
-        raise
+    client = ShowStatsClient()
+    shows = await client.get_watched_shows(limit=limit, period=period, page=page)
+    return ShowFormatters.format_watched_shows(shows)
 
 
 @handle_api_errors_func
@@ -360,62 +368,69 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_trending_shows"],
-        description="Fetch trending TV shows from Trakt",
+        description="Fetch trending TV shows from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
     @handle_api_errors_func
-    async def fetch_trending_shows_tool(limit: int = DEFAULT_LIMIT) -> str:
+    async def fetch_trending_shows_tool(
+        limit: int = DEFAULT_LIMIT, page: int | None = None
+    ) -> str:
         # Validate parameters with Pydantic
-        params = LimitOnly(limit=limit)
-        return await fetch_trending_shows(params.limit)
+        params = LimitOnly(limit=limit, page=page)
+        return await fetch_trending_shows(params.limit, params.page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_popular_shows"],
-        description="Fetch popular TV shows from Trakt",
+        description="Fetch popular TV shows from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
     @handle_api_errors_func
-    async def fetch_popular_shows_tool(limit: int = DEFAULT_LIMIT) -> str:
+    async def fetch_popular_shows_tool(
+        limit: int = DEFAULT_LIMIT, page: int | None = None
+    ) -> str:
         # Validate parameters with Pydantic
-        params = LimitOnly(limit=limit)
-        return await fetch_popular_shows(params.limit)
+        params = LimitOnly(limit=limit, page=page)
+        return await fetch_popular_shows(params.limit, params.page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_favorited_shows"],
-        description="Fetch most favorited TV shows from Trakt",
+        description="Fetch most favorited TV shows from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
     @handle_api_errors_func
     async def fetch_favorited_shows_tool(
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        page: int | None = None,
     ) -> str:
         # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period)
-        return await fetch_favorited_shows(params.limit, params.period)
+        params = PeriodParams(limit=limit, period=period, page=page)
+        return await fetch_favorited_shows(params.limit, params.period, params.page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_played_shows"],
-        description="Fetch most played TV shows from Trakt",
+        description="Fetch most played TV shows from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
     @handle_api_errors_func
     async def fetch_played_shows_tool(
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        page: int | None = None,
     ) -> str:
         # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period)
-        return await fetch_played_shows(params.limit, params.period)
+        params = PeriodParams(limit=limit, period=period, page=page)
+        return await fetch_played_shows(params.limit, params.period, params.page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_watched_shows"],
-        description="Fetch most watched TV shows from Trakt",
+        description="Fetch most watched TV shows from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
     @handle_api_errors_func
     async def fetch_watched_shows_tool(
         limit: int = DEFAULT_LIMIT,
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        page: int | None = None,
     ) -> str:
         # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period)
-        return await fetch_watched_shows(params.limit, params.period)
+        params = PeriodParams(limit=limit, period=period, page=page)
+        return await fetch_watched_shows(params.limit, params.period, params.page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_ratings"],

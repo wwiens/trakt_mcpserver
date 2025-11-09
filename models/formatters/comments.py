@@ -1,6 +1,8 @@
 """Comments formatting methods for the Trakt MCP server."""
 
+from models.formatters.utils import format_display_time, format_pagination_header
 from models.types import CommentResponse
+from models.types.pagination import PaginatedResponse
 
 
 class CommentsFormatters:
@@ -8,15 +10,36 @@ class CommentsFormatters:
 
     @staticmethod
     def format_comments(
-        comments: list[CommentResponse], title: str, show_spoilers: bool = False
+        data: list[CommentResponse] | PaginatedResponse[CommentResponse],
+        title: str,
+        show_spoilers: bool = False,
     ) -> str:
-        """Format comments for MCP resource."""
+        """Format comments for MCP resource.
+
+        Args:
+            data: Either a list of all comments or a paginated response
+            title: Title to use in the formatted output
+            show_spoilers: Whether to show spoiler content
+
+        Returns:
+            Formatted markdown text with comments
+        """
         result = f"# Comments for {title}\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += format_pagination_header(data)
+            comments = data.data
+        else:
+            comments = data
 
         if show_spoilers:
             result += "**Note: Showing all spoilers**\n\n"
         else:
-            result += "**Note: Spoilers are hidden. Use `show_spoilers=True` to view them.**\n\n"
+            result += (
+                "**Note: Spoilers are hidden. "
+                "Use `show_spoilers=True` to view them.**\n\n"
+            )
 
         if not comments:
             return result + "No comments found."
@@ -31,12 +54,7 @@ class CommentsFormatters:
             likes = comment.get("likes", 0)
             comment_id = comment.get("id", "")
 
-            try:
-                created_time = (
-                    created_at.replace("Z", "").split(".")[0].replace("T", " ")
-                )
-            except Exception:
-                created_time = created_at
+            created_time = format_display_time(created_at)
 
             comment_type = ""
             if review:
@@ -48,7 +66,10 @@ class CommentsFormatters:
 
             if (spoiler or "[spoiler]" in comment_text) and not show_spoilers:
                 result += "**⚠️ SPOILER WARNING ⚠️**\n\n"
-                result += "*This comment contains spoilers. Use `show_spoilers=True` to view it.*\n\n"
+                result += (
+                    "*This comment contains spoilers. "
+                    "Use `show_spoilers=True` to view it.*\n\n"
+                )
             else:
                 if show_spoilers:
                     comment_text = comment_text.replace("[spoiler]", "")
@@ -65,10 +86,22 @@ class CommentsFormatters:
     def format_comment(
         comment: CommentResponse,
         with_replies: bool = False,
-        replies: list[CommentResponse] | None = None,
+        replies: list[CommentResponse]
+        | PaginatedResponse[CommentResponse]
+        | None = None,
         show_spoilers: bool = False,
     ) -> str:
-        """Format a single comment with optional replies."""
+        """Format a single comment with optional replies.
+
+        Args:
+            comment: The comment to format
+            with_replies: Whether to include replies in the output
+            replies: Either a list of all replies or a paginated response
+            show_spoilers: Whether to show spoiler content
+
+        Returns:
+            Formatted markdown text with the comment and optional replies
+        """
         username = comment.get("user", {}).get("username", "Anonymous")
         created_at = comment.get("created_at", "Unknown date")
         comment_text = comment.get("comment", "")
@@ -78,10 +111,7 @@ class CommentsFormatters:
         likes = comment.get("likes", 0)
         comment_id = comment.get("id", "")
 
-        try:
-            created_time = created_at.replace("Z", "").split(".")[0].replace("T", " ")
-        except Exception:
-            created_time = created_at
+        created_time = format_display_time(created_at)
 
         comment_type = ""
         if review:
@@ -94,13 +124,19 @@ class CommentsFormatters:
         if show_spoilers:
             result += "**Note: Showing all spoilers**\n\n"
         else:
-            result += "**Note: Spoilers are hidden. Use `show_spoilers=True` to view them.**\n\n"
+            result += (
+                "**Note: Spoilers are hidden. "
+                "Use `show_spoilers=True` to view them.**\n\n"
+            )
 
         result += f"**Posted:** {created_time}\n\n"
 
         if (spoiler or "[spoiler]" in comment_text) and not show_spoilers:
             result += "**⚠️ SPOILER WARNING ⚠️**\n\n"
-            result += "*This comment contains spoilers. Use `show_spoilers=True` to view it.*\n\n"
+            result += (
+                "*This comment contains spoilers. "
+                "Use `show_spoilers=True` to view it.*\n\n"
+            )
         else:
             if show_spoilers:
                 comment_text = comment_text.replace("[spoiler]", "")
@@ -113,21 +149,21 @@ class CommentsFormatters:
         if with_replies and replies:
             result += "## Replies\n\n"
 
-            for reply in replies:
+            # Handle pagination metadata if present
+            if isinstance(replies, PaginatedResponse):
+                result += format_pagination_header(replies)
+                replies_list = replies.data
+            else:
+                replies_list = replies
+
+            for reply in replies_list:
                 reply_username = reply.get("user", {}).get("username", "Anonymous")
                 reply_created_at = reply.get("created_at", "Unknown date")
                 reply_text = reply.get("comment", "")
                 reply_spoiler = reply.get("spoiler", False)
                 reply_id = reply.get("id", "")
 
-                try:
-                    reply_time = (
-                        reply_created_at.replace("Z", "")
-                        .split(".")[0]
-                        .replace("T", " ")
-                    )
-                except Exception:
-                    reply_time = reply_created_at
+                reply_time = format_display_time(reply_created_at)
 
                 reply_type = ""
                 if reply.get("review", False):
@@ -139,7 +175,10 @@ class CommentsFormatters:
 
                 if (reply_spoiler or "[spoiler]" in reply_text) and not show_spoilers:
                     result += "**⚠️ SPOILER WARNING ⚠️**\n\n"
-                    result += "*This reply contains spoilers. Use `show_spoilers=True` to view it.*\n\n"
+                    result += (
+                        "*This reply contains spoilers. "
+                        "Use `show_spoilers=True` to view it.*\n\n"
+                    )
                 else:
                     if show_spoilers:
                         reply_text = reply_text.replace("[spoiler]", "")

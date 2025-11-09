@@ -1,5 +1,7 @@
 """Show details functionality."""
 
+from urllib.parse import quote
+
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import ShowResponse, TraktRating
 from utils.api.errors import handle_api_errors
@@ -20,7 +22,7 @@ class ShowDetailsClient(BaseClient):
         Returns:
             Show details data
         """
-        endpoint = f"/shows/{show_id}"
+        endpoint = f"/shows/{quote(show_id, safe='')}"
         return await self._make_typed_request(endpoint, response_type=ShowResponse)
 
     @handle_api_errors
@@ -33,7 +35,7 @@ class ShowDetailsClient(BaseClient):
         Returns:
             Extended show details data including airs object, status, enhanced overview
         """
-        endpoint = f"/shows/{show_id}"
+        endpoint = f"/shows/{quote(show_id, safe='')}"
         params = {"extended": "full"}
         return await self._make_typed_request(
             endpoint, response_type=ShowResponse, params=params
@@ -49,5 +51,7 @@ class ShowDetailsClient(BaseClient):
         Returns:
             Show ratings data
         """
-        endpoint = TRAKT_ENDPOINTS["show_ratings"].replace(":id", show_id)
+        endpoint = TRAKT_ENDPOINTS["show_ratings"].replace(
+            ":id", quote(show_id, safe="")
+        )
         return await self._make_typed_request(endpoint, response_type=TraktRating)

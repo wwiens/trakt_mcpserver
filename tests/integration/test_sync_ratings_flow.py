@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -98,31 +98,31 @@ async def test_fetch_user_ratings_integration(
     """Test complete flow from server tool to client for fetching user ratings."""
 
     # Set up mock HTTP responses
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        # Configure the mock HTTP client
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
         # Mock for ratings request
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = SAMPLE_USER_RATINGS_RESPONSE
         ratings_mock.raise_for_status = MagicMock()
-
-        mock_instance.get.return_value = ratings_mock
-
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.get = AsyncMock(return_value=ratings_mock)
+        mock_http_client.aclose = AsyncMock()
+        # Patch the client's _get_client method to return our mock
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
             # Test fetching all movies
             result = await fetch_user_ratings(rating_type="movies")
-
             # Verify the formatted response
             assert "# Your Movies Ratings" in result
             assert "movies" in result
@@ -130,8 +130,8 @@ async def test_fetch_user_ratings_integration(
             assert "Rating 10/10" in result
 
             # Verify the HTTP request was made correctly
-            mock_instance.get.assert_called()
-            call_args = mock_instance.get.call_args[0]
+            mock_http_client.get.assert_called()
+            call_args = mock_http_client.get.call_args[0]
             assert "/sync/ratings/movies" in call_args[0]
 
 
@@ -148,36 +148,37 @@ async def test_fetch_user_ratings_with_rating_filter_integration(
         if r["rating"] == 8 and r["type"] == "show"
     ]
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = high_rated_response
         ratings_mock.raise_for_status = MagicMock()
-
-        mock_instance.get.return_value = ratings_mock
-
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.get = AsyncMock(return_value=ratings_mock)
+        mock_http_client.aclose = AsyncMock()
+        # Patch the client's _get_client method to return our mock
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="shows", rating=8)
-
             # Verify rating-specific formatting
             assert "# Your Shows Ratings (filtered to rating 8)" in result
             assert "show" in result
             assert "TRON: Legacy" not in result  # Should only show rated=8 content
 
             # Verify the correct API endpoint was called with rating filter
-            mock_instance.get.assert_called()
-            call_args = mock_instance.get.call_args[0]
+            mock_http_client.get.assert_called()
+            call_args = mock_http_client.get.call_args[0]
             assert "/sync/ratings/shows/8" in call_args[0]
 
 
@@ -187,24 +188,26 @@ async def test_add_user_ratings_integration(
 ) -> None:
     """Test complete flow for adding user ratings."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
         # Mock for add ratings POST request
         add_mock = MagicMock()
         add_mock.json.return_value = SAMPLE_ADD_RATINGS_RESPONSE
         add_mock.raise_for_status = MagicMock()
-
-        mock_instance.post.return_value = add_mock
-
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.post = AsyncMock(return_value=add_mock)
+        mock_http_client.aclose = AsyncMock()
+        # Patch the client's _get_client method to return our mock
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import add_user_ratings
 
@@ -212,7 +215,6 @@ async def test_add_user_ratings_integration(
             sample_items = [{"rating": 9, "title": "Inception", "imdb_id": "tt1375666"}]
 
             result = await add_user_ratings(rating_type="movies", items=sample_items)
-
             # Verify the formatted response
             assert "# Ratings Added - Movies" in result
             assert "Successfully added **1** movies rating(s)" in result
@@ -221,8 +223,8 @@ async def test_add_user_ratings_integration(
             assert "Episodes: 2" in result
 
             # Verify the POST request was made correctly
-            mock_instance.post.assert_called()
-            call_args = mock_instance.post.call_args
+            mock_http_client.post.assert_called()
+            call_args = mock_http_client.post.call_args
             assert "/sync/ratings" in call_args[0][0]  # endpoint
             assert "json" in call_args[1]  # request data
 
@@ -233,24 +235,27 @@ async def test_remove_user_ratings_integration(
 ) -> None:
     """Test complete flow for removing user ratings."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.post = AsyncMock()
         # Mock for remove ratings POST request
         remove_mock = MagicMock()
         remove_mock.json.return_value = SAMPLE_REMOVE_RATINGS_RESPONSE
         remove_mock.raise_for_status = MagicMock()
+        mock_http_client.post.return_value = remove_mock
 
-        mock_instance.post.return_value = remove_mock
-
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import remove_user_ratings
 
@@ -258,7 +263,6 @@ async def test_remove_user_ratings_integration(
             sample_items = [{"title": "Inception", "imdb_id": "tt1375666"}]
 
             result = await remove_user_ratings(rating_type="movies", items=sample_items)
-
             # Verify the formatted response
             assert "# Ratings Removed - Movies" in result
             assert "Successfully removed **2** movies rating(s)" in result
@@ -267,8 +271,8 @@ async def test_remove_user_ratings_integration(
             assert "Episodes: 1" in result
 
             # Verify the POST request was made correctly
-            mock_instance.post.assert_called()
-            call_args = mock_instance.post.call_args
+            mock_http_client.post.assert_called()
+            call_args = mock_http_client.post.call_args
             assert "/sync/ratings/remove" in call_args[0][0]  # endpoint
             assert "json" in call_args[1]  # request data
 
@@ -294,7 +298,6 @@ async def test_authentication_flow_integration(
                 fetch_user_ratings,
                 remove_user_ratings,
             )
-
             # All operations should raise authentication errors
 
             with pytest.raises(
@@ -324,19 +327,23 @@ async def test_error_propagation_integration(
 ) -> None:
     """Test error propagation through the complete sync ratings stack."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
         # Configure mock to raise HTTP errors
-        mock_instance = mock_client.return_value.__aenter__.return_value
-        mock_instance.get.side_effect = Exception("API connection error")
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get = AsyncMock()
+        mock_http_client.get.side_effect = Exception("API connection error")
 
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
             from utils.api.errors import InternalError
@@ -354,29 +361,31 @@ async def test_empty_ratings_response_integration(
 ) -> None:
     """Test handling of empty ratings response through complete stack."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get = AsyncMock()
         # Mock empty response
         empty_mock = MagicMock()
         empty_mock.json.return_value = []  # Empty ratings list
         empty_mock.raise_for_status = MagicMock()
+        mock_http_client.get.return_value = empty_mock
 
-        mock_instance.get.return_value = empty_mock
-
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="episodes")
-
             # Verify empty state is handled gracefully
             assert "# Your Episodes Ratings" in result
             assert "You haven't rated any episodes yet" in result
@@ -388,15 +397,14 @@ async def test_mixed_content_types_integration(
 ) -> None:
     """Test fetching ratings for different content types in sequence."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get = AsyncMock()
         # Mock different responses for different content types
         movies_response = [
             r for r in SAMPLE_USER_RATINGS_RESPONSE if r["type"] == "movie"
@@ -423,10 +431,15 @@ async def test_mixed_content_types_integration(
 
             return mock_response
 
-        mock_instance.get.side_effect = mock_get_side_effect
+        mock_http_client.get.side_effect = mock_get_side_effect
 
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
@@ -474,28 +487,30 @@ async def test_rating_grouping_integration(
         },
     ]
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get = AsyncMock()
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = mixed_ratings_response
         ratings_mock.raise_for_status = MagicMock()
+        mock_http_client.get.return_value = ratings_mock
 
-        mock_instance.get.return_value = ratings_mock
-
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="movies")
-
             # Verify ratings are grouped by score
             assert "## Rating 10/10 (2 movies)" in result
             assert "## Rating 8/10 (1 movie)" in result
@@ -516,16 +531,10 @@ async def test_fetch_user_ratings_paginated_integration(
 ) -> None:
     """Test complete flow for paginated user ratings fetching."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        # Configure the mock HTTP client
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
         # Mock paginated response - first page of results
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = SAMPLE_USER_RATINGS_RESPONSE[
@@ -540,16 +549,23 @@ async def test_fetch_user_ratings_paginated_integration(
             "X-Pagination-Item-Count": "3",
         }
 
-        mock_instance.get.return_value = ratings_mock
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get.return_value = ratings_mock
 
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
             # Test fetching page 1 of movies
             result = await fetch_user_ratings(rating_type="movies", page=1)
-
             # Verify paginated response format
             assert "# Your Movies Ratings" in result
             assert "📄 **Page 1 of 2" in result
@@ -559,8 +575,8 @@ async def test_fetch_user_ratings_paginated_integration(
             assert "TRON: Legacy (2010)" in result
 
             # Verify the HTTP request was made correctly with page parameter
-            mock_instance.get.assert_called()
-            call_args = mock_instance.get.call_args
+            mock_http_client.get.assert_called()
+            call_args = mock_http_client.get.call_args
             call_kwargs = call_args[1]
             assert "params" in call_kwargs
             assert call_kwargs["params"]["page"] == 1
@@ -578,15 +594,14 @@ async def test_fetch_user_ratings_paginated_last_page_integration(
 ) -> None:
     """Test paginated user ratings on the last page (no next page navigation)."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get = AsyncMock()
         # Mock last page response
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = SAMPLE_USER_RATINGS_RESPONSE[2:]  # Last item
@@ -599,15 +614,19 @@ async def test_fetch_user_ratings_paginated_last_page_integration(
             "X-Pagination-Item-Count": "3",
         }
 
-        mock_instance.get.return_value = ratings_mock
+        mock_http_client.get.return_value = ratings_mock
 
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="episodes", page=2)
-
             # Verify last page pagination formatting
             assert "# Your Episodes Ratings" in result
             assert "📄 **Page 2 of 2" in result
@@ -617,7 +636,7 @@ async def test_fetch_user_ratings_paginated_last_page_integration(
             assert "Found 1 rated episode on this page" in result
 
             # Verify page parameter was sent correctly
-            call_args = mock_instance.get.call_args
+            call_args = mock_http_client.get.call_args
             assert call_args[1]["params"]["page"] == 2
 
 
@@ -630,15 +649,14 @@ async def test_fetch_user_ratings_paginated_with_rating_filter_integration(
     # Filter response to only rating=10 content
     high_rated_response = [r for r in SAMPLE_USER_RATINGS_RESPONSE if r["rating"] == 10]
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get = AsyncMock()
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = high_rated_response
         ratings_mock.raise_for_status = MagicMock()
@@ -650,23 +668,26 @@ async def test_fetch_user_ratings_paginated_with_rating_filter_integration(
             "X-Pagination-Item-Count": "1",
         }
 
-        mock_instance.get.return_value = ratings_mock
+        mock_http_client.get.return_value = ratings_mock
 
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="movies", rating=10, page=1)
-
             # Verify paginated response with rating filter
             assert "# Your Movies Ratings (filtered to rating 10)" in result
             assert "📄 **1 total items" in result  # Single page format
             assert "TRON: Legacy (2010)" in result
             assert "Breaking Bad" not in result  # Should not appear (rating 8)
-
             # Verify API endpoint includes rating filter
-            call_args = mock_instance.get.call_args
+            call_args = mock_http_client.get.call_args
             assert "/sync/ratings/movies/10" in call_args[0][0]
             assert call_args[1]["params"]["page"] == 1
 
@@ -677,15 +698,14 @@ async def test_fetch_user_ratings_paginated_empty_result_integration(
 ) -> None:
     """Test paginated user ratings with empty results through complete stack."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get = AsyncMock()
         # Mock empty paginated response
         empty_mock = MagicMock()
         empty_mock.json.return_value = []
@@ -698,22 +718,26 @@ async def test_fetch_user_ratings_paginated_empty_result_integration(
             "X-Pagination-Item-Count": "0",
         }
 
-        mock_instance.get.return_value = empty_mock
+        mock_http_client.get.return_value = empty_mock
 
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="seasons", page=1)
-
             # Verify empty paginated state handling
             assert "# Your Seasons Ratings" in result
             assert "You haven't rated any seasons yet" in result
             assert "📄 **Pagination Info:** 0 total items" in result
 
             # Verify page parameter was sent
-            call_args = mock_instance.get.call_args
+            call_args = mock_http_client.get.call_args
             assert call_args[1]["params"]["page"] == 1
 
 
@@ -723,30 +747,32 @@ async def test_fetch_user_ratings_backward_compatibility_integration(
 ) -> None:
     """Test that non-paginated requests still work alongside paginated ones."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get = AsyncMock()
         # Mock non-paginated response (no pagination headers)
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = SAMPLE_USER_RATINGS_RESPONSE
         ratings_mock.raise_for_status = MagicMock()
+        mock_http_client.get.return_value = ratings_mock
 
-        mock_instance.get.return_value = ratings_mock
-
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
             # Test without page parameter (non-paginated request)
             result = await fetch_user_ratings(rating_type="movies")
-
             # Verify response format (pagination info is always present in response structure)
             assert "# Your Movies Ratings" in result
             assert "Found 3 rated movies on this page" in result
@@ -755,9 +781,9 @@ async def test_fetch_user_ratings_backward_compatibility_integration(
             assert "📄" in result
 
             # Verify NO pagination parameters were sent (following "Pagination Optional" pattern)
-            call_args = mock_instance.get.call_args
+            call_args = mock_http_client.get.call_args
             call_kwargs = call_args[1]
-            assert "params" not in call_kwargs or not call_kwargs["params"]
+            assert not call_kwargs.get("params")
 
 
 @pytest.mark.asyncio
@@ -766,20 +792,26 @@ async def test_fetch_user_ratings_pagination_error_handling_integration(
 ) -> None:
     """Test pagination error handling through complete stack."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get = AsyncMock()
         # Mock HTTP error during paginated request
-        mock_instance.get.side_effect = Exception("Pagination API error")
+        import httpx
 
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        mock_http_client.get.side_effect = httpx.RequestError("Pagination API error")
+
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
             from utils.api.errors import InternalError
@@ -788,10 +820,9 @@ async def test_fetch_user_ratings_pagination_error_handling_integration(
             with pytest.raises(InternalError) as exc_info:
                 await fetch_user_ratings(rating_type="movies", page=1)
 
-            assert "unexpected error occurred" in str(exc_info.value).lower()
-
+            assert "unable to connect to trakt api" in str(exc_info.value).lower()
             # Verify page parameter was attempted
-            call_args = mock_instance.get.call_args
+            call_args = mock_http_client.get.call_args
             assert call_args[1]["params"]["page"] == 1
 
 
@@ -826,15 +857,14 @@ async def test_fetch_user_ratings_pagination_headers_extraction_integration(
 ) -> None:
     """Test that pagination headers are correctly extracted and processed."""
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
+    with patch.dict(
+        os.environ,
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
+        # Create mock HTTP client
+        mock_http_client = AsyncMock()
+        mock_http_client.aclose = AsyncMock()
+        mock_http_client.get = AsyncMock()
         # Mock response with specific pagination headers
         ratings_mock = MagicMock()
         ratings_mock.json.return_value = SAMPLE_USER_RATINGS_RESPONSE[:1]
@@ -847,15 +877,19 @@ async def test_fetch_user_ratings_pagination_headers_extraction_integration(
             "X-Pagination-Item-Count": "47",
         }
 
-        mock_instance.get.return_value = ratings_mock
+        mock_http_client.get.return_value = ratings_mock
 
-        with patch(
-            "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+        with (
+            patch.object(
+                authenticated_sync_client, "_get_client", return_value=mock_http_client
+            ),
+            patch(
+                "server.sync.tools.SyncClient", return_value=authenticated_sync_client
+            ),
         ):
             from server.sync.tools import fetch_user_ratings
 
             result = await fetch_user_ratings(rating_type="shows", page=3)
-
             # Verify pagination metadata is correctly extracted and formatted
             assert "📄 **Page 3 of 10" in result
             assert "items 11-11 of 47" in result  # Calculated based on page 3, limit 5
@@ -863,5 +897,5 @@ async def test_fetch_user_ratings_pagination_headers_extraction_integration(
             assert "Found 1 rated show on this page" in result
 
             # Verify correct API call
-            call_args = mock_instance.get.call_args
+            call_args = mock_http_client.get.call_args
             assert call_args[1]["params"]["page"] == 3

@@ -11,10 +11,11 @@ from client.comments.episode import EpisodeCommentsClient
 from client.comments.movie import MovieCommentsClient
 from client.comments.season import SeasonCommentsClient
 from client.comments.show import ShowCommentsClient
-from config.api import DEFAULT_LIMIT
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.comments import CommentsFormatters
 from models.types import CommentResponse
+from models.types.pagination import PaginatedResponse
 from server.base import BaseToolErrorMixin
 from server.movies.tools import MovieIdParam
 from server.shows.tools import ShowIdParam
@@ -81,6 +82,28 @@ class CommentsListOptionsParam(BaseModel):
     show_spoilers: bool = Field(False, description="Whether to show spoiler content")
 
 
+class PageParam(BaseModel):
+    """Parameters for tools that support pagination."""
+
+    page: int | None = Field(
+        default=None,
+        ge=1,
+        description="Optional page number for pagination (1-based, positive integer)",
+    )
+
+    @field_validator("page", mode="before")
+    @classmethod
+    def _validate_page(cls, v: object) -> object:
+        """Handle empty strings and None values; trim whitespace."""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            v = v.strip()
+            if v == "":
+                return None
+        return v
+
+
 def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
     """Handle validation errors with consistent formatting via BaseToolErrorMixin.
 
@@ -135,7 +158,9 @@ async def _fetch_and_format_comments(
     *,
     resource_type: str,
     resource_id: str,
-    fetch_fn: Callable[[], Awaitable[list[CommentResponse]]],
+    fetch_fn: Callable[
+        [], Awaitable[list[CommentResponse] | PaginatedResponse[CommentResponse]]
+    ],
     title: str,
     show_spoilers: bool,
 ) -> str:
@@ -196,14 +221,20 @@ async def _fetch_and_format_comment(
 
 
 # Type aliases for tool functions
-MovieCommentsToolType = Callable[[str, int, bool, CommentSort], Awaitable[str]]
-ShowCommentsToolType = Callable[[str, int, bool, CommentSort], Awaitable[str]]
-SeasonCommentsToolType = Callable[[str, int, int, bool, CommentSort], Awaitable[str]]
+MovieCommentsToolType = Callable[
+    [str, int, bool, CommentSort, int | None, int], Awaitable[str]
+]
+ShowCommentsToolType = Callable[
+    [str, int, bool, CommentSort, int | None, int], Awaitable[str]
+]
+SeasonCommentsToolType = Callable[
+    [str, int, int, bool, CommentSort, int | None, int], Awaitable[str]
+]
 EpisodeCommentsToolType = Callable[
-    [str, int, int, int, bool, CommentSort], Awaitable[str]
+    [str, int, int, int, bool, CommentSort, int | None, int], Awaitable[str]
 ]
 CommentToolType = Callable[[str, bool], Awaitable[str]]
-CommentRepliesToolType = Callable[[str, int, bool, CommentSort], Awaitable[str]]
+CommentRepliesToolType = Callable[[str, int, bool, int | None, int], Awaitable[str]]
 
 
 @handle_api_errors_func
@@ -212,6 +243,8 @@ async def fetch_movie_comments(
     limit: int = DEFAULT_LIMIT,
     show_spoilers: bool = False,
     sort: CommentSort = "newest",
+    page: int | None = None,
+    max_pages: int = DEFAULT_MAX_PAGES,
 ) -> str:
     """Fetch comments for a movie from Trakt.
 
@@ -220,6 +253,8 @@ async def fetch_movie_comments(
         limit: Maximum number of comments to return
         show_spoilers: Whether to show spoilers by default
         sort: How to sort comments (newest, oldest, likes, replies)
+        page: Page number (optional). If None, returns all results via auto-pagination.
+        max_pages: Maximum number of pages to fetch during auto-pagination
 
     Returns:
         Information about movie comments
@@ -233,7 +268,9 @@ async def fetch_movie_comments(
         options = CommentsListOptionsParam(
             limit=limit, sort=sort, show_spoilers=show_spoilers
         )
+        page_params = PageParam(page=page)
         movie_id = id_params.movie_id
+        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "movie comments")
 
@@ -243,7 +280,11 @@ async def fetch_movie_comments(
         resource_type="movie_comments",
         resource_id=movie_id,
         fetch_fn=lambda: client.get_movie_comments(
-            movie_id, limit=options.limit, sort=options.sort
+            movie_id,
+            limit=options.limit,
+            sort=options.sort,
+            page=page,
+            max_pages=max_pages,
         ),
         title=f"Movie ID: {movie_id}",
         show_spoilers=options.show_spoilers,
@@ -256,6 +297,8 @@ async def fetch_show_comments(
     limit: int = DEFAULT_LIMIT,
     show_spoilers: bool = False,
     sort: CommentSort = "newest",
+    page: int | None = None,
+    max_pages: int = DEFAULT_MAX_PAGES,
 ) -> str:
     """Fetch comments for a show from Trakt.
 
@@ -264,6 +307,8 @@ async def fetch_show_comments(
         limit: Maximum number of comments to return
         show_spoilers: Whether to show spoilers by default
         sort: How to sort comments (newest, oldest, likes, replies)
+        page: Page number (optional). If None, returns all results via auto-pagination.
+        max_pages: Maximum number of pages to fetch during auto-pagination
 
     Returns:
         Information about show comments
@@ -277,7 +322,9 @@ async def fetch_show_comments(
         options = CommentsListOptionsParam(
             limit=limit, sort=sort, show_spoilers=show_spoilers
         )
+        page_params = PageParam(page=page)
         show_id = id_params.show_id
+        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "show comments")
 
@@ -287,7 +334,11 @@ async def fetch_show_comments(
         resource_type="show_comments",
         resource_id=show_id,
         fetch_fn=lambda: client.get_show_comments(
-            show_id, limit=options.limit, sort=options.sort
+            show_id,
+            limit=options.limit,
+            sort=options.sort,
+            page=page,
+            max_pages=max_pages,
         ),
         title=f"Show ID: {show_id}",
         show_spoilers=options.show_spoilers,
@@ -301,6 +352,8 @@ async def fetch_season_comments(
     limit: int = DEFAULT_LIMIT,
     show_spoilers: bool = False,
     sort: CommentSort = "newest",
+    page: int | None = None,
+    max_pages: int = DEFAULT_MAX_PAGES,
 ) -> str:
     """Fetch comments for a season from Trakt.
 
@@ -310,6 +363,8 @@ async def fetch_season_comments(
         limit: Maximum number of comments to return
         show_spoilers: Whether to show spoilers by default
         sort: How to sort comments (newest, oldest, likes, replies)
+        page: Page number (optional). If None, returns all results via auto-pagination.
+        max_pages: Maximum number of pages to fetch during auto-pagination
 
     Returns:
         Information about season comments
@@ -323,7 +378,9 @@ async def fetch_season_comments(
         options = CommentsListOptionsParam(
             limit=limit, sort=sort, show_spoilers=show_spoilers
         )
+        page_params = PageParam(page=page)
         show_id, season = id_params.show_id, id_params.season
+        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "season comments")
 
@@ -333,7 +390,12 @@ async def fetch_season_comments(
         resource_type="season_comments",
         resource_id=f"{show_id}-{season}",
         fetch_fn=lambda: client.get_season_comments(
-            show_id, season, limit=options.limit, sort=options.sort
+            show_id,
+            season,
+            limit=options.limit,
+            sort=options.sort,
+            page=page,
+            max_pages=max_pages,
         ),
         title=f"Show ID: {show_id} - Season {season}",
         show_spoilers=options.show_spoilers,
@@ -348,6 +410,8 @@ async def fetch_episode_comments(
     limit: int = DEFAULT_LIMIT,
     show_spoilers: bool = False,
     sort: CommentSort = "newest",
+    page: int | None = None,
+    max_pages: int = DEFAULT_MAX_PAGES,
 ) -> str:
     """Fetch comments for an episode from Trakt.
 
@@ -358,6 +422,8 @@ async def fetch_episode_comments(
         limit: Maximum number of comments to return
         show_spoilers: Whether to show spoilers by default
         sort: How to sort comments (newest, oldest, likes, replies)
+        page: Page number (optional). If None, returns all results via auto-pagination.
+        max_pages: Maximum number of pages to fetch during auto-pagination
 
     Returns:
         Information about episode comments
@@ -371,11 +437,13 @@ async def fetch_episode_comments(
         options = CommentsListOptionsParam(
             limit=limit, sort=sort, show_spoilers=show_spoilers
         )
+        page_params = PageParam(page=page)
         show_id, season, episode = (
             id_params.show_id,
             id_params.season,
             id_params.episode,
         )
+        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "episode comments")
 
@@ -385,7 +453,13 @@ async def fetch_episode_comments(
         resource_type="episode_comments",
         resource_id=f"{show_id}-{season}-{episode}",
         fetch_fn=lambda: client.get_episode_comments(
-            show_id, season, episode, limit=options.limit, sort=options.sort
+            show_id,
+            season,
+            episode,
+            limit=options.limit,
+            sort=options.sort,
+            page=page,
+            max_pages=max_pages,
         ),
         title=f"Show ID: {show_id} - S{season:02d}E{episode:02d}",
         show_spoilers=options.show_spoilers,
@@ -428,7 +502,8 @@ async def fetch_comment_replies(
     comment_id: str,
     limit: int = DEFAULT_LIMIT,
     show_spoilers: bool = False,
-    sort: CommentSort = "newest",
+    page: int | None = None,
+    max_pages: int = DEFAULT_MAX_PAGES,
 ) -> str:
     """Fetch replies for a comment from Trakt.
 
@@ -436,7 +511,8 @@ async def fetch_comment_replies(
         comment_id: Trakt ID of the comment
         limit: Maximum number of replies to return
         show_spoilers: Whether to show spoilers by default
-        sort: How to sort replies (newest, oldest, likes, replies)
+        page: Page number (optional). If None, returns all results via auto-pagination.
+        max_pages: Maximum number of pages to fetch during auto-pagination
 
     Returns:
         Information about the comment and its replies
@@ -447,10 +523,9 @@ async def fetch_comment_replies(
     """
     try:
         id_params = CommentIdParam(comment_id=comment_id)
-        options = CommentsListOptionsParam(
-            limit=limit, sort=sort, show_spoilers=show_spoilers
-        )
+        page_params = PageParam(page=page)
         comment_id = id_params.comment_id
+        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "comment replies")
 
@@ -467,7 +542,7 @@ async def fetch_comment_replies(
 
     # Fetch replies data
     replies = await client.get_comment_replies(
-        comment_id, limit=options.limit, sort=options.sort
+        comment_id, limit=limit, page=page, max_pages=max_pages
     )
     _ensure_not_error_string(
         replies,
@@ -480,7 +555,7 @@ async def fetch_comment_replies(
         comment,
         with_replies=True,
         replies=replies,
-        show_spoilers=options.show_spoilers,
+        show_spoilers=show_spoilers,
     )
 
 
@@ -505,31 +580,39 @@ def register_comment_tools(
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_movie_comments"],
-        description="Fetch comments for a specific movie from Trakt",
+        description="Fetch comments for a specific movie from Trakt. Supports optional pagination with 'page' parameter and safety cap 'max_pages'.",
     )
     async def fetch_movie_comments_tool(
         movie_id: str,
         limit: int = DEFAULT_LIMIT,
         show_spoilers: bool = False,
         sort: CommentSort = "newest",
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> str:
-        return await fetch_movie_comments(movie_id, limit, show_spoilers, sort)
+        return await fetch_movie_comments(
+            movie_id, limit, show_spoilers, sort, page, max_pages
+        )
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_comments"],
-        description="Fetch comments for a specific TV show from Trakt",
+        description="Fetch comments for a specific TV show from Trakt. Supports optional pagination with 'page' parameter and safety cap 'max_pages'.",
     )
     async def fetch_show_comments_tool(
         show_id: str,
         limit: int = DEFAULT_LIMIT,
         show_spoilers: bool = False,
         sort: CommentSort = "newest",
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> str:
-        return await fetch_show_comments(show_id, limit, show_spoilers, sort)
+        return await fetch_show_comments(
+            show_id, limit, show_spoilers, sort, page, max_pages
+        )
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_comments"],
-        description="Fetch comments for a specific TV show season from Trakt",
+        description="Fetch comments for a specific TV show season from Trakt. Supports optional pagination with 'page' parameter and safety cap 'max_pages'.",
     )
     async def fetch_season_comments_tool(
         show_id: str,
@@ -537,12 +620,16 @@ def register_comment_tools(
         limit: int = DEFAULT_LIMIT,
         show_spoilers: bool = False,
         sort: CommentSort = "newest",
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> str:
-        return await fetch_season_comments(show_id, season, limit, show_spoilers, sort)
+        return await fetch_season_comments(
+            show_id, season, limit, show_spoilers, sort, page, max_pages
+        )
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_episode_comments"],
-        description="Fetch comments for a specific TV show episode from Trakt",
+        description="Fetch comments for a specific TV show episode from Trakt. Supports optional pagination with 'page' parameter and safety cap 'max_pages'.",
     )
     async def fetch_episode_comments_tool(
         show_id: str,
@@ -551,9 +638,11 @@ def register_comment_tools(
         limit: int = DEFAULT_LIMIT,
         show_spoilers: bool = False,
         sort: CommentSort = "newest",
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> str:
         return await fetch_episode_comments(
-            show_id, season, episode, limit, show_spoilers, sort
+            show_id, season, episode, limit, show_spoilers, sort, page, max_pages
         )
 
     @mcp.tool(
@@ -565,15 +654,18 @@ def register_comment_tools(
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_comment_replies"],
-        description="Fetch replies for a specific comment from Trakt",
+        description="Fetch replies for a specific comment from Trakt. Supports optional pagination with 'page' parameter and safety cap 'max_pages'.",
     )
     async def fetch_comment_replies_tool(
         comment_id: str,
         limit: int = DEFAULT_LIMIT,
         show_spoilers: bool = False,
-        sort: CommentSort = "newest",
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
     ) -> str:
-        return await fetch_comment_replies(comment_id, limit, show_spoilers, sort)
+        return await fetch_comment_replies(
+            comment_id, limit, show_spoilers, page, max_pages
+        )
 
     # Return handlers for type checker visibility
     return (

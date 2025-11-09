@@ -65,8 +65,8 @@ class TestPaginationMetadata:
         # First page boundary conditions
         assert not metadata.has_previous_page
         assert metadata.has_next_page
-        assert metadata.previous_page is None
-        assert metadata.next_page == 2
+        assert metadata.previous_page() is None
+        assert metadata.next_page() == 2
 
     def test_last_page_properties(self) -> None:
         """Test properties when on last page."""
@@ -77,8 +77,8 @@ class TestPaginationMetadata:
         # Last page boundary conditions
         assert metadata.has_previous_page
         assert not metadata.has_next_page
-        assert metadata.previous_page == 2
-        assert metadata.next_page is None
+        assert metadata.previous_page() == 2
+        assert metadata.next_page() is None
 
     def test_middle_page_properties(self) -> None:
         """Test properties when on middle page."""
@@ -89,8 +89,8 @@ class TestPaginationMetadata:
         # Middle page conditions
         assert metadata.has_previous_page
         assert metadata.has_next_page
-        assert metadata.previous_page == 1
-        assert metadata.next_page == 3
+        assert metadata.previous_page() == 1
+        assert metadata.next_page() == 3
 
     def test_single_page_properties(self) -> None:
         """Test properties when there's only one page."""
@@ -101,8 +101,8 @@ class TestPaginationMetadata:
         # Single page boundary conditions
         assert not metadata.has_previous_page
         assert not metadata.has_next_page
-        assert metadata.previous_page is None
-        assert metadata.next_page is None
+        assert metadata.previous_page() is None
+        assert metadata.next_page() is None
 
     def test_zero_total_items(self) -> None:
         """Test handling of zero total items."""
@@ -112,6 +112,44 @@ class TestPaginationMetadata:
         assert metadata.total_items == 0
         assert not metadata.has_next_page
         assert not metadata.has_previous_page
+
+    def test_zero_total_pages(self) -> None:
+        """Test handling of zero total pages (empty result set)."""
+        metadata = PaginationMetadata(
+            current_page=1, items_per_page=10, total_pages=0, total_items=0
+        )
+        assert metadata.total_pages == 0
+        assert metadata.total_items == 0
+        assert not metadata.has_next_page
+        assert not metadata.has_previous_page
+        assert metadata.next_page() is None
+        assert metadata.previous_page() is None
+
+    def test_validation_constraints(self) -> None:
+        """Test that validation constraints work correctly."""
+        # Valid: total_pages=0 should be allowed
+        metadata = PaginationMetadata(
+            current_page=1, items_per_page=10, total_pages=0, total_items=0
+        )
+        assert metadata.total_pages == 0
+
+        # Invalid: current_page must be >= 1
+        with pytest.raises(ValidationError):
+            PaginationMetadata(
+                current_page=0, items_per_page=10, total_pages=1, total_items=10
+            )
+
+        # Invalid: items_per_page must be >= 1
+        with pytest.raises(ValidationError):
+            PaginationMetadata(
+                current_page=1, items_per_page=0, total_pages=1, total_items=10
+            )
+
+        # Invalid: total_pages must be >= 0
+        with pytest.raises(ValidationError):
+            PaginationMetadata(
+                current_page=1, items_per_page=10, total_pages=-1, total_items=0
+            )
 
 
 class TestPaginatedResponse:
@@ -270,14 +308,14 @@ class TestPaginatedResponse:
         assert metadata.has_previous_page == expected_has_prev
 
         if expected_has_next:
-            assert metadata.next_page == page + 1
+            assert metadata.next_page() == page + 1
         else:
-            assert metadata.next_page is None
+            assert metadata.next_page() is None
 
         if expected_has_prev:
-            assert metadata.previous_page == page - 1
+            assert metadata.previous_page() == page - 1
         else:
-            assert metadata.previous_page is None
+            assert metadata.previous_page() is None
 
     def test_page_info_calculation_edge_cases(self) -> None:
         """Test edge cases in page info calculations."""
@@ -306,6 +344,19 @@ class TestPaginatedResponse:
 
         assert response.is_empty
         assert response.is_single_page
+        summary = response.page_info_summary()
+        assert summary == "0 total items"
+
+    def test_zero_total_pages_response(self) -> None:
+        """Test PaginatedResponse with zero total pages (truly empty result set)."""
+        metadata = PaginationMetadata(
+            current_page=1, items_per_page=10, total_pages=0, total_items=0
+        )
+
+        response = PaginatedResponse[str](data=[], pagination=metadata)
+
+        assert response.is_empty
+        assert response.is_single_page  # total_pages <= 1
         summary = response.page_info_summary()
         assert summary == "0 total items"
 

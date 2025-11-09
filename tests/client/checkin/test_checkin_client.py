@@ -37,9 +37,12 @@ async def test_checkin_to_show():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.post = AsyncMock(
-            return_value=mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = Mock()
+        mock_instance.post = AsyncMock(return_value=mock_response)
+        mock_instance.get = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = CheckinClient()
         # Set up authentication
@@ -99,9 +102,12 @@ async def test_checkin_to_show_with_title():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_client.return_value.__aenter__.return_value.post = AsyncMock(
-            return_value=mock_response
-        )
+        # Create mock instance with async methods
+        mock_instance = Mock()
+        mock_instance.post = AsyncMock(return_value=mock_response)
+        mock_instance.get = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
 
         client = CheckinClient()
         # Set up authentication

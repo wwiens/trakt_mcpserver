@@ -28,13 +28,13 @@ from .api_responses import (
 )
 from .common import (
     ErrorResponse,
-    PaginatedResponse,
     T,
     TraktHeaders,
     TRequest,
     TResponse,
 )
 from .pagination import (
+    PaginatedResponse,
     PaginationMetadata,
     PaginationParams,
 )
@@ -46,6 +46,12 @@ from .protocols import (
     ShowsClientProtocol,
     UserClientProtocol,
 )
+from .sort import (
+    EpisodeCommentSort,
+    MovieCommentSort,
+    SeasonCommentSort,
+    ShowCommentSort,
+)
 
 __all__ = [
     # Protocol Types
@@ -54,24 +60,28 @@ __all__ = [
     "CheckinResponse",
     "CommentResponse",
     "DeviceCodeResponse",
+    "EpisodeCommentSort",
     "EpisodeResponse",
     "ErrorResponse",
     "FavoritedMovieWrapper",
     "FavoritedShowWrapper",
+    "MovieCommentSort",
     "MovieResponse",
     "MoviesClientProtocol",
-    # Common Types
-    "PaginatedResponse",
     # Pagination Types
+    "PaginatedResponse",
     "PaginationMetadata",
     "PaginationParams",
     "PlayedMovieWrapper",
     "PlayedShowWrapper",
     "SearchClientProtocol",
     "SearchResult",
+    "SeasonCommentSort",
     "SeasonResponse",
+    "ShowCommentSort",
     "ShowResponse",
     "ShowsClientProtocol",
+    # Sort Types
     "StatsResponse",
     "T",
     "TRequest",

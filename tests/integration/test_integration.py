@@ -60,8 +60,6 @@ async def test_auth_flow_integration() -> None:
         patch("server.auth.tools.active_auth_flow", {}),
         patch("os.path.exists", return_value=True),
     ):
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
         device_code_mock = MagicMock()
         device_code_mock.json.return_value = device_code_response
         device_code_mock.raise_for_status = MagicMock()
@@ -70,7 +68,17 @@ async def test_auth_flow_integration() -> None:
         auth_token_mock.json.return_value = auth_token_response
         auth_token_mock.raise_for_status = MagicMock()
 
-        mock_instance.post.side_effect = [device_code_mock, auth_token_mock]
+        mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock()
+        mock_instance.post = AsyncMock(side_effect=[device_code_mock, auth_token_mock])
+
+        # Also configure the direct return value (for non-context-manager usage)
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock()
+        mock_client.return_value.post = AsyncMock(
+            side_effect=[device_code_mock, auth_token_mock]
+        )
 
         from server.auth.tools import start_device_auth
 
@@ -139,9 +147,6 @@ async def test_search_and_checkin_integration() -> None:
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Configure the mock to return different responses for each call
-        mock_instance = mock_client.return_value.__aenter__.return_value
-
         # Mock for search request
         search_mock = MagicMock()
         search_mock.json.return_value = search_results
@@ -152,9 +157,16 @@ async def test_search_and_checkin_integration() -> None:
         checkin_mock.json.return_value = checkin_response
         checkin_mock.raise_for_status = MagicMock()
 
-        # Set up the responses for GET and POST requests
-        mock_instance.get.return_value = search_mock
-        mock_instance.post.return_value = checkin_mock
+        # Configure the mock to return different responses for each call
+        mock_instance = mock_client.return_value.__aenter__.return_value
+        mock_instance.aclose = AsyncMock()
+        mock_instance.get = AsyncMock(return_value=search_mock)
+        mock_instance.post = AsyncMock(return_value=checkin_mock)
+
+        # Also configure the direct return value (for non-context-manager usage)
+        mock_client.return_value.aclose = AsyncMock()
+        mock_client.return_value.get = AsyncMock(return_value=search_mock)
+        mock_client.return_value.post = AsyncMock(return_value=checkin_mock)
 
         # Create clients with mock auth tokens
         search_client = SearchClient()

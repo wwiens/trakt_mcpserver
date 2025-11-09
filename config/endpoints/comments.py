@@ -7,5 +7,5 @@ COMMENTS_ENDPOINTS = {
     "comments_season": "/shows/:id/seasons/:season/comments/:sort",
     "comments_episode": "/shows/:id/seasons/:season/episodes/:episode/comments/:sort",
     "comment": "/comments/:id",
-    "comment_replies": "/comments/:id/replies/:sort",
+    "comment_replies": "/comments/:id/replies",
 }

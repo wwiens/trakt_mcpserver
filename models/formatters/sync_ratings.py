@@ -16,7 +16,8 @@ class SyncRatingsFormatters:
         """Format user's personal ratings with pagination information.
 
         Args:
-            paginated_ratings: Paginated response with ratings data and pagination metadata
+            paginated_ratings: Paginated response with ratings data
+                and pagination metadata
             rating_type: Type of content (movies, shows, seasons, episodes)
             rating_filter: Optional specific rating filter applied
 
@@ -30,10 +31,16 @@ class SyncRatingsFormatters:
         if not ratings:
             result = f"# Your {rating_type.title()} Ratings\n\n"
             if rating_filter:
-                result += f"You haven't rated any {rating_type} with rating {rating_filter} yet. "
+                result += (
+                    f"You haven't rated any {rating_type} with rating "
+                    f"{rating_filter} yet. "
+                )
             else:
                 result += f"You haven't rated any {rating_type} yet. "
-            result += f"Use the `add_user_ratings` tool to add ratings for your {rating_type}.\n\n"
+            result += (
+                f"Use the `add_user_ratings` tool to add ratings "
+                f"for your {rating_type}.\n\n"
+            )
 
             # Show pagination info even for empty results
             result += (
@@ -50,9 +57,9 @@ class SyncRatingsFormatters:
         # Show page navigation hints
         navigation_hints: list[str] = []
         if pagination.has_previous_page:
-            navigation_hints.append(f"Previous: page {pagination.previous_page}")
+            navigation_hints.append(f"Previous: page {pagination.previous_page()}")
         if pagination.has_next_page:
-            navigation_hints.append(f"Next: page {pagination.next_page}")
+            navigation_hints.append(f"Next: page {pagination.next_page()}")
 
         if navigation_hints:
             result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
@@ -149,7 +156,10 @@ class SyncRatingsFormatters:
         if counts:
             total = getattr(counts, rating_type, 0)
             if total > 0:
-                result += f"✅ Successfully {operation} **{total}** {rating_type} rating(s).\n\n"
+                result += (
+                    f"✅ Successfully {operation} **{total}** "
+                    f"{rating_type} rating(s).\n\n"
+                )
 
                 # Show breakdown by type if multiple types were processed
                 type_breakdown: list[str] = []
