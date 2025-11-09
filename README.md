@@ -100,7 +100,7 @@ This multi-tool approach demonstrates:
 - Provides tools for fetching real-time entertainment information
 - Enables AI models to offer personalized entertainment recommendations
 - Simple authentication and logout process
-- **Pagination support** for list endpoints (trending, popular, search, comments) - use `page` parameter for manual pagination or omit for auto-fetch all results
+- **Pagination support** for list endpoints (trending, popular, search, comments) - pass `page: int` for single-page results with metadata (PaginatedResponse), or omit `page` to auto-fetch all results as a flat list
 
 ### 📺 Currently Trending Shows
 
@@ -163,10 +163,10 @@ fetch_played_shows(limit=10, period="weekly")
 # Get most watched shows with optional limit and period parameters
 fetch_watched_shows(limit=10, period="weekly")
 
-# Search for shows by title to get show IDs and details
+# Search for shows: auto-paginate all results (omit page parameter)
 search_shows(query="Breaking Bad", limit=5)
 
-# Search with pagination
+# Search for shows: single page with pagination metadata
 search_shows(query="Breaking Bad", limit=5, page=1)
 
 # Get ratings for a show
@@ -190,10 +190,10 @@ search_movies(query="The Godfather", limit=5)
 
 ### Movie Tools
 ```python
-# Get trending movies with optional limit parameter
+# Get trending movies: auto-paginate all results (omit page parameter)
 fetch_trending_movies(limit=10)
 
-# Get trending movies with pagination
+# Get trending movies: single page with pagination metadata
 fetch_trending_movies(limit=10, page=1)
 
 # Get popular movies with optional limit parameter
@@ -279,10 +279,10 @@ checkin_to_show(
 
 ### Comment Tools
 ```python
-# Get comments for a movie (sorted by newest by default)
+# Get comments for a movie: auto-paginate all results (omit page parameter)
 fetch_movie_comments(movie_id="123", limit=10, show_spoilers=False)
 
-# Get comments with pagination
+# Get comments for a movie: single page with pagination metadata
 fetch_movie_comments(movie_id="123", limit=10, show_spoilers=False, page=1)
 
 # Get comments for a show sorted by most likes
