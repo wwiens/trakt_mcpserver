@@ -42,7 +42,7 @@ docker run -d --rm --name trakt_server \
    cp .env.example .env
    ```
    Then edit `.env` to add your Trakt API credentials:
-   ```
+   ```bash
    TRAKT_CLIENT_ID=your_client_id
    TRAKT_CLIENT_SECRET=your_client_secret
    ```
