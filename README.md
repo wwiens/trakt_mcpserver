@@ -100,7 +100,7 @@ This multi-tool approach demonstrates:
 - Provides tools for fetching real-time entertainment information
 - Enables AI models to offer personalized entertainment recommendations
 - Simple authentication and logout process
-- **Pagination support** for list endpoints (trending, popular, search, comments) - pass `page: int` for single-page results with metadata (PaginatedResponse), or omit `page` to auto-fetch all results as a flat list
+- **Pagination support** for list endpoints (trending, popular, favorited, played, watched, search, comments) - pass `page: int` for single-page results with metadata (PaginatedResponse), or omit `page` to auto-fetch all results as a flat list
 
 ### 📺 Currently Trending Shows
 
