@@ -6,6 +6,8 @@ This file provides guidance to Claude Code when working with this repository.
 
 **Model Context Protocol (MCP) server** bridging AI models with Trakt.tv API. Built with FastMCP, providing entertainment data access with OAuth authentication.
 
+**Trakt API Reference**: See `trakt.apib` for complete API documentation and endpoint specifications.
+
 ## Architecture - Single Responsibility Principle
 
 **CRITICAL REQUIREMENT**: Every file must have exactly ONE clear purpose. No exceptions.
