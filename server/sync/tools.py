@@ -11,17 +11,35 @@ from client.sync.client import SyncClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools.sync import SYNC_TOOLS
 from models.formatters.sync_ratings import SyncRatingsFormatters
+from models.formatters.sync_watchlist import SyncWatchlistFormatters
 from models.sync.ratings import (
     SyncRatingsSummary,
     TraktSyncRating,
     TraktSyncRatingItem,
     TraktSyncRatingsRequest,
 )
+from models.sync.watchlist import (
+    SyncWatchlistSummary,
+    TraktSyncWatchlistItem,
+    TraktSyncWatchlistRequest,
+    TraktWatchlistItem,
+)
 from models.types.pagination import PaginatedResponse, PaginationParams
 from server.base import BaseToolErrorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
+
+WatchlistSortField = Literal[
+    "rank",
+    "added",
+    "title",
+    "released",
+    "runtime",
+    "popularity",
+    "percentage",
+    "votes",
+]
 
 # Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
@@ -149,6 +167,126 @@ class UserRatingRequest(BaseModel):
     rating_type: Literal["movies", "shows", "seasons", "episodes"]
     items: list[UserRatingRequestItem] = Field(
         min_length=1, description="List of items to rate"
+    )
+
+
+class UserWatchlistParams(BaseModel):
+    """Parameters for fetching user watchlist."""
+
+    watchlist_type: Literal["all", "movies", "shows", "seasons", "episodes"] = "all"
+    sort_by: WatchlistSortField = "rank"
+    sort_how: Literal["asc", "desc"] = "asc"
+    page: int | None = Field(
+        default=None, ge=1, description="Optional page number for pagination (1-based)"
+    )
+
+    @field_validator("page", mode="before")
+    @classmethod
+    def _validate_page(cls, v: object) -> object:
+        if v is None or v == "":
+            return None
+        return v
+
+
+class UserWatchlistRequestItem(BaseModel):
+    """Single watchlist item for add operations (with optional notes)."""
+
+    trakt_id: str | None = Field(default=None, min_length=1, description="Trakt ID")
+    imdb_id: str | None = Field(default=None, min_length=1, description="IMDB ID")
+    tmdb_id: str | None = Field(default=None, min_length=1, description="TMDB ID")
+    title: str | None = Field(default=None, min_length=1, description="Title")
+    year: int | None = Field(default=None, gt=1800, description="Release year")
+    notes: str | None = Field(
+        default=None,
+        max_length=500,
+        description="Optional notes (VIP only, 500 char max)",
+    )
+
+    @field_validator("trakt_id", "imdb_id", "tmdb_id", "title", "notes", mode="before")
+    @classmethod
+    def _strip_strings(cls, v: object) -> object:
+        return v.strip() if isinstance(v, str) else v
+
+    @field_validator("trakt_id", mode="after")
+    @classmethod
+    def _validate_trakt_id_numeric(cls, v: str | None) -> str | None:
+        """Ensure trakt_id is numeric if provided."""
+        if v is not None and not v.isdigit():
+            raise ValueError(f"trakt_id must be numeric, got: '{v}'")
+        return v
+
+    @field_validator("tmdb_id", mode="after")
+    @classmethod
+    def _validate_tmdb_id_numeric(cls, v: str | None) -> str | None:
+        """Ensure tmdb_id is numeric if provided."""
+        if v is not None and not v.isdigit():
+            raise ValueError(f"tmdb_id must be numeric, got: '{v}'")
+        return v
+
+    @model_validator(mode="after")
+    def _validate_identifiers(self) -> "UserWatchlistRequestItem":
+        """Ensure at least one identifier (trakt_id/imdb_id/tmdb_id) OR both title+year are provided."""
+        has_id = any([self.trakt_id, self.imdb_id, self.tmdb_id])
+        has_title_year = self.title and self.year
+
+        if not has_id and not has_title_year:
+            raise ValueError(
+                "Watchlist item must include either an identifier (trakt_id, imdb_id, or tmdb_id) "
+                + "or both title and year for proper identification"
+            )
+        return self
+
+
+class UserWatchlistIdentifier(BaseModel):
+    """Watchlist item identifier for removal operations (no notes)."""
+
+    trakt_id: str | None = Field(default=None, min_length=1, description="Trakt ID")
+    imdb_id: str | None = Field(default=None, min_length=1, description="IMDB ID")
+    tmdb_id: str | None = Field(default=None, min_length=1, description="TMDB ID")
+    title: str | None = Field(default=None, min_length=1, description="Title")
+    year: int | None = Field(default=None, gt=1800, description="Release year")
+
+    @field_validator("trakt_id", "imdb_id", "tmdb_id", "title", mode="before")
+    @classmethod
+    def _strip_strings(cls, v: object) -> object:
+        return v.strip() if isinstance(v, str) else v
+
+    @field_validator("trakt_id", mode="after")
+    @classmethod
+    def _validate_trakt_id_numeric(cls, v: str | None) -> str | None:
+        """Ensure trakt_id is numeric if provided."""
+        if v is not None and not v.isdigit():
+            raise ValueError(f"trakt_id must be numeric, got: '{v}'")
+        return v
+
+    @field_validator("tmdb_id", mode="after")
+    @classmethod
+    def _validate_tmdb_id_numeric(cls, v: str | None) -> str | None:
+        """Ensure tmdb_id is numeric if provided."""
+        if v is not None and not v.isdigit():
+            raise ValueError(f"tmdb_id must be numeric, got: '{v}'")
+        return v
+
+    @model_validator(mode="after")
+    def _validate_identifiers(self) -> "UserWatchlistIdentifier":
+        """Ensure at least one identifier (trakt_id/imdb_id/tmdb_id) OR both title+year are provided."""
+        has_id = any([self.trakt_id, self.imdb_id, self.tmdb_id])
+        has_title_year = self.title and self.year
+
+        if not has_id and not has_title_year:
+            raise ValueError(
+                "Watchlist item must include either an identifier (trakt_id, imdb_id, or tmdb_id) "
+                + "or both title and year for proper identification"
+            )
+        return self
+
+
+class UserWatchlistRequest(BaseModel):
+    """Parameters for adding/removing user watchlist items."""
+
+    watchlist_type: Literal["movies", "shows", "seasons", "episodes"]
+    items: list[UserWatchlistRequestItem] = Field(
+        min_length=1, description="List of items to add to watchlist"
     )
 
 
@@ -356,8 +494,225 @@ async def remove_user_ratings(
         raise
 
 
-def register_sync_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler, ToolHandler]:
-    """Register sync rating tools with the MCP server.
+@handle_api_errors_func
+async def fetch_user_watchlist(
+    watchlist_type: Literal["all", "movies", "shows", "seasons", "episodes"] = "all",
+    sort_by: WatchlistSortField = "rank",
+    sort_how: Literal["asc", "desc"] = "asc",
+    page: int | None = None,
+) -> str:
+    """Fetch authenticated user's watchlist from Trakt.
+
+    Args:
+        watchlist_type: Type of watchlist items to fetch (all, movies, shows, seasons, episodes)
+        sort_by: Field to sort by (rank, added, title, released, runtime, etc.)
+        sort_how: Sort direction (asc, desc)
+        page: Optional page number for pagination (1-based)
+
+    Returns:
+        User's watchlist formatted as markdown. When 'page' is None,
+        only the first page is retrieved (see pagination info in the output).
+
+    Raises:
+        AuthenticationRequiredError: If user is not authenticated
+    """
+    logger.debug("fetch_user_watchlist called with watchlist_type=%s", watchlist_type)
+    # Validate parameters with Pydantic
+    params = UserWatchlistParams(
+        watchlist_type=watchlist_type, sort_by=sort_by, sort_how=sort_how, page=page
+    )
+    watchlist_type, sort_by, sort_how, page = (
+        params.watchlist_type,
+        params.sort_by,
+        params.sort_how,
+        params.page,
+    )
+
+    try:
+        client = SyncClient()
+
+        # If 'page' is provided, request that page; otherwise use default page=1.
+        pagination_params = (
+            PaginationParams(page=page, limit=DEFAULT_LIMIT)
+            if page is not None
+            else None
+        )
+        paginated_result: PaginatedResponse[
+            TraktWatchlistItem
+        ] = await client.get_sync_watchlist(
+            watchlist_type, sort_by, sort_how, pagination=pagination_params
+        )
+
+        # Handle transitional case where API returns error strings
+        if isinstance(paginated_result, str):
+            error = BaseToolErrorMixin.handle_api_string_error(
+                resource_type=f"user_{watchlist_type}_watchlist",
+                resource_id=f"user_watchlist_{watchlist_type}",
+                error_message=paginated_result,
+                operation="fetch_user_watchlist",
+            )
+            raise error
+
+        return SyncWatchlistFormatters.format_user_watchlist(
+            paginated_result, watchlist_type, sort_by, sort_how
+        )
+    except MCPError:
+        raise
+
+
+@handle_api_errors_func
+async def add_user_watchlist(
+    watchlist_type: Literal["movies", "shows", "seasons", "episodes"],
+    items: list[dict[str, Any]],
+) -> str:
+    """Add items to the authenticated user's watchlist.
+
+    Args:
+        watchlist_type: Type of content to add (movies, shows, seasons, episodes)
+        items: List of items to add with identification info and optional notes (VIP only)
+
+    Returns:
+        Summary of added watchlist items with counts
+
+    Raises:
+        AuthenticationRequiredError: If user is not authenticated
+    """
+    logger.debug("add_user_watchlist called with watchlist_type=%s", watchlist_type)
+    # Validate parameters with Pydantic
+    items_list = [UserWatchlistRequestItem(**item) for item in items]
+    params = UserWatchlistRequest(watchlist_type=watchlist_type, items=items_list)
+    watchlist_type, validated_items = params.watchlist_type, params.items
+
+    try:
+        client = SyncClient()
+
+        # Convert to sync request format
+        sync_items: list[TraktSyncWatchlistItem] = []
+        for item in validated_items:
+            ids: dict[str, Any] = {}
+
+            # Add IDs that are provided (upstream validation ensures numeric strings)
+            if item.trakt_id:
+                ids["trakt"] = int(item.trakt_id)
+            if item.imdb_id:
+                ids["imdb"] = item.imdb_id
+            if item.tmdb_id:
+                ids["tmdb"] = int(item.tmdb_id)
+
+            # Create sync watchlist item
+            sync_item_data: dict[str, Any] = {"ids": ids}
+
+            # Add title and year if provided
+            if item.title:
+                sync_item_data["title"] = item.title
+            if item.year:
+                sync_item_data["year"] = item.year
+            # Add notes if provided (VIP only)
+            if item.notes:
+                sync_item_data["notes"] = item.notes
+
+            sync_items.append(TraktSyncWatchlistItem(**sync_item_data))
+
+        # Create request with the appropriate type
+        request_data: dict[str, Any] = {watchlist_type: sync_items}
+        request = TraktSyncWatchlistRequest(**request_data)
+
+        summary: SyncWatchlistSummary = await client.add_sync_watchlist(request)
+
+        # Handle transitional case where API returns error strings
+        if isinstance(summary, str):
+            error = BaseToolErrorMixin.handle_api_string_error(
+                resource_type=f"add_user_{watchlist_type}_watchlist",
+                resource_id=f"add_watchlist_{watchlist_type}",
+                error_message=summary,
+                operation="add_user_watchlist",
+            )
+            raise error
+
+        return SyncWatchlistFormatters.format_user_watchlist_summary(
+            summary, "added", watchlist_type
+        )
+    except MCPError:
+        raise
+
+
+@handle_api_errors_func
+async def remove_user_watchlist(
+    watchlist_type: Literal["movies", "shows", "seasons", "episodes"],
+    items: list[dict[str, Any]],
+) -> str:
+    """Remove items from the authenticated user's watchlist.
+
+    Args:
+        watchlist_type: Type of content to remove (movies, shows, seasons, episodes)
+        items: List of items to remove from watchlist (no notes needed, just identification)
+
+    Returns:
+        Summary of removed watchlist items with counts
+
+    Raises:
+        AuthenticationRequiredError: If user is not authenticated
+    """
+    logger.debug("remove_user_watchlist called with watchlist_type=%s", watchlist_type)
+    # For removal, we only need identifiers (no notes)
+    validated_items = [UserWatchlistIdentifier(**item) for item in items]
+
+    try:
+        client = SyncClient()
+
+        # Convert to sync request format (no notes for removal)
+        sync_items: list[TraktSyncWatchlistItem] = []
+        for item in validated_items:
+            ids: dict[str, Any] = {}
+
+            # Add IDs that are provided (upstream validation ensures numeric strings)
+            if item.trakt_id:
+                ids["trakt"] = int(item.trakt_id)
+            if item.imdb_id:
+                ids["imdb"] = item.imdb_id
+            if item.tmdb_id:
+                ids["tmdb"] = int(item.tmdb_id)
+
+            # Create sync watchlist item (no notes for removal)
+            sync_item_data: dict[str, Any] = {"ids": ids}
+
+            # Add title and year if provided
+            if item.title:
+                sync_item_data["title"] = item.title
+            if item.year:
+                sync_item_data["year"] = item.year
+
+            sync_items.append(TraktSyncWatchlistItem(**sync_item_data))
+
+        # Create request with the appropriate type
+        request_data: dict[str, Any] = {watchlist_type: sync_items}
+        request = TraktSyncWatchlistRequest(**request_data)
+
+        summary: SyncWatchlistSummary = await client.remove_sync_watchlist(request)
+
+        # Handle transitional case where API returns error strings
+        if isinstance(summary, str):
+            error = BaseToolErrorMixin.handle_api_string_error(
+                resource_type=f"remove_user_{watchlist_type}_watchlist",
+                resource_id=f"remove_watchlist_{watchlist_type}",
+                error_message=summary,
+                operation="remove_user_watchlist",
+            )
+            raise error
+
+        return SyncWatchlistFormatters.format_user_watchlist_summary(
+            summary, "removed", watchlist_type
+        )
+    except MCPError:
+        raise
+
+
+def register_sync_tools(
+    mcp: FastMCP,
+) -> tuple[
+    ToolHandler, ToolHandler, ToolHandler, ToolHandler, ToolHandler, ToolHandler
+]:
+    """Register sync rating and watchlist tools with the MCP server.
 
     Returns:
         Tuple of tool handlers for type checker visibility
@@ -400,9 +755,63 @@ def register_sync_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler, ToolHan
     ) -> str:
         return await remove_user_ratings(rating_type, items)
 
+    @mcp.tool(
+        name=SYNC_TOOLS["fetch_user_watchlist"],
+        description=(
+            "Fetch the authenticated user's watchlist from Trakt. "
+            "Supports optional pagination with 'page' parameter and sorting options. "
+            "Requires OAuth authentication."
+        ),
+    )
+    async def fetch_user_watchlist_tool(
+        watchlist_type: Literal[
+            "all", "movies", "shows", "seasons", "episodes"
+        ] = "all",
+        sort_by: WatchlistSortField = "rank",
+        sort_how: Literal["asc", "desc"] = "asc",
+        page: int | None = None,
+    ) -> str:
+        # Validate parameters with Pydantic
+        params = UserWatchlistParams(
+            watchlist_type=watchlist_type, sort_by=sort_by, sort_how=sort_how, page=page
+        )
+        return await fetch_user_watchlist(
+            params.watchlist_type, params.sort_by, params.sort_how, params.page
+        )
+
+    @mcp.tool(
+        name=SYNC_TOOLS["add_user_watchlist"],
+        description=(
+            "Add items to the authenticated user's watchlist. "
+            "Supports optional notes (VIP only, 500 character limit). "
+            "Requires OAuth authentication."
+        ),
+    )
+    async def add_user_watchlist_tool(
+        watchlist_type: Literal["movies", "shows", "seasons", "episodes"],
+        items: list[dict[str, Any]],
+    ) -> str:
+        return await add_user_watchlist(watchlist_type, items)
+
+    @mcp.tool(
+        name=SYNC_TOOLS["remove_user_watchlist"],
+        description=(
+            "Remove items from the authenticated user's watchlist. "
+            "Requires OAuth authentication."
+        ),
+    )
+    async def remove_user_watchlist_tool(
+        watchlist_type: Literal["movies", "shows", "seasons", "episodes"],
+        items: list[dict[str, Any]],
+    ) -> str:
+        return await remove_user_watchlist(watchlist_type, items)
+
     # Return handlers for type checker visibility
     return (
         fetch_user_ratings_tool,
         add_user_ratings_tool,
         remove_user_ratings_tool,
+        fetch_user_watchlist_tool,
+        add_user_watchlist_tool,
+        remove_user_watchlist_tool,
     )

@@ -88,6 +88,10 @@ Add to your Claude Desktop MCP configuration file:
   - See when you watched the episode in human-readable format
 - **Search for shows** to find their details and IDs
 - **Manage your ratings**: View, add, and remove personal ratings for movies, shows, seasons, and episodes with pagination support
+- **Manage your watchlist**: View, add, and remove items from your watchlist with pagination and sorting support
+  - Filter by type (all, movies, shows, seasons, episodes)
+  - Sort by multiple criteria (rank, added, title, released, runtime, popularity, percentage, votes)
+  - Add optional notes to watchlist items (VIP feature, 500 char limit)
 - Secure authentication with Trakt through device code flow
 - Personal data is fetched directly from your Trakt account
 
@@ -105,7 +109,7 @@ Add to your Claude Desktop MCP configuration file:
 - Provides tools for fetching real-time entertainment information
 - Enables AI models to offer personalized entertainment recommendations
 - Simple authentication and logout process
-- **Pagination support** for list endpoints (trending, popular, favorited, played, watched, search, comments) - pass `page: int` for single-page results with metadata (PaginatedResponse), or omit `page` to auto-fetch all results as a flat list
+- **Pagination support** for list endpoints (trending, popular, favorited, played, watched, search, comments, ratings, watchlist) - pass `page: int` for single-page results with metadata (PaginatedResponse), or omit `page` to auto-fetch all results as a flat list
 
 ### 🔥 Real-Time Trending Data
 - Access currently trending TV shows with live viewer counts
@@ -271,6 +275,15 @@ add_user_ratings(rating_type="movies", items=[{"trakt_id": "314", "rating": 9}])
 
 # Remove existing ratings by ID
 remove_user_ratings(rating_type="movies", items=[{"trakt_id": "314"}])
+
+# Fetch user's watchlist with pagination and sorting
+fetch_user_watchlist(watchlist_type="all", sort_by="rank", sort_how="asc", page=1)
+
+# Add items to watchlist with optional notes (VIP)
+add_user_watchlist(watchlist_type="movies", items=[{"trakt_id": "314", "notes": "Must watch!"}])
+
+# Remove items from watchlist
+remove_user_watchlist(watchlist_type="movies", items=[{"trakt_id": "314"}])
 ```
 
 </details>
@@ -373,6 +386,12 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 - "What was the last movie I watched?"
 - "Show me my 10/10 rated movies"
 - "Add a 9/10 rating for Breaking Bad"
+- "Show me my watchlist"
+- "What movies are on my watchlist?"
+- "Add The Godfather to my watchlist"
+- "Add Breaking Bad to my watchlist with a note" (VIP)
+- "Remove The Dark Knight from my watchlist"
+- "Show me my watchlist sorted by when I added them"
 - "Check me in to Season 2 Episode 5 of Breaking Bad"
 - "Check me in to Season 1 Episode 3 of show ID 1388"
 
@@ -387,6 +406,9 @@ With authentication, you can access:
 - Number of times you've watched each show and movie
 - Check in to shows you're currently watching and track your progress
 - Personal viewing statistics
+- Your complete watchlist with filtering and sorting options
+- Add and remove items from your watchlist
+- Add personal notes to watchlist items (VIP feature)
 
 All data is fetched directly from your Trakt account in real-time.
 
