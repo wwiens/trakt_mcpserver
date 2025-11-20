@@ -83,6 +83,10 @@ This multi-tool approach demonstrates:
   - See when you watched the episode in human-readable format
 - **Search for shows** to find their details and IDs
 - **Manage your ratings**: View, add, and remove personal ratings for movies, shows, seasons, and episodes with pagination support
+- **Manage your watchlist**: View, add, and remove items from your watchlist with pagination and sorting support
+  - Filter by type (all, movies, shows, seasons, episodes)
+  - Sort by multiple criteria (rank, added, title, released, runtime, popularity, percentage, votes)
+  - Add optional notes to watchlist items (VIP feature, 500 char limit)
 - Secure authentication with Trakt through device code flow
 - Personal data is fetched directly from your Trakt account
 
@@ -100,7 +104,7 @@ This multi-tool approach demonstrates:
 - Provides tools for fetching real-time entertainment information
 - Enables AI models to offer personalized entertainment recommendations
 - Simple authentication and logout process
-- **Pagination support** for list endpoints (trending, popular, favorited, played, watched, search, comments) - pass `page: int` for single-page results with metadata (PaginatedResponse), or omit `page` to auto-fetch all results as a flat list
+- **Pagination support** for list endpoints (trending, popular, favorited, played, watched, search, comments, ratings, watchlist) - pass `page: int` for single-page results with metadata (PaginatedResponse), or omit `page` to auto-fetch all results as a flat list
 
 ### 📺 Currently Trending Shows
 
@@ -255,6 +259,15 @@ add_user_ratings(rating_type="movies", items=[{"trakt_id": "314", "rating": 9}])
 
 # Remove existing ratings by ID
 remove_user_ratings(rating_type="movies", items=[{"trakt_id": "314"}])
+
+# Fetch user's watchlist with pagination and sorting
+fetch_user_watchlist(watchlist_type="all", sort_by="rank", sort_how="asc", page=1)
+
+# Add items to watchlist with optional notes (VIP)
+add_user_watchlist(watchlist_type="movies", items=[{"trakt_id": "314", "notes": "Must watch!"}])
+
+# Remove items from watchlist
+remove_user_watchlist(watchlist_type="movies", items=[{"trakt_id": "314"}])
 ```
 
 ### Check-in Tools
@@ -446,6 +459,12 @@ Once installed, you can ask Claude questions like:
 - "What was the last movie I watched?" (requires authentication)
 - "Show me my 10/10 rated movies" (requires authentication)
 - "Add a 9/10 rating for Breaking Bad" (requires authentication)
+- "Show me my watchlist" (requires authentication)
+- "What movies are on my watchlist?" (requires authentication)
+- "Add The Godfather to my watchlist" (requires authentication)
+- "Add Breaking Bad to my watchlist with a note" (requires authentication, VIP)
+- "Remove The Dark Knight from my watchlist" (requires authentication)
+- "Show me my watchlist sorted by when I added them" (requires authentication)
 - "Search for shows like 'Breaking Bad'"
 - "Check me in to Season 2 Episode 5 of Breaking Bad" (uses title)
 - "Check me in to Season 1 Episode 3 of show ID 1388 and share it on Twitter" (uses ID)
@@ -481,6 +500,9 @@ With authentication, you can access:
 - Check in to shows you're currently watching and track your progress
 - Personal viewing statistics
 - Share your viewing activity on social media platforms
+- Your complete watchlist with filtering and sorting options
+- Add and remove items from your watchlist
+- Add personal notes to watchlist items (VIP feature)
 
 All data is fetched directly from your Trakt account in real-time.
 
