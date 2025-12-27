@@ -1,6 +1,7 @@
 """Main server module for the Trakt MCP server."""
 
 import logging
+import sys
 
 from mcp.server.fastmcp import FastMCP
 
@@ -62,7 +63,8 @@ mcp = create_server()
 
 
 if __name__ == "__main__":
-    print("Starting Trakt MCP server...")
-    print("Run 'mcp dev server.py' to test with the MCP Inspector")
-    print("Run 'mcp install server.py' to install in Claude Desktop")
+    # Print to stderr to avoid polluting stdout (required for stdio transport)
+    print("Starting Trakt MCP server...", file=sys.stderr)
+    print("Run 'mcp dev server.py' to test with the MCP Inspector", file=sys.stderr)
+    print("Run 'mcp install server.py' to install in Claude Desktop", file=sys.stderr)
     mcp.run()

@@ -105,3 +105,5 @@ pip-delete-this-directory.txt
 # Trakt authentication tokens (contains OAuth secrets)
 auth_token.json
 auth_token.json.tmp
+
+phase-runner-script.sh
