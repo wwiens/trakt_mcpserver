@@ -439,7 +439,7 @@ Use the `:stdio` image for MCP clients that communicate via stdin/stdout:
 
 ```bash
 # Pull and run the stdio image
-docker run -i --rm --name trakt_mcpserver \
+docker run -i --rm --name trakt_mcpserver_stdio \
   -e TRAKT_CLIENT_ID=your_client_id \
   -e TRAKT_CLIENT_SECRET=your_client_secret \
   ghcr.io/wwiens/trakt_mcpserver:stdio
@@ -452,7 +452,7 @@ docker run -i --rm --name trakt_mcpserver \
     "trakt": {
       "command": "docker",
       "args": [
-        "run", "-i", "--rm", "--name", "trakt_mcpserver",
+        "run", "-i", "--rm", "--name", "trakt_mcpserver_stdio",
         "-e", "TRAKT_CLIENT_ID=your_client_id",
         "-e", "TRAKT_CLIENT_SECRET=your_client_secret",
         "ghcr.io/wwiens/trakt_mcpserver:stdio"

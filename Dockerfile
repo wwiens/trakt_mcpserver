@@ -27,11 +27,7 @@ WORKDIR /app
 # Change ownership of application files to non-root user
 RUN chown -R appuser:appuser /app
 
-# Copy .env file to container
-COPY .env.example /app/.env
-
-# Load environment variables from .env file
-# Default values (can be overridden at runtime)
+# Environment variables (pass at runtime via -e or --env-file)
 ENV TRAKT_CLIENT_ID=""
 ENV TRAKT_CLIENT_SECRET=""
 

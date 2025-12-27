@@ -83,7 +83,7 @@ cp .env.example .env
 docker build -f Dockerfile.stdio -t trakt_mcpserver:stdio .
 
 # Run stdio container
-docker run -i --rm --name trakt_mcpserver \
+docker run -i --rm --name trakt_mcpserver_stdio \
   -e TRAKT_CLIENT_ID=your_client_id \
   -e TRAKT_CLIENT_SECRET=your_client_secret \
   trakt_mcpserver:stdio

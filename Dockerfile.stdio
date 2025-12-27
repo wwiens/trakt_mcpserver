@@ -22,9 +22,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project (everything except what's in .dockerignore)
 COPY . .
 
-# Copy .env.example as fallback
-COPY .env.example /app/.env.example
-
 # Environment variables (can be overridden at runtime)
 ENV TRAKT_CLIENT_ID=""
 ENV TRAKT_CLIENT_SECRET=""
