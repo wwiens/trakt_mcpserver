@@ -8,14 +8,13 @@ from client.movies.popular import PopularMoviesClient
 from client.movies.stats import MovieStatsClient
 from client.movies.trending import TrendingMoviesClient
 from models.types.pagination import PaginatedResponse
-from utils.api.errors import InternalError
 
 
 @pytest.mark.asyncio
-async def test_trending_movies_no_page_returns_all(
+async def test_trending_movies_no_page_respects_limit(
     trakt_env: None, patched_httpx_client: MagicMock
 ):
-    """Test that trending movies with no page parameter auto-paginates all results."""
+    """Test that trending movies with no page parameter respects limit as max items."""
     # Mock first page response
     mock_response_page1 = MagicMock()
     mock_response_page1.json.return_value = [
@@ -30,35 +29,20 @@ async def test_trending_movies_no_page_returns_all(
     }
     mock_response_page1.raise_for_status = MagicMock()
 
-    # Mock second page response
-    mock_response_page2 = MagicMock()
-    mock_response_page2.json.return_value = [
-        {"watchers": 80, "movie": {"title": "Movie 3", "year": 2024}},
-        {"watchers": 70, "movie": {"title": "Movie 4", "year": 2024}},
-    ]
-    mock_response_page2.headers = {
-        "X-Pagination-Page": "2",
-        "X-Pagination-Limit": "2",
-        "X-Pagination-Page-Count": "2",
-        "X-Pagination-Item-Count": "4",
-    }
-    mock_response_page2.raise_for_status = MagicMock()
-
-    # Configure mock to return both pages
-    patched_httpx_client.get.side_effect = [mock_response_page1, mock_response_page2]
+    patched_httpx_client.get.return_value = mock_response_page1
 
     client = TrendingMoviesClient()
     result = await client.get_trending_movies(limit=2, page=None)
 
-    # Should return a plain list with all 4 movies
+    # Should return exactly 2 movies (capped by limit)
     assert isinstance(result, list)
-    assert len(result) == 4
+    assert len(result) == 2
     movie_0 = result[0].get("movie")
     assert movie_0 is not None
     assert movie_0["title"] == "Movie 1"
-    movie_3 = result[3].get("movie")
-    assert movie_3 is not None
-    assert movie_3["title"] == "Movie 4"
+    movie_1 = result[1].get("movie")
+    assert movie_1 is not None
+    assert movie_1["title"] == "Movie 2"
 
 
 @pytest.mark.asyncio
@@ -209,50 +193,37 @@ async def test_popular_movies_with_page_returns_paginated(
 
 
 @pytest.mark.asyncio
-async def test_favorited_movies_no_page_returns_all(
+async def test_favorited_movies_no_page_respects_limit(
     trakt_env: None, patched_httpx_client: MagicMock
 ):
-    """Test that favorited movies with no page parameter auto-paginates."""
-    # Mock two pages of responses
-    mock_response_page1 = MagicMock()
-    mock_response_page1.json.return_value = [
+    """Test that favorited movies with no page parameter respects limit."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
         {"user_count": 500, "movie": {"title": "Favorited 1", "year": 2024}},
         {"user_count": 450, "movie": {"title": "Favorited 2", "year": 2024}},
     ]
-    mock_response_page1.headers = {
+    mock_response.headers = {
         "X-Pagination-Page": "1",
         "X-Pagination-Limit": "2",
         "X-Pagination-Page-Count": "2",
         "X-Pagination-Item-Count": "3",
     }
-    mock_response_page1.raise_for_status = MagicMock()
+    mock_response.raise_for_status = MagicMock()
 
-    mock_response_page2 = MagicMock()
-    mock_response_page2.json.return_value = [
-        {"user_count": 400, "movie": {"title": "Favorited 3", "year": 2024}},
-    ]
-    mock_response_page2.headers = {
-        "X-Pagination-Page": "2",
-        "X-Pagination-Limit": "2",
-        "X-Pagination-Page-Count": "2",
-        "X-Pagination-Item-Count": "3",
-    }
-    mock_response_page2.raise_for_status = MagicMock()
-
-    patched_httpx_client.get.side_effect = [mock_response_page1, mock_response_page2]
+    patched_httpx_client.get.return_value = mock_response
 
     client = MovieStatsClient()
     result = await client.get_favorited_movies(limit=2, period="weekly", page=None)
 
-    # Should return a plain list with all 3 movies
+    # Should return exactly 2 movies (capped by limit)
     assert isinstance(result, list)
-    assert len(result) == 3
+    assert len(result) == 2
     movie_0 = result[0].get("movie")
     assert movie_0 is not None
     assert movie_0["title"] == "Favorited 1"
-    movie_2 = result[2].get("movie")
-    assert movie_2 is not None
-    assert movie_2["title"] == "Favorited 3"
+    movie_1 = result[1].get("movie")
+    assert movie_1 is not None
+    assert movie_1["title"] == "Favorited 2"
 
 
 @pytest.mark.asyncio
@@ -285,13 +256,12 @@ async def test_favorited_movies_pagination(
 
 
 @pytest.mark.asyncio
-async def test_played_movies_no_page_returns_all(
+async def test_played_movies_no_page_respects_limit(
     trakt_env: None, patched_httpx_client: MagicMock
 ):
-    """Test that played movies with no page parameter auto-paginates."""
-    # Mock two pages of responses
-    mock_response_page1 = MagicMock()
-    mock_response_page1.json.return_value = [
+    """Test that played movies with no page parameter respects limit."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
         {
             "watcher_count": 1000,
             "play_count": 5000,
@@ -303,44 +273,28 @@ async def test_played_movies_no_page_returns_all(
             "movie": {"title": "Played 2", "year": 2024},
         },
     ]
-    mock_response_page1.headers = {
+    mock_response.headers = {
         "X-Pagination-Page": "1",
         "X-Pagination-Limit": "2",
         "X-Pagination-Page-Count": "2",
         "X-Pagination-Item-Count": "3",
     }
-    mock_response_page1.raise_for_status = MagicMock()
+    mock_response.raise_for_status = MagicMock()
 
-    mock_response_page2 = MagicMock()
-    mock_response_page2.json.return_value = [
-        {
-            "watcher_count": 800,
-            "play_count": 4000,
-            "movie": {"title": "Played 3", "year": 2024},
-        },
-    ]
-    mock_response_page2.headers = {
-        "X-Pagination-Page": "2",
-        "X-Pagination-Limit": "2",
-        "X-Pagination-Page-Count": "2",
-        "X-Pagination-Item-Count": "3",
-    }
-    mock_response_page2.raise_for_status = MagicMock()
-
-    patched_httpx_client.get.side_effect = [mock_response_page1, mock_response_page2]
+    patched_httpx_client.get.return_value = mock_response
 
     client = MovieStatsClient()
     result = await client.get_played_movies(limit=2, period="weekly", page=None)
 
-    # Should return a plain list with all 3 movies
+    # Should return exactly 2 movies (capped by limit)
     assert isinstance(result, list)
-    assert len(result) == 3
+    assert len(result) == 2
     movie_0 = result[0].get("movie")
     assert movie_0 is not None
     assert movie_0["title"] == "Played 1"
-    movie_2 = result[2].get("movie")
-    assert movie_2 is not None
-    assert movie_2["title"] == "Played 3"
+    movie_1 = result[1].get("movie")
+    assert movie_1 is not None
+    assert movie_1["title"] == "Played 2"
 
 
 @pytest.mark.asyncio
@@ -374,50 +328,37 @@ async def test_played_movies_pagination(
 
 
 @pytest.mark.asyncio
-async def test_watched_movies_no_page_returns_all(
+async def test_watched_movies_no_page_respects_limit(
     trakt_env: None, patched_httpx_client: MagicMock
 ):
-    """Test that watched movies with no page parameter auto-paginates."""
-    # Mock two pages of responses
-    mock_response_page1 = MagicMock()
-    mock_response_page1.json.return_value = [
+    """Test that watched movies with no page parameter respects limit."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
         {"watcher_count": 2000, "movie": {"title": "Watched 1", "year": 2024}},
         {"watcher_count": 1900, "movie": {"title": "Watched 2", "year": 2024}},
     ]
-    mock_response_page1.headers = {
+    mock_response.headers = {
         "X-Pagination-Page": "1",
         "X-Pagination-Limit": "2",
         "X-Pagination-Page-Count": "2",
         "X-Pagination-Item-Count": "3",
     }
-    mock_response_page1.raise_for_status = MagicMock()
+    mock_response.raise_for_status = MagicMock()
 
-    mock_response_page2 = MagicMock()
-    mock_response_page2.json.return_value = [
-        {"watcher_count": 1800, "movie": {"title": "Watched 3", "year": 2024}},
-    ]
-    mock_response_page2.headers = {
-        "X-Pagination-Page": "2",
-        "X-Pagination-Limit": "2",
-        "X-Pagination-Page-Count": "2",
-        "X-Pagination-Item-Count": "3",
-    }
-    mock_response_page2.raise_for_status = MagicMock()
-
-    patched_httpx_client.get.side_effect = [mock_response_page1, mock_response_page2]
+    patched_httpx_client.get.return_value = mock_response
 
     client = MovieStatsClient()
     result = await client.get_watched_movies(limit=2, period="weekly", page=None)
 
-    # Should return a plain list with all 3 movies
+    # Should return exactly 2 movies (capped by limit)
     assert isinstance(result, list)
-    assert len(result) == 3
+    assert len(result) == 2
     movie_0 = result[0].get("movie")
     assert movie_0 is not None
     assert movie_0["title"] == "Watched 1"
-    movie_2 = result[2].get("movie")
-    assert movie_2 is not None
-    assert movie_2["title"] == "Watched 3"
+    movie_1 = result[1].get("movie")
+    assert movie_1 is not None
+    assert movie_1["title"] == "Watched 2"
 
 
 @pytest.mark.asyncio
@@ -499,8 +440,9 @@ async def test_empty_result(trakt_env: None, patched_httpx_client: MagicMock):
 async def test_multiple_pages_auto_paginate(
     trakt_env: None, patched_httpx_client: MagicMock
 ):
-    """Test auto-pagination fetches all pages correctly."""
-    # Create 3 pages of mock responses
+    """Test auto-pagination fetches multiple pages when limit exceeds page size."""
+    # Create 3 pages of mock responses (1 item each, total 3)
+    # Use limit=10 so we fetch all 3 items (not capped by limit)
     responses: list[MagicMock] = []
     for page_num in range(1, 4):
         mock_response = MagicMock()
@@ -522,9 +464,10 @@ async def test_multiple_pages_auto_paginate(
     patched_httpx_client.get.side_effect = responses
 
     client = TrendingMoviesClient()
-    result = await client.get_trending_movies(limit=1, page=None)
+    # Use limit=10 so we can fetch all 3 items without hitting max_items cap
+    result = await client.get_trending_movies(limit=10, page=None)
 
-    # Should fetch all 3 pages and return flat list
+    # Should fetch all 3 pages and return flat list (total items < limit)
     assert isinstance(result, list)
     assert len(result) == 3
     movie_0 = result[0].get("movie")
@@ -539,12 +482,14 @@ async def test_multiple_pages_auto_paginate(
 
 
 @pytest.mark.asyncio
-async def test_auto_pagination_max_pages_safety_cap(
+async def test_auto_pagination_max_pages_returns_collected_items(
     trakt_env: None, patched_httpx_client: MagicMock
 ):
-    """Test that InternalError is raised when max_pages limit is hit during auto-pagination.
+    """Test that hitting max_pages with max_items set returns collected items without error.
 
-    The RuntimeError from auto_paginate is wrapped in InternalError by the error handler.
+    When limit is passed (which sets max_items), hitting max_pages is graceful - we return
+    what we've collected so far. The error is only raised when max_items is None,
+    which can only happen at the base client level.
     """
     # Create 101 mock pages (more than DEFAULT_MAX_PAGES which is 100)
     responses: list[MagicMock] = []
@@ -569,11 +514,17 @@ async def test_auto_pagination_max_pages_safety_cap(
 
     client = TrendingMoviesClient()
 
-    # Should raise InternalError (wrapping RuntimeError) when hitting max_pages limit
-    with pytest.raises(InternalError) as exc_info:
-        await client.get_trending_movies(limit=1, page=None)
+    # With limit=200 (sets max_items=200), we fetch up to 100 pages (max_pages default)
+    # then return what we have (100 items) without error
+    result = await client.get_trending_movies(limit=200, page=None)
 
-    # Verify error message contains expected text about pagination safety limit
-    error_message = str(exc_info.value)
-    assert "Pagination safety limit reached" in error_message
-    assert "100 pages fetched" in error_message
+    # Should return all 100 items collected (one per page for 100 pages)
+    assert isinstance(result, list)
+    assert len(result) == 100
+    # Verify first and last items
+    movie_0 = result[0].get("movie")
+    assert movie_0 is not None
+    assert movie_0["title"] == "Movie 1"
+    movie_99 = result[99].get("movie")
+    assert movie_99 is not None
+    assert movie_99["title"] == "Movie 100"

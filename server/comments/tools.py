@@ -73,10 +73,11 @@ class EpisodeParam(BaseModel):
 class CommentsListOptionsParam(BaseModel):
     """Parameters for comment listing tools with validation constraints."""
 
-    limit: PositiveInt = Field(
+    limit: int = Field(
         DEFAULT_LIMIT,
-        le=200,
-        description="Maximum number of comments to return (1-200)",
+        ge=0,
+        le=100,
+        description="Maximum number of comments to return (0=all up to 100, default=10)",
     )
     sort: CommentSort = Field("newest", description="Sort order for comments")
     show_spoilers: bool = Field(False, description="Whether to show spoiler content")

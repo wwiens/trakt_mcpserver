@@ -2,7 +2,7 @@
 
 from typing import Literal, overload
 
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
+from config.api import DEFAULT_FETCH_ALL_LIMIT, DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import FavoritedShowWrapper, PlayedShowWrapper, WatchedShowWrapper
 from models.types.pagination import PaginatedResponse
@@ -43,24 +43,24 @@ class ShowStatsClient(BaseClient):
         """Get favorited shows from Trakt.
 
         Args:
-            limit: Items per page
+            limit: Maximum total items to return when page is None,
+                or items per page when page is specified.
             period: Time period for favorited shows
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating
+            page: Page number. If None, returns up to 'limit' total items.
+            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
-            If page is None: List of all favorited shows across all pages (up to max_pages)
+            If page is None: List of up to 'limit' favorited shows
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         if page is None:
+            # limit=0 means fetch all (up to safety cap)
             return await self.auto_paginate(
                 TRAKT_ENDPOINTS["shows_favorited"],
                 response_type=FavoritedShowWrapper,
-                params={"limit": limit, "period": period},
+                params={"limit": limit if limit > 0 else 100, "period": period},
                 max_pages=max_pages,
+                max_items=limit if limit > 0 else DEFAULT_FETCH_ALL_LIMIT,
             )
 
         # Single page with metadata
@@ -99,24 +99,24 @@ class ShowStatsClient(BaseClient):
         """Get played shows from Trakt.
 
         Args:
-            limit: Items per page
+            limit: Maximum total items to return when page is None,
+                or items per page when page is specified.
             period: Time period for played shows
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating
+            page: Page number. If None, returns up to 'limit' total items.
+            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
-            If page is None: List of all played shows across all pages (up to max_pages)
+            If page is None: List of up to 'limit' played shows
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         if page is None:
+            # limit=0 means fetch all (up to safety cap)
             return await self.auto_paginate(
                 TRAKT_ENDPOINTS["shows_played"],
                 response_type=PlayedShowWrapper,
-                params={"limit": limit, "period": period},
+                params={"limit": limit if limit > 0 else 100, "period": period},
                 max_pages=max_pages,
+                max_items=limit if limit > 0 else DEFAULT_FETCH_ALL_LIMIT,
             )
 
         # Single page with metadata
@@ -155,24 +155,24 @@ class ShowStatsClient(BaseClient):
         """Get watched shows from Trakt.
 
         Args:
-            limit: Items per page
+            limit: Maximum total items to return when page is None,
+                or items per page when page is specified.
             period: Time period for watched shows
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating
+            page: Page number. If None, returns up to 'limit' total items.
+            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
-            If page is None: List of all watched shows across all pages (up to max_pages)
+            If page is None: List of up to 'limit' watched shows
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         if page is None:
+            # limit=0 means fetch all (up to safety cap)
             return await self.auto_paginate(
                 TRAKT_ENDPOINTS["shows_watched"],
                 response_type=WatchedShowWrapper,
-                params={"limit": limit, "period": period},
+                params={"limit": limit if limit > 0 else 100, "period": period},
                 max_pages=max_pages,
+                max_items=limit if limit > 0 else DEFAULT_FETCH_ALL_LIMIT,
             )
 
         # Single page with metadata

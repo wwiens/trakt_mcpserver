@@ -3,7 +3,7 @@
 from typing import overload
 from urllib.parse import quote
 
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
+from config.api import DEFAULT_FETCH_ALL_LIMIT, DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
@@ -58,27 +58,27 @@ class CommentDetailsClient(BaseClient):
 
         Args:
             comment_id: The Trakt comment ID
-            limit: Maximum number of replies to return
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            limit: Maximum total replies when page is None,
+                or replies per page when page is specified.
+            page: Page number. If None, returns up to 'limit' total replies.
+            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
-            If page is None: List of all comment replies across all pages (up to max_pages)
+            If page is None: List of up to 'limit' comment replies
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         endpoint = TRAKT_ENDPOINTS["comment_replies"].replace(
             ":id", quote(comment_id, safe="")
         )
 
         if page is None:
+            # limit=0 means fetch all (up to safety cap)
             return await self.auto_paginate(
                 endpoint,
                 response_type=CommentResponse,
-                params={"limit": limit},
+                params={"limit": limit if limit > 0 else 100},
                 max_pages=max_pages,
+                max_items=limit if limit > 0 else DEFAULT_FETCH_ALL_LIMIT,
             )
         else:
             # Single page with metadata

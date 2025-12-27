@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, PositiveInt, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from client.shows.client import ShowsClient
 from client.shows.details import ShowDetailsClient
@@ -33,7 +33,12 @@ ToolHandler = Callable[..., Awaitable[str]]
 class LimitOnly(BaseModel):
     """Parameters for tools that only require a limit."""
 
-    limit: PositiveInt = DEFAULT_LIMIT
+    limit: int = Field(
+        DEFAULT_LIMIT,
+        ge=0,
+        le=100,
+        description="Maximum results to return (0=all up to 100, default=10)",
+    )
     page: int | None = Field(
         default=None, ge=1, description="Page number for pagination (optional)"
     )
@@ -42,7 +47,12 @@ class LimitOnly(BaseModel):
 class PeriodParams(BaseModel):
     """Parameters for tools that accept limit and time period."""
 
-    limit: PositiveInt = DEFAULT_LIMIT
+    limit: int = Field(
+        DEFAULT_LIMIT,
+        ge=0,
+        le=100,
+        description="Maximum results to return (0=all up to 100, default=10)",
+    )
     period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly"
     page: int | None = Field(
         default=None, ge=1, description="Page number for pagination (optional)"
@@ -79,12 +89,13 @@ async def fetch_trending_shows(
     """Fetch trending shows from Trakt.
 
     Args:
-        limit: Items per page (default: 10)
-        page: Page number (optional). If None, returns all results via auto-pagination.
+        limit: Maximum shows to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number. If None, auto-paginates up to 'limit' total shows.
+            If specified, returns that page with pagination metadata.
 
     Returns:
-        Information about trending shows. When page is None, returns all shows.
-        When page is specified, returns shows from that page with pagination metadata.
+        Information about trending shows.
     """
     # Validate parameters with Pydantic for normalization and constraints
     params = LimitOnly(limit=limit, page=page)
@@ -102,12 +113,13 @@ async def fetch_popular_shows(
     """Fetch popular shows from Trakt.
 
     Args:
-        limit: Items per page (default: 10)
-        page: Page number (optional). If None, returns all results via auto-pagination.
+        limit: Maximum shows to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number. If None, auto-paginates up to 'limit' total shows.
+            If specified, returns that page with pagination metadata.
 
     Returns:
-        Information about popular shows. When page is None, returns all shows.
-        When page is specified, returns shows from that page with pagination metadata.
+        Information about popular shows.
     """
     # Validate parameters with Pydantic for normalization and constraints
     params = LimitOnly(limit=limit, page=page)
@@ -127,13 +139,14 @@ async def fetch_favorited_shows(
     """Fetch most favorited shows from Trakt.
 
     Args:
-        limit: Items per page (default: 10)
+        limit: Maximum shows to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
         period: Time period for favorite calculation (daily, weekly, monthly, yearly, all)
-        page: Page number (optional). If None, returns all results via auto-pagination.
+        page: Page number. If None, auto-paginates up to 'limit' total shows.
+            If specified, returns that page with pagination metadata.
 
     Returns:
-        Information about most favorited shows. When page is None, returns all shows.
-        When page is specified, returns shows from that page with pagination metadata.
+        Information about most favorited shows.
     """
     # Validate parameters with Pydantic for normalization and constraints
     params = PeriodParams(limit=limit, period=period, page=page)
@@ -161,13 +174,14 @@ async def fetch_played_shows(
     """Fetch most played shows from Trakt.
 
     Args:
-        limit: Items per page (default: 10)
+        limit: Maximum shows to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
         period: Time period for most played (daily, weekly, monthly, yearly, all)
-        page: Page number (optional). If None, returns all results via auto-pagination.
+        page: Page number. If None, auto-paginates up to 'limit' total shows.
+            If specified, returns that page with pagination metadata.
 
     Returns:
-        Information about most played shows. When page is None, returns all shows.
-        When page is specified, returns shows from that page with pagination metadata.
+        Information about most played shows.
     """
     # Validate parameters with Pydantic for normalization and constraints
     params = PeriodParams(limit=limit, period=period, page=page)
@@ -187,13 +201,14 @@ async def fetch_watched_shows(
     """Fetch most watched shows from Trakt.
 
     Args:
-        limit: Items per page (default: 10)
+        limit: Maximum shows to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
         period: Time period for most watched (daily, weekly, monthly, yearly, all)
-        page: Page number (optional). If None, returns all results via auto-pagination.
+        page: Page number. If None, auto-paginates up to 'limit' total shows.
+            If specified, returns that page with pagination metadata.
 
     Returns:
-        Information about most watched shows. When page is None, returns all shows.
-        When page is specified, returns shows from that page with pagination metadata.
+        Information about most watched shows.
     """
     # Validate parameters with Pydantic for normalization and constraints
     params = PeriodParams(limit=limit, period=period, page=page)

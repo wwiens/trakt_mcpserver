@@ -7,6 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, ValidationError
 
 from client.user.client import UserClient
+from config.api import DEFAULT_FETCH_ALL_LIMIT
 from config.auth import AUTH_VERIFICATION_URL
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.user import UserFormatters
@@ -85,7 +86,9 @@ async def _fetch_user_items(
             auth_url=AUTH_VERIFICATION_URL,
         )
     items = await fetcher()
-    return formatter(items[:limit] if limit > 0 else items)
+    # Apply limit or safety cap when limit=0 (fetch all)
+    max_items = limit if limit > 0 else DEFAULT_FETCH_ALL_LIMIT
+    return formatter(items[:max_items])
 
 
 class UserLimitParam(BaseModel):
@@ -94,8 +97,8 @@ class UserLimitParam(BaseModel):
     limit: int = Field(
         0,
         ge=0,
-        le=1000,
-        description="Maximum number of items to return (0 for all)",
+        le=100,
+        description="Maximum number of items to return (0 for all, max 100)",
     )
 
 
