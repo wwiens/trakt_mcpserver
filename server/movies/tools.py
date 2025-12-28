@@ -3,10 +3,10 @@
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Literal, Self
+from typing import TYPE_CHECKING, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from client.movies.client import MoviesClient
 from client.movies.details import MovieDetailsClient
@@ -17,7 +17,7 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.movies import MovieFormatters
 from models.formatters.videos import VideoFormatters
-from server.base import BaseToolErrorMixin
+from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ ToolHandler = Callable[..., Awaitable[str]]
 
 
 # Pydantic models for parameter validation
-class LimitOnly(BaseModel):
+class LimitOnly(LimitPageValidatorMixin):
     """Parameters for tools that only require a limit."""
 
     limit: int = Field(
@@ -43,17 +43,8 @@ class LimitOnly(BaseModel):
         default=None, ge=1, description="Page number for pagination (optional)"
     )
 
-    @model_validator(mode="after")
-    def _validate_limit_with_page(self) -> Self:
-        if self.page is not None and self.limit == 0:
-            raise ValueError(
-                "limit must be > 0 when page is specified; limit=0 (fetch all) "
-                + "requires auto-pagination"
-            )
-        return self
 
-
-class PeriodParams(BaseModel):
+class PeriodParams(LimitPageValidatorMixin):
     """Parameters for tools that accept limit and time period."""
 
     limit: int = Field(
@@ -66,15 +57,6 @@ class PeriodParams(BaseModel):
     page: int | None = Field(
         default=None, ge=1, description="Page number for pagination (optional)"
     )
-
-    @model_validator(mode="after")
-    def _validate_limit_with_page(self) -> Self:
-        if self.page is not None and self.limit == 0:
-            raise ValueError(
-                "limit must be > 0 when page is specified; limit=0 (fetch all) "
-                + "requires auto-pagination"
-            )
-        return self
 
 
 class MovieIdParam(BaseModel):

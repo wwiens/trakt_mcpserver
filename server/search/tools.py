@@ -1,23 +1,23 @@
 """Search tools for the Trakt MCP server."""
 
 from collections.abc import Awaitable, Callable
-from typing import Any, Self
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
+from pydantic import Field, ValidationError, field_validator
 
 from client.search.client import SearchClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.search import SearchFormatters
-from server.base import BaseToolErrorMixin
+from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
 # Type alias for search tool handlers
 ToolHandler = Callable[[str, int, int | None], Awaitable[str]]
 
 
-class QueryParam(BaseModel):
+class QueryParam(LimitPageValidatorMixin):
     """Parameters for tools that require a search query and result limit."""
 
     query: str = Field(
@@ -39,6 +39,7 @@ class QueryParam(BaseModel):
     )
 
     @field_validator("query", mode="before")
+    @classmethod
     def _validate_query(cls, v: object) -> object:
         if isinstance(v, str):
             # Strip whitespace and check if result is empty
@@ -49,15 +50,6 @@ class QueryParam(BaseModel):
                 )
             return stripped
         return v
-
-    @model_validator(mode="after")
-    def _validate_limit_with_page(self) -> Self:
-        if self.page is not None and self.limit == 0:
-            raise ValueError(
-                "limit must be > 0 when page is specified; limit=0 (fetch all) "
-                + "requires auto-pagination"
-            )
-        return self
 
 
 def _validate_search_params(

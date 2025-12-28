@@ -83,6 +83,18 @@ class CommentsListOptionsParam(BaseModel):
     show_spoilers: bool = Field(False, description="Whether to show spoiler content")
 
 
+class RepliesListOptionsParam(BaseModel):
+    """Parameters for comment replies listing with validation constraints."""
+
+    limit: int = Field(
+        DEFAULT_LIMIT,
+        ge=0,
+        le=100,
+        description="Maximum number of replies to return (0=all up to 100, default=10)",
+    )
+    show_spoilers: bool = Field(False, description="Whether to show spoiler content")
+
+
 class PageParam(BaseModel):
     """Parameters for tools that support pagination."""
 
@@ -562,12 +574,13 @@ async def fetch_comment_replies(
     try:
         id_params = CommentIdParam(comment_id=comment_id)
         page_params = PageParam(page=page)
+        options = RepliesListOptionsParam(limit=limit, show_spoilers=show_spoilers)
         comment_id = id_params.comment_id
         page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "comment replies")
 
-    _validate_limit_page_combination(limit, page, "comment replies")
+    _validate_limit_page_combination(options.limit, page, "comment replies")
 
     client = CommentDetailsClient()
 
@@ -582,7 +595,7 @@ async def fetch_comment_replies(
 
     # Fetch replies data
     replies = await client.get_comment_replies(
-        comment_id, limit=limit, page=page, max_pages=max_pages
+        comment_id, limit=options.limit, page=page, max_pages=max_pages
     )
     _ensure_not_error_string(
         replies,
@@ -595,7 +608,7 @@ async def fetch_comment_replies(
         comment,
         with_replies=True,
         replies=replies,
-        show_spoilers=show_spoilers,
+        show_spoilers=options.show_spoilers,
     )
 
 

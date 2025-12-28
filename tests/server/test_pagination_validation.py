@@ -89,6 +89,10 @@ class TestPeriodParamsValidation:
         assert params.limit == 25
         assert params.page == 3
 
+        params = MoviesPeriodParams(limit=25, period="monthly", page=3)
+        assert params.limit == 25
+        assert params.page == 3
+
 
 class TestQueryParamValidation:
     """Test QueryParam model validation for limit=0 with page specified."""
