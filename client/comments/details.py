@@ -68,23 +68,19 @@ class CommentDetailsClient(BaseClient):
         Returns:
             If page is None: List of up to 'limit' comment replies
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination hits max_pages limit without completing
-                (only when limit > 0, not when limit=0 which is capped).
         """
         endpoint = TRAKT_ENDPOINTS["comment_replies"].replace(
             ":id", quote(comment_id, safe="")
         )
 
         if page is None:
-            api_limit, max_items = effective_limit(limit)
+            eff = effective_limit(limit)
             return await self.auto_paginate(
                 endpoint,
                 response_type=CommentResponse,
-                params={"limit": api_limit},
+                params={"limit": eff.api_limit},
                 max_pages=max_pages,
-                max_items=max_items,
+                max_items=eff.max_items,
             )
         else:
             # Single page with metadata

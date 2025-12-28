@@ -37,21 +37,17 @@ class SearchClient(BaseClient):
         Returns:
             If page is None: List of up to 'limit' search results
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination hits max_pages limit without completing
-                (only when limit > 0, not when limit=0 which is capped).
         """
         endpoint = f"{TRAKT_ENDPOINTS['search']}/{kind}"
 
         if page is None:
-            api_limit, max_items = effective_limit(limit)
+            eff = effective_limit(limit)
             return await self.auto_paginate(
                 endpoint,
                 response_type=SearchResult,
-                params={"query": query, "limit": api_limit},
+                params={"query": query, "limit": eff.api_limit},
                 max_pages=max_pages,
-                max_items=max_items,
+                max_items=eff.max_items,
             )
 
         return await self._make_paginated_request(
@@ -100,10 +96,6 @@ class SearchClient(BaseClient):
         Returns:
             If page is None: List of up to 'limit' search results
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination hits max_pages limit without completing
-                (only when limit > 0, not when limit=0 which is capped).
         """
         return await self._search("show", query, limit, page, max_pages)
 
@@ -147,9 +139,5 @@ class SearchClient(BaseClient):
         Returns:
             If page is None: List of up to 'limit' search results
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination hits max_pages limit without completing
-                (only when limit > 0, not when limit=0 which is capped).
         """
         return await self._search("movie", query, limit, page, max_pages)

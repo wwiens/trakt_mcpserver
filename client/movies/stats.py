@@ -54,19 +54,15 @@ class MovieStatsClient(BaseClient):
         Returns:
             If page is None: List of up to 'limit' favorited movies
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination hits max_pages limit without completing
-                (only when limit > 0, not when limit=0 which is capped).
         """
         if page is None:
-            api_limit, max_items = effective_limit(limit)
+            eff = effective_limit(limit)
             return await self.auto_paginate(
                 TRAKT_ENDPOINTS["movies_favorited"],
                 response_type=FavoritedMovieWrapper,
-                params={"limit": api_limit, "period": period},
+                params={"limit": eff.api_limit, "period": period},
                 max_pages=max_pages,
-                max_items=max_items,
+                max_items=eff.max_items,
             )
 
         # Single page with metadata
@@ -116,19 +112,15 @@ class MovieStatsClient(BaseClient):
         Returns:
             If page is None: List of up to 'limit' played movies
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination hits max_pages limit without completing
-                (only when limit > 0, not when limit=0 which is capped).
         """
         if page is None:
-            api_limit, max_items = effective_limit(limit)
+            eff = effective_limit(limit)
             return await self.auto_paginate(
                 TRAKT_ENDPOINTS["movies_played"],
                 response_type=PlayedMovieWrapper,
-                params={"limit": api_limit, "period": period},
+                params={"limit": eff.api_limit, "period": period},
                 max_pages=max_pages,
-                max_items=max_items,
+                max_items=eff.max_items,
             )
 
         # Single page with metadata
@@ -178,19 +170,15 @@ class MovieStatsClient(BaseClient):
         Returns:
             If page is None: List of up to 'limit' watched movies
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination hits max_pages limit without completing
-                (only when limit > 0, not when limit=0 which is capped).
         """
         if page is None:
-            api_limit, max_items = effective_limit(limit)
+            eff = effective_limit(limit)
             return await self.auto_paginate(
                 TRAKT_ENDPOINTS["movies_watched"],
                 response_type=WatchedMovieWrapper,
-                params={"limit": api_limit, "period": period},
+                params={"limit": eff.api_limit, "period": period},
                 max_pages=max_pages,
-                max_items=max_items,
+                max_items=eff.max_items,
             )
 
         # Single page with metadata
