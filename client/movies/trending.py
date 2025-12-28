@@ -40,9 +40,11 @@ class TrendingMoviesClient(BaseClient):
         """Get trending movies from Trakt.
 
         Args:
-            limit: Maximum total items to return when page is None,
-                or items per page when page is specified.
-            page: Page number. If None, returns up to 'limit' total items.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
+            page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:

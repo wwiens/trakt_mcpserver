@@ -43,10 +43,12 @@ class MovieStatsClient(BaseClient):
         """Get favorited movies from Trakt.
 
         Args:
-            limit: Maximum total items to return when page is None,
-                or items per page when page is specified.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
             period: Time period for favorited movies
-            page: Page number. If None, returns up to 'limit' total items.
+            page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
@@ -99,10 +101,12 @@ class MovieStatsClient(BaseClient):
         """Get played movies from Trakt.
 
         Args:
-            limit: Maximum total items to return when page is None,
-                or items per page when page is specified.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
             period: Time period for played movies
-            page: Page number. If None, returns up to 'limit' total items.
+            page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
@@ -155,10 +159,12 @@ class MovieStatsClient(BaseClient):
         """Get watched movies from Trakt.
 
         Args:
-            limit: Maximum total items to return when page is None,
-                or items per page when page is specified.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
             period: Time period for watched movies
-            page: Page number. If None, returns up to 'limit' total items.
+            page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:

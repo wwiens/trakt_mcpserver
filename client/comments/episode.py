@@ -57,9 +57,11 @@ class EpisodeCommentsClient(BaseClient):
             show_id: The Trakt show ID
             season: Season number
             episode: Episode number
-            limit: Maximum total comments when page is None,
-                or comments per page when page is specified.
-            page: Page number. If None, returns up to 'limit' total comments.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL comments to return
+                - Single page (page=N): Comments per page in the response
+                Use limit=0 with page=None to fetch all available results.
+            page: Page number for single-page mode, or None for auto-pagination.
             sort: Sort order for comments
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 

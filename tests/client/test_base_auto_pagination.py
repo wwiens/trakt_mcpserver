@@ -597,3 +597,263 @@ async def test_auto_paginate_max_items_no_error_at_max_pages():
 
         # Should have made exactly 5 requests (max_pages)
         assert mock_instance.get.call_count == 5
+
+
+@pytest.mark.asyncio
+async def test_auto_paginate_max_items_zero():
+    """Test that max_items=0 returns empty list after fetching first page."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
+        {"title": "Item 1", "id": 1},
+        {"title": "Item 2", "id": 2},
+        {"title": "Item 3", "id": 3},
+    ]
+    mock_response.headers = {
+        "X-Pagination-Page": "1",
+        "X-Pagination-Limit": "3",
+        "X-Pagination-Page-Count": "5",
+        "X-Pagination-Item-Count": "15",
+    }
+    mock_response.raise_for_status = MagicMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client_class,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client_class.return_value = mock_instance
+
+        client = StubClient()
+        result = await client.auto_paginate(
+            "/test/endpoint",
+            response_type=MockResponseItem,
+            params={"limit": 3},
+            max_items=0,  # Request 0 items
+        )
+
+        # Should return empty list (truncated to 0)
+        assert isinstance(result, list)
+        assert len(result) == 0
+
+        # Should still make one request (first page is always fetched)
+        assert mock_instance.get.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_auto_paginate_max_items_one():
+    """Test that max_items=1 returns exactly 1 item."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
+        {"title": "Item 1", "id": 1},
+        {"title": "Item 2", "id": 2},
+        {"title": "Item 3", "id": 3},
+        {"title": "Item 4", "id": 4},
+        {"title": "Item 5", "id": 5},
+    ]
+    mock_response.headers = {
+        "X-Pagination-Page": "1",
+        "X-Pagination-Limit": "5",
+        "X-Pagination-Page-Count": "10",
+        "X-Pagination-Item-Count": "50",
+    }
+    mock_response.raise_for_status = MagicMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client_class,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client_class.return_value = mock_instance
+
+        client = StubClient()
+        result = await client.auto_paginate(
+            "/test/endpoint",
+            response_type=MockResponseItem,
+            params={"limit": 5},
+            max_items=1,  # Request only 1 item
+        )
+
+        # Should return exactly 1 item
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["title"] == "Item 1"
+
+        # Should only make one request
+        assert mock_instance.get.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_auto_paginate_max_items_with_empty_first_page():
+    """Test behavior when first page is empty but max_items is set."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = []
+    mock_response.headers = {
+        "X-Pagination-Page": "1",
+        "X-Pagination-Limit": "10",
+        "X-Pagination-Page-Count": "1",
+        "X-Pagination-Item-Count": "0",
+    }
+    mock_response.raise_for_status = MagicMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client_class,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client_class.return_value = mock_instance
+
+        client = StubClient()
+        result = await client.auto_paginate(
+            "/test/endpoint",
+            response_type=MockResponseItem,
+            params={"limit": 10},
+            max_items=10,  # Request 10 items but none available
+        )
+
+        # Should return empty list
+        assert isinstance(result, list)
+        assert len(result) == 0
+
+        # Should only make one request
+        assert mock_instance.get.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_auto_paginate_max_items_larger_than_total():
+    """Test max_items larger than total available items returns all items."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
+        {"title": "Item 1", "id": 1},
+        {"title": "Item 2", "id": 2},
+        {"title": "Item 3", "id": 3},
+        {"title": "Item 4", "id": 4},
+        {"title": "Item 5", "id": 5},
+    ]
+    mock_response.headers = {
+        "X-Pagination-Page": "1",
+        "X-Pagination-Limit": "10",
+        "X-Pagination-Page-Count": "1",
+        "X-Pagination-Item-Count": "5",
+    }
+    mock_response.raise_for_status = MagicMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client_class,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client_class.return_value = mock_instance
+
+        client = StubClient()
+        result = await client.auto_paginate(
+            "/test/endpoint",
+            response_type=MockResponseItem,
+            params={"limit": 10},
+            max_items=1000,  # Request 1000 but only 5 available
+        )
+
+        # Should return all 5 available items
+        assert isinstance(result, list)
+        assert len(result) == 5
+        assert result[0]["title"] == "Item 1"
+        assert result[4]["title"] == "Item 5"
+
+        # Should only make one request
+        assert mock_instance.get.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_auto_paginate_max_items_exact_page_boundary():
+    """Test max_items equals exact sum of N complete pages (no extra fetch)."""
+    # Mock first page
+    mock_response_page1 = MagicMock()
+    mock_response_page1.json.return_value = [
+        {"title": "Item 1", "id": 1},
+        {"title": "Item 2", "id": 2},
+    ]
+    mock_response_page1.headers = {
+        "X-Pagination-Page": "1",
+        "X-Pagination-Limit": "2",
+        "X-Pagination-Page-Count": "5",
+        "X-Pagination-Item-Count": "10",
+    }
+    mock_response_page1.raise_for_status = MagicMock()
+
+    # Mock second page
+    mock_response_page2 = MagicMock()
+    mock_response_page2.json.return_value = [
+        {"title": "Item 3", "id": 3},
+        {"title": "Item 4", "id": 4},
+    ]
+    mock_response_page2.headers = {
+        "X-Pagination-Page": "2",
+        "X-Pagination-Limit": "2",
+        "X-Pagination-Page-Count": "5",
+        "X-Pagination-Item-Count": "10",
+    }
+    mock_response_page2.raise_for_status = MagicMock()
+
+    # Mock third page (should NOT be fetched)
+    mock_response_page3 = MagicMock()
+    mock_response_page3.json.return_value = [
+        {"title": "Item 5", "id": 5},
+        {"title": "Item 6", "id": 6},
+    ]
+    mock_response_page3.headers = {
+        "X-Pagination-Page": "3",
+        "X-Pagination-Limit": "2",
+        "X-Pagination-Page-Count": "5",
+        "X-Pagination-Item-Count": "10",
+    }
+    mock_response_page3.raise_for_status = MagicMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client_class,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(
+            side_effect=[mock_response_page1, mock_response_page2, mock_response_page3]
+        )
+        mock_instance.aclose = AsyncMock()
+        mock_client_class.return_value = mock_instance
+
+        client = StubClient()
+        result = await client.auto_paginate(
+            "/test/endpoint",
+            response_type=MockResponseItem,
+            params={"limit": 2},
+            max_items=4,  # Exactly 2 pages worth
+        )
+
+        # Should return exactly 4 items
+        assert isinstance(result, list)
+        assert len(result) == 4
+        assert result[0]["title"] == "Item 1"
+        assert result[3]["title"] == "Item 4"
+
+        # Should make exactly 2 requests (stops when 4 items >= max_items)
+        assert mock_instance.get.call_count == 2

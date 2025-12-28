@@ -43,10 +43,12 @@ class ShowStatsClient(BaseClient):
         """Get favorited shows from Trakt.
 
         Args:
-            limit: Maximum total items to return when page is None,
-                or items per page when page is specified.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
             period: Time period for favorited shows
-            page: Page number. If None, returns up to 'limit' total items.
+            page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
@@ -99,10 +101,12 @@ class ShowStatsClient(BaseClient):
         """Get played shows from Trakt.
 
         Args:
-            limit: Maximum total items to return when page is None,
-                or items per page when page is specified.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
             period: Time period for played shows
-            page: Page number. If None, returns up to 'limit' total items.
+            page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
@@ -155,10 +159,12 @@ class ShowStatsClient(BaseClient):
         """Get watched shows from Trakt.
 
         Args:
-            limit: Maximum total items to return when page is None,
-                or items per page when page is specified.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
             period: Time period for watched shows
-            page: Page number. If None, returns up to 'limit' total items.
+            page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:

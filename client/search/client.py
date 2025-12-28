@@ -27,8 +27,11 @@ class SearchClient(BaseClient):
         Args:
             kind: Type of content to search ("show" or "movie")
             query: Search query string
-            limit: Maximum total results when page is None, or per-page when specified
-            page: Page number. If None, returns up to 'limit' total results.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL results to return
+                - Single page (page=N): Results per page in the response
+                Use limit=0 with page=None to fetch all available results.
+            page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
@@ -83,9 +86,11 @@ class SearchClient(BaseClient):
 
         Args:
             query: Search query string
-            limit: Maximum total results when page is None,
-                or results per page when page is specified.
-            page: Page number. If None, returns up to 'limit' total results.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL results to return
+                - Single page (page=N): Results per page in the response
+                Use limit=0 with page=None to fetch all available results.
+            page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
@@ -124,9 +129,11 @@ class SearchClient(BaseClient):
 
         Args:
             query: Search query string
-            limit: Maximum total results when page is None,
-                or results per page when page is specified.
-            page: Page number. If None, returns up to 'limit' total results.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL results to return
+                - Single page (page=N): Results per page in the response
+                Use limit=0 with page=None to fetch all available results.
+            page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
