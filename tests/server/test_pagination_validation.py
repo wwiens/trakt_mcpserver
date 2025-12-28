@@ -7,11 +7,8 @@ since limit=0 means "fetch all" which requires auto-pagination (page=None).
 import pytest
 from pydantic import ValidationError
 
-from server.movies.tools import LimitOnly as MoviesLimitOnly
-from server.movies.tools import PeriodParams as MoviesPeriodParams
+from server.base import LimitOnly, PeriodParams
 from server.search.tools import QueryParam
-from server.shows.tools import LimitOnly as ShowsLimitOnly
-from server.shows.tools import PeriodParams as ShowsPeriodParams
 
 
 class TestLimitOnlyValidation:
@@ -19,13 +16,7 @@ class TestLimitOnlyValidation:
 
     def test_limit_zero_page_none_allowed(self) -> None:
         """Test that limit=0 with page=None is allowed (auto-pagination mode)."""
-        # Shows
-        params = ShowsLimitOnly(limit=0, page=None)
-        assert params.limit == 0
-        assert params.page is None
-
-        # Movies
-        params = MoviesLimitOnly(limit=0, page=None)
+        params = LimitOnly(limit=0, page=None)
         assert params.limit == 0
         assert params.page is None
 
@@ -34,26 +25,17 @@ class TestLimitOnlyValidation:
         with pytest.raises(
             ValidationError, match="limit must be > 0 when page is specified"
         ):
-            ShowsLimitOnly(limit=0, page=1)
-
-        with pytest.raises(
-            ValidationError, match="limit must be > 0 when page is specified"
-        ):
-            MoviesLimitOnly(limit=0, page=1)
+            LimitOnly(limit=0, page=1)
 
     def test_positive_limit_with_page_allowed(self) -> None:
         """Test that positive limit with page specified is allowed."""
-        params = ShowsLimitOnly(limit=10, page=1)
+        params = LimitOnly(limit=10, page=1)
         assert params.limit == 10
         assert params.page == 1
 
-        params = MoviesLimitOnly(limit=10, page=2)
-        assert params.limit == 10
-        assert params.page == 2
-
     def test_positive_limit_without_page_allowed(self) -> None:
         """Test that positive limit without page is allowed."""
-        params = ShowsLimitOnly(limit=50)
+        params = LimitOnly(limit=50)
         assert params.limit == 50
         assert params.page is None
 
@@ -63,11 +45,7 @@ class TestPeriodParamsValidation:
 
     def test_limit_zero_page_none_allowed(self) -> None:
         """Test that limit=0 with page=None is allowed (auto-pagination mode)."""
-        params = ShowsPeriodParams(limit=0, period="weekly", page=None)
-        assert params.limit == 0
-        assert params.page is None
-
-        params = MoviesPeriodParams(limit=0, period="monthly", page=None)
+        params = PeriodParams(limit=0, period="weekly", page=None)
         assert params.limit == 0
         assert params.page is None
 
@@ -76,20 +54,11 @@ class TestPeriodParamsValidation:
         with pytest.raises(
             ValidationError, match="limit must be > 0 when page is specified"
         ):
-            ShowsPeriodParams(limit=0, period="weekly", page=1)
-
-        with pytest.raises(
-            ValidationError, match="limit must be > 0 when page is specified"
-        ):
-            MoviesPeriodParams(limit=0, period="weekly", page=1)
+            PeriodParams(limit=0, period="weekly", page=1)
 
     def test_positive_limit_with_page_allowed(self) -> None:
         """Test that positive limit with page specified is allowed."""
-        params = ShowsPeriodParams(limit=25, period="weekly", page=3)
-        assert params.limit == 25
-        assert params.page == 3
-
-        params = MoviesPeriodParams(limit=25, period="monthly", page=3)
+        params = PeriodParams(limit=25, period="weekly", page=3)
         assert params.limit == 25
         assert params.page == 3
 
@@ -122,13 +91,13 @@ class TestEdgeCases:
 
     def test_limit_one_with_page_allowed(self) -> None:
         """Test that limit=1 (minimum valid) with page is allowed."""
-        params = ShowsLimitOnly(limit=1, page=1)
+        params = LimitOnly(limit=1, page=1)
         assert params.limit == 1
         assert params.page == 1
 
     def test_limit_max_with_page_allowed(self) -> None:
         """Test that limit=100 (maximum) with page is allowed."""
-        params = ShowsLimitOnly(limit=100, page=1)
+        params = LimitOnly(limit=100, page=1)
         assert params.limit == 100
         assert params.page == 1
 
@@ -136,14 +105,29 @@ class TestEdgeCases:
         """Test that limit=0 with various page numbers is rejected."""
         for page in [1, 2, 5, 10, 100]:
             with pytest.raises(ValidationError):
-                ShowsLimitOnly(limit=0, page=page)
+                LimitOnly(limit=0, page=page)
 
     def test_negative_limit_rejected_by_field_constraint(self) -> None:
         """Test that negative limit is rejected by ge=0 field constraint."""
         with pytest.raises(ValidationError, match="greater than or equal to 0"):
-            ShowsLimitOnly(limit=-1, page=None)
+            LimitOnly(limit=-1, page=None)
 
     def test_limit_exceeds_max_rejected(self) -> None:
         """Test that limit > 100 is rejected by le=100 field constraint."""
         with pytest.raises(ValidationError, match="less than or equal to 100"):
-            ShowsLimitOnly(limit=101, page=None)
+            LimitOnly(limit=101, page=None)
+
+    def test_page_zero_rejected_by_field_constraint(self) -> None:
+        """Test that page=0 is rejected by ge=1 field constraint."""
+        with pytest.raises(ValidationError, match="greater than or equal to 1"):
+            LimitOnly(limit=10, page=0)
+
+    def test_page_zero_rejected_for_period_params(self) -> None:
+        """Test that page=0 is rejected by ge=1 field constraint for PeriodParams."""
+        with pytest.raises(ValidationError, match="greater than or equal to 1"):
+            PeriodParams(limit=10, period="weekly", page=0)
+
+    def test_page_zero_rejected_for_query_param(self) -> None:
+        """Test that page=0 is rejected by ge=1 field constraint for QueryParam."""
+        with pytest.raises(ValidationError, match="greater than or equal to 1"):
+            QueryParam(query="test", limit=10, page=0)

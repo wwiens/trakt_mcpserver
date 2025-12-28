@@ -17,7 +17,7 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.movies import MovieFormatters
 from models.formatters.videos import VideoFormatters
-from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
+from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams
 from utils.api.errors import MCPError, handle_api_errors_func
 
 if TYPE_CHECKING:
@@ -27,36 +27,6 @@ logger = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
-
-
-# Pydantic models for parameter validation
-class LimitOnly(LimitPageValidatorMixin):
-    """Parameters for tools that only require a limit."""
-
-    limit: int = Field(
-        DEFAULT_LIMIT,
-        ge=0,
-        le=100,
-        description="Maximum results to return (0=all up to 100, default=10)",
-    )
-    page: int | None = Field(
-        default=None, ge=1, description="Page number for pagination (optional)"
-    )
-
-
-class PeriodParams(LimitPageValidatorMixin):
-    """Parameters for tools that accept limit and time period."""
-
-    limit: int = Field(
-        DEFAULT_LIMIT,
-        ge=0,
-        le=100,
-        description="Maximum results to return (0=all up to 100, default=10)",
-    )
-    period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly"
-    page: int | None = Field(
-        default=None, ge=1, description="Page number for pagination (optional)"
-    )
 
 
 class MovieIdParam(BaseModel):

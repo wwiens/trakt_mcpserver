@@ -16,7 +16,7 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.comments import CommentsFormatters
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
-from server.base import BaseToolErrorMixin
+from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
 from server.movies.tools import MovieIdParam
 from server.shows.tools import ShowIdParam
 from utils.api.errors import handle_api_errors_func
@@ -70,8 +70,8 @@ class EpisodeParam(BaseModel):
         return v.strip() if isinstance(v, str) else v
 
 
-class CommentsListOptionsParam(BaseModel):
-    """Parameters for comment listing tools with validation constraints."""
+class CommentsListOptionsParam(LimitPageValidatorMixin):
+    """Parameters for comment listing tools with pagination validation."""
 
     limit: int = Field(
         DEFAULT_LIMIT,
@@ -79,12 +79,17 @@ class CommentsListOptionsParam(BaseModel):
         le=100,
         description="Maximum number of comments to return (0=all up to 100, default=10)",
     )
+    page: int | None = Field(
+        default=None,
+        ge=1,
+        description="Optional page number for pagination (1-based, positive integer)",
+    )
     sort: CommentSort = Field("newest", description="Sort order for comments")
     show_spoilers: bool = Field(False, description="Whether to show spoiler content")
 
 
-class RepliesListOptionsParam(BaseModel):
-    """Parameters for comment replies listing with validation constraints."""
+class RepliesListOptionsParam(LimitPageValidatorMixin):
+    """Parameters for comment replies listing with pagination validation."""
 
     limit: int = Field(
         DEFAULT_LIMIT,
@@ -92,58 +97,12 @@ class RepliesListOptionsParam(BaseModel):
         le=100,
         description="Maximum number of replies to return (0=all up to 100, default=10)",
     )
-    show_spoilers: bool = Field(False, description="Whether to show spoiler content")
-
-
-class PageParam(BaseModel):
-    """Parameters for tools that support pagination."""
-
     page: int | None = Field(
         default=None,
         ge=1,
         description="Optional page number for pagination (1-based, positive integer)",
     )
-
-    @field_validator("page", mode="before")
-    @classmethod
-    def _validate_page(cls, v: object) -> object:
-        """Handle empty strings and None values; trim whitespace."""
-        if v is None:
-            return None
-        if isinstance(v, str):
-            v = v.strip()
-            if v == "":
-                return None
-        return v
-
-
-def _validate_limit_page_combination(
-    limit: int, page: int | None, context: str
-) -> None:
-    """Validate that limit=0 is not used with explicit page.
-
-    Args:
-        limit: The limit parameter value
-        page: The page parameter value (None for auto-pagination)
-        context: Context string for the error message
-
-    Raises:
-        BaseToolErrorMixin error: If limit=0 with page specified
-    """
-    if page is not None and limit == 0:
-        raise BaseToolErrorMixin.handle_validation_error(
-            f"Invalid parameters for {context}: limit must be > 0 when page is "
-            + "specified; limit=0 (fetch all) requires auto-pagination",
-            validation_errors=[
-                {
-                    "field": "limit",
-                    "message": "limit must be > 0 when page is specified",
-                    "type": "value_error",
-                    "input": limit,
-                }
-            ],
-            operation=f"{context.replace(' ', '_')}_validation",
-        )
+    show_spoilers: bool = Field(False, description="Whether to show spoiler content")
 
 
 def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
@@ -308,15 +267,11 @@ async def fetch_movie_comments(
     try:
         id_params = MovieIdParam(movie_id=movie_id)
         options = CommentsListOptionsParam(
-            limit=limit, sort=sort, show_spoilers=show_spoilers
+            limit=limit, page=page, sort=sort, show_spoilers=show_spoilers
         )
-        page_params = PageParam(page=page)
         movie_id = id_params.movie_id
-        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "movie comments")
-
-    _validate_limit_page_combination(options.limit, page, "movie comments")
 
     client = MovieCommentsClient()
 
@@ -327,7 +282,7 @@ async def fetch_movie_comments(
             movie_id,
             limit=options.limit,
             sort=options.sort,
-            page=page,
+            page=options.page,
             max_pages=max_pages,
         ),
         title=f"Movie ID: {movie_id}",
@@ -364,15 +319,11 @@ async def fetch_show_comments(
     try:
         id_params = ShowIdParam(show_id=show_id)
         options = CommentsListOptionsParam(
-            limit=limit, sort=sort, show_spoilers=show_spoilers
+            limit=limit, page=page, sort=sort, show_spoilers=show_spoilers
         )
-        page_params = PageParam(page=page)
         show_id = id_params.show_id
-        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "show comments")
-
-    _validate_limit_page_combination(options.limit, page, "show comments")
 
     client = ShowCommentsClient()
 
@@ -383,7 +334,7 @@ async def fetch_show_comments(
             show_id,
             limit=options.limit,
             sort=options.sort,
-            page=page,
+            page=options.page,
             max_pages=max_pages,
         ),
         title=f"Show ID: {show_id}",
@@ -422,15 +373,11 @@ async def fetch_season_comments(
     try:
         id_params = SeasonParam(show_id=show_id, season=season)
         options = CommentsListOptionsParam(
-            limit=limit, sort=sort, show_spoilers=show_spoilers
+            limit=limit, page=page, sort=sort, show_spoilers=show_spoilers
         )
-        page_params = PageParam(page=page)
         show_id, season = id_params.show_id, id_params.season
-        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "season comments")
-
-    _validate_limit_page_combination(options.limit, page, "season comments")
 
     client = SeasonCommentsClient()
 
@@ -442,7 +389,7 @@ async def fetch_season_comments(
             season,
             limit=options.limit,
             sort=options.sort,
-            page=page,
+            page=options.page,
             max_pages=max_pages,
         ),
         title=f"Show ID: {show_id} - Season {season}",
@@ -483,19 +430,15 @@ async def fetch_episode_comments(
     try:
         id_params = EpisodeParam(show_id=show_id, season=season, episode=episode)
         options = CommentsListOptionsParam(
-            limit=limit, sort=sort, show_spoilers=show_spoilers
+            limit=limit, page=page, sort=sort, show_spoilers=show_spoilers
         )
-        page_params = PageParam(page=page)
         show_id, season, episode = (
             id_params.show_id,
             id_params.season,
             id_params.episode,
         )
-        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "episode comments")
-
-    _validate_limit_page_combination(options.limit, page, "episode comments")
 
     client = EpisodeCommentsClient()
 
@@ -508,7 +451,7 @@ async def fetch_episode_comments(
             episode,
             limit=options.limit,
             sort=options.sort,
-            page=page,
+            page=options.page,
             max_pages=max_pages,
         ),
         title=f"Show ID: {show_id} - S{season:02d}E{episode:02d}",
@@ -573,14 +516,12 @@ async def fetch_comment_replies(
     """
     try:
         id_params = CommentIdParam(comment_id=comment_id)
-        page_params = PageParam(page=page)
-        options = RepliesListOptionsParam(limit=limit, show_spoilers=show_spoilers)
+        options = RepliesListOptionsParam(
+            limit=limit, page=page, show_spoilers=show_spoilers
+        )
         comment_id = id_params.comment_id
-        page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "comment replies")
-
-    _validate_limit_page_combination(options.limit, page, "comment replies")
 
     client = CommentDetailsClient()
 
@@ -595,7 +536,7 @@ async def fetch_comment_replies(
 
     # Fetch replies data
     replies = await client.get_comment_replies(
-        comment_id, limit=options.limit, page=page, max_pages=max_pages
+        comment_id, limit=options.limit, page=options.page, max_pages=max_pages
     )
     _ensure_not_error_string(
         replies,
