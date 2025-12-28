@@ -3,7 +3,7 @@
 from typing import overload
 from urllib.parse import quote
 
-from config.api import DEFAULT_FETCH_ALL_LIMIT, DEFAULT_LIMIT, DEFAULT_MAX_PAGES
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
@@ -68,19 +68,23 @@ class CommentDetailsClient(BaseClient):
         Returns:
             If page is None: List of up to 'limit' comment replies
             If page specified: Paginated response with metadata for that page
+
+        Raises:
+            RuntimeError: If auto-pagination hits max_pages limit without completing
+                (only when limit > 0, not when limit=0 which is capped).
         """
         endpoint = TRAKT_ENDPOINTS["comment_replies"].replace(
             ":id", quote(comment_id, safe="")
         )
 
         if page is None:
-            # limit=0 means fetch all (up to safety cap)
+            api_limit, max_items = effective_limit(limit)
             return await self.auto_paginate(
                 endpoint,
                 response_type=CommentResponse,
-                params={"limit": limit if limit > 0 else 100},
+                params={"limit": api_limit},
                 max_pages=max_pages,
-                max_items=limit if limit > 0 else DEFAULT_FETCH_ALL_LIMIT,
+                max_items=max_items,
             )
         else:
             # Single page with metadata
