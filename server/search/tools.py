@@ -1,10 +1,10 @@
 """Search tools for the Trakt MCP server."""
 
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, Self
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 from client.search.client import SearchClient
 from config.api import DEFAULT_LIMIT
@@ -50,6 +50,15 @@ class QueryParam(BaseModel):
             return stripped
         return v
 
+    @model_validator(mode="after")
+    def _validate_limit_with_page(self) -> Self:
+        if self.page is not None and self.limit == 0:
+            raise ValueError(
+                "limit must be > 0 when page is specified; limit=0 (fetch all) "
+                + "requires auto-pagination"
+            )
+        return self
+
 
 def _validate_search_params(
     query: str, limit: int, page: int | None, operation: str
@@ -60,7 +69,7 @@ def _validate_search_params(
     except ValidationError as e:
         validation_errors: list[dict[str, Any]] = [
             {
-                "field": str(err.get("loc", ["query"])[-1]),
+                "field": str(err.get("loc", ())[-1]) if err.get("loc") else "value",
                 "message": str(err.get("msg", "Invalid value")),
                 "type": str(err.get("type", "validation_error")),
                 "input": repr(err.get("input")),

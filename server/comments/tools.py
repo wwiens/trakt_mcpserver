@@ -105,6 +105,35 @@ class PageParam(BaseModel):
         return v
 
 
+def _validate_limit_page_combination(
+    limit: int, page: int | None, context: str
+) -> None:
+    """Validate that limit=0 is not used with explicit page.
+
+    Args:
+        limit: The limit parameter value
+        page: The page parameter value (None for auto-pagination)
+        context: Context string for the error message
+
+    Raises:
+        BaseToolErrorMixin error: If limit=0 with page specified
+    """
+    if page is not None and limit == 0:
+        raise BaseToolErrorMixin.handle_validation_error(
+            f"Invalid parameters for {context}: limit must be > 0 when page is "
+            + "specified; limit=0 (fetch all) requires auto-pagination",
+            validation_errors=[
+                {
+                    "field": "limit",
+                    "message": "limit must be > 0 when page is specified",
+                    "type": "value_error",
+                    "input": limit,
+                }
+            ],
+            operation=f"{context.replace(' ', '_')}_validation",
+        )
+
+
 def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
     """Handle validation errors with consistent formatting via BaseToolErrorMixin.
 
@@ -275,6 +304,8 @@ async def fetch_movie_comments(
     except ValidationError as e:
         _handle_validation_error(e, "movie comments")
 
+    _validate_limit_page_combination(options.limit, page, "movie comments")
+
     client = MovieCommentsClient()
 
     return await _fetch_and_format_comments(
@@ -328,6 +359,8 @@ async def fetch_show_comments(
         page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "show comments")
+
+    _validate_limit_page_combination(options.limit, page, "show comments")
 
     client = ShowCommentsClient()
 
@@ -384,6 +417,8 @@ async def fetch_season_comments(
         page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "season comments")
+
+    _validate_limit_page_combination(options.limit, page, "season comments")
 
     client = SeasonCommentsClient()
 
@@ -447,6 +482,8 @@ async def fetch_episode_comments(
         page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "episode comments")
+
+    _validate_limit_page_combination(options.limit, page, "episode comments")
 
     client = EpisodeCommentsClient()
 
@@ -529,6 +566,8 @@ async def fetch_comment_replies(
         page = page_params.page
     except ValidationError as e:
         _handle_validation_error(e, "comment replies")
+
+    _validate_limit_page_combination(limit, page, "comment replies")
 
     client = CommentDetailsClient()
 

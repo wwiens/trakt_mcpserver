@@ -3,10 +3,10 @@
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Self
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from client.movies.client import MoviesClient
 from client.movies.details import MovieDetailsClient
@@ -43,6 +43,15 @@ class LimitOnly(BaseModel):
         default=None, ge=1, description="Page number for pagination (optional)"
     )
 
+    @model_validator(mode="after")
+    def _validate_limit_with_page(self) -> Self:
+        if self.page is not None and self.limit == 0:
+            raise ValueError(
+                "limit must be > 0 when page is specified; limit=0 (fetch all) "
+                + "requires auto-pagination"
+            )
+        return self
+
 
 class PeriodParams(BaseModel):
     """Parameters for tools that accept limit and time period."""
@@ -57,6 +66,15 @@ class PeriodParams(BaseModel):
     page: int | None = Field(
         default=None, ge=1, description="Page number for pagination (optional)"
     )
+
+    @model_validator(mode="after")
+    def _validate_limit_with_page(self) -> Self:
+        if self.page is not None and self.limit == 0:
+            raise ValueError(
+                "limit must be > 0 when page is specified; limit=0 (fetch all) "
+                + "requires auto-pagination"
+            )
+        return self
 
 
 class MovieIdParam(BaseModel):

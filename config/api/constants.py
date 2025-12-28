@@ -29,13 +29,20 @@ def effective_limit(limit: int) -> EffectiveLimit:
     for the result cap (safety limit).
 
     Args:
-        limit: User-provided limit (0 = fetch all)
+        limit: User-provided limit (0 = fetch all, must be >= 0)
 
     Returns:
         EffectiveLimit with:
         - api_limit: The limit to send to API (uses max per page when fetching all)
         - max_items: Maximum items to return (capped at DEFAULT_FETCH_ALL_LIMIT)
+
+    Raises:
+        ValueError: If limit is negative
     """
+    if limit < 0:
+        raise ValueError(f"limit must be >= 0, got {limit}")
     if limit > 0:
         return EffectiveLimit(api_limit=limit, max_items=limit)
-    return EffectiveLimit(api_limit=MAX_API_PAGE_SIZE, max_items=DEFAULT_FETCH_ALL_LIMIT)
+    return EffectiveLimit(
+        api_limit=MAX_API_PAGE_SIZE, max_items=DEFAULT_FETCH_ALL_LIMIT
+    )
