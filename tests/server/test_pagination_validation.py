@@ -131,3 +131,18 @@ class TestEdgeCases:
         """Test that page=0 is rejected by ge=1 field constraint for QueryParam."""
         with pytest.raises(ValidationError, match="greater than or equal to 1"):
             QueryParam(query="test", limit=10, page=0)
+
+    def test_negative_page_rejected_by_field_constraint(self) -> None:
+        """Test that page=-1 is rejected by ge=1 field constraint."""
+        with pytest.raises(ValidationError, match="greater than or equal to 1"):
+            LimitOnly(limit=10, page=-1)
+
+    def test_negative_page_rejected_for_period_params(self) -> None:
+        """Test that page=-1 is rejected for PeriodParams."""
+        with pytest.raises(ValidationError, match="greater than or equal to 1"):
+            PeriodParams(limit=10, period="weekly", page=-1)
+
+    def test_negative_page_rejected_for_query_param(self) -> None:
+        """Test that page=-1 is rejected for QueryParam."""
+        with pytest.raises(ValidationError, match="greater than or equal to 1"):
+            QueryParam(query="test", limit=10, page=-1)

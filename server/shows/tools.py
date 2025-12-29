@@ -359,9 +359,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     async def fetch_trending_shows_tool(
         limit: int = DEFAULT_LIMIT, page: int | None = None
     ) -> str:
-        # Validate parameters with Pydantic
-        params = LimitOnly(limit=limit, page=page)
-        return await fetch_trending_shows(params.limit, params.page)
+        return await fetch_trending_shows(limit, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_popular_shows"],
@@ -371,9 +369,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     async def fetch_popular_shows_tool(
         limit: int = DEFAULT_LIMIT, page: int | None = None
     ) -> str:
-        # Validate parameters with Pydantic
-        params = LimitOnly(limit=limit, page=page)
-        return await fetch_popular_shows(params.limit, params.page)
+        return await fetch_popular_shows(limit, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_favorited_shows"],
@@ -385,9 +381,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
     ) -> str:
-        # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period, page=page)
-        return await fetch_favorited_shows(params.limit, params.period, params.page)
+        return await fetch_favorited_shows(limit, period, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_played_shows"],
@@ -399,9 +393,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
     ) -> str:
-        # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period, page=page)
-        return await fetch_played_shows(params.limit, params.period, params.page)
+        return await fetch_played_shows(limit, period, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_watched_shows"],
@@ -413,9 +405,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
     ) -> str:
-        # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period, page=page)
-        return await fetch_watched_shows(params.limit, params.period, params.page)
+        return await fetch_watched_shows(limit, period, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_ratings"],

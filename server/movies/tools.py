@@ -363,9 +363,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     async def fetch_trending_movies_tool(
         limit: int = DEFAULT_LIMIT, page: int | None = None
     ) -> str:
-        # Validate parameters with Pydantic
-        params = LimitOnly(limit=limit, page=page)
-        return await fetch_trending_movies(params.limit, params.page)
+        return await fetch_trending_movies(limit, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_popular_movies"],
@@ -375,9 +373,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     async def fetch_popular_movies_tool(
         limit: int = DEFAULT_LIMIT, page: int | None = None
     ) -> str:
-        # Validate parameters with Pydantic
-        params = LimitOnly(limit=limit, page=page)
-        return await fetch_popular_movies(params.limit, params.page)
+        return await fetch_popular_movies(limit, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_favorited_movies"],
@@ -389,9 +385,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
     ) -> str:
-        # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period, page=page)
-        return await fetch_favorited_movies(params.limit, params.period, params.page)
+        return await fetch_favorited_movies(limit, period, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_played_movies"],
@@ -403,9 +397,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
     ) -> str:
-        # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period, page=page)
-        return await fetch_played_movies(params.limit, params.period, params.page)
+        return await fetch_played_movies(limit, period, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_watched_movies"],
@@ -417,9 +409,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
     ) -> str:
-        # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period, page=page)
-        return await fetch_watched_movies(params.limit, params.period, params.page)
+        return await fetch_watched_movies(limit, period, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_movie_ratings"],
