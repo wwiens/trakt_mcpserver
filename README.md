@@ -473,21 +473,26 @@ docker run -i --rm --name trakt_mcpserver_stdio \
 Use the `:latest` image for HTTP-based access:
 
 ```bash
-# Build the image locally
-docker build -t trakt_mcpserver .
-
-# Run with SSE transport on port 8080
+# Option 1: Pull and run from GHCR (recommended)
 docker run -d --rm --name trakt_mcpserver \
   -e TRAKT_CLIENT_ID=your_client_id \
   -e TRAKT_CLIENT_SECRET=your_client_secret \
   -p 8080:8080 \
   ghcr.io/wwiens/trakt_mcpserver:latest
+
+# Option 2: Build locally and run
+docker build -t trakt_mcpserver .
+docker run -d --rm --name trakt_mcpserver \
+  -e TRAKT_CLIENT_ID=your_client_id \
+  -e TRAKT_CLIENT_SECRET=your_client_secret \
+  -p 8080:8080 \
+  trakt_mcpserver
 ```
 
 ### Using `docker compose`
 
 ```bash
-# Builds the docker image and starts the service
+# Builds the docker image using the default Dockerfile (SSE variant) and starts the service
 docker compose up
 ```
 
