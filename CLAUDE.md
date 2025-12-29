@@ -77,6 +77,28 @@ pip install -r requirements-dev.txt
 cp .env.example .env
 ```
 
+### Docker
+```bash
+# Build stdio image
+docker build -f Dockerfile.stdio -t trakt_mcpserver:stdio .
+
+# Run stdio container
+docker run -i --rm --name trakt_mcpserver_stdio \
+  -e TRAKT_CLIENT_ID=your_client_id \
+  -e TRAKT_CLIENT_SECRET=your_client_secret \
+  trakt_mcpserver:stdio
+
+# Build SSE image
+docker build -t trakt_mcpserver .
+
+# Run SSE container
+docker run -d --rm --name trakt_mcpserver \
+  -e TRAKT_CLIENT_ID=your_client_id \
+  -e TRAKT_CLIENT_SECRET=your_client_secret \
+  -p 8080:8080 \
+  trakt_mcpserver
+```
+
 ### Testing & Quality
 ```bash
 # Tests
