@@ -4,20 +4,20 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, PositiveInt, ValidationError, field_validator
+from pydantic import Field, ValidationError, field_validator
 
 from client.search.client import SearchClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.search import SearchFormatters
-from server.base import BaseToolErrorMixin
+from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
 # Type alias for search tool handlers
 ToolHandler = Callable[[str, int, int | None], Awaitable[str]]
 
 
-class QueryParam(BaseModel):
+class QueryParam(LimitPageValidatorMixin):
     """Parameters for tools that require a search query and result limit."""
 
     query: str = Field(
@@ -26,18 +26,20 @@ class QueryParam(BaseModel):
         max_length=200,
         description="Non-empty, non-whitespace search query",
     )
-    limit: PositiveInt = Field(
+    limit: int = Field(
         DEFAULT_LIMIT,
-        le=1000,
-        description="Maximum number of search results to return (1-1000)",
+        ge=0,
+        le=100,
+        description="Maximum results to return (0=all up to 100, default=10)",
     )
     page: int | None = Field(
         default=None,
         ge=1,
-        description="Page number for pagination (optional). If not provided, returns all results.",
+        description="Page number for pagination (optional). If not provided, auto-paginates.",
     )
 
     @field_validator("query", mode="before")
+    @classmethod
     def _validate_query(cls, v: object) -> object:
         if isinstance(v, str):
             # Strip whitespace and check if result is empty
@@ -59,7 +61,7 @@ def _validate_search_params(
     except ValidationError as e:
         validation_errors: list[dict[str, Any]] = [
             {
-                "field": str(err.get("loc", ["query"])[-1]),
+                "field": str(err.get("loc", ())[-1]) if err.get("loc") else "value",
                 "message": str(err.get("msg", "Invalid value")),
                 "type": str(err.get("type", "validation_error")),
                 "input": repr(err.get("input")),
@@ -122,8 +124,9 @@ async def search_shows(
 
     Args:
         query: Search query string
-        limit: Maximum number of results to return per page
-        page: Page number (optional). If not provided, returns all results.
+        limit: Maximum results to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number (optional). If not provided, auto-paginates.
 
     Returns:
         Formatted search results
@@ -151,8 +154,9 @@ async def search_movies(
 
     Args:
         query: Search query string
-        limit: Maximum number of results to return per page
-        page: Page number (optional). If not provided, returns all results.
+        limit: Maximum results to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number (optional). If not provided, auto-paginates.
 
     Returns:
         Formatted search results

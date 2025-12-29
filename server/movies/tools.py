@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, PositiveInt, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from client.movies.client import MoviesClient
 from client.movies.details import MovieDetailsClient
@@ -17,7 +17,7 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.movies import MovieFormatters
 from models.formatters.videos import VideoFormatters
-from server.base import BaseToolErrorMixin
+from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams
 from utils.api.errors import MCPError, handle_api_errors_func
 
 if TYPE_CHECKING:
@@ -27,26 +27,6 @@ logger = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
-
-
-# Pydantic models for parameter validation
-class LimitOnly(BaseModel):
-    """Parameters for tools that only require a limit."""
-
-    limit: PositiveInt = DEFAULT_LIMIT
-    page: int | None = Field(
-        default=None, ge=1, description="Page number for pagination (optional)"
-    )
-
-
-class PeriodParams(BaseModel):
-    """Parameters for tools that accept limit and time period."""
-
-    limit: PositiveInt = DEFAULT_LIMIT
-    period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly"
-    page: int | None = Field(
-        default=None, ge=1, description="Page number for pagination (optional)"
-    )
 
 
 class MovieIdParam(BaseModel):
@@ -79,12 +59,13 @@ async def fetch_trending_movies(
     """Fetch trending movies from Trakt.
 
     Args:
-        limit: Items per page (default: 10)
-        page: Page number (optional). If None, returns all results via auto-pagination.
+        limit: Maximum movies to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number. If None, auto-paginates up to 'limit' total movies.
+            If specified, returns that page with pagination metadata.
 
     Returns:
-        Information about trending movies. When page is None, returns all movies.
-        When page is specified, returns movies from that page with pagination metadata.
+        Information about trending movies.
     """
     # Validate parameters with Pydantic for normalization and constraints
     params = LimitOnly(limit=limit, page=page)
@@ -102,12 +83,13 @@ async def fetch_popular_movies(
     """Fetch popular movies from Trakt.
 
     Args:
-        limit: Items per page (default: 10)
-        page: Page number (optional). If None, returns all results via auto-pagination.
+        limit: Maximum movies to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number. If None, auto-paginates up to 'limit' total movies.
+            If specified, returns that page with pagination metadata.
 
     Returns:
-        Information about popular movies. When page is None, returns all movies.
-        When page is specified, returns movies from that page with pagination metadata.
+        Information about popular movies.
     """
     # Validate parameters with Pydantic for normalization and constraints
     params = LimitOnly(limit=limit, page=page)
@@ -127,13 +109,14 @@ async def fetch_favorited_movies(
     """Fetch most favorited movies from Trakt.
 
     Args:
-        limit: Items per page (default: 10)
+        limit: Maximum movies to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
         period: Time period for favorite calculation (daily, weekly, monthly, yearly, all)
-        page: Page number (optional). If None, returns all results via auto-pagination.
+        page: Page number. If None, auto-paginates up to 'limit' total movies.
+            If specified, returns that page with pagination metadata.
 
     Returns:
-        Information about most favorited movies. When page is None, returns all movies.
-        When page is specified, returns movies from that page with pagination metadata.
+        Information about most favorited movies.
     """
     # Validate parameters with Pydantic for normalization and constraints
     params = PeriodParams(limit=limit, period=period, page=page)
@@ -161,13 +144,14 @@ async def fetch_played_movies(
     """Fetch most played movies from Trakt.
 
     Args:
-        limit: Items per page (default: 10)
+        limit: Maximum movies to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
         period: Time period for most played (daily, weekly, monthly, yearly, all)
-        page: Page number (optional). If None, returns all results via auto-pagination.
+        page: Page number. If None, auto-paginates up to 'limit' total movies.
+            If specified, returns that page with pagination metadata.
 
     Returns:
-        Information about most played movies. When page is None, returns all movies.
-        When page is specified, returns movies from that page with pagination metadata.
+        Information about most played movies.
     """
     # Validate parameters with Pydantic for normalization and constraints
     params = PeriodParams(limit=limit, period=period, page=page)
@@ -187,13 +171,14 @@ async def fetch_watched_movies(
     """Fetch most watched movies from Trakt.
 
     Args:
-        limit: Items per page (default: 10)
+        limit: Maximum movies to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
         period: Time period for most watched (daily, weekly, monthly, yearly, all)
-        page: Page number (optional). If None, returns all results via auto-pagination.
+        page: Page number. If None, auto-paginates up to 'limit' total movies.
+            If specified, returns that page with pagination metadata.
 
     Returns:
-        Information about most watched movies. When page is None, returns all movies.
-        When page is specified, returns movies from that page with pagination metadata.
+        Information about most watched movies.
     """
     # Validate parameters with Pydantic for normalization and constraints
     params = PeriodParams(limit=limit, period=period, page=page)
@@ -378,9 +363,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     async def fetch_trending_movies_tool(
         limit: int = DEFAULT_LIMIT, page: int | None = None
     ) -> str:
-        # Validate parameters with Pydantic
-        params = LimitOnly(limit=limit, page=page)
-        return await fetch_trending_movies(params.limit, params.page)
+        return await fetch_trending_movies(limit, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_popular_movies"],
@@ -390,9 +373,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     async def fetch_popular_movies_tool(
         limit: int = DEFAULT_LIMIT, page: int | None = None
     ) -> str:
-        # Validate parameters with Pydantic
-        params = LimitOnly(limit=limit, page=page)
-        return await fetch_popular_movies(params.limit, params.page)
+        return await fetch_popular_movies(limit, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_favorited_movies"],
@@ -404,9 +385,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
     ) -> str:
-        # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period, page=page)
-        return await fetch_favorited_movies(params.limit, params.period, params.page)
+        return await fetch_favorited_movies(limit, period, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_played_movies"],
@@ -418,9 +397,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
     ) -> str:
-        # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period, page=page)
-        return await fetch_played_movies(params.limit, params.period, params.page)
+        return await fetch_played_movies(limit, period, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_watched_movies"],
@@ -432,9 +409,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
         page: int | None = None,
     ) -> str:
-        # Validate parameters with Pydantic
-        params = PeriodParams(limit=limit, period=period, page=page)
-        return await fetch_watched_movies(params.limit, params.period, params.page)
+        return await fetch_watched_movies(limit, period, page)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_movie_ratings"],

@@ -2,7 +2,7 @@
 
 from typing import Literal, overload
 
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import FavoritedMovieWrapper, PlayedMovieWrapper, WatchedMovieWrapper
 from models.types.pagination import PaginatedResponse
@@ -43,24 +43,26 @@ class MovieStatsClient(BaseClient):
         """Get favorited movies from Trakt.
 
         Args:
-            limit: Items per page
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
             period: Time period for favorited movies
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating
+            page: Page number for single-page mode, or None for auto-pagination.
+            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
-            If page is None: List of all favorited movies across all pages (up to max_pages)
+            If page is None: List of up to 'limit' favorited movies
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         if page is None:
+            eff = effective_limit(limit)
             return await self.auto_paginate(
                 TRAKT_ENDPOINTS["movies_favorited"],
                 response_type=FavoritedMovieWrapper,
-                params={"limit": limit, "period": period},
+                params={"limit": eff.api_limit, "period": period},
                 max_pages=max_pages,
+                max_items=eff.max_items,
             )
 
         # Single page with metadata
@@ -99,24 +101,26 @@ class MovieStatsClient(BaseClient):
         """Get played movies from Trakt.
 
         Args:
-            limit: Items per page
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
             period: Time period for played movies
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating
+            page: Page number for single-page mode, or None for auto-pagination.
+            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
-            If page is None: List of all played movies across all pages (up to max_pages)
+            If page is None: List of up to 'limit' played movies
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         if page is None:
+            eff = effective_limit(limit)
             return await self.auto_paginate(
                 TRAKT_ENDPOINTS["movies_played"],
                 response_type=PlayedMovieWrapper,
-                params={"limit": limit, "period": period},
+                params={"limit": eff.api_limit, "period": period},
                 max_pages=max_pages,
+                max_items=eff.max_items,
             )
 
         # Single page with metadata
@@ -155,24 +159,26 @@ class MovieStatsClient(BaseClient):
         """Get watched movies from Trakt.
 
         Args:
-            limit: Items per page
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
             period: Time period for watched movies
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating
+            page: Page number for single-page mode, or None for auto-pagination.
+            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
-            If page is None: List of all watched movies across all pages (up to max_pages)
+            If page is None: List of up to 'limit' watched movies
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         if page is None:
+            eff = effective_limit(limit)
             return await self.auto_paginate(
                 TRAKT_ENDPOINTS["movies_watched"],
                 response_type=WatchedMovieWrapper,
-                params={"limit": limit, "period": period},
+                params={"limit": eff.api_limit, "period": period},
                 max_pages=max_pages,
+                max_items=eff.max_items,
             )
 
         # Single page with metadata
