@@ -1,4 +1,4 @@
-"""Tests for BaseClient.auto_paginate method."""
+"""Tests for BaseClient.auto_paginate method - basic functionality."""
 
 import os
 from typing import TypedDict
@@ -9,15 +9,15 @@ import pytest
 from client.base import BaseClient
 
 
-class MockResponse(TypedDict):
-    """Test response type for auto-pagination tests."""
+class MockResponseItem(TypedDict):
+    """Mock response type for auto-pagination tests."""
 
     title: str
     id: int
 
 
-class MockClient(BaseClient):
-    """Testable subclass of BaseClient for direct testing."""
+class StubClient(BaseClient):
+    """Stub subclass of BaseClient for direct testing."""
 
     pass
 
@@ -50,9 +50,9 @@ async def test_auto_paginate_single_page():
         mock_instance.aclose = AsyncMock()
         mock_client_class.return_value = mock_instance
 
-        client = MockClient()
+        client = StubClient()
         result = await client.auto_paginate(
-            "/test/endpoint", response_type=MockResponse, params={"limit": 2}
+            "/test/endpoint", response_type=MockResponseItem, params={"limit": 2}
         )
 
         # Should return all items from single page
@@ -123,9 +123,9 @@ async def test_auto_paginate_multiple_pages():
         mock_instance.aclose = AsyncMock()
         mock_client_class.return_value = mock_instance
 
-        client = MockClient()
+        client = StubClient()
         result = await client.auto_paginate(
-            "/test/endpoint", response_type=MockResponse, params={"limit": 2}
+            "/test/endpoint", response_type=MockResponseItem, params={"limit": 2}
         )
 
         # Should return all items from all pages
@@ -164,9 +164,9 @@ async def test_auto_paginate_empty_results():
         mock_instance.aclose = AsyncMock()
         mock_client_class.return_value = mock_instance
 
-        client = MockClient()
+        client = StubClient()
         result = await client.auto_paginate(
-            "/test/endpoint", response_type=MockResponse, params={"limit": 10}
+            "/test/endpoint", response_type=MockResponseItem, params={"limit": 10}
         )
 
         # Should return empty list
@@ -216,9 +216,9 @@ async def test_auto_paginate_uses_server_next_page():
         mock_instance.aclose = AsyncMock()
         mock_client_class.return_value = mock_instance
 
-        client = MockClient()
+        client = StubClient()
         result = await client.auto_paginate(
-            "/test/endpoint", response_type=MockResponse, params={"limit": 1}
+            "/test/endpoint", response_type=MockResponseItem, params={"limit": 1}
         )
 
         # Should successfully fetch both pages
@@ -262,10 +262,10 @@ async def test_auto_paginate_preserves_params():
         mock_instance.aclose = AsyncMock()
         mock_client_class.return_value = mock_instance
 
-        client = MockClient()
+        client = StubClient()
         result = await client.auto_paginate(
             "/test/endpoint",
-            response_type=MockResponse,
+            response_type=MockResponseItem,
             params={"limit": 1, "period": "weekly", "sort": "newest"},
         )
 
@@ -314,7 +314,7 @@ async def test_auto_paginate_max_pages_safety_guard():
         mock_instance.aclose = AsyncMock()
         mock_client_class.return_value = mock_instance
 
-        client = MockClient()
+        client = StubClient()
 
         # Should raise RuntimeError when hitting max_pages limit
         with pytest.raises(
@@ -323,7 +323,7 @@ async def test_auto_paginate_max_pages_safety_guard():
         ):
             await client.auto_paginate(
                 "/test/endpoint",
-                response_type=MockResponse,
+                response_type=MockResponseItem,
                 params={"limit": 1},
                 max_pages=5,
             )
@@ -357,9 +357,9 @@ async def test_auto_paginate_with_none_params():
         mock_instance.aclose = AsyncMock()
         mock_client_class.return_value = mock_instance
 
-        client = MockClient()
+        client = StubClient()
         result = await client.auto_paginate(
-            "/test/endpoint", response_type=MockResponse, params=None
+            "/test/endpoint", response_type=MockResponseItem, params=None
         )
 
         # Should return results

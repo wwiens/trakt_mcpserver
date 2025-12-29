@@ -3,7 +3,7 @@
 from typing import overload
 from urllib.parse import quote
 
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
@@ -49,17 +49,17 @@ class ShowCommentsClient(BaseClient):
 
         Args:
             show_id: The Trakt show ID
-            limit: Maximum number of comments to return
-            page: Page number (optional). If None, returns all results via auto-pagination.
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL comments to return
+                - Single page (page=N): Comments per page in the response
+                Use limit=0 with page=None to fetch all available results.
+            page: Page number for single-page mode, or None for auto-pagination.
             sort: Sort order for comments
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
-            If page is None: List of all show comments across all pages (up to max_pages)
+            If page is None: List of up to 'limit' show comments
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         endpoint = (
             TRAKT_ENDPOINTS["comments_show"]
@@ -68,11 +68,13 @@ class ShowCommentsClient(BaseClient):
         )
 
         if page is None:
+            eff = effective_limit(limit)
             return await self.auto_paginate(
                 endpoint,
                 response_type=CommentResponse,
-                params={"limit": limit},
+                params={"limit": eff.api_limit},
                 max_pages=max_pages,
+                max_items=eff.max_items,
             )
         else:
             # Single page with metadata

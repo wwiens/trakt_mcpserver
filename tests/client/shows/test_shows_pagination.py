@@ -12,35 +12,20 @@ from models.types.pagination import PaginatedResponse
 
 
 @pytest.mark.asyncio
-async def test_trending_shows_no_page_returns_all():
-    """Test that trending shows with no page parameter auto-paginates all results."""
-    # Mock first page response
-    mock_response_page1 = MagicMock()
-    mock_response_page1.json.return_value = [
+async def test_trending_shows_no_page_respects_limit():
+    """Test that trending shows with no page parameter respects limit as max items."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
         {"watchers": 100, "show": {"title": "Show 1", "year": 2024}},
         {"watchers": 90, "show": {"title": "Show 2", "year": 2024}},
     ]
-    mock_response_page1.headers = {
+    mock_response.headers = {
         "X-Pagination-Page": "1",
         "X-Pagination-Limit": "2",
         "X-Pagination-Page-Count": "2",
         "X-Pagination-Item-Count": "4",
     }
-    mock_response_page1.raise_for_status = MagicMock()
-
-    # Mock second page response
-    mock_response_page2 = MagicMock()
-    mock_response_page2.json.return_value = [
-        {"watchers": 80, "show": {"title": "Show 3", "year": 2024}},
-        {"watchers": 70, "show": {"title": "Show 4", "year": 2024}},
-    ]
-    mock_response_page2.headers = {
-        "X-Pagination-Page": "2",
-        "X-Pagination-Limit": "2",
-        "X-Pagination-Page-Count": "2",
-        "X-Pagination-Item-Count": "4",
-    }
-    mock_response_page2.raise_for_status = MagicMock()
+    mock_response.raise_for_status = MagicMock()
 
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -49,11 +34,8 @@ async def test_trending_shows_no_page_returns_all():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
         mock_instance = MagicMock()
-        mock_instance.get = AsyncMock(
-            side_effect=[mock_response_page1, mock_response_page2]
-        )
+        mock_instance.get = AsyncMock(return_value=mock_response)
         mock_instance.post = AsyncMock()
         mock_instance.aclose = AsyncMock()
         mock_client.return_value = mock_instance
@@ -61,15 +43,15 @@ async def test_trending_shows_no_page_returns_all():
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=2, page=None)
 
-        # Should return a plain list with all 4 shows
+        # Should return exactly 2 shows (capped by limit)
         assert isinstance(result, list)
-        assert len(result) == 4
+        assert len(result) == 2
         show_0 = result[0].get("show")
         assert show_0 is not None
         assert show_0["title"] == "Show 1"
-        show_3 = result[3].get("show")
-        assert show_3 is not None
-        assert show_3["title"] == "Show 4"
+        show_1 = result[1].get("show")
+        assert show_1 is not None
+        assert show_1["title"] == "Show 2"
 
 
 @pytest.mark.asyncio
@@ -460,8 +442,9 @@ async def test_empty_result():
 
 @pytest.mark.asyncio
 async def test_multiple_pages_auto_paginate():
-    """Test auto-pagination fetches all pages correctly."""
-    # Create 3 pages of mock responses
+    """Test auto-pagination fetches multiple pages when limit exceeds page size."""
+    # Create 3 pages of mock responses (1 item each, total 3)
+    # Use limit=10 so we fetch all 3 items (not capped by limit)
     responses: list[MagicMock] = []
     for page_num in range(1, 4):
         mock_response = MagicMock()
@@ -487,7 +470,6 @@ async def test_multiple_pages_auto_paginate():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.get = AsyncMock(side_effect=responses)
         mock_instance.post = AsyncMock()
@@ -495,9 +477,10 @@ async def test_multiple_pages_auto_paginate():
         mock_client.return_value = mock_instance
 
         client = TrendingShowsClient()
-        result = await client.get_trending_shows(limit=1, page=None)
+        # Use limit=10 so we can fetch all 3 items without hitting max_items cap
+        result = await client.get_trending_shows(limit=10, page=None)
 
-        # Should fetch all 3 pages and return flat list
+        # Should fetch all 3 pages and return flat list (total items < limit)
         assert isinstance(result, list)
         assert len(result) == 3
         show_0 = result[0].get("show")

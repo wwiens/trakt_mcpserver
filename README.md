@@ -109,7 +109,10 @@ Add to your Claude Desktop MCP configuration file:
 - Provides tools for fetching real-time entertainment information
 - Enables AI models to offer personalized entertainment recommendations
 - Simple authentication and logout process
-- **Pagination support** for list endpoints (trending, popular, favorited, played, watched, search, comments, ratings, watchlist) - pass `page: int` for single-page results with metadata (PaginatedResponse), or omit `page` to auto-fetch all results as a flat list
+- **Pagination support** for list endpoints (trending, popular, favorited, played, watched, search, comments, ratings, watchlist):
+  - Pass `page: int` for single-page results with pagination metadata
+  - Omit `page` to auto-paginate and return up to `limit` total items as a flat list
+  - Use `limit=0` to fetch all available results (capped at 100 for safety)
 
 ### 🔥 Real-Time Trending Data
 - Access currently trending TV shows with live viewer counts
@@ -160,8 +163,11 @@ MCP tools are interactive functions that AI models can call with parameters. Use
 <summary><strong>Show Tools</strong></summary>
 
 ```python
-# Get trending shows: auto-paginate all results (omit page parameter)
+# Get trending shows: auto-paginate up to 10 results
 fetch_trending_shows(limit=10)
+
+# Get trending shows: fetch ALL results (no limit)
+fetch_trending_shows(limit=0)
 
 # Get trending shows: single page with pagination metadata
 fetch_trending_shows(limit=10, page=1)

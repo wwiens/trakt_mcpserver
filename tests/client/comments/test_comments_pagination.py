@@ -34,11 +34,10 @@ def _make_httpx_mock(*responses: MagicMock) -> MagicMock:
 
 
 @pytest.mark.asyncio
-async def test_movie_comments_no_page_returns_all():
-    """Test that movie comments with no page parameter auto-paginates all results."""
-    # Mock first page response
-    mock_response_page1 = MagicMock()
-    mock_response_page1.json.return_value = [
+async def test_movie_comments_no_page_respects_limit():
+    """Test that movie comments with no page parameter respects limit as max items."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
         {
             "id": 1,
             "comment": "Great movie!",
@@ -52,37 +51,13 @@ async def test_movie_comments_no_page_returns_all():
             "created_at": "2024-01-02T00:00:00Z",
         },
     ]
-    mock_response_page1.headers = {
+    mock_response.headers = {
         "X-Pagination-Page": "1",
         "X-Pagination-Limit": "2",
         "X-Pagination-Page-Count": "2",
         "X-Pagination-Item-Count": "4",
     }
-    mock_response_page1.raise_for_status = MagicMock()
-
-    # Mock second page response
-    mock_response_page2 = MagicMock()
-    mock_response_page2.json.return_value = [
-        {
-            "id": 3,
-            "comment": "Good movie",
-            "user": {"username": "user3"},
-            "created_at": "2024-01-03T00:00:00Z",
-        },
-        {
-            "id": 4,
-            "comment": "Nice!",
-            "user": {"username": "user4"},
-            "created_at": "2024-01-04T00:00:00Z",
-        },
-    ]
-    mock_response_page2.headers = {
-        "X-Pagination-Page": "2",
-        "X-Pagination-Limit": "2",
-        "X-Pagination-Page-Count": "2",
-        "X-Pagination-Item-Count": "4",
-    }
-    mock_response_page2.raise_for_status = MagicMock()
+    mock_response.raise_for_status = MagicMock()
 
     with (
         patch("httpx.AsyncClient") as mock_client,
@@ -91,17 +66,17 @@ async def test_movie_comments_no_page_returns_all():
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_instance = _make_httpx_mock(mock_response_page1, mock_response_page2)
+        mock_instance = _make_httpx_mock(mock_response)
         mock_client.return_value = mock_instance
 
         client = MovieCommentsClient()
         result = await client.get_movie_comments("test-movie", limit=2, page=None)
 
-        # Should return a plain list with all 4 comments
+        # Should return exactly 2 comments (capped by limit)
         assert isinstance(result, list)
-        assert len(result) == 4
+        assert len(result) == 2
         assert result[0]["id"] == 1
-        assert result[3]["id"] == 4
+        assert result[1]["id"] == 2
 
 
 @pytest.mark.asyncio

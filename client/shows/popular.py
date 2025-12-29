@@ -2,7 +2,7 @@
 
 from typing import overload
 
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import ShowResponse
 from models.types.pagination import PaginatedResponse
@@ -40,23 +40,25 @@ class PopularShowsClient(BaseClient):
         """Get popular shows from Trakt.
 
         Args:
-            limit: Items per page
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating
+            limit: Controls result size based on pagination mode:
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
+                Use limit=0 with page=None to fetch all available results.
+            page: Page number for single-page mode, or None for auto-pagination.
+            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
-            If page is None: List of all popular shows across all pages (up to max_pages)
+            If page is None: List of up to 'limit' popular shows
             If page specified: Paginated response with metadata for that page
-
-        Raises:
-            RuntimeError: If auto-pagination reaches max_pages without completing.
         """
         if page is None:
+            eff = effective_limit(limit)
             return await self.auto_paginate(
                 TRAKT_ENDPOINTS["shows_popular"],
                 response_type=ShowResponse,
-                params={"limit": limit},
+                params={"limit": eff.api_limit},
                 max_pages=max_pages,
+                max_items=eff.max_items,
             )
         else:
             # Single page with metadata

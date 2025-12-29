@@ -361,10 +361,11 @@ class BaseClient:
         response_type: type[T],
         params: dict[str, Any] | None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
+        max_items: int | None = None,
     ) -> list[T]:
-        """Auto-paginate through all pages of a paginated endpoint.
+        """Auto-paginate through pages of a paginated endpoint.
 
-        Fetches all pages by iterating using server-provided next_page.
+        Fetches pages until max_items is reached or no more pages exist.
         Includes safety cap to prevent runaway loops.
 
         Args:
@@ -372,12 +373,16 @@ class BaseClient:
             response_type: Type for individual items in response
             params: Base query parameters (page will be added/overridden)
             max_pages: Maximum number of pages to fetch (safety guard)
+            max_items: Maximum total items to return. When set, pagination stops
+                once this many items are collected and the result is truncated.
+                When None, fetches all available pages up to max_pages.
 
         Returns:
-            List of all items across all pages (up to max_pages)
+            List of items (up to max_items if specified, otherwise all items)
 
         Raises:
             RuntimeError: If max_pages reached without natural pagination end
+                and max_items was not specified.
         """
         all_items: list[T] = []
         current_page = 1
@@ -395,6 +400,10 @@ class BaseClient:
 
             all_items.extend(response.data)
 
+            # Check if we've collected enough items
+            if max_items is not None and len(all_items) >= max_items:
+                return all_items[:max_items]
+
             # Use server-provided next_page instead of manual increment
             next_page = response.pagination.next_page()
             if next_page is None:
@@ -403,10 +412,12 @@ class BaseClient:
             current_page = next_page
         else:
             # Loop completed without break - hit max_pages limit
-            raise RuntimeError(
-                f"Pagination safety limit reached: {max_pages} pages fetched. "
-                + "Consider using explicit page parameter or increasing max_pages."
-            )
+            # Only raise error if we weren't capped by max_items
+            if max_items is None:
+                raise RuntimeError(
+                    f"Pagination safety limit reached: {max_pages} pages fetched. "
+                    + "Consider using explicit page parameter or increasing max_pages."
+                )
 
         return all_items
 
