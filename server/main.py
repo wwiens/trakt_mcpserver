@@ -11,7 +11,6 @@ from .checkin import register_checkin_tools
 from .comments import register_comment_tools
 from .movies import register_movie_resources, register_movie_tools
 from .prompts.basic import register_basic_prompts
-from .recommendations import register_recommendation_tools
 from .search import register_search_tools
 from .shows import register_show_resources, register_show_tools
 from .sync import register_sync_tools
@@ -51,7 +50,6 @@ def create_server() -> FastMCP:
     _ = register_search_tools(mcp)
     _ = register_checkin_tools(mcp)
     _ = register_sync_tools(mcp)
-    _ = register_recommendation_tools(mcp)
 
     # Register prompts and capture handlers for type checker
     _ = register_basic_prompts(mcp)
