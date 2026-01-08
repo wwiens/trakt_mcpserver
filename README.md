@@ -104,6 +104,13 @@ Add to your Claude Desktop MCP configuration file:
 - **View reviews**: Longer, more detailed comments are marked as reviews
 - **See ratings distribution**: View how many users gave each rating from 1-10
 
+### 🎯 Personalized Recommendations
+- **Get personalized movie recommendations** based on your viewing history
+- **Get personalized show recommendations** tailored to your tastes
+- **Filter recommendations** to exclude already collected or watchlisted items
+- **Hide recommendations** you're not interested in from future suggestions
+- Recommendations improve as you watch more content
+
 ### 🔄 General Features
 - Exposes Trakt API data through MCP resources
 - Provides tools for fetching real-time entertainment information
@@ -352,6 +359,34 @@ fetch_comment_replies(comment_id="789", limit=10, show_spoilers=False, sort="old
 
 </details>
 
+<details>
+<summary><strong>Recommendation Tools</strong></summary>
+
+```python
+# Get personalized movie recommendations (requires authentication)
+fetch_movie_recommendations(limit=10)
+
+# Get movie recommendations with filters
+fetch_movie_recommendations(limit=10, ignore_collected=True, ignore_watchlisted=True)
+
+# Get movie recommendations with pagination
+fetch_movie_recommendations(limit=10, page=1)
+
+# Get personalized show recommendations (requires authentication)
+fetch_show_recommendations(limit=10)
+
+# Get show recommendations with filters
+fetch_show_recommendations(limit=10, ignore_collected=True, ignore_watchlisted=True)
+
+# Hide a movie from future recommendations
+hide_movie_recommendation(movie_id="tron-legacy-2010")
+
+# Hide a show from future recommendations
+hide_show_recommendation(show_id="breaking-bad")
+```
+
+</details>
+
 ## 📝 Using with Claude
 
 Once installed, Claude can use this MCP server to answer questions about entertainment data. Here are some examples to get you started.
@@ -400,6 +435,10 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 - "Show me my watchlist sorted by when I added them"
 - "Check me in to Season 2 Episode 5 of Breaking Bad"
 - "Check me in to Season 1 Episode 3 of show ID 1388"
+- "What movies do you recommend for me?"
+- "Show me personalized TV show recommendations"
+- "Get movie recommendations but exclude stuff I've already collected"
+- "Hide this movie from my recommendations"
 
 </details>
 
