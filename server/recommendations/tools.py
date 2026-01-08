@@ -11,7 +11,7 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.recommendations import RecommendationFormatters
 from server.base import BaseToolErrorMixin
-from utils.api.errors import MCPError, handle_api_errors_func
+from utils.api.errors import handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -83,28 +83,24 @@ async def fetch_movie_recommendations(
         ignore_watchlisted=ignore_watchlisted,
     )
 
-    try:
-        client = RecommendationsClient()
-        recommendations = await client.get_movie_recommendations(
-            limit=params.limit,
-            page=params.page,
-            ignore_collected=params.ignore_collected,
-            ignore_watchlisted=params.ignore_watchlisted,
+    client = RecommendationsClient()
+    recommendations = await client.get_movie_recommendations(
+        limit=params.limit,
+        page=params.page,
+        ignore_collected=params.ignore_collected,
+        ignore_watchlisted=params.ignore_watchlisted,
+    )
+
+    # Handle transitional case where API returns error strings
+    if isinstance(recommendations, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="movie_recommendations",
+            resource_id="recommendations",
+            error_message=recommendations,
+            operation="fetch_movie_recommendations",
         )
 
-        # Handle transitional case where API returns error strings
-        if isinstance(recommendations, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
-                resource_type="movie_recommendations",
-                resource_id="recommendations",
-                error_message=recommendations,
-                operation="fetch_movie_recommendations",
-            )
-            raise error
-
-        return RecommendationFormatters.format_movie_recommendations(recommendations)
-    except MCPError:
-        raise
+    return RecommendationFormatters.format_movie_recommendations(recommendations)
 
 
 @handle_api_errors_func
@@ -138,28 +134,24 @@ async def fetch_show_recommendations(
         ignore_watchlisted=ignore_watchlisted,
     )
 
-    try:
-        client = RecommendationsClient()
-        recommendations = await client.get_show_recommendations(
-            limit=params.limit,
-            page=params.page,
-            ignore_collected=params.ignore_collected,
-            ignore_watchlisted=params.ignore_watchlisted,
+    client = RecommendationsClient()
+    recommendations = await client.get_show_recommendations(
+        limit=params.limit,
+        page=params.page,
+        ignore_collected=params.ignore_collected,
+        ignore_watchlisted=params.ignore_watchlisted,
+    )
+
+    # Handle transitional case where API returns error strings
+    if isinstance(recommendations, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="show_recommendations",
+            resource_id="recommendations",
+            error_message=recommendations,
+            operation="fetch_show_recommendations",
         )
 
-        # Handle transitional case where API returns error strings
-        if isinstance(recommendations, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show_recommendations",
-                resource_id="recommendations",
-                error_message=recommendations,
-                operation="fetch_show_recommendations",
-            )
-            raise error
-
-        return RecommendationFormatters.format_show_recommendations(recommendations)
-    except MCPError:
-        raise
+    return RecommendationFormatters.format_show_recommendations(recommendations)
 
 
 @handle_api_errors_func
@@ -178,12 +170,9 @@ async def hide_movie_recommendation(movie_id: str) -> str:
     logger.debug("hide_movie_recommendation called with movie_id=%s", movie_id)
     params = HideRecommendationParams(item_id=movie_id)
 
-    try:
-        client = RecommendationsClient()
-        await client.hide_movie_recommendation(params.item_id)
-        return RecommendationFormatters.format_hide_result("movie", params.item_id)
-    except MCPError:
-        raise
+    client = RecommendationsClient()
+    await client.hide_movie_recommendation(params.item_id)
+    return RecommendationFormatters.format_hide_result("movie", params.item_id)
 
 
 @handle_api_errors_func
@@ -202,12 +191,9 @@ async def hide_show_recommendation(show_id: str) -> str:
     logger.debug("hide_show_recommendation called with show_id=%s", show_id)
     params = HideRecommendationParams(item_id=show_id)
 
-    try:
-        client = RecommendationsClient()
-        await client.hide_show_recommendation(params.item_id)
-        return RecommendationFormatters.format_hide_result("show", params.item_id)
-    except MCPError:
-        raise
+    client = RecommendationsClient()
+    await client.hide_show_recommendation(params.item_id)
+    return RecommendationFormatters.format_hide_result("show", params.item_id)
 
 
 @handle_api_errors_func
@@ -226,12 +212,9 @@ async def unhide_movie_recommendation(movie_id: str) -> str:
     logger.debug("unhide_movie_recommendation called with movie_id=%s", movie_id)
     params = HideRecommendationParams(item_id=movie_id)
 
-    try:
-        client = RecommendationsClient()
-        await client.unhide_movie_recommendation(params.item_id)
-        return RecommendationFormatters.format_unhide_result("movie", params.item_id)
-    except MCPError:
-        raise
+    client = RecommendationsClient()
+    await client.unhide_movie_recommendation(params.item_id)
+    return RecommendationFormatters.format_unhide_result("movie", params.item_id)
 
 
 @handle_api_errors_func
@@ -250,12 +233,9 @@ async def unhide_show_recommendation(show_id: str) -> str:
     logger.debug("unhide_show_recommendation called with show_id=%s", show_id)
     params = HideRecommendationParams(item_id=show_id)
 
-    try:
-        client = RecommendationsClient()
-        await client.unhide_show_recommendation(params.item_id)
-        return RecommendationFormatters.format_unhide_result("show", params.item_id)
-    except MCPError:
-        raise
+    client = RecommendationsClient()
+    await client.unhide_show_recommendation(params.item_id)
+    return RecommendationFormatters.format_unhide_result("show", params.item_id)
 
 
 def register_recommendation_tools(

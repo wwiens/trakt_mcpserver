@@ -33,11 +33,7 @@ class RecommendationFormatters:
             movies = data
 
         if not movies:
-            return (
-                result
-                + "No recommendations available. "
-                + "Watch more content to improve recommendations!\n"
-            )
+            return f"{result}No recommendations available. Watch more content to improve recommendations!\n"
 
         for movie in movies:
             title = movie.title
@@ -84,11 +80,7 @@ class RecommendationFormatters:
             shows = data
 
         if not shows:
-            return (
-                result
-                + "No recommendations available. "
-                + "Watch more content to improve recommendations!\n"
-            )
+            return f"{result}No recommendations available. Watch more content to improve recommendations!\n"
 
         for show in shows:
             title = show.title

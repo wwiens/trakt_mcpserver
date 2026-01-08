@@ -10,6 +10,7 @@ from models.recommendations.recommendation import TraktRecommendedMovie
 from models.types.pagination import PaginatedResponse
 from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
+from utils.api.id_helpers import build_trakt_id_object
 
 
 class MovieRecommendationsClient(AuthClient):
@@ -124,17 +125,6 @@ class MovieRecommendationsClient(AuthClient):
             raise AuthenticationRequiredError("unhide movie recommendation")
 
         endpoint = TRAKT_ENDPOINTS["unhide_recommendations"]
-
-        # Build movie object for API request
-        if movie_id.isdigit():
-            movie_obj: dict[str, dict[str, str | int]] = {
-                "ids": {"trakt": int(movie_id)}
-            }
-        elif movie_id.startswith("tt"):
-            movie_obj = {"ids": {"imdb": movie_id}}
-        else:
-            movie_obj = {"ids": {"slug": movie_id}}
-
-        data = {"movies": [movie_obj]}
+        data = build_trakt_id_object(movie_id, "movies")
         await self._post_request(endpoint, data)
         return True

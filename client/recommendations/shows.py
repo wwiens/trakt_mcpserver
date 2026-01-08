@@ -10,6 +10,7 @@ from models.recommendations.recommendation import TraktRecommendedShow
 from models.types.pagination import PaginatedResponse
 from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
+from utils.api.id_helpers import build_trakt_id_object
 
 
 class ShowRecommendationsClient(AuthClient):
@@ -124,15 +125,6 @@ class ShowRecommendationsClient(AuthClient):
             raise AuthenticationRequiredError("unhide show recommendation")
 
         endpoint = TRAKT_ENDPOINTS["unhide_recommendations"]
-
-        # Build show object for API request
-        if show_id.isdigit():
-            show_obj: dict[str, dict[str, str | int]] = {"ids": {"trakt": int(show_id)}}
-        elif show_id.startswith("tt"):
-            show_obj = {"ids": {"imdb": show_id}}
-        else:
-            show_obj = {"ids": {"slug": show_id}}
-
-        data = {"shows": [show_obj]}
+        data = build_trakt_id_object(show_id, "shows")
         await self._post_request(endpoint, data)
         return True

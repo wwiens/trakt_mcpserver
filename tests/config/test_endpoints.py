@@ -90,6 +90,7 @@ class TestTraktEndpoints:
             "recommendations_shows",
             "hide_movie_recommendation",
             "hide_show_recommendation",
+            "unhide_recommendations",
         ]
         for endpoint in recommendation_endpoints:
             assert endpoint in TRAKT_ENDPOINTS
