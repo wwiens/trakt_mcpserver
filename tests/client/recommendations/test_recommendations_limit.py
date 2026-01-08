@@ -5,12 +5,19 @@ Use the limit parameter (max 100) to control number of results.
 """
 
 import time
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
 
 from client.recommendations import RecommendationsClient
 from models.auth import TraktAuthToken
+
+if TYPE_CHECKING:
+    from models.recommendations.recommendation import (
+        TraktRecommendedMovie,
+        TraktRecommendedShow,
+    )
 
 
 @pytest.fixture
@@ -49,7 +56,9 @@ async def test_movie_recommendations_respects_limit(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result = await authenticated_client.get_movie_recommendations(limit=2)
+    result: list[
+        TraktRecommendedMovie
+    ] = await authenticated_client.get_movie_recommendations(limit=2)
 
     # Should return a list
     assert isinstance(result, list)
@@ -78,7 +87,9 @@ async def test_show_recommendations_respects_limit(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result = await authenticated_client.get_show_recommendations(limit=2)
+    result: list[
+        TraktRecommendedShow
+    ] = await authenticated_client.get_show_recommendations(limit=2)
 
     # Should return a list
     assert isinstance(result, list)
@@ -104,7 +115,9 @@ async def test_empty_recommendations_result(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result = await authenticated_client.get_movie_recommendations(limit=10)
+    result: list[
+        TraktRecommendedMovie
+    ] = await authenticated_client.get_movie_recommendations(limit=10)
 
     # Should return empty list
     assert isinstance(result, list)
@@ -141,11 +154,13 @@ async def test_recommendations_with_favorited_by(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result = await authenticated_client.get_movie_recommendations(limit=10)
+    result: list[
+        TraktRecommendedMovie
+    ] = await authenticated_client.get_movie_recommendations(limit=10)
 
     assert isinstance(result, list)
     assert len(result) == 1
-    movie = result[0]
+    movie: TraktRecommendedMovie = result[0]
     assert movie.title == "Popular Movie"
     assert len(movie.favorited_by) == 1
     assert movie.favorited_by[0].user.username == "user1"

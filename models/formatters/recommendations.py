@@ -1,13 +1,50 @@
 """Formatters for recommendation data."""
 
+from typing import Protocol
+
 from models.recommendations.recommendation import (
+    FavoritedByEntry,
     TraktRecommendedMovie,
     TraktRecommendedShow,
 )
 
 
+class _RecommendationItem(Protocol):
+    """Protocol for recommendation items with shared attributes."""
+
+    title: str
+    year: int | None
+    ids: dict[str, str | int | None]
+    favorited_by: list[FavoritedByEntry]
+
+
 class RecommendationFormatters:
     """Helper class for formatting recommendation data for MCP responses."""
+
+    @staticmethod
+    def _format_recommendation_item(item: _RecommendationItem) -> str:
+        """Format a single recommendation item.
+
+        Args:
+            item: A recommendation item (movie or show)
+
+        Returns:
+            Formatted markdown text for the item
+        """
+        year_str = f" ({item.year})" if item.year else ""
+        trakt_id = item.ids.get("trakt", "")
+        imdb_id = item.ids.get("imdb", "")
+
+        result = f"### {item.title}{year_str}\n"
+        if trakt_id:
+            result += f"- **Trakt ID:** {trakt_id}\n"
+        if imdb_id:
+            result += f"- **IMDB:** {imdb_id}\n"
+        if item.favorited_by:
+            result += f"- **Favorited by:** {len(item.favorited_by)} user(s)\n"
+        result += "\n"
+
+        return result
 
     @staticmethod
     def format_movie_recommendations(
@@ -28,25 +65,7 @@ class RecommendationFormatters:
             return f"{result}No recommendations available. Watch more content to improve recommendations!\n"
 
         for movie in movies:
-            title = movie.title
-            year = movie.year
-            year_str = f" ({year})" if year else ""
-
-            ids = movie.ids
-            trakt_id = ids.get("trakt", "")
-            imdb_id = ids.get("imdb", "")
-
-            result += f"### {title}{year_str}\n"
-            if trakt_id:
-                result += f"- **Trakt ID:** {trakt_id}\n"
-            if imdb_id:
-                result += f"- **IMDB:** {imdb_id}\n"
-
-            if movie.favorited_by:
-                fav_count = len(movie.favorited_by)
-                result += f"- **Favorited by:** {fav_count} user(s)\n"
-
-            result += "\n"
+            result += RecommendationFormatters._format_recommendation_item(movie)
 
         return result
 
@@ -69,25 +88,7 @@ class RecommendationFormatters:
             return f"{result}No recommendations available. Watch more content to improve recommendations!\n"
 
         for show in shows:
-            title = show.title
-            year = show.year
-            year_str = f" ({year})" if year else ""
-
-            ids = show.ids
-            trakt_id = ids.get("trakt", "")
-            imdb_id = ids.get("imdb", "")
-
-            result += f"### {title}{year_str}\n"
-            if trakt_id:
-                result += f"- **Trakt ID:** {trakt_id}\n"
-            if imdb_id:
-                result += f"- **IMDB:** {imdb_id}\n"
-
-            if show.favorited_by:
-                fav_count = len(show.favorited_by)
-                result += f"- **Favorited by:** {fav_count} user(s)\n"
-
-            result += "\n"
+            result += RecommendationFormatters._format_recommendation_item(show)
 
         return result
 

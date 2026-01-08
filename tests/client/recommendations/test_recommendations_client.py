@@ -2,6 +2,7 @@
 
 import time
 from collections.abc import Generator
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,6 +10,12 @@ import pytest
 from client.recommendations import RecommendationsClient
 from models.auth import TraktAuthToken
 from utils.api.error_types import AuthenticationRequiredError
+
+if TYPE_CHECKING:
+    from models.recommendations.recommendation import (
+        TraktRecommendedMovie,
+        TraktRecommendedShow,
+    )
 
 
 @pytest.fixture
@@ -138,7 +145,9 @@ async def test_get_movie_recommendations_success(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result = await authenticated_client.get_movie_recommendations(limit=10)
+    result: list[
+        TraktRecommendedMovie
+    ] = await authenticated_client.get_movie_recommendations(limit=10)
 
     # Should return a list (no pagination support)
     assert isinstance(result, list)
@@ -171,7 +180,9 @@ async def test_get_show_recommendations_success(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result = await authenticated_client.get_show_recommendations(limit=10)
+    result: list[
+        TraktRecommendedShow
+    ] = await authenticated_client.get_show_recommendations(limit=10)
 
     # Should return a list (no pagination support)
     assert isinstance(result, list)
@@ -277,7 +288,9 @@ async def test_get_movie_recommendations_with_filters(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result = await authenticated_client.get_movie_recommendations(
+    result: list[
+        TraktRecommendedMovie
+    ] = await authenticated_client.get_movie_recommendations(
         limit=10, ignore_collected=True, ignore_watchlisted=True
     )
 
