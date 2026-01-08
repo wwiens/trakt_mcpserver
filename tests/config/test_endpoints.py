@@ -137,8 +137,6 @@ class TestEndpointUrlFormats:
             "comment_replies": [":id"],
             "show_ratings": [":id"],
             "movie_ratings": [":id"],
-            "hide_movie_recommendation": [":id"],
-            "hide_show_recommendation": [":id"],
         }
 
         for endpoint_key, expected_params in parameterized_endpoints.items():
@@ -183,11 +181,11 @@ class TestEndpointUrlFormats:
             **AUTH_ENDPOINTS,
             **SHOWS_ENDPOINTS,
             **MOVIES_ENDPOINTS,
-            **RECOMMENDATIONS_ENDPOINTS,
             **COMMENTS_ENDPOINTS,
             **SEARCH_ENDPOINTS,
             **CHECKIN_ENDPOINTS,
             **USER_ENDPOINTS,
+            **RECOMMENDATIONS_ENDPOINTS,
         }
 
         # TRAKT_ENDPOINTS should contain all domain endpoints

@@ -25,11 +25,11 @@ class RecommendationParams(BaseModel):
     limit: int = Field(DEFAULT_LIMIT, ge=1, le=100)
     page: int | None = Field(default=None, ge=1)
     ignore_collected: bool = Field(
-        default=False,
+        default=True,
         description="Filter out items the user has already collected",
     )
     ignore_watchlisted: bool = Field(
-        default=False,
+        default=True,
         description="Filter out items the user has already watchlisted",
     )
 
@@ -56,8 +56,8 @@ class HideRecommendationParams(BaseModel):
 async def fetch_movie_recommendations(
     limit: int = DEFAULT_LIMIT,
     page: int | None = None,
-    ignore_collected: bool = False,
-    ignore_watchlisted: bool = False,
+    ignore_collected: bool = True,
+    ignore_watchlisted: bool = True,
 ) -> str:
     """Fetch personalized movie recommendations from Trakt.
 
@@ -107,8 +107,8 @@ async def fetch_movie_recommendations(
 async def fetch_show_recommendations(
     limit: int = DEFAULT_LIMIT,
     page: int | None = None,
-    ignore_collected: bool = False,
-    ignore_watchlisted: bool = False,
+    ignore_collected: bool = True,
+    ignore_watchlisted: bool = True,
 ) -> str:
     """Fetch personalized show recommendations from Trakt.
 
@@ -260,8 +260,8 @@ def register_recommendation_tools(
     async def fetch_movie_recommendations_tool(
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
-        ignore_collected: bool = False,
-        ignore_watchlisted: bool = False,
+        ignore_collected: bool = True,
+        ignore_watchlisted: bool = True,
     ) -> str:
         """MCP tool: fetch personalized movie recommendations."""
         params = RecommendationParams(
@@ -288,8 +288,8 @@ def register_recommendation_tools(
     async def fetch_show_recommendations_tool(
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
-        ignore_collected: bool = False,
-        ignore_watchlisted: bool = False,
+        ignore_collected: bool = True,
+        ignore_watchlisted: bool = True,
     ) -> str:
         """MCP tool: fetch personalized show recommendations."""
         params = RecommendationParams(
