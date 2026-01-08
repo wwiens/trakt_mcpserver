@@ -1,6 +1,5 @@
 """Tests for recommendations client."""
 
-import time
 from collections.abc import Generator
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -8,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from client.recommendations import RecommendationsClient
-from models.auth import TraktAuthToken
 from utils.api.error_types import AuthenticationRequiredError
 
 if TYPE_CHECKING:
@@ -16,27 +14,6 @@ if TYPE_CHECKING:
         TraktRecommendedMovie,
         TraktRecommendedShow,
     )
-
-
-@pytest.fixture
-def mock_auth_token() -> TraktAuthToken:
-    """Create a mock auth token for testing."""
-    return TraktAuthToken(
-        access_token="mock_access_token",
-        refresh_token="mock_refresh_token",
-        expires_in=7200,
-        created_at=int(time.time()),
-        scope="public",
-        token_type="bearer",
-    )
-
-
-@pytest.fixture
-def authenticated_client(mock_auth_token: TraktAuthToken) -> RecommendationsClient:
-    """Create an authenticated recommendations client for testing."""
-    client = RecommendationsClient()
-    client.auth_token = mock_auth_token
-    return client
 
 
 @pytest.fixture

@@ -4,41 +4,18 @@ Note: The Trakt recommendations API does not support pagination.
 Use the limit parameter (max 100) to control number of results.
 """
 
-import time
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
 
 from client.recommendations import RecommendationsClient
-from models.auth import TraktAuthToken
 
 if TYPE_CHECKING:
     from models.recommendations.recommendation import (
         TraktRecommendedMovie,
         TraktRecommendedShow,
     )
-
-
-@pytest.fixture
-def mock_auth_token() -> TraktAuthToken:
-    """Create a mock auth token for testing."""
-    return TraktAuthToken(
-        access_token="mock_access_token",
-        refresh_token="mock_refresh_token",
-        expires_in=7200,
-        created_at=int(time.time()),
-        scope="public",
-        token_type="bearer",
-    )
-
-
-@pytest.fixture
-def authenticated_client(mock_auth_token: TraktAuthToken) -> RecommendationsClient:
-    """Create an authenticated recommendations client for testing."""
-    client = RecommendationsClient()
-    client.auth_token = mock_auth_token
-    return client
 
 
 @pytest.mark.asyncio
