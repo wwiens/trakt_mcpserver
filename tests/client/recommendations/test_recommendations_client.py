@@ -135,18 +135,12 @@ async def test_get_movie_recommendations_success(
             "ids": {"trakt": 2, "slug": "the-matrix-1999", "imdb": "tt0133093"},
         },
     ]
-    mock_response.headers = {
-        "X-Pagination-Page": "1",
-        "X-Pagination-Limit": "10",
-        "X-Pagination-Page-Count": "1",
-        "X-Pagination-Item-Count": "2",
-    }
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
     result = await authenticated_client.get_movie_recommendations(limit=10)
 
-    # Should return a list when page is None (auto-paginate)
+    # Should return a list (no pagination support)
     assert isinstance(result, list)
     assert len(result) == 2
     assert result[0].title == "TRON: Legacy"
@@ -174,18 +168,12 @@ async def test_get_show_recommendations_success(
             "ids": {"trakt": 1390, "slug": "game-of-thrones", "imdb": "tt0944947"},
         },
     ]
-    mock_response.headers = {
-        "X-Pagination-Page": "1",
-        "X-Pagination-Limit": "10",
-        "X-Pagination-Page-Count": "1",
-        "X-Pagination-Item-Count": "2",
-    }
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
     result = await authenticated_client.get_show_recommendations(limit=10)
 
-    # Should return a list when page is None (auto-paginate)
+    # Should return a list (no pagination support)
     assert isinstance(result, list)
     assert len(result) == 2
     assert result[0].title == "Breaking Bad"
@@ -286,12 +274,6 @@ async def test_get_movie_recommendations_with_filters(
             "ids": {"trakt": 999, "slug": "new-movie-2024"},
         },
     ]
-    mock_response.headers = {
-        "X-Pagination-Page": "1",
-        "X-Pagination-Limit": "10",
-        "X-Pagination-Page-Count": "1",
-        "X-Pagination-Item-Count": "1",
-    }
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 

@@ -1,13 +1,11 @@
 """Client for show recommendations."""
 
-from typing import overload
 from urllib.parse import quote
 
 from client.auth import AuthClient
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
+from config.api import DEFAULT_LIMIT
 from config.endpoints import TRAKT_ENDPOINTS
 from models.recommendations.recommendation import TraktRecommendedShow
-from models.types.pagination import PaginatedResponse
 from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
 from utils.api.id_helpers import build_trakt_id_object
@@ -16,46 +14,25 @@ from utils.api.id_helpers import build_trakt_id_object
 class ShowRecommendationsClient(AuthClient):
     """Client for fetching show recommendations from Trakt."""
 
-    @overload
-    async def get_show_recommendations(
-        self,
-        limit: int = DEFAULT_LIMIT,
-        page: None = None,
-        max_pages: int = DEFAULT_MAX_PAGES,
-        ignore_collected: bool = False,
-        ignore_watchlisted: bool = False,
-    ) -> list[TraktRecommendedShow]: ...
-
-    @overload
-    async def get_show_recommendations(
-        self,
-        limit: int = DEFAULT_LIMIT,
-        page: int = 1,
-        max_pages: int = DEFAULT_MAX_PAGES,
-        ignore_collected: bool = False,
-        ignore_watchlisted: bool = False,
-    ) -> PaginatedResponse[TraktRecommendedShow]: ...
-
     @handle_api_errors
     async def get_show_recommendations(
         self,
         limit: int = DEFAULT_LIMIT,
-        page: int | None = None,
-        max_pages: int = DEFAULT_MAX_PAGES,
         ignore_collected: bool = False,
         ignore_watchlisted: bool = False,
-    ) -> list[TraktRecommendedShow] | PaginatedResponse[TraktRecommendedShow]:
+    ) -> list[TraktRecommendedShow]:
         """Fetch personalized show recommendations.
 
+        Note: The Trakt recommendations API does not support pagination.
+        Use the limit parameter (max 100) to control number of results.
+
         Args:
-            limit: Number of results per page (max 100).
-            page: Page number. If None, auto-paginates all results.
-            max_pages: Maximum pages to fetch when auto-paginating.
+            limit: Number of results to return (max 100).
             ignore_collected: Filter out shows user has collected.
             ignore_watchlisted: Filter out shows user has watchlisted.
 
         Returns:
-            List of recommendations or paginated response.
+            List of show recommendations.
 
         Raises:
             AuthenticationRequiredError: If the client is not authenticated.
@@ -71,16 +48,7 @@ class ShowRecommendationsClient(AuthClient):
         if ignore_watchlisted:
             params["ignore_watchlisted"] = "true"
 
-        if page is None:
-            return await self.auto_paginate(
-                endpoint=endpoint,
-                params=params,
-                max_pages=max_pages,
-                response_type=TraktRecommendedShow,
-            )
-
-        params["page"] = page
-        return await self._make_paginated_request(
+        return await self._make_typed_list_request(
             endpoint=endpoint,
             params=params,
             response_type=TraktRecommendedShow,

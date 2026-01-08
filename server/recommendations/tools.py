@@ -20,10 +20,13 @@ ToolHandler = Callable[..., Awaitable[str]]
 
 
 class RecommendationParams(BaseModel):
-    """Parameters for recommendation fetching."""
+    """Parameters for recommendation fetching.
+
+    Note: The Trakt recommendations API does not support pagination.
+    Use limit (max 100) to control the number of results.
+    """
 
     limit: int = Field(DEFAULT_LIMIT, ge=1, le=100)
-    page: int | None = Field(default=None, ge=1)
     ignore_collected: bool = Field(
         default=True,
         description="Filter out items the user has already collected",
@@ -32,13 +35,6 @@ class RecommendationParams(BaseModel):
         default=True,
         description="Filter out items the user has already watchlisted",
     )
-
-    @field_validator("page", mode="before")
-    @classmethod
-    def _validate_page(cls, v: object) -> object:
-        if v is None or v == "":
-            return None
-        return v
 
 
 class HideRecommendationParams(BaseModel):
@@ -55,15 +51,16 @@ class HideRecommendationParams(BaseModel):
 @handle_api_errors_func
 async def fetch_movie_recommendations(
     limit: int = DEFAULT_LIMIT,
-    page: int | None = None,
     ignore_collected: bool = True,
     ignore_watchlisted: bool = True,
 ) -> str:
     """Fetch personalized movie recommendations from Trakt.
 
+    Note: The Trakt recommendations API does not support pagination.
+    Use limit (max 100) to control the number of results.
+
     Args:
-        limit: Number of results per page (max 100).
-        page: Page number. If None, auto-paginates all results.
+        limit: Number of results to return (max 100).
         ignore_collected: Filter out movies user has collected.
         ignore_watchlisted: Filter out movies user has watchlisted.
 
@@ -73,12 +70,9 @@ async def fetch_movie_recommendations(
     Raises:
         AuthenticationRequiredError: If user is not authenticated.
     """
-    logger.debug(
-        "fetch_movie_recommendations called with limit=%s, page=%s", limit, page
-    )
+    logger.debug("fetch_movie_recommendations called with limit=%s", limit)
     params = RecommendationParams(
         limit=limit,
-        page=page,
         ignore_collected=ignore_collected,
         ignore_watchlisted=ignore_watchlisted,
     )
@@ -86,7 +80,6 @@ async def fetch_movie_recommendations(
     client = RecommendationsClient()
     recommendations = await client.get_movie_recommendations(
         limit=params.limit,
-        page=params.page,
         ignore_collected=params.ignore_collected,
         ignore_watchlisted=params.ignore_watchlisted,
     )
@@ -106,15 +99,16 @@ async def fetch_movie_recommendations(
 @handle_api_errors_func
 async def fetch_show_recommendations(
     limit: int = DEFAULT_LIMIT,
-    page: int | None = None,
     ignore_collected: bool = True,
     ignore_watchlisted: bool = True,
 ) -> str:
     """Fetch personalized show recommendations from Trakt.
 
+    Note: The Trakt recommendations API does not support pagination.
+    Use limit (max 100) to control the number of results.
+
     Args:
-        limit: Number of results per page (max 100).
-        page: Page number. If None, auto-paginates all results.
+        limit: Number of results to return (max 100).
         ignore_collected: Filter out shows user has collected.
         ignore_watchlisted: Filter out shows user has watchlisted.
 
@@ -124,12 +118,9 @@ async def fetch_show_recommendations(
     Raises:
         AuthenticationRequiredError: If user is not authenticated.
     """
-    logger.debug(
-        "fetch_show_recommendations called with limit=%s, page=%s", limit, page
-    )
+    logger.debug("fetch_show_recommendations called with limit=%s", limit)
     params = RecommendationParams(
         limit=limit,
-        page=page,
         ignore_collected=ignore_collected,
         ignore_watchlisted=ignore_watchlisted,
     )
@@ -137,7 +128,6 @@ async def fetch_show_recommendations(
     client = RecommendationsClient()
     recommendations = await client.get_show_recommendations(
         limit=params.limit,
-        page=params.page,
         ignore_collected=params.ignore_collected,
         ignore_watchlisted=params.ignore_watchlisted,
     )
@@ -253,38 +243,36 @@ def register_recommendation_tools(
         name=TOOL_NAMES["fetch_movie_recommendations"],
         description=(
             "Fetch personalized movie recommendations from Trakt based on your "
-            "viewing history. Requires OAuth authentication. Use page parameter "
-            "for paginated results, or omit for all results."
+            "viewing history. Requires OAuth authentication. Use limit parameter "
+            "(max 100) to control number of results."
         ),
     )
     async def fetch_movie_recommendations_tool(
         limit: int = DEFAULT_LIMIT,
-        page: int | None = None,
         ignore_collected: bool = True,
         ignore_watchlisted: bool = True,
     ) -> str:
         """MCP tool: fetch personalized movie recommendations."""
         return await fetch_movie_recommendations(
-            limit, page, ignore_collected, ignore_watchlisted
+            limit, ignore_collected, ignore_watchlisted
         )
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_recommendations"],
         description=(
             "Fetch personalized TV show recommendations from Trakt based on your "
-            "viewing history. Requires OAuth authentication. Use page parameter "
-            "for paginated results, or omit for all results."
+            "viewing history. Requires OAuth authentication. Use limit parameter "
+            "(max 100) to control number of results."
         ),
     )
     async def fetch_show_recommendations_tool(
         limit: int = DEFAULT_LIMIT,
-        page: int | None = None,
         ignore_collected: bool = True,
         ignore_watchlisted: bool = True,
     ) -> str:
         """MCP tool: fetch personalized show recommendations."""
         return await fetch_show_recommendations(
-            limit, page, ignore_collected, ignore_watchlisted
+            limit, ignore_collected, ignore_watchlisted
         )
 
     @mcp.tool(

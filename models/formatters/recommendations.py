@@ -1,11 +1,9 @@
 """Formatters for recommendation data."""
 
-from models.formatters.utils import format_pagination_header
 from models.recommendations.recommendation import (
     TraktRecommendedMovie,
     TraktRecommendedShow,
 )
-from models.types.pagination import PaginatedResponse
 
 
 class RecommendationFormatters:
@@ -13,24 +11,18 @@ class RecommendationFormatters:
 
     @staticmethod
     def format_movie_recommendations(
-        data: list[TraktRecommendedMovie] | PaginatedResponse[TraktRecommendedMovie],
+        movies: list[TraktRecommendedMovie],
     ) -> str:
         """Format movie recommendations for MCP response.
 
         Args:
-            data: Either a list of all movie recommendations or a paginated response
+            movies: List of movie recommendations
 
         Returns:
             Formatted markdown text with movie recommendations
         """
         result = "# Recommended Movies\n\n"
         result += "_Personalized recommendations based on your viewing history_\n\n"
-
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            movies = data.data
-        else:
-            movies = data
 
         if not movies:
             return f"{result}No recommendations available. Watch more content to improve recommendations!\n"
@@ -60,24 +52,18 @@ class RecommendationFormatters:
 
     @staticmethod
     def format_show_recommendations(
-        data: list[TraktRecommendedShow] | PaginatedResponse[TraktRecommendedShow],
+        shows: list[TraktRecommendedShow],
     ) -> str:
         """Format show recommendations for MCP response.
 
         Args:
-            data: Either a list of all show recommendations or a paginated response
+            shows: List of show recommendations
 
         Returns:
             Formatted markdown text with show recommendations
         """
         result = "# Recommended TV Shows\n\n"
         result += "_Personalized recommendations based on your viewing history_\n\n"
-
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            shows = data.data
-        else:
-            shows = data
 
         if not shows:
             return f"{result}No recommendations available. Watch more content to improve recommendations!\n"

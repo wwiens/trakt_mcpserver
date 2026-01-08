@@ -1,13 +1,11 @@
 """Client for movie recommendations."""
 
-from typing import overload
 from urllib.parse import quote
 
 from client.auth import AuthClient
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
+from config.api import DEFAULT_LIMIT
 from config.endpoints import TRAKT_ENDPOINTS
 from models.recommendations.recommendation import TraktRecommendedMovie
-from models.types.pagination import PaginatedResponse
 from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
 from utils.api.id_helpers import build_trakt_id_object
@@ -16,46 +14,25 @@ from utils.api.id_helpers import build_trakt_id_object
 class MovieRecommendationsClient(AuthClient):
     """Client for fetching movie recommendations from Trakt."""
 
-    @overload
-    async def get_movie_recommendations(
-        self,
-        limit: int = DEFAULT_LIMIT,
-        page: None = None,
-        max_pages: int = DEFAULT_MAX_PAGES,
-        ignore_collected: bool = False,
-        ignore_watchlisted: bool = False,
-    ) -> list[TraktRecommendedMovie]: ...
-
-    @overload
-    async def get_movie_recommendations(
-        self,
-        limit: int = DEFAULT_LIMIT,
-        page: int = 1,
-        max_pages: int = DEFAULT_MAX_PAGES,
-        ignore_collected: bool = False,
-        ignore_watchlisted: bool = False,
-    ) -> PaginatedResponse[TraktRecommendedMovie]: ...
-
     @handle_api_errors
     async def get_movie_recommendations(
         self,
         limit: int = DEFAULT_LIMIT,
-        page: int | None = None,
-        max_pages: int = DEFAULT_MAX_PAGES,
         ignore_collected: bool = False,
         ignore_watchlisted: bool = False,
-    ) -> list[TraktRecommendedMovie] | PaginatedResponse[TraktRecommendedMovie]:
+    ) -> list[TraktRecommendedMovie]:
         """Fetch personalized movie recommendations.
 
+        Note: The Trakt recommendations API does not support pagination.
+        Use the limit parameter (max 100) to control number of results.
+
         Args:
-            limit: Number of results per page (max 100).
-            page: Page number. If None, auto-paginates all results.
-            max_pages: Maximum pages to fetch when auto-paginating.
+            limit: Number of results to return (max 100).
             ignore_collected: Filter out movies user has collected.
             ignore_watchlisted: Filter out movies user has watchlisted.
 
         Returns:
-            List of recommendations or paginated response.
+            List of movie recommendations.
 
         Raises:
             AuthenticationRequiredError: If the client is not authenticated.
@@ -71,16 +48,7 @@ class MovieRecommendationsClient(AuthClient):
         if ignore_watchlisted:
             params["ignore_watchlisted"] = "true"
 
-        if page is None:
-            return await self.auto_paginate(
-                endpoint=endpoint,
-                params=params,
-                max_pages=max_pages,
-                response_type=TraktRecommendedMovie,
-            )
-
-        params["page"] = page
-        return await self._make_paginated_request(
+        return await self._make_typed_list_request(
             endpoint=endpoint,
             params=params,
             response_type=TraktRecommendedMovie,
