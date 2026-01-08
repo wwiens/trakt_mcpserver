@@ -1,8 +1,12 @@
 """Helpers for building Trakt ID objects."""
 
+from typing import Literal
+
+ItemType = Literal["movies", "shows"]
+
 
 def build_trakt_id_object(
-    item_id: str, item_type: str
+    item_id: str, item_type: ItemType
 ) -> dict[str, list[dict[str, dict[str, str | int]]]]:
     """Build a Trakt API ID object for POST requests.
 
@@ -14,7 +18,13 @@ def build_trakt_id_object(
         Dictionary formatted for Trakt API requests, e.g.:
         {"movies": [{"ids": {"trakt": 123}}]} or
         {"shows": [{"ids": {"imdb": "tt1234567"}}]}
+
+    Raises:
+        ValueError: If item_id is empty.
     """
+    if not item_id:
+        raise ValueError("item_id cannot be empty")
+
     if item_id.isdigit():
         id_obj: dict[str, str | int] = {"trakt": int(item_id)}
     elif item_id.startswith("tt"):

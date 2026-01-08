@@ -1,5 +1,7 @@
 """Tests for ID helper utilities."""
 
+import pytest
+
 from utils.api.id_helpers import build_trakt_id_object
 
 
@@ -54,3 +56,8 @@ class TestBuildTraktIdObject:
         result = build_trakt_id_object("tt0000001", "movies")
 
         assert result == {"movies": [{"ids": {"imdb": "tt0000001"}}]}
+
+    def test_empty_item_id_raises_value_error(self) -> None:
+        """Test that empty item_id raises ValueError."""
+        with pytest.raises(ValueError, match="item_id cannot be empty"):
+            build_trakt_id_object("", "movies")
