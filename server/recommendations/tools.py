@@ -264,17 +264,8 @@ def register_recommendation_tools(
         ignore_watchlisted: bool = True,
     ) -> str:
         """MCP tool: fetch personalized movie recommendations."""
-        params = RecommendationParams(
-            limit=limit,
-            page=page,
-            ignore_collected=ignore_collected,
-            ignore_watchlisted=ignore_watchlisted,
-        )
         return await fetch_movie_recommendations(
-            params.limit,
-            params.page,
-            params.ignore_collected,
-            params.ignore_watchlisted,
+            limit, page, ignore_collected, ignore_watchlisted
         )
 
     @mcp.tool(
@@ -292,17 +283,8 @@ def register_recommendation_tools(
         ignore_watchlisted: bool = True,
     ) -> str:
         """MCP tool: fetch personalized show recommendations."""
-        params = RecommendationParams(
-            limit=limit,
-            page=page,
-            ignore_collected=ignore_collected,
-            ignore_watchlisted=ignore_watchlisted,
-        )
         return await fetch_show_recommendations(
-            params.limit,
-            params.page,
-            params.ignore_collected,
-            params.ignore_watchlisted,
+            limit, page, ignore_collected, ignore_watchlisted
         )
 
     @mcp.tool(
