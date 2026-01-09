@@ -230,24 +230,10 @@ async def add_user_ratings(
         # Convert to sync request format
         sync_items: list[TraktSyncRatingItem] = []
         for item in validated_items:
-            ids: dict[str, Any] = {}
-
-            # Add IDs that are provided (upstream validation ensures numeric strings)
-            if item.trakt_id:
-                ids["trakt"] = int(item.trakt_id)
-            if item.slug:
-                ids["slug"] = item.slug
-            if item.imdb_id:
-                ids["imdb"] = item.imdb_id
-            if item.tmdb_id:
-                ids["tmdb"] = int(item.tmdb_id)
-            if item.tvdb_id:
-                ids["tvdb"] = int(item.tvdb_id)
-
             # Create sync rating item
             sync_item_data: dict[str, Any] = {
                 "rating": item.rating,
-                "ids": ids,
+                "ids": item.build_ids_dict(),
             }
 
             # Add title and year if provided
@@ -308,22 +294,8 @@ async def remove_user_ratings(
         # Convert to sync request format (no ratings needed for removal)
         sync_items: list[TraktSyncRatingItem] = []
         for item in validated_items:
-            ids: dict[str, Any] = {}
-
-            # Add IDs that are provided (upstream validation ensures numeric strings)
-            if item.trakt_id:
-                ids["trakt"] = int(item.trakt_id)
-            if item.slug:
-                ids["slug"] = item.slug
-            if item.imdb_id:
-                ids["imdb"] = item.imdb_id
-            if item.tmdb_id:
-                ids["tmdb"] = int(item.tmdb_id)
-            if item.tvdb_id:
-                ids["tvdb"] = int(item.tvdb_id)
-
             # Create sync rating item (no rating for removal)
-            sync_item_data: dict[str, Any] = {"ids": ids}
+            sync_item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 
             # Add title and year if provided
             if item.title:
@@ -449,22 +421,8 @@ async def add_user_watchlist(
         # Convert to sync request format
         sync_items: list[TraktSyncWatchlistItem] = []
         for item in validated_items:
-            ids: dict[str, Any] = {}
-
-            # Add IDs that are provided (upstream validation ensures numeric strings)
-            if item.trakt_id:
-                ids["trakt"] = int(item.trakt_id)
-            if item.slug:
-                ids["slug"] = item.slug
-            if item.imdb_id:
-                ids["imdb"] = item.imdb_id
-            if item.tmdb_id:
-                ids["tmdb"] = int(item.tmdb_id)
-            if item.tvdb_id:
-                ids["tvdb"] = int(item.tvdb_id)
-
             # Create sync watchlist item
-            sync_item_data: dict[str, Any] = {"ids": ids}
+            sync_item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 
             # Add title and year if provided
             if item.title:
@@ -527,22 +485,8 @@ async def remove_user_watchlist(
         # Convert to sync request format (no notes for removal)
         sync_items: list[TraktSyncWatchlistItem] = []
         for item in validated_items:
-            ids: dict[str, Any] = {}
-
-            # Add IDs that are provided (upstream validation ensures numeric strings)
-            if item.trakt_id:
-                ids["trakt"] = int(item.trakt_id)
-            if item.slug:
-                ids["slug"] = item.slug
-            if item.imdb_id:
-                ids["imdb"] = item.imdb_id
-            if item.tmdb_id:
-                ids["tmdb"] = int(item.tmdb_id)
-            if item.tvdb_id:
-                ids["tvdb"] = int(item.tvdb_id)
-
             # Create sync watchlist item (no notes for removal)
-            sync_item_data: dict[str, Any] = {"ids": ids}
+            sync_item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 
             # Add title and year if provided
             if item.title:

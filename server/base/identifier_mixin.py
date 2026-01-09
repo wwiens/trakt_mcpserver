@@ -100,3 +100,26 @@ class IdentifierValidatorMixin(BaseModel):
                 + "or both title and year for proper identification"
             )
         return self
+
+    def build_ids_dict(self) -> dict[str, str | int]:
+        """Build IDs dict for Trakt API requests.
+
+        Converts identifier fields to API format:
+        - trakt_id, tmdb_id, tvdb_id → integers
+        - imdb_id, slug → strings (unchanged)
+
+        Returns:
+            Dict with API-formatted IDs (empty if no identifiers set)
+        """
+        ids: dict[str, str | int] = {}
+        if self.trakt_id:
+            ids["trakt"] = int(self.trakt_id)
+        if self.slug:
+            ids["slug"] = self.slug
+        if self.imdb_id:
+            ids["imdb"] = self.imdb_id
+        if self.tmdb_id:
+            ids["tmdb"] = int(self.tmdb_id)
+        if self.tvdb_id:
+            ids["tvdb"] = int(self.tvdb_id)
+        return ids

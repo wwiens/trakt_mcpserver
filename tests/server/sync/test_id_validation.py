@@ -18,8 +18,7 @@ from server.sync.tools import (
 class TestIDValidationInSyncTools:
     """Test ID validation in the main sync tool functions."""
 
-    @pytest.mark.asyncio
-    async def test_trakt_id_validation_mixed_characters(self) -> None:
+    def test_trakt_id_validation_mixed_characters(self) -> None:
         """Test various invalid trakt_id formats (upstream validation)."""
         invalid_trakt_ids = ["123abc", "abc123", "12.34", "1-23", "12 34", "x1y2z3"]
 
@@ -34,8 +33,7 @@ class TestIDValidationInSyncTools:
             assert "trakt_id must be numeric" in error_msg
             assert invalid_id in error_msg
 
-    @pytest.mark.asyncio
-    async def test_tmdb_id_validation_mixed_characters(self) -> None:
+    def test_tmdb_id_validation_mixed_characters(self) -> None:
         """Test various invalid tmdb_id formats (upstream validation)."""
         invalid_tmdb_ids = ["456def", "def456", "45.67", "4-56", "45 67", "a1b2c3"]
 
@@ -50,8 +48,7 @@ class TestIDValidationInSyncTools:
             assert "tmdb_id must be numeric" in error_msg
             assert invalid_id in error_msg
 
-    @pytest.mark.asyncio
-    async def test_add_user_ratings_invalid_trakt_id(self) -> None:
+    def test_add_user_ratings_invalid_trakt_id(self) -> None:
         """Test add_user_ratings with invalid trakt_id (upstream validation)."""
         # Now validation happens at model creation
         with pytest.raises(ValidationError) as exc_info:
@@ -65,8 +62,7 @@ class TestIDValidationInSyncTools:
         assert "trakt_id must be numeric" in error_msg
         assert "invalid_id" in error_msg
 
-    @pytest.mark.asyncio
-    async def test_add_user_ratings_invalid_tmdb_id(self) -> None:
+    def test_add_user_ratings_invalid_tmdb_id(self) -> None:
         """Test add_user_ratings with invalid tmdb_id (upstream validation)."""
         # Now validation happens at model creation
         with pytest.raises(ValidationError) as exc_info:
@@ -119,8 +115,7 @@ class TestIDValidationInSyncTools:
             assert movie_item.ids["trakt"] == 123  # Should be integer
             assert movie_item.ids["tmdb"] == 456  # Should be integer
 
-    @pytest.mark.asyncio
-    async def test_remove_user_ratings_invalid_trakt_id(self) -> None:
+    def test_remove_user_ratings_invalid_trakt_id(self) -> None:
         """Test remove_user_ratings with invalid trakt_id (upstream validation)."""
         # Now validation happens at model creation
         with pytest.raises(ValidationError) as exc_info:
@@ -134,8 +129,7 @@ class TestIDValidationInSyncTools:
         assert "trakt_id must be numeric" in error_msg
         assert "bad_trakt_id" in error_msg
 
-    @pytest.mark.asyncio
-    async def test_remove_user_ratings_invalid_tmdb_id(self) -> None:
+    def test_remove_user_ratings_invalid_tmdb_id(self) -> None:
         """Test remove_user_ratings with invalid tmdb_id (upstream validation)."""
         # Now validation happens at model creation
         with pytest.raises(ValidationError) as exc_info:
@@ -188,8 +182,7 @@ class TestIDValidationInSyncTools:
             assert movie_item.ids["trakt"] == 789  # Should be integer
             assert movie_item.ids["tmdb"] == 101112  # Should be integer
 
-    @pytest.mark.asyncio
-    async def test_pydantic_validation_error_details(self) -> None:
+    def test_pydantic_validation_error_details(self) -> None:
         """Test that Pydantic validation provides clear error details."""
         # Upstream validation provides clear error details
         with pytest.raises(ValidationError) as exc_info:
@@ -213,8 +206,7 @@ class TestIDValidationInSyncTools:
             ("imdb_id", "123456", "imdb_id must be in format 'tt' followed by digits"),
         ],
     )
-    @pytest.mark.asyncio
-    async def test_multiple_validation_errors_parametrized(
+    def test_multiple_validation_errors_parametrized(
         self, field: str, invalid_value: str, expected_message: str
     ) -> None:
         """Test that each invalid ID field generates the expected validation error."""
@@ -227,8 +219,7 @@ class TestIDValidationInSyncTools:
         error_msg = error["msg"]
         assert expected_message in error_msg
 
-    @pytest.mark.asyncio
-    async def test_tvdb_id_validation_mixed_characters(self) -> None:
+    def test_tvdb_id_validation_mixed_characters(self) -> None:
         """Test various invalid tvdb_id formats (upstream validation)."""
         invalid_tvdb_ids = ["789ghi", "ghi789", "78.90", "7-89", "78 90"]
 
@@ -242,8 +233,7 @@ class TestIDValidationInSyncTools:
             assert "tvdb_id must be numeric" in error_msg
             assert invalid_id in error_msg
 
-    @pytest.mark.asyncio
-    async def test_imdb_id_format_validation(self) -> None:
+    def test_imdb_id_format_validation(self) -> None:
         """Test IMDB ID format validation (must be tt followed by digits)."""
         invalid_imdb_ids = ["tt", "123456", "TT123456", "tt123abc", "imdb123"]
 
@@ -257,8 +247,7 @@ class TestIDValidationInSyncTools:
             assert "imdb_id must be in format 'tt' followed by digits" in error_msg
             assert invalid_id in error_msg
 
-    @pytest.mark.asyncio
-    async def test_valid_imdb_id_format(self) -> None:
+    def test_valid_imdb_id_format(self) -> None:
         """Test that valid IMDB IDs are accepted."""
         valid_imdb_ids = ["tt0372784", "tt1234567", "tt00001"]
 
@@ -267,20 +256,17 @@ class TestIDValidationInSyncTools:
             item = UserRatingRequestItem(rating=9, imdb_id=imdb_id)
             assert item.imdb_id == imdb_id
 
-    @pytest.mark.asyncio
-    async def test_slug_id_accepted(self) -> None:
+    def test_slug_id_accepted(self) -> None:
         """Test that slug identifier is accepted."""
         item = UserRatingRequestItem(rating=8, slug="the-dark-knight-2008")
         assert item.slug == "the-dark-knight-2008"
 
-    @pytest.mark.asyncio
-    async def test_tvdb_id_valid(self) -> None:
+    def test_tvdb_id_valid(self) -> None:
         """Test that valid numeric tvdb_id is accepted."""
         item = UserRatingRequestItem(rating=7, tvdb_id="12345")
         assert item.tvdb_id == "12345"
 
-    @pytest.mark.asyncio
-    async def test_all_new_ids_in_identifier(self) -> None:
+    def test_all_new_ids_in_identifier(self) -> None:
         """Test that slug and tvdb_id work in UserRatingIdentifier."""
         # Test slug
         item_slug = UserRatingIdentifier(slug="breaking-bad")
@@ -298,8 +284,7 @@ class TestIDValidationInSyncTools:
 class TestWatchlistIDValidation:
     """Test ID validation in watchlist models."""
 
-    @pytest.mark.asyncio
-    async def test_watchlist_item_trakt_id_validation(self) -> None:
+    def test_watchlist_item_trakt_id_validation(self) -> None:
         """Test various invalid trakt_id formats in watchlist item."""
         invalid_trakt_ids = ["123abc", "abc123", "12.34", "1-23", "12 34"]
 
@@ -313,8 +298,7 @@ class TestWatchlistIDValidation:
             assert "trakt_id must be numeric" in error_msg
             assert invalid_id in error_msg
 
-    @pytest.mark.asyncio
-    async def test_watchlist_item_tmdb_id_validation(self) -> None:
+    def test_watchlist_item_tmdb_id_validation(self) -> None:
         """Test various invalid tmdb_id formats in watchlist item."""
         invalid_tmdb_ids = ["456def", "def456", "45.67", "4-56", "45 67"]
 
@@ -328,8 +312,7 @@ class TestWatchlistIDValidation:
             assert "tmdb_id must be numeric" in error_msg
             assert invalid_id in error_msg
 
-    @pytest.mark.asyncio
-    async def test_watchlist_item_tvdb_id_validation(self) -> None:
+    def test_watchlist_item_tvdb_id_validation(self) -> None:
         """Test various invalid tvdb_id formats in watchlist item."""
         invalid_tvdb_ids = ["789ghi", "ghi789", "78.90", "7-89", "78 90"]
 
@@ -343,8 +326,7 @@ class TestWatchlistIDValidation:
             assert "tvdb_id must be numeric" in error_msg
             assert invalid_id in error_msg
 
-    @pytest.mark.asyncio
-    async def test_watchlist_item_imdb_id_format_validation(self) -> None:
+    def test_watchlist_item_imdb_id_format_validation(self) -> None:
         """Test IMDB ID format validation in watchlist item."""
         invalid_imdb_ids = ["tt", "123456", "TT123456", "tt123abc", "imdb123"]
 
@@ -358,8 +340,7 @@ class TestWatchlistIDValidation:
             assert "imdb_id must be in format 'tt' followed by digits" in error_msg
             assert invalid_id in error_msg
 
-    @pytest.mark.asyncio
-    async def test_watchlist_item_valid_imdb_id(self) -> None:
+    def test_watchlist_item_valid_imdb_id(self) -> None:
         """Test that valid IMDB IDs are accepted in watchlist item."""
         valid_imdb_ids = ["tt0372784", "tt1234567", "tt00001"]
 
@@ -367,14 +348,12 @@ class TestWatchlistIDValidation:
             item = UserWatchlistRequestItem(imdb_id=imdb_id)
             assert item.imdb_id == imdb_id
 
-    @pytest.mark.asyncio
-    async def test_watchlist_item_slug_accepted(self) -> None:
+    def test_watchlist_item_slug_accepted(self) -> None:
         """Test that slug identifier is accepted in watchlist item."""
         item = UserWatchlistRequestItem(slug="the-dark-knight-2008")
         assert item.slug == "the-dark-knight-2008"
 
-    @pytest.mark.asyncio
-    async def test_watchlist_identifier_all_ids(self) -> None:
+    def test_watchlist_identifier_all_ids(self) -> None:
         """Test that all ID types work in UserWatchlistIdentifier."""
         # Test slug
         item_slug = UserWatchlistIdentifier(slug="breaking-bad")
@@ -407,8 +386,7 @@ class TestWatchlistIDValidation:
             ("imdb_id", "123456", "imdb_id must be in format 'tt' followed by digits"),
         ],
     )
-    @pytest.mark.asyncio
-    async def test_watchlist_validation_errors_parametrized(
+    def test_watchlist_validation_errors_parametrized(
         self, field: str, invalid_value: str, expected_message: str
     ) -> None:
         """Test that each invalid ID field generates the expected validation error."""
@@ -421,8 +399,7 @@ class TestWatchlistIDValidation:
         error_msg = error["msg"]
         assert expected_message in error_msg
 
-    @pytest.mark.asyncio
-    async def test_watchlist_identifier_validation_errors(self) -> None:
+    def test_watchlist_identifier_validation_errors(self) -> None:
         """Test validation errors in UserWatchlistIdentifier."""
         # Invalid trakt_id
         with pytest.raises(ValidationError) as exc_info:

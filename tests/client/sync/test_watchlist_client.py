@@ -100,7 +100,7 @@ SAMPLE_ADD_WATCHLIST_RESPONSE = {
 }
 
 SAMPLE_REMOVE_WATCHLIST_RESPONSE: dict[str, dict[str, int | list[dict[str, str]]]] = {
-    "removed": {"movies": 2, "shows": 1, "seasons": 0, "episodes": 1},
+    "deleted": {"movies": 2, "shows": 1, "seasons": 0, "episodes": 1},
     "not_found": {"movies": [], "shows": [], "seasons": [], "episodes": []},
 }
 
