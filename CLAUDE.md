@@ -149,6 +149,13 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - Never log sensitive data (tokens, user IDs)
 - Keep dependencies updated (`pip-audit`)
 
+### API & Tool Schema Compliance
+
+- **Read `trakt.apib` first** - Verify field names, request/response structures before implementing
+- **Match API field names exactly** - e.g., API uses `deleted` not `removed`
+- **Support all identifier types** - `trakt`, `slug`, `imdb`, `tmdb`, `tvdb` (validate formats: IMDB=`tt\d+`, others=numeric)
+- **Tool parameters must be unambiguous** - If flattening nested API structures (e.g., `{"movies": [...]}` → `items` + `type`), ensure LLM clients won't misinterpret; include examples in descriptions for complex inputs
+
 ## Key Patterns
 
 ### MCP Pattern

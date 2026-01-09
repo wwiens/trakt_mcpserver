@@ -230,7 +230,7 @@ class TestSyncWatchlistFormatters:
     def test_format_user_watchlist_summary_removed(self) -> None:
         """Test formatting remove operation summary."""
         summary = SyncWatchlistSummary(
-            removed=SyncWatchlistSummaryCount(movies=3, shows=2, seasons=1, episodes=0),
+            deleted=SyncWatchlistSummaryCount(movies=3, shows=2, seasons=1, episodes=0),
             not_found=SyncWatchlistNotFound(
                 movies=[], shows=[], seasons=[], episodes=[]
             ),

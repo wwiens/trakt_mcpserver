@@ -30,7 +30,7 @@ class SyncWatchlistSummary(BaseModel):
 
     added: SyncWatchlistSummaryCount | None = None
     existing: SyncWatchlistSummaryCount | None = None
-    removed: SyncWatchlistSummaryCount | None = None
+    deleted: SyncWatchlistSummaryCount | None = None
     not_found: SyncWatchlistNotFound = Field(
         default_factory=lambda: SyncWatchlistNotFound(
             movies=[], shows=[], seasons=[], episodes=[]

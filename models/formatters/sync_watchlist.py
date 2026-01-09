@@ -168,8 +168,8 @@ class SyncWatchlistFormatters:
         counts = None
         if operation == "added" and summary.added:
             counts = summary.added
-        elif operation == "removed" and summary.removed:
-            counts = summary.removed
+        elif operation == "removed" and summary.deleted:
+            counts = summary.deleted
 
         if counts:
             total = getattr(counts, watchlist_type, 0)

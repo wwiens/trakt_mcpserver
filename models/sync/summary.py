@@ -34,7 +34,7 @@ class SyncRatingsSummary(BaseModel):
     """Add/remove operation summary with counts and errors."""
 
     added: SyncRatingsSummaryCount | None = None
-    removed: SyncRatingsSummaryCount | None = None
+    deleted: SyncRatingsSummaryCount | None = None
     not_found: SyncRatingsNotFound = Field(
         default_factory=_create_sync_ratings_not_found
     )

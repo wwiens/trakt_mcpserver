@@ -385,19 +385,19 @@ class TestSyncRatingsSummary:
         assert summary.added is not None
         assert summary.added.movies == 1
         assert summary.added.shows == 1
-        assert summary.removed is None
+        assert summary.deleted is None
         assert summary.not_found.movies == []
 
     def test_remove_operation_summary(self) -> None:
         """Test summary for remove operation."""
-        removed = SyncRatingsSummaryCount(movies=2, shows=1)
+        deleted = SyncRatingsSummaryCount(movies=2, shows=1)
         not_found = SyncRatingsNotFound.model_construct()
 
-        summary = SyncRatingsSummary(removed=removed, not_found=not_found)
+        summary = SyncRatingsSummary(deleted=deleted, not_found=not_found)
 
-        assert summary.removed is not None
-        assert summary.removed.movies == 2
-        assert summary.removed.shows == 1
+        assert summary.deleted is not None
+        assert summary.deleted.movies == 2
+        assert summary.deleted.shows == 1
         assert summary.added is None
 
     def test_summary_with_not_found_items(self) -> None:
