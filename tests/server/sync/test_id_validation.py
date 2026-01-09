@@ -8,6 +8,8 @@ from pydantic import ValidationError
 from server.sync.tools import (
     UserRatingIdentifier,
     UserRatingRequestItem,
+    UserWatchlistIdentifier,
+    UserWatchlistRequestItem,
     add_user_ratings,
     remove_user_ratings,
 )
@@ -291,3 +293,147 @@ class TestIDValidationInSyncTools:
         # Test valid imdb_id
         item_imdb = UserRatingIdentifier(imdb_id="tt0903747")
         assert item_imdb.imdb_id == "tt0903747"
+
+
+class TestWatchlistIDValidation:
+    """Test ID validation in watchlist models."""
+
+    @pytest.mark.asyncio
+    async def test_watchlist_item_trakt_id_validation(self) -> None:
+        """Test various invalid trakt_id formats in watchlist item."""
+        invalid_trakt_ids = ["123abc", "abc123", "12.34", "1-23", "12 34"]
+
+        for invalid_id in invalid_trakt_ids:
+            with pytest.raises(ValidationError) as exc_info:
+                UserWatchlistRequestItem(trakt_id=invalid_id)
+
+            error = exc_info.value.errors()[0]
+            assert error["type"] == "value_error"
+            error_msg = error["msg"]
+            assert "trakt_id must be numeric" in error_msg
+            assert invalid_id in error_msg
+
+    @pytest.mark.asyncio
+    async def test_watchlist_item_tmdb_id_validation(self) -> None:
+        """Test various invalid tmdb_id formats in watchlist item."""
+        invalid_tmdb_ids = ["456def", "def456", "45.67", "4-56", "45 67"]
+
+        for invalid_id in invalid_tmdb_ids:
+            with pytest.raises(ValidationError) as exc_info:
+                UserWatchlistRequestItem(tmdb_id=invalid_id)
+
+            error = exc_info.value.errors()[0]
+            assert error["type"] == "value_error"
+            error_msg = error["msg"]
+            assert "tmdb_id must be numeric" in error_msg
+            assert invalid_id in error_msg
+
+    @pytest.mark.asyncio
+    async def test_watchlist_item_tvdb_id_validation(self) -> None:
+        """Test various invalid tvdb_id formats in watchlist item."""
+        invalid_tvdb_ids = ["789ghi", "ghi789", "78.90", "7-89", "78 90"]
+
+        for invalid_id in invalid_tvdb_ids:
+            with pytest.raises(ValidationError) as exc_info:
+                UserWatchlistRequestItem(tvdb_id=invalid_id)
+
+            error = exc_info.value.errors()[0]
+            assert error["type"] == "value_error"
+            error_msg = error["msg"]
+            assert "tvdb_id must be numeric" in error_msg
+            assert invalid_id in error_msg
+
+    @pytest.mark.asyncio
+    async def test_watchlist_item_imdb_id_format_validation(self) -> None:
+        """Test IMDB ID format validation in watchlist item."""
+        invalid_imdb_ids = ["tt", "123456", "TT123456", "tt123abc", "imdb123"]
+
+        for invalid_id in invalid_imdb_ids:
+            with pytest.raises(ValidationError) as exc_info:
+                UserWatchlistRequestItem(imdb_id=invalid_id)
+
+            error = exc_info.value.errors()[0]
+            assert error["type"] == "value_error"
+            error_msg = error["msg"]
+            assert "imdb_id must be in format 'tt' followed by digits" in error_msg
+            assert invalid_id in error_msg
+
+    @pytest.mark.asyncio
+    async def test_watchlist_item_valid_imdb_id(self) -> None:
+        """Test that valid IMDB IDs are accepted in watchlist item."""
+        valid_imdb_ids = ["tt0372784", "tt1234567", "tt00001"]
+
+        for imdb_id in valid_imdb_ids:
+            item = UserWatchlistRequestItem(imdb_id=imdb_id)
+            assert item.imdb_id == imdb_id
+
+    @pytest.mark.asyncio
+    async def test_watchlist_item_slug_accepted(self) -> None:
+        """Test that slug identifier is accepted in watchlist item."""
+        item = UserWatchlistRequestItem(slug="the-dark-knight-2008")
+        assert item.slug == "the-dark-knight-2008"
+
+    @pytest.mark.asyncio
+    async def test_watchlist_identifier_all_ids(self) -> None:
+        """Test that all ID types work in UserWatchlistIdentifier."""
+        # Test slug
+        item_slug = UserWatchlistIdentifier(slug="breaking-bad")
+        assert item_slug.slug == "breaking-bad"
+
+        # Test tvdb_id
+        item_tvdb = UserWatchlistIdentifier(tvdb_id="81189")
+        assert item_tvdb.tvdb_id == "81189"
+
+        # Test valid imdb_id
+        item_imdb = UserWatchlistIdentifier(imdb_id="tt0903747")
+        assert item_imdb.imdb_id == "tt0903747"
+
+        # Test trakt_id
+        item_trakt = UserWatchlistIdentifier(trakt_id="12345")
+        assert item_trakt.trakt_id == "12345"
+
+        # Test tmdb_id
+        item_tmdb = UserWatchlistIdentifier(tmdb_id="67890")
+        assert item_tmdb.tmdb_id == "67890"
+
+    @pytest.mark.parametrize(
+        "field,invalid_value,expected_message",
+        [
+            ("trakt_id", "bad_trakt", "trakt_id must be numeric"),
+            ("tmdb_id", "bad_tmdb", "tmdb_id must be numeric"),
+            ("tvdb_id", "bad_tvdb", "tvdb_id must be numeric"),
+            ("imdb_id", "invalid", "imdb_id must be in format 'tt' followed by digits"),
+            ("imdb_id", "tt", "imdb_id must be in format 'tt' followed by digits"),
+            ("imdb_id", "123456", "imdb_id must be in format 'tt' followed by digits"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_watchlist_validation_errors_parametrized(
+        self, field: str, invalid_value: str, expected_message: str
+    ) -> None:
+        """Test that each invalid ID field generates the expected validation error."""
+        with pytest.raises(ValidationError) as exc_info:
+            UserWatchlistRequestItem(**{field: invalid_value})  # type: ignore[arg-type]
+
+        error = exc_info.value.errors()[0]
+        assert error["type"] == "value_error"
+        assert error["loc"] == (field,)
+        error_msg = error["msg"]
+        assert expected_message in error_msg
+
+    @pytest.mark.asyncio
+    async def test_watchlist_identifier_validation_errors(self) -> None:
+        """Test validation errors in UserWatchlistIdentifier."""
+        # Invalid trakt_id
+        with pytest.raises(ValidationError) as exc_info:
+            UserWatchlistIdentifier(trakt_id="not_numeric")
+
+        error = exc_info.value.errors()[0]
+        assert "trakt_id must be numeric" in error["msg"]
+
+        # Invalid imdb_id
+        with pytest.raises(ValidationError) as exc_info:
+            UserWatchlistIdentifier(imdb_id="bad_imdb")
+
+        error = exc_info.value.errors()[0]
+        assert "imdb_id must be in format 'tt' followed by digits" in error["msg"]
