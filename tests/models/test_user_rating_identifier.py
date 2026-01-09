@@ -100,7 +100,7 @@ class TestUserRatingIdentifierValidation:
         assert error["type"] == "value_error"
         error_msg = error["msg"]
         assert "Rating item must include either an identifier" in error_msg
-        assert "trakt_id, imdb_id, or tmdb_id" in error_msg
+        assert "trakt_id, slug, imdb_id, tmdb_id, or tvdb_id" in error_msg
         assert "or both title and year" in error_msg
 
     def test_invalid_title_without_year(self) -> None:
@@ -189,7 +189,15 @@ class TestUserRatingIdentifierValidation:
         # Verify no rating field exists
         assert not hasattr(item, "rating")
 
-        # Verify the model only has the expected fields
-        expected_fields = {"trakt_id", "imdb_id", "tmdb_id", "title", "year"}
+        # Verify the model has the expected fields from IdentifierValidatorMixin
+        expected_fields = {
+            "trakt_id",
+            "slug",
+            "imdb_id",
+            "tmdb_id",
+            "tvdb_id",
+            "title",
+            "year",
+        }
         actual_fields = set(UserRatingIdentifier.model_fields.keys())
         assert actual_fields == expected_fields

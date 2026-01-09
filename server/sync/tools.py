@@ -221,15 +221,13 @@ async def add_user_ratings(
         AuthenticationRequiredError: If user is not authenticated
     """
     logger.debug("add_user_ratings called with rating_type=%s", rating_type)
-    # Items are already validated as Pydantic models by FastMCP
-    validated_items = items
 
     try:
         client = SyncClient()
 
         # Convert to sync request format
         sync_items: list[TraktSyncRatingItem] = []
-        for item in validated_items:
+        for item in items:
             # Create sync rating item
             sync_item_data: dict[str, Any] = {
                 "rating": item.rating,
@@ -285,15 +283,13 @@ async def remove_user_ratings(
         AuthenticationRequiredError: If user is not authenticated
     """
     logger.debug("remove_user_ratings called with rating_type=%s", rating_type)
-    # Items are already validated as Pydantic models by FastMCP
-    validated_items = items
 
     try:
         client = SyncClient()
 
         # Convert to sync request format (no ratings needed for removal)
         sync_items: list[TraktSyncRatingItem] = []
-        for item in validated_items:
+        for item in items:
             # Create sync rating item (no rating for removal)
             sync_item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 
@@ -412,15 +408,13 @@ async def add_user_watchlist(
         AuthenticationRequiredError: If user is not authenticated
     """
     logger.debug("add_user_watchlist called with watchlist_type=%s", watchlist_type)
-    # Items are already validated as Pydantic models by FastMCP
-    validated_items = items
 
     try:
         client = SyncClient()
 
         # Convert to sync request format
         sync_items: list[TraktSyncWatchlistItem] = []
-        for item in validated_items:
+        for item in items:
             # Create sync watchlist item
             sync_item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 
@@ -476,15 +470,13 @@ async def remove_user_watchlist(
         AuthenticationRequiredError: If user is not authenticated
     """
     logger.debug("remove_user_watchlist called with watchlist_type=%s", watchlist_type)
-    # Items are already validated as Pydantic models by FastMCP
-    validated_items = items
 
     try:
         client = SyncClient()
 
         # Convert to sync request format (no notes for removal)
         sync_items: list[TraktSyncWatchlistItem] = []
-        for item in validated_items:
+        for item in items:
             # Create sync watchlist item (no notes for removal)
             sync_item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 

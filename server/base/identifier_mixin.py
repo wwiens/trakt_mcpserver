@@ -3,7 +3,7 @@
 import re
 from typing import ClassVar, Self
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 
 class IdentifierValidatorMixin(BaseModel):
@@ -51,28 +51,12 @@ class IdentifierValidatorMixin(BaseModel):
         """Strip whitespace from string fields."""
         return v.strip() if isinstance(v, str) else v
 
-    @field_validator("trakt_id", mode="after")
+    @field_validator("trakt_id", "tmdb_id", "tvdb_id", mode="after")
     @classmethod
-    def _validate_trakt_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure trakt_id is numeric if provided."""
+    def _validate_numeric_ids(cls, v: str | None, info: ValidationInfo) -> str | None:
+        """Ensure numeric ID fields are numeric if provided."""
         if v is not None and not v.isdigit():
-            raise ValueError(f"trakt_id must be numeric, got: '{v}'")
-        return v
-
-    @field_validator("tmdb_id", mode="after")
-    @classmethod
-    def _validate_tmdb_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure tmdb_id is numeric if provided."""
-        if v is not None and not v.isdigit():
-            raise ValueError(f"tmdb_id must be numeric, got: '{v}'")
-        return v
-
-    @field_validator("tvdb_id", mode="after")
-    @classmethod
-    def _validate_tvdb_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure tvdb_id is numeric if provided."""
-        if v is not None and not v.isdigit():
-            raise ValueError(f"tvdb_id must be numeric, got: '{v}'")
+            raise ValueError(f"{info.field_name} must be numeric, got: '{v}'")
         return v
 
     @field_validator("imdb_id", mode="after")
