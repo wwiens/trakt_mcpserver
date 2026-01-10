@@ -35,12 +35,12 @@ class QueryParam(LimitPageValidatorMixin):
         DEFAULT_LIMIT,
         ge=0,
         le=100,
-        description="Maximum results to return (0=all up to 100, default=10)",
+        description=SEARCH_LIMIT_DESCRIPTION,
     )
     page: int | None = Field(
         default=None,
         ge=1,
-        description="Page number for pagination (optional). If not provided, auto-paginates.",
+        description=PAGE_DESCRIPTION,
     )
 
     @field_validator("query", mode="before")

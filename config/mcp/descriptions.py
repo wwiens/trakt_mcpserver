@@ -64,7 +64,8 @@ COMMENTS_LIMIT_DESCRIPTION = "Number of comments to return (default 10)"
 REPLIES_LIMIT_DESCRIPTION = "Number of replies to return (default 10)"
 SEARCH_LIMIT_DESCRIPTION = "Maximum results to return (0=all, default 10)"
 USER_LIMIT_DESCRIPTION = (
-    "Maximum number of items to return. Use 0 to return all items (default). Max 100."
+    "Maximum number of items to return. Use 0 to return all items (default). Max 100. "
+    "None is treated as 0."
 )
 RECOMMENDATIONS_LIMIT_DESCRIPTION = (
     "Number of recommendations to return (1-100, default 10)"
