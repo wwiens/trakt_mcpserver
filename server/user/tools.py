@@ -1,7 +1,7 @@
 """User tools for the Trakt MCP server."""
 
 from collections.abc import Awaitable, Callable
-from typing import Any, TypeVar
+from typing import Annotated, Any, TypeVar
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, ValidationError
@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, ValidationError
 from client.user.client import UserClient
 from config.api import effective_limit
 from config.auth import AUTH_VERIFICATION_URL
+from config.mcp.descriptions import USER_LIMIT_DESCRIPTION
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.user import UserFormatters
 from server.base import BaseToolErrorMixin
@@ -98,7 +99,7 @@ class UserLimitParam(BaseModel):
         0,
         ge=0,
         le=100,
-        description="Maximum number of items to return (0 for all, max 100)",
+        description=USER_LIMIT_DESCRIPTION,
     )
 
 
@@ -151,25 +152,35 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_user_watched_shows"],
-        description="Fetch TV shows watched by the authenticated user from Trakt",
+        description="Fetch TV shows watched by the authenticated user from Trakt. Requires OAuth authentication.",
     )
     @BaseToolErrorMixin.with_error_handling(
         operation="fetch_user_watched_shows_tool",
         tool=TOOL_NAMES["fetch_user_watched_shows"],
     )
-    async def fetch_user_watched_shows_tool(limit: int | None = 0) -> str:
+    async def fetch_user_watched_shows_tool(
+        limit: Annotated[
+            int | None,
+            Field(description=USER_LIMIT_DESCRIPTION),
+        ] = 0,
+    ) -> str:
         """MCP tool: fetch TV shows watched by the authenticated user."""
         return await fetch_user_watched_shows(limit)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_user_watched_movies"],
-        description="Fetch movies watched by the authenticated user from Trakt",
+        description="Fetch movies watched by the authenticated user from Trakt. Requires OAuth authentication.",
     )
     @BaseToolErrorMixin.with_error_handling(
         operation="fetch_user_watched_movies_tool",
         tool=TOOL_NAMES["fetch_user_watched_movies"],
     )
-    async def fetch_user_watched_movies_tool(limit: int | None = 0) -> str:
+    async def fetch_user_watched_movies_tool(
+        limit: Annotated[
+            int | None,
+            Field(description=USER_LIMIT_DESCRIPTION),
+        ] = 0,
+    ) -> str:
         """MCP tool: fetch movies watched by the authenticated user."""
         return await fetch_user_watched_movies(limit)
 
