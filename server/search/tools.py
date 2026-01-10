@@ -196,12 +196,13 @@ def register_search_tools(
     )
     async def search_shows_tool(
         query: Annotated[
-            str, Field(min_length=1, description=SEARCH_QUERY_DESCRIPTION)
+            str,
+            Field(min_length=1, max_length=200, description=SEARCH_QUERY_DESCRIPTION),
         ],
         limit: Annotated[
-            int, Field(description=SEARCH_LIMIT_DESCRIPTION)
+            int, Field(ge=0, le=100, description=SEARCH_LIMIT_DESCRIPTION)
         ] = DEFAULT_LIMIT,
-        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+        page: Annotated[int | None, Field(ge=1, description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await search_shows(query, limit, page)
 
@@ -211,12 +212,13 @@ def register_search_tools(
     )
     async def search_movies_tool(
         query: Annotated[
-            str, Field(min_length=1, description=SEARCH_QUERY_DESCRIPTION)
+            str,
+            Field(min_length=1, max_length=200, description=SEARCH_QUERY_DESCRIPTION),
         ],
         limit: Annotated[
-            int, Field(description=SEARCH_LIMIT_DESCRIPTION)
+            int, Field(ge=0, le=100, description=SEARCH_LIMIT_DESCRIPTION)
         ] = DEFAULT_LIMIT,
-        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+        page: Annotated[int | None, Field(ge=1, description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await search_movies(query, limit, page)
 

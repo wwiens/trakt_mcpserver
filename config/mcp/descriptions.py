@@ -51,7 +51,10 @@ __all__ = [
 SHOW_ID_DESCRIPTION = (
     "Trakt ID, Trakt slug, or IMDB ID (e.g., '1388', 'breaking-bad', 'tt0903747')"
 )
-MOVIE_ID_DESCRIPTION = "Trakt ID, Trakt slug, or IMDB ID (e.g., '120', 'the-dark-knight-2008', 'tt0468569')"
+MOVIE_ID_DESCRIPTION = (
+    "Trakt ID, Trakt slug, or IMDB ID "
+    "(e.g., '120', 'the-dark-knight-2008', 'tt0468569')"
+)
 COMMENT_ID_DESCRIPTION = "Trakt comment ID (numeric string, e.g., '417', '12345')"
 
 # Pagination descriptions
