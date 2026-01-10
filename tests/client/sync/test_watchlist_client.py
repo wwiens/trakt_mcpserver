@@ -100,7 +100,7 @@ SAMPLE_ADD_WATCHLIST_RESPONSE = {
 }
 
 SAMPLE_REMOVE_WATCHLIST_RESPONSE: dict[str, dict[str, int | list[dict[str, str]]]] = {
-    "removed": {"movies": 2, "shows": 1, "seasons": 0, "episodes": 1},
+    "deleted": {"movies": 2, "shows": 1, "seasons": 0, "episodes": 1},
     "not_found": {"movies": [], "shows": [], "seasons": [], "episodes": []},
 }
 
@@ -415,7 +415,7 @@ class TestSyncWatchlistClient:
         with patch.object(authenticated_client, "_post_typed_request") as mock_request:
             # Mock the response with proper Pydantic object
             mock_summary = SyncWatchlistSummary(
-                removed=SyncWatchlistSummaryCount(
+                deleted=SyncWatchlistSummaryCount(
                     movies=2, shows=1, seasons=0, episodes=1
                 ),
                 not_found=SyncWatchlistNotFound(
@@ -426,10 +426,10 @@ class TestSyncWatchlistClient:
 
             result = await authenticated_client.remove_sync_watchlist(request)
 
-            assert result.removed is not None
-            assert result.removed.movies == 2
-            assert result.removed.shows == 1
-            assert result.removed.episodes == 1
+            assert result.deleted is not None
+            assert result.deleted.movies == 2
+            assert result.deleted.shows == 1
+            assert result.deleted.episodes == 1
             assert len(result.not_found.movies) == 0
 
             # Verify correct endpoint and data were used

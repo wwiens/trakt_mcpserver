@@ -111,7 +111,7 @@ class TestUserRatingRequestItemValidation:
         assert error["type"] == "value_error"
         error_msg = error["msg"]
         assert "Rating item must include either an identifier" in error_msg
-        assert "trakt_id, imdb_id, or tmdb_id" in error_msg
+        assert "trakt_id, slug, imdb_id, tmdb_id, or tvdb_id" in error_msg
         assert "or both title and year" in error_msg
 
     def test_invalid_title_without_year(self) -> None:

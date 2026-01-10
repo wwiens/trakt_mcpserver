@@ -2,10 +2,10 @@
 
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from client.sync.client import SyncClient
 from config.api import DEFAULT_LIMIT
@@ -25,7 +25,7 @@ from models.sync.watchlist import (
     TraktWatchlistItem,
 )
 from models.types.pagination import PaginatedResponse, PaginationParams
-from server.base import BaseToolErrorMixin
+from server.base import BaseToolErrorMixin, IdentifierValidatorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
@@ -72,93 +72,18 @@ class UserRatingsParams(BaseModel):
         return v
 
 
-class UserRatingRequestItem(BaseModel):
+class UserRatingRequestItem(IdentifierValidatorMixin):
     """Single rating item for add/remove operations."""
 
+    _identifier_error_prefix: ClassVar[str] = "Rating item"
+
     rating: int = Field(ge=1, le=10, description="Rating from 1 to 10")
-    trakt_id: str | None = Field(default=None, min_length=1, description="Trakt ID")
-    imdb_id: str | None = Field(default=None, min_length=1, description="IMDB ID")
-    tmdb_id: str | None = Field(default=None, min_length=1, description="TMDB ID")
-    title: str | None = Field(default=None, min_length=1, description="Title")
-    year: int | None = Field(default=None, gt=1800, description="Release year")
-
-    @field_validator("trakt_id", "imdb_id", "tmdb_id", "title", mode="before")
-    @classmethod
-    def _strip_strings(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
-
-    @field_validator("trakt_id", mode="after")
-    @classmethod
-    def _validate_trakt_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure trakt_id is numeric if provided."""
-        if v is not None and not v.isdigit():
-            raise ValueError(f"trakt_id must be numeric, got: '{v}'")
-        return v
-
-    @field_validator("tmdb_id", mode="after")
-    @classmethod
-    def _validate_tmdb_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure tmdb_id is numeric if provided."""
-        if v is not None and not v.isdigit():
-            raise ValueError(f"tmdb_id must be numeric, got: '{v}'")
-        return v
-
-    @model_validator(mode="after")
-    def _validate_identifiers(self) -> "UserRatingRequestItem":
-        """Ensure at least one identifier (trakt_id/imdb_id/tmdb_id) OR both title+year are provided."""
-        has_id = any([self.trakt_id, self.imdb_id, self.tmdb_id])
-        has_title_year = self.title and self.year
-
-        if not has_id and not has_title_year:
-            raise ValueError(
-                "Rating item must include either an identifier (trakt_id, imdb_id, or tmdb_id) "
-                + "or both title and year for proper identification"
-            )
-        return self
 
 
-class UserRatingIdentifier(BaseModel):
+class UserRatingIdentifier(IdentifierValidatorMixin):
     """Rating item identifier for removal operations (no rating required)."""
 
-    trakt_id: str | None = Field(default=None, min_length=1, description="Trakt ID")
-    imdb_id: str | None = Field(default=None, min_length=1, description="IMDB ID")
-    tmdb_id: str | None = Field(default=None, min_length=1, description="TMDB ID")
-    title: str | None = Field(default=None, min_length=1, description="Title")
-    year: int | None = Field(default=None, gt=1800, description="Release year")
-
-    @field_validator("trakt_id", "imdb_id", "tmdb_id", "title", mode="before")
-    @classmethod
-    def _strip_strings(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
-
-    @field_validator("trakt_id", mode="after")
-    @classmethod
-    def _validate_trakt_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure trakt_id is numeric if provided."""
-        if v is not None and not v.isdigit():
-            raise ValueError(f"trakt_id must be numeric, got: '{v}'")
-        return v
-
-    @field_validator("tmdb_id", mode="after")
-    @classmethod
-    def _validate_tmdb_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure tmdb_id is numeric if provided."""
-        if v is not None and not v.isdigit():
-            raise ValueError(f"tmdb_id must be numeric, got: '{v}'")
-        return v
-
-    @model_validator(mode="after")
-    def _validate_identifiers(self) -> "UserRatingIdentifier":
-        """Ensure at least one identifier (trakt_id/imdb_id/tmdb_id) OR both title+year are provided."""
-        has_id = any([self.trakt_id, self.imdb_id, self.tmdb_id])
-        has_title_year = self.title and self.year
-
-        if not has_id and not has_title_year:
-            raise ValueError(
-                "Rating item must include either an identifier (trakt_id, imdb_id, or tmdb_id) "
-                + "or both title and year for proper identification"
-            )
-        return self
+    _identifier_error_prefix: ClassVar[str] = "Rating item"
 
 
 class UserRatingRequest(BaseModel):
@@ -188,97 +113,28 @@ class UserWatchlistParams(BaseModel):
         return v
 
 
-class UserWatchlistRequestItem(BaseModel):
+class UserWatchlistRequestItem(IdentifierValidatorMixin):
     """Single watchlist item for add operations (with optional notes)."""
 
-    trakt_id: str | None = Field(default=None, min_length=1, description="Trakt ID")
-    imdb_id: str | None = Field(default=None, min_length=1, description="IMDB ID")
-    tmdb_id: str | None = Field(default=None, min_length=1, description="TMDB ID")
-    title: str | None = Field(default=None, min_length=1, description="Title")
-    year: int | None = Field(default=None, gt=1800, description="Release year")
+    _identifier_error_prefix: ClassVar[str] = "Watchlist item"
+
     notes: str | None = Field(
         default=None,
         max_length=500,
         description="Optional notes (VIP only, 500 char max)",
     )
 
-    @field_validator("trakt_id", "imdb_id", "tmdb_id", "title", "notes", mode="before")
+    @field_validator("notes", mode="before")
     @classmethod
-    def _strip_strings(cls, v: object) -> object:
+    def _strip_notes(cls, v: object) -> object:
+        """Strip whitespace from notes field."""
         return v.strip() if isinstance(v, str) else v
 
-    @field_validator("trakt_id", mode="after")
-    @classmethod
-    def _validate_trakt_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure trakt_id is numeric if provided."""
-        if v is not None and not v.isdigit():
-            raise ValueError(f"trakt_id must be numeric, got: '{v}'")
-        return v
 
-    @field_validator("tmdb_id", mode="after")
-    @classmethod
-    def _validate_tmdb_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure tmdb_id is numeric if provided."""
-        if v is not None and not v.isdigit():
-            raise ValueError(f"tmdb_id must be numeric, got: '{v}'")
-        return v
-
-    @model_validator(mode="after")
-    def _validate_identifiers(self) -> "UserWatchlistRequestItem":
-        """Ensure at least one identifier (trakt_id/imdb_id/tmdb_id) OR both title+year are provided."""
-        has_id = any([self.trakt_id, self.imdb_id, self.tmdb_id])
-        has_title_year = self.title and self.year
-
-        if not has_id and not has_title_year:
-            raise ValueError(
-                "Watchlist item must include either an identifier (trakt_id, imdb_id, or tmdb_id) "
-                + "or both title and year for proper identification"
-            )
-        return self
-
-
-class UserWatchlistIdentifier(BaseModel):
+class UserWatchlistIdentifier(IdentifierValidatorMixin):
     """Watchlist item identifier for removal operations (no notes)."""
 
-    trakt_id: str | None = Field(default=None, min_length=1, description="Trakt ID")
-    imdb_id: str | None = Field(default=None, min_length=1, description="IMDB ID")
-    tmdb_id: str | None = Field(default=None, min_length=1, description="TMDB ID")
-    title: str | None = Field(default=None, min_length=1, description="Title")
-    year: int | None = Field(default=None, gt=1800, description="Release year")
-
-    @field_validator("trakt_id", "imdb_id", "tmdb_id", "title", mode="before")
-    @classmethod
-    def _strip_strings(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
-
-    @field_validator("trakt_id", mode="after")
-    @classmethod
-    def _validate_trakt_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure trakt_id is numeric if provided."""
-        if v is not None and not v.isdigit():
-            raise ValueError(f"trakt_id must be numeric, got: '{v}'")
-        return v
-
-    @field_validator("tmdb_id", mode="after")
-    @classmethod
-    def _validate_tmdb_id_numeric(cls, v: str | None) -> str | None:
-        """Ensure tmdb_id is numeric if provided."""
-        if v is not None and not v.isdigit():
-            raise ValueError(f"tmdb_id must be numeric, got: '{v}'")
-        return v
-
-    @model_validator(mode="after")
-    def _validate_identifiers(self) -> "UserWatchlistIdentifier":
-        """Ensure at least one identifier (trakt_id/imdb_id/tmdb_id) OR both title+year are provided."""
-        has_id = any([self.trakt_id, self.imdb_id, self.tmdb_id])
-        has_title_year = self.title and self.year
-
-        if not has_id and not has_title_year:
-            raise ValueError(
-                "Watchlist item must include either an identifier (trakt_id, imdb_id, or tmdb_id) "
-                + "or both title and year for proper identification"
-            )
-        return self
+    _identifier_error_prefix: ClassVar[str] = "Watchlist item"
 
 
 class UserWatchlistRequest(BaseModel):
@@ -350,7 +206,7 @@ async def fetch_user_ratings(
 @handle_api_errors_func
 async def add_user_ratings(
     rating_type: Literal["movies", "shows", "seasons", "episodes"],
-    items: list[dict[str, Any]],
+    items: list[UserRatingRequestItem],
 ) -> str:
     """Add new ratings for the authenticated user.
 
@@ -365,31 +221,17 @@ async def add_user_ratings(
         AuthenticationRequiredError: If user is not authenticated
     """
     logger.debug("add_user_ratings called with rating_type=%s", rating_type)
-    # Validate parameters with Pydantic
-    items_list = [UserRatingRequestItem(**item) for item in items]
-    params = UserRatingRequest(rating_type=rating_type, items=items_list)
-    rating_type, validated_items = params.rating_type, params.items
 
     try:
         client = SyncClient()
 
         # Convert to sync request format
         sync_items: list[TraktSyncRatingItem] = []
-        for item in validated_items:
-            ids: dict[str, Any] = {}
-
-            # Add IDs that are provided (upstream validation ensures numeric strings)
-            if item.trakt_id:
-                ids["trakt"] = int(item.trakt_id)
-            if item.imdb_id:
-                ids["imdb"] = item.imdb_id
-            if item.tmdb_id:
-                ids["tmdb"] = int(item.tmdb_id)
-
+        for item in items:
             # Create sync rating item
             sync_item_data: dict[str, Any] = {
                 "rating": item.rating,
-                "ids": ids,
+                "ids": item.build_ids_dict(),
             }
 
             # Add title and year if provided
@@ -426,7 +268,7 @@ async def add_user_ratings(
 @handle_api_errors_func
 async def remove_user_ratings(
     rating_type: Literal["movies", "shows", "seasons", "episodes"],
-    items: list[dict[str, Any]],
+    items: list[UserRatingIdentifier],
 ) -> str:
     """Remove ratings for the authenticated user.
 
@@ -441,27 +283,15 @@ async def remove_user_ratings(
         AuthenticationRequiredError: If user is not authenticated
     """
     logger.debug("remove_user_ratings called with rating_type=%s", rating_type)
-    # For removal, we only need identifiers (no ratings required)
-    validated_items = [UserRatingIdentifier(**item) for item in items]
 
     try:
         client = SyncClient()
 
         # Convert to sync request format (no ratings needed for removal)
         sync_items: list[TraktSyncRatingItem] = []
-        for item in validated_items:
-            ids: dict[str, Any] = {}
-
-            # Add IDs that are provided (upstream validation ensures numeric strings)
-            if item.trakt_id:
-                ids["trakt"] = int(item.trakt_id)
-            if item.imdb_id:
-                ids["imdb"] = item.imdb_id
-            if item.tmdb_id:
-                ids["tmdb"] = int(item.tmdb_id)
-
+        for item in items:
             # Create sync rating item (no rating for removal)
-            sync_item_data: dict[str, Any] = {"ids": ids}
+            sync_item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 
             # Add title and year if provided
             if item.title:
@@ -563,7 +393,7 @@ async def fetch_user_watchlist(
 @handle_api_errors_func
 async def add_user_watchlist(
     watchlist_type: Literal["movies", "shows", "seasons", "episodes"],
-    items: list[dict[str, Any]],
+    items: list[UserWatchlistRequestItem],
 ) -> str:
     """Add items to the authenticated user's watchlist.
 
@@ -578,29 +408,15 @@ async def add_user_watchlist(
         AuthenticationRequiredError: If user is not authenticated
     """
     logger.debug("add_user_watchlist called with watchlist_type=%s", watchlist_type)
-    # Validate parameters with Pydantic
-    items_list = [UserWatchlistRequestItem(**item) for item in items]
-    params = UserWatchlistRequest(watchlist_type=watchlist_type, items=items_list)
-    watchlist_type, validated_items = params.watchlist_type, params.items
 
     try:
         client = SyncClient()
 
         # Convert to sync request format
         sync_items: list[TraktSyncWatchlistItem] = []
-        for item in validated_items:
-            ids: dict[str, Any] = {}
-
-            # Add IDs that are provided (upstream validation ensures numeric strings)
-            if item.trakt_id:
-                ids["trakt"] = int(item.trakt_id)
-            if item.imdb_id:
-                ids["imdb"] = item.imdb_id
-            if item.tmdb_id:
-                ids["tmdb"] = int(item.tmdb_id)
-
+        for item in items:
             # Create sync watchlist item
-            sync_item_data: dict[str, Any] = {"ids": ids}
+            sync_item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 
             # Add title and year if provided
             if item.title:
@@ -639,7 +455,7 @@ async def add_user_watchlist(
 @handle_api_errors_func
 async def remove_user_watchlist(
     watchlist_type: Literal["movies", "shows", "seasons", "episodes"],
-    items: list[dict[str, Any]],
+    items: list[UserWatchlistIdentifier],
 ) -> str:
     """Remove items from the authenticated user's watchlist.
 
@@ -654,27 +470,15 @@ async def remove_user_watchlist(
         AuthenticationRequiredError: If user is not authenticated
     """
     logger.debug("remove_user_watchlist called with watchlist_type=%s", watchlist_type)
-    # For removal, we only need identifiers (no notes)
-    validated_items = [UserWatchlistIdentifier(**item) for item in items]
 
     try:
         client = SyncClient()
 
         # Convert to sync request format (no notes for removal)
         sync_items: list[TraktSyncWatchlistItem] = []
-        for item in validated_items:
-            ids: dict[str, Any] = {}
-
-            # Add IDs that are provided (upstream validation ensures numeric strings)
-            if item.trakt_id:
-                ids["trakt"] = int(item.trakt_id)
-            if item.imdb_id:
-                ids["imdb"] = item.imdb_id
-            if item.tmdb_id:
-                ids["tmdb"] = int(item.tmdb_id)
-
+        for item in items:
             # Create sync watchlist item (no notes for removal)
-            sync_item_data: dict[str, Any] = {"ids": ids}
+            sync_item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 
             # Add title and year if provided
             if item.title:
@@ -741,7 +545,7 @@ def register_sync_tools(
     )
     async def add_user_ratings_tool(
         rating_type: Literal["movies", "shows", "seasons", "episodes"],
-        items: list[dict[str, Any]],
+        items: list[UserRatingRequestItem],
     ) -> str:
         return await add_user_ratings(rating_type, items)
 
@@ -751,7 +555,7 @@ def register_sync_tools(
     )
     async def remove_user_ratings_tool(
         rating_type: Literal["movies", "shows", "seasons", "episodes"],
-        items: list[dict[str, Any]],
+        items: list[UserRatingIdentifier],
     ) -> str:
         return await remove_user_ratings(rating_type, items)
 
@@ -789,7 +593,7 @@ def register_sync_tools(
     )
     async def add_user_watchlist_tool(
         watchlist_type: Literal["movies", "shows", "seasons", "episodes"],
-        items: list[dict[str, Any]],
+        items: list[UserWatchlistRequestItem],
     ) -> str:
         return await add_user_watchlist(watchlist_type, items)
 
@@ -802,7 +606,7 @@ def register_sync_tools(
     )
     async def remove_user_watchlist_tool(
         watchlist_type: Literal["movies", "shows", "seasons", "episodes"],
-        items: list[dict[str, Any]],
+        items: list[UserWatchlistIdentifier],
     ) -> str:
         return await remove_user_watchlist(watchlist_type, items)
 

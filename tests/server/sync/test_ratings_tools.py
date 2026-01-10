@@ -12,6 +12,8 @@ sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 from models.movies.movie import TraktMovie
 from models.sync.ratings import TraktSyncRating
 from server.sync.tools import (
+    UserRatingIdentifier,
+    UserRatingRequestItem,
     add_user_ratings,
     fetch_user_ratings,
     remove_user_ratings,
@@ -188,7 +190,9 @@ async def test_fetch_user_ratings_error_handling() -> None:
 @pytest.mark.asyncio
 async def test_add_user_ratings_success() -> None:
     """Test successful addition of user ratings."""
-    sample_items = [{"rating": 9, "title": "Inception", "imdb_id": "tt1375666"}]
+    sample_items = [
+        UserRatingRequestItem(rating=9, title="Inception", imdb_id="tt1375666")
+    ]
 
     with patch("server.sync.tools.SyncClient") as mock_client_class:
         mock_client = mock_client_class.return_value
@@ -232,24 +236,18 @@ async def test_add_user_ratings_success() -> None:
 @pytest.mark.asyncio
 async def test_add_user_ratings_validation_error() -> None:
     """Test add user ratings with invalid request data."""
-    invalid_items = [
-        {
-            "rating": 15,  # Invalid rating (> 10)
-            "imdb_id": "tt1375666",
-        }
-    ]
-
     # This should raise a validation error when creating UserRatingRequestItem
     from pydantic import ValidationError
 
     with pytest.raises(ValidationError):
-        await add_user_ratings(rating_type="movies", items=invalid_items)
+        # Invalid rating (> 10) should fail at model creation
+        UserRatingRequestItem(rating=15, imdb_id="tt1375666")
 
 
 @pytest.mark.asyncio
 async def test_add_user_ratings_api_error() -> None:
     """Test error handling in add_user_ratings."""
-    sample_items = [{"rating": 9, "imdb_id": "tt1375666"}]
+    sample_items = [UserRatingRequestItem(rating=9, imdb_id="tt1375666")]
 
     with patch("server.sync.tools.SyncClient") as mock_client_class:
         mock_client = mock_client_class.return_value
@@ -266,7 +264,7 @@ async def test_add_user_ratings_api_error() -> None:
 @pytest.mark.asyncio
 async def test_remove_user_ratings_success() -> None:
     """Test successful removal of user ratings."""
-    sample_items = [{"title": "Inception", "imdb_id": "tt1375666"}]
+    sample_items = [UserRatingIdentifier(title="Inception", imdb_id="tt1375666")]
 
     with patch("server.sync.tools.SyncClient") as mock_client_class:
         mock_client = mock_client_class.return_value
@@ -279,7 +277,7 @@ async def test_remove_user_ratings_success() -> None:
         )
 
         summary_response = SyncRatingsSummary(
-            removed=SyncRatingsSummaryCount(movies=2, shows=1, seasons=0, episodes=1),
+            deleted=SyncRatingsSummaryCount(movies=2, shows=1, seasons=0, episodes=1),
             not_found=SyncRatingsNotFound(movies=[], shows=[], seasons=[], episodes=[]),
         )
         mock_client.remove_sync_ratings = AsyncMock(return_value=summary_response)
@@ -305,7 +303,7 @@ async def test_remove_user_ratings_success() -> None:
 @pytest.mark.asyncio
 async def test_remove_user_ratings_with_not_found() -> None:
     """Test remove user ratings when some items are not found."""
-    sample_items = [{"trakt_id": "123"}]
+    sample_items = [UserRatingIdentifier(trakt_id="123")]
 
     # Response with not_found items (data moved to Pydantic object creation)
 
@@ -321,7 +319,7 @@ async def test_remove_user_ratings_with_not_found() -> None:
         )
 
         summary_response = SyncRatingsSummary(
-            removed=SyncRatingsSummaryCount(movies=0, shows=0, seasons=0, episodes=0),
+            deleted=SyncRatingsSummaryCount(movies=0, shows=0, seasons=0, episodes=0),
             not_found=SyncRatingsNotFound(
                 movies=[],
                 shows=[TraktSyncRatingItem(ids={"trakt": "123"})],
@@ -341,7 +339,7 @@ async def test_remove_user_ratings_with_not_found() -> None:
 @pytest.mark.asyncio
 async def test_remove_user_ratings_api_error() -> None:
     """Test error handling in remove_user_ratings."""
-    sample_items = [{"imdb_id": "tt1375666"}]
+    sample_items = [UserRatingIdentifier(imdb_id="tt1375666")]
 
     with patch("server.sync.tools.SyncClient") as mock_client_class:
         mock_client = mock_client_class.return_value

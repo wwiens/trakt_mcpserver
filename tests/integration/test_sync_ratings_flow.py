@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from client.sync.client import SyncClient
+from server.sync.tools import UserRatingIdentifier, UserRatingRequestItem
 
 # TYPE_CHECKING imports removed as not actually used in runtime
 
@@ -86,7 +87,7 @@ SAMPLE_ADD_RATINGS_RESPONSE: dict[str, Any] = {
 }
 
 SAMPLE_REMOVE_RATINGS_RESPONSE: dict[str, Any] = {
-    "removed": {"movies": 2, "shows": 1, "seasons": 0, "episodes": 1},
+    "deleted": {"movies": 2, "shows": 1, "seasons": 0, "episodes": 1},
     "not_found": {"movies": [], "shows": [], "seasons": [], "episodes": []},
 }
 
@@ -211,8 +212,10 @@ async def test_add_user_ratings_integration(
         ):
             from server.sync.tools import add_user_ratings
 
-            # Sample request data - using flat structure
-            sample_items = [{"rating": 9, "title": "Inception", "imdb_id": "tt1375666"}]
+            # Sample request data - using Pydantic models
+            sample_items = [
+                UserRatingRequestItem(rating=9, title="Inception", imdb_id="tt1375666")
+            ]
 
             result = await add_user_ratings(rating_type="movies", items=sample_items)
             # Verify the formatted response
@@ -259,8 +262,10 @@ async def test_remove_user_ratings_integration(
         ):
             from server.sync.tools import remove_user_ratings
 
-            # Sample request data (no rating needed for removal) - using flat structure
-            sample_items = [{"title": "Inception", "imdb_id": "tt1375666"}]
+            # Sample request data (no rating needed for removal) - using Pydantic models
+            sample_items = [
+                UserRatingIdentifier(title="Inception", imdb_id="tt1375666")
+            ]
 
             result = await remove_user_ratings(rating_type="movies", items=sample_items)
             # Verify the formatted response
@@ -310,14 +315,16 @@ async def test_authentication_flow_integration(
                 ValueError, match="You must be authenticated to add personal ratings"
             ):
                 await add_user_ratings(
-                    rating_type="movies", items=[{"rating": 10, "imdb_id": "tt1375666"}]
+                    rating_type="movies",
+                    items=[UserRatingRequestItem(rating=10, imdb_id="tt1375666")],
                 )
 
             with pytest.raises(
                 ValueError, match="You must be authenticated to remove personal ratings"
             ):
                 await remove_user_ratings(
-                    rating_type="movies", items=[{"imdb_id": "tt1375666"}]
+                    rating_type="movies",
+                    items=[UserRatingIdentifier(imdb_id="tt1375666")],
                 )
 
 
