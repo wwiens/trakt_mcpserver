@@ -83,6 +83,20 @@ class TestTraktEndpoints:
             assert isinstance(TRAKT_ENDPOINTS[endpoint], str)
             assert TRAKT_ENDPOINTS[endpoint].startswith("/")
 
+    def test_recommendation_endpoints_exist(self) -> None:
+        """Test recommendation endpoints are present."""
+        recommendation_endpoints = [
+            "recommendations_movies",
+            "recommendations_shows",
+            "hide_movie_recommendation",
+            "hide_show_recommendation",
+            "unhide_recommendations",
+        ]
+        for endpoint in recommendation_endpoints:
+            assert endpoint in TRAKT_ENDPOINTS
+            assert isinstance(TRAKT_ENDPOINTS[endpoint], str)
+            assert TRAKT_ENDPOINTS[endpoint].startswith("/")
+
 
 class TestEndpointUrlFormats:
     """Test endpoint URL formats and structure."""
@@ -157,6 +171,7 @@ class TestEndpointUrlFormats:
         from config.endpoints.checkin import CHECKIN_ENDPOINTS
         from config.endpoints.comments import COMMENTS_ENDPOINTS
         from config.endpoints.movies import MOVIES_ENDPOINTS
+        from config.endpoints.recommendations import RECOMMENDATIONS_ENDPOINTS
         from config.endpoints.search import SEARCH_ENDPOINTS
         from config.endpoints.shows import SHOWS_ENDPOINTS
         from config.endpoints.user import USER_ENDPOINTS
@@ -170,6 +185,7 @@ class TestEndpointUrlFormats:
             **SEARCH_ENDPOINTS,
             **CHECKIN_ENDPOINTS,
             **USER_ENDPOINTS,
+            **RECOMMENDATIONS_ENDPOINTS,
         }
 
         # TRAKT_ENDPOINTS should contain all domain endpoints

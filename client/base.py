@@ -216,6 +216,33 @@ class BaseClient:
             f"Expected dict response from POST {endpoint}, got {type(result).__name__}: {result}"
         )
 
+    @handle_api_errors
+    async def _delete_request(self, endpoint: str) -> None:
+        """Make a DELETE request to the Trakt API.
+
+        Args:
+            endpoint: API endpoint to call
+
+        Note:
+            DELETE requests typically return 204 No Content on success.
+        """
+        self._update_headers_with_token()
+        request_headers = self.headers
+
+        client = self._get_client()
+        should_close = self._client is None
+
+        try:
+            response = await client.delete(
+                endpoint,
+                headers=request_headers,
+                timeout=self.REQUEST_TIMEOUT,
+            )
+            response.raise_for_status()
+        finally:
+            if should_close:
+                await client.aclose()
+
     @overload
     async def _make_typed_request(
         self,
