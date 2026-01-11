@@ -135,6 +135,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - Return type annotations including `None`
 - **CRITICAL: Prefer precise typing**: Use most specific types possible - NEVER use `Any` when concrete types are known
 - **Avoid `cast()`**: Use type guards, unions, or proper design instead of bypassing type checker
+- **Use `Final` for constants**: Module-level constants require `Final` type annotation
 
 ### Code Standards
 - PEP 8 compliance
@@ -142,6 +143,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - Descriptive names (no abbreviations)
 - Docstrings for public functions/classes
 - No comments explaining what code does - only why when needed
+- Never hardcode config values - reference existing constants from `config/`
 
 ### Security
 - Never hardcode secrets (use environment variables)
