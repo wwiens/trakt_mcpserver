@@ -58,19 +58,20 @@ MOVIE_ID_DESCRIPTION = (
 COMMENT_ID_DESCRIPTION = "Trakt comment ID (numeric string, e.g., '417', '12345')"
 
 # Pagination descriptions
-PAGE_DESCRIPTION = "Page number (omit to fetch all pages)"
+PAGE_DESCRIPTION = "Page number (omit to auto-paginate)"
 MAX_PAGES_DESCRIPTION = "Maximum pages to fetch during auto-pagination"
-LIMIT_DESCRIPTION = "Number of results to return (default 10)"
+LIMIT_DESCRIPTION = (
+    "Number of results to return (default 10, 0=up to 100 when page omitted)"
+)
 
 # Specific limit descriptions for different contexts
 COMMENTS_LIMIT_DESCRIPTION = "Number of comments to return (default 10)"
 REPLIES_LIMIT_DESCRIPTION = "Number of replies to return (default 10)"
 SEARCH_LIMIT_DESCRIPTION = (
-    "Maximum results to return (0=all when page omitted, default 10)"
+    "Maximum results to return (0=up to 100 when page omitted, default 10)"
 )
 USER_LIMIT_DESCRIPTION = (
-    "Maximum number of items to return. Use 0 to return all items (default). Max 100. "
-    "None is treated as 0."
+    "Maximum number of items to return (0=up to 100, default). None is treated as 0."
 )
 RECOMMENDATIONS_LIMIT_DESCRIPTION = (
     "Number of recommendations to return (1-100, default 10)"
