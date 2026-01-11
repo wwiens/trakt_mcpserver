@@ -3,7 +3,14 @@
 import re
 from typing import ClassVar, Self
 
-from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 
 class IdentifierValidatorMixin(BaseModel):
@@ -14,7 +21,7 @@ class IdentifierValidatorMixin(BaseModel):
     - trakt_id: Must be numeric
     - tmdb_id: Must be numeric
     - tvdb_id: Must be numeric
-    - imdb_id: Must match tt + digits format (e.g., tt0372784)
+    - imdb_id: Must match tt + digits format (e.g., tt0468569)
     - slug: Any non-empty string
     - At least one identifier OR both title+year must be provided
 
@@ -31,14 +38,61 @@ class IdentifierValidatorMixin(BaseModel):
         - _identifier_error_prefix: ClassVar[str] = "Item"
     """
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"trakt_id": "120"},
+                {"slug": "the-dark-knight-2008"},
+                {"imdb_id": "tt0468569"},
+                {"tmdb_id": "155"},
+                {"title": "The Dark Knight", "year": 2008},
+            ]
+        }
+    )
+
     # Fields with default values for mixin compatibility
-    trakt_id: str | None = Field(default=None, min_length=1, description="Trakt ID")
-    slug: str | None = Field(default=None, min_length=1, description="Trakt slug")
-    imdb_id: str | None = Field(default=None, min_length=1, description="IMDB ID")
-    tmdb_id: str | None = Field(default=None, min_length=1, description="TMDB ID")
-    tvdb_id: str | None = Field(default=None, min_length=1, description="TVDB ID")
-    title: str | None = Field(default=None, min_length=1, description="Title")
-    year: int | None = Field(default=None, gt=1800, description="Release year")
+    trakt_id: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Trakt ID (numeric string)",
+        json_schema_extra={"examples": ["120", "16662"]},
+    )
+    slug: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Trakt slug",
+        json_schema_extra={"examples": ["the-dark-knight-2008", "inception-2010"]},
+    )
+    imdb_id: str | None = Field(
+        default=None,
+        min_length=1,
+        description="IMDB ID (format: 'tt' + digits)",
+        json_schema_extra={"examples": ["tt0468569", "tt1375666"]},
+    )
+    tmdb_id: str | None = Field(
+        default=None,
+        min_length=1,
+        description="TMDB ID (numeric string)",
+        json_schema_extra={"examples": ["155", "27205"]},
+    )
+    tvdb_id: str | None = Field(
+        default=None,
+        min_length=1,
+        description="TVDB ID (numeric string, for TV shows only)",
+        json_schema_extra={"examples": ["81189"]},
+    )
+    title: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Title (use with 'year' instead of identifiers)",
+        json_schema_extra={"examples": ["The Dark Knight", "Inception"]},
+    )
+    year: int | None = Field(
+        default=None,
+        gt=1800,
+        description="Release year (use with 'title' instead of identifiers)",
+        json_schema_extra={"examples": [2008, 2010]},
+    )
 
     # Class variable for customizable error message prefix
     _identifier_error_prefix: ClassVar[str] = "Item"
@@ -65,7 +119,7 @@ class IdentifierValidatorMixin(BaseModel):
         """Ensure imdb_id follows tt + digits format if provided."""
         if v is not None and not re.match(r"^tt\d+$", v):
             raise ValueError(
-                f"imdb_id must be in format 'tt' followed by digits (e.g., 'tt0372784'), got: '{v}'"
+                f"imdb_id must be in format 'tt' followed by digits (e.g., 'tt0468569'), got: '{v}'"
             )
         return v
 

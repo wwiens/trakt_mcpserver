@@ -1,16 +1,20 @@
 """Checkin tools for the Trakt MCP server."""
 
 import logging
-from typing import Any
+from typing import Annotated, Any
 
 from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from client.checkin.client import CheckinClient
+from config.mcp.descriptions import (
+    EPISODE_DESCRIPTION,
+    SEASON_DESCRIPTION,
+    SHOW_ID_DESCRIPTION,
+)
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.checkin import CheckinFormatters
 from server.base import BaseToolErrorMixin
-
-# Import start_device_auth from auth module
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -110,15 +114,50 @@ def register_checkin_tools(mcp: FastMCP) -> Any:
         description="Check in to a TV show episode you're currently watching on Trakt",
     )
     async def checkin_to_show_tool(
-        season: int,
-        episode: int,
-        show_id: str | None = None,
-        show_title: str | None = None,
-        show_year: int | None = None,
-        message: str = "",
-        share_twitter: bool = False,
-        share_mastodon: bool = False,
-        share_tumblr: bool = False,
+        season: Annotated[int, Field(description=SEASON_DESCRIPTION)],
+        episode: Annotated[int, Field(description=EPISODE_DESCRIPTION)],
+        show_id: Annotated[
+            str | None,
+            Field(
+                description=f"{SHOW_ID_DESCRIPTION}. Provide either show_id OR show_title."
+            ),
+        ] = None,
+        show_title: Annotated[
+            str | None,
+            Field(
+                description="Title of the show (e.g., 'Breaking Bad'). Provide either show_title OR show_id."
+            ),
+        ] = None,
+        show_year: Annotated[
+            int | None,
+            Field(
+                description="Year the show first aired (e.g., 2008). Helps disambiguate shows with the same title."
+            ),
+        ] = None,
+        message: Annotated[
+            str,
+            Field(
+                description="Optional message to share on connected social networks. If not provided, uses the user's default watching message."
+            ),
+        ] = "",
+        share_twitter: Annotated[
+            bool,
+            Field(
+                description="Share this check-in on Twitter. Overrides user's default sharing setting."
+            ),
+        ] = False,
+        share_mastodon: Annotated[
+            bool,
+            Field(
+                description="Share this check-in on Mastodon. Overrides user's default sharing setting."
+            ),
+        ] = False,
+        share_tumblr: Annotated[
+            bool,
+            Field(
+                description="Share this check-in on Tumblr. Overrides user's default sharing setting."
+            ),
+        ] = False,
     ) -> str:
         return await checkin_to_show(
             season,

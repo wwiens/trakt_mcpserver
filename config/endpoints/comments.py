@@ -1,6 +1,8 @@
 """Comment endpoints."""
 
-COMMENTS_ENDPOINTS = {
+from typing import Final
+
+COMMENTS_ENDPOINTS: Final[dict[str, str]] = {
     # Comment endpoints
     "comments_movie": "/movies/:id/comments/:sort",
     "comments_show": "/shows/:id/comments/:sort",

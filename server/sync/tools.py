@@ -2,13 +2,26 @@
 
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Any, ClassVar, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
 
 from client.sync.client import SyncClient
 from config.api import DEFAULT_LIMIT
+from config.mcp.descriptions import (
+    PAGE_DESCRIPTION,
+    RATING_FILTER_DESCRIPTION,
+    RATING_ITEMS_DESCRIPTION,
+    RATING_REMOVE_ITEMS_DESCRIPTION,
+    RATING_TYPE_DESCRIPTION,
+    SORT_DIRECTION_DESCRIPTION,
+    WATCHLIST_ITEMS_DESCRIPTION,
+    WATCHLIST_REMOVE_ITEMS_DESCRIPTION,
+    WATCHLIST_SORT_BY_DESCRIPTION,
+    WATCHLIST_TYPE_DESCRIPTION,
+    WATCHLIST_TYPE_REQUIRED_DESCRIPTION,
+)
 from config.mcp.tools.sync import SYNC_TOOLS
 from models.formatters.sync_ratings import SyncRatingsFormatters
 from models.formatters.sync_watchlist import SyncWatchlistFormatters
@@ -531,9 +544,18 @@ def register_sync_tools(
         ),
     )
     async def fetch_user_ratings_tool(
-        rating_type: Literal["movies", "shows", "seasons", "episodes"] = "movies",
-        rating: int | None = None,
-        page: int | None = None,
+        rating_type: Annotated[
+            Literal["movies", "shows", "seasons", "episodes"],
+            Field(description=RATING_TYPE_DESCRIPTION),
+        ] = "movies",
+        rating: Annotated[
+            int | None,
+            Field(ge=1, le=10, description=RATING_FILTER_DESCRIPTION),
+        ] = None,
+        page: Annotated[
+            int | None,
+            Field(ge=1, description=PAGE_DESCRIPTION),
+        ] = None,
     ) -> str:
         # Validate parameters with Pydantic
         params = UserRatingsParams(rating_type=rating_type, rating=rating, page=page)
@@ -544,8 +566,17 @@ def register_sync_tools(
         description="Add new ratings for the authenticated user. Requires OAuth authentication.",
     )
     async def add_user_ratings_tool(
-        rating_type: Literal["movies", "shows", "seasons", "episodes"],
-        items: list[UserRatingRequestItem],
+        rating_type: Annotated[
+            Literal["movies", "shows", "seasons", "episodes"],
+            Field(description=RATING_TYPE_DESCRIPTION),
+        ],
+        items: Annotated[
+            list[UserRatingRequestItem],
+            Field(
+                min_length=1,
+                description=RATING_ITEMS_DESCRIPTION,
+            ),
+        ],
     ) -> str:
         return await add_user_ratings(rating_type, items)
 
@@ -554,8 +585,17 @@ def register_sync_tools(
         description="Remove ratings for the authenticated user. Requires OAuth authentication.",
     )
     async def remove_user_ratings_tool(
-        rating_type: Literal["movies", "shows", "seasons", "episodes"],
-        items: list[UserRatingIdentifier],
+        rating_type: Annotated[
+            Literal["movies", "shows", "seasons", "episodes"],
+            Field(description=RATING_TYPE_DESCRIPTION),
+        ],
+        items: Annotated[
+            list[UserRatingIdentifier],
+            Field(
+                min_length=1,
+                description=RATING_REMOVE_ITEMS_DESCRIPTION,
+            ),
+        ],
     ) -> str:
         return await remove_user_ratings(rating_type, items)
 
@@ -568,12 +608,22 @@ def register_sync_tools(
         ),
     )
     async def fetch_user_watchlist_tool(
-        watchlist_type: Literal[
-            "all", "movies", "shows", "seasons", "episodes"
+        watchlist_type: Annotated[
+            Literal["all", "movies", "shows", "seasons", "episodes"],
+            Field(description=WATCHLIST_TYPE_DESCRIPTION),
         ] = "all",
-        sort_by: WatchlistSortField = "rank",
-        sort_how: Literal["asc", "desc"] = "asc",
-        page: int | None = None,
+        sort_by: Annotated[
+            WatchlistSortField,
+            Field(description=WATCHLIST_SORT_BY_DESCRIPTION),
+        ] = "rank",
+        sort_how: Annotated[
+            Literal["asc", "desc"],
+            Field(description=SORT_DIRECTION_DESCRIPTION),
+        ] = "asc",
+        page: Annotated[
+            int | None,
+            Field(ge=1, description=PAGE_DESCRIPTION),
+        ] = None,
     ) -> str:
         # Validate parameters with Pydantic
         params = UserWatchlistParams(
@@ -592,8 +642,17 @@ def register_sync_tools(
         ),
     )
     async def add_user_watchlist_tool(
-        watchlist_type: Literal["movies", "shows", "seasons", "episodes"],
-        items: list[UserWatchlistRequestItem],
+        watchlist_type: Annotated[
+            Literal["movies", "shows", "seasons", "episodes"],
+            Field(description=WATCHLIST_TYPE_REQUIRED_DESCRIPTION),
+        ],
+        items: Annotated[
+            list[UserWatchlistRequestItem],
+            Field(
+                min_length=1,
+                description=WATCHLIST_ITEMS_DESCRIPTION,
+            ),
+        ],
     ) -> str:
         return await add_user_watchlist(watchlist_type, items)
 
@@ -605,8 +664,17 @@ def register_sync_tools(
         ),
     )
     async def remove_user_watchlist_tool(
-        watchlist_type: Literal["movies", "shows", "seasons", "episodes"],
-        items: list[UserWatchlistIdentifier],
+        watchlist_type: Annotated[
+            Literal["movies", "shows", "seasons", "episodes"],
+            Field(description=WATCHLIST_TYPE_REQUIRED_DESCRIPTION),
+        ],
+        items: Annotated[
+            list[UserWatchlistIdentifier],
+            Field(
+                min_length=1,
+                description=WATCHLIST_REMOVE_ITEMS_DESCRIPTION,
+            ),
+        ],
     ) -> str:
         return await remove_user_watchlist(watchlist_type, items)
 

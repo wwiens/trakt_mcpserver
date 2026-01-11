@@ -1,7 +1,9 @@
 """Comments-specific MCP tool name definitions."""
 
+from typing import Final
+
 # Comments MCP Tool Names
-COMMENT_TOOLS = {
+COMMENT_TOOLS: Final[dict[str, str]] = {
     "fetch_movie_comments": "fetch_movie_comments",
     "fetch_show_comments": "fetch_show_comments",
     "fetch_season_comments": "fetch_season_comments",

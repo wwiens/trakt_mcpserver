@@ -1,7 +1,9 @@
 """Movie-specific MCP tool name definitions."""
 
+from typing import Final
+
 # Movie MCP Tool Names
-MOVIE_TOOLS = {
+MOVIE_TOOLS: Final[dict[str, str]] = {
     "fetch_trending_movies": "fetch_trending_movies",
     "fetch_popular_movies": "fetch_popular_movies",
     "fetch_favorited_movies": "fetch_favorited_movies",

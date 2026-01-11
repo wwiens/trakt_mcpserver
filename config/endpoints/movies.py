@@ -1,6 +1,8 @@
 """Movie endpoints."""
 
-MOVIES_ENDPOINTS = {
+from typing import Final
+
+MOVIES_ENDPOINTS: Final[dict[str, str]] = {
     # Movie endpoints
     "movies_trending": "/movies/trending",
     "movies_popular": "/movies/popular",

@@ -1,12 +1,12 @@
 """API constants for the Trakt MCP server."""
 
-from typing import NamedTuple
+from typing import Final, NamedTuple
 
 # API constants
-DEFAULT_LIMIT = 10
-DEFAULT_MAX_PAGES = 100  # Safety limit for auto-pagination
-DEFAULT_FETCH_ALL_LIMIT = 100  # Safety cap when limit=0 (fetch all)
-MAX_API_PAGE_SIZE = 100  # Maximum items per page supported by Trakt API
+DEFAULT_LIMIT: Final[int] = 10
+DEFAULT_MAX_PAGES: Final[int] = 100  # Safety limit for auto-pagination
+DEFAULT_FETCH_ALL_LIMIT: Final[int] = 100  # Safety cap when limit=0 (fetch all)
+MAX_API_PAGE_SIZE: Final[int] = 100  # Maximum items per page supported by Trakt API
 
 
 class EffectiveLimit(NamedTuple):

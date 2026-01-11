@@ -3,7 +3,7 @@
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
@@ -14,6 +14,14 @@ from client.movies.popular import PopularMoviesClient
 from client.movies.stats import MovieStatsClient
 from client.movies.trending import TrendingMoviesClient
 from config.api import DEFAULT_LIMIT
+from config.mcp.descriptions import (
+    EMBED_MARKDOWN_DESCRIPTION,
+    EXTENDED_DESCRIPTION,
+    LIMIT_DESCRIPTION,
+    MOVIE_ID_DESCRIPTION,
+    PAGE_DESCRIPTION,
+    PERIOD_DESCRIPTION,
+)
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.movies import MovieFormatters
 from models.formatters.videos import VideoFormatters
@@ -32,7 +40,11 @@ ToolHandler = Callable[..., Awaitable[str]]
 class MovieIdParam(BaseModel):
     """Parameters for tools that require a movie ID."""
 
-    movie_id: str = Field(..., min_length=1, description="Non-empty Trakt movie ID")
+    movie_id: str = Field(
+        ...,
+        min_length=1,
+        description=MOVIE_ID_DESCRIPTION,
+    )
 
     @field_validator("movie_id", mode="before")
     @classmethod
@@ -194,7 +206,7 @@ async def fetch_movie_ratings(movie_id: str) -> str:
     """Fetch ratings for a movie from Trakt.
 
     Args:
-        movie_id: Trakt ID of the movie
+        movie_id: Trakt ID, Trakt slug, or IMDB ID (e.g., '1', 'tron-legacy-2010', 'tt1104001')
 
     Returns:
         Information about movie ratings including average and distribution
@@ -244,7 +256,7 @@ async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
     """Fetch movie summary from Trakt.
 
     Args:
-        movie_id: Trakt ID of the movie
+        movie_id: Trakt ID, Trakt slug, or IMDB ID (e.g., '1', 'tron-legacy-2010', 'tt1104001')
         extended: If True, return comprehensive data with production status and metadata.
                  If False, return basic movie information (title, year, IDs).
 
@@ -294,7 +306,7 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
     """Fetch videos for a movie from Trakt.
 
     Args:
-        movie_id: Trakt ID, slug, or IMDB ID
+        movie_id: Trakt ID, Trakt slug, or IMDB ID (e.g., '1', 'tron-legacy-2010', 'tt1104001')
         embed_markdown: Use embedded markdown syntax for video links
 
     Returns:
@@ -361,7 +373,8 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_trending_movies_tool(
-        limit: int = DEFAULT_LIMIT, page: int | None = None
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await fetch_trending_movies(limit, page)
 
@@ -371,7 +384,8 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_popular_movies_tool(
-        limit: int = DEFAULT_LIMIT, page: int | None = None
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await fetch_popular_movies(limit, page)
 
@@ -381,9 +395,12 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_favorited_movies_tool(
-        limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
-        page: int | None = None,
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        period: Annotated[
+            Literal["daily", "weekly", "monthly", "yearly", "all"],
+            Field(description=PERIOD_DESCRIPTION),
+        ] = "weekly",
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await fetch_favorited_movies(limit, period, page)
 
@@ -393,9 +410,12 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_played_movies_tool(
-        limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
-        page: int | None = None,
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        period: Annotated[
+            Literal["daily", "weekly", "monthly", "yearly", "all"],
+            Field(description=PERIOD_DESCRIPTION),
+        ] = "weekly",
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await fetch_played_movies(limit, period, page)
 
@@ -405,9 +425,12 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_watched_movies_tool(
-        limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
-        page: int | None = None,
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        period: Annotated[
+            Literal["daily", "weekly", "monthly", "yearly", "all"],
+            Field(description=PERIOD_DESCRIPTION),
+        ] = "weekly",
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await fetch_watched_movies(limit, period, page)
 
@@ -416,7 +439,9 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         description="Fetch ratings and voting statistics for a specific movie",
     )
     @handle_api_errors_func
-    async def fetch_movie_ratings_tool(movie_id: str) -> str:
+    async def fetch_movie_ratings_tool(
+        movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
+    ) -> str:
         # Validate parameters with Pydantic
         params = MovieIdParam(movie_id=movie_id)
         return await fetch_movie_ratings(params.movie_id)
@@ -426,7 +451,10 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         description="Get movie summary from Trakt. Default behavior (extended=true): Returns comprehensive data including production status, ratings, genres, runtime, certification, and metadata. Basic mode (extended=false): Returns only title, year, and Trakt ID.",
     )
     @handle_api_errors_func
-    async def fetch_movie_summary_tool(movie_id: str, extended: bool = True) -> str:
+    async def fetch_movie_summary_tool(
+        movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
+        extended: Annotated[bool, Field(description=EXTENDED_DESCRIPTION)] = True,
+    ) -> str:
         # Validate parameters with Pydantic
         params = MovieSummaryParams(movie_id=movie_id, extended=extended)
         return await fetch_movie_summary(params.movie_id, params.extended)
@@ -440,7 +468,11 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_movie_videos_tool(
-        movie_id: str, embed_markdown: bool = True
+        movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
+        embed_markdown: Annotated[
+            bool,
+            Field(description=EMBED_MARKDOWN_DESCRIPTION),
+        ] = True,
     ) -> str:
         """MCP tool wrapper for fetch_movie_videos."""
         # Validate parameters with Pydantic

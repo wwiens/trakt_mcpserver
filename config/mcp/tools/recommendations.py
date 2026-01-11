@@ -1,7 +1,9 @@
 """Recommendation MCP tool name definitions."""
 
+from typing import Final
+
 # Recommendation MCP Tool Names
-RECOMMENDATIONS_TOOLS = {
+RECOMMENDATIONS_TOOLS: Final[dict[str, str]] = {
     "fetch_movie_recommendations": "fetch_movie_recommendations",
     "fetch_show_recommendations": "fetch_show_recommendations",
     "hide_movie_recommendation": "hide_movie_recommendation",

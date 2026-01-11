@@ -135,6 +135,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - Return type annotations including `None`
 - **CRITICAL: Prefer precise typing**: Use most specific types possible - NEVER use `Any` when concrete types are known
 - **Avoid `cast()`**: Use type guards, unions, or proper design instead of bypassing type checker
+- **Use `Final` for constants**: Module-level constants require `Final` type annotation
 
 ### Code Standards
 - PEP 8 compliance
@@ -142,6 +143,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - Descriptive names (no abbreviations)
 - Docstrings for public functions/classes
 - No comments explaining what code does - only why when needed
+- Never hardcode config values - reference existing constants from `config/`
 
 ### Security
 - Never hardcode secrets (use environment variables)
@@ -155,6 +157,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - **Match API field names exactly** - e.g., API uses `deleted` not `removed`
 - **Support all identifier types** - `trakt`, `slug`, `imdb`, `tmdb`, `tvdb` (validate formats: IMDB=`tt\d+`, others=numeric)
 - **Tool parameters must be unambiguous** - If flattening nested API structures (e.g., `{"movies": [...]}` → `items` + `type`), ensure LLM clients won't misinterpret; include examples in descriptions for complex inputs
+- **Tool parameter descriptions**: Use `Annotated[type, Field(description=...)]` with descriptions from `config/mcp/descriptions.py`
 
 ## Key Patterns
 
