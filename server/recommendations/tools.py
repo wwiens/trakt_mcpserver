@@ -258,7 +258,7 @@ def register_recommendation_tools(
     async def fetch_movie_recommendations_tool(
         limit: Annotated[
             int,
-            Field(description=RECOMMENDATIONS_LIMIT_DESCRIPTION),
+            Field(ge=1, le=100, description=RECOMMENDATIONS_LIMIT_DESCRIPTION),
         ] = DEFAULT_LIMIT,
         ignore_collected: Annotated[
             bool, Field(description=IGNORE_COLLECTED_DESCRIPTION)
@@ -284,7 +284,7 @@ def register_recommendation_tools(
     async def fetch_show_recommendations_tool(
         limit: Annotated[
             int,
-            Field(description=RECOMMENDATIONS_LIMIT_DESCRIPTION),
+            Field(ge=1, le=100, description=RECOMMENDATIONS_LIMIT_DESCRIPTION),
         ] = DEFAULT_LIMIT,
         ignore_collected: Annotated[
             bool, Field(description=IGNORE_COLLECTED_DESCRIPTION)
