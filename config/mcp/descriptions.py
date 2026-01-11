@@ -13,6 +13,8 @@ Naming Convention:
         - LIMIT_DESCRIPTION for limit parameters
 """
 
+from config.api.constants import DEFAULT_FETCH_ALL_LIMIT, DEFAULT_LIMIT
+
 __all__ = [
     "COMMENTS_LIMIT_DESCRIPTION",
     "COMMENT_ID_DESCRIPTION",
@@ -61,20 +63,30 @@ COMMENT_ID_DESCRIPTION = "Trakt comment ID (numeric string, e.g., '417', '12345'
 PAGE_DESCRIPTION = "Page number (omit to auto-paginate)"
 MAX_PAGES_DESCRIPTION = "Maximum pages to fetch during auto-pagination"
 LIMIT_DESCRIPTION = (
-    "Number of results to return (default 10, 0=up to 100 when page omitted)"
+    f"Number of results to return (default {DEFAULT_LIMIT}, "
+    f"0=up to {DEFAULT_FETCH_ALL_LIMIT} when page omitted)"
 )
 
 # Specific limit descriptions for different contexts
-COMMENTS_LIMIT_DESCRIPTION = "Number of comments to return (default 10)"
-REPLIES_LIMIT_DESCRIPTION = "Number of replies to return (default 10)"
+COMMENTS_LIMIT_DESCRIPTION = (
+    f"Number of comments to return (default {DEFAULT_LIMIT}, "
+    f"0=up to {DEFAULT_FETCH_ALL_LIMIT} when page omitted)"
+)
+REPLIES_LIMIT_DESCRIPTION = (
+    f"Number of replies to return (default {DEFAULT_LIMIT}, "
+    f"0=up to {DEFAULT_FETCH_ALL_LIMIT} when page omitted)"
+)
 SEARCH_LIMIT_DESCRIPTION = (
-    "Maximum results to return (0=up to 100 when page omitted, default 10)"
+    f"Maximum results to return (default {DEFAULT_LIMIT}, "
+    f"0=up to {DEFAULT_FETCH_ALL_LIMIT} when page omitted)"
 )
 USER_LIMIT_DESCRIPTION = (
-    "Maximum number of items to return (0=up to 100, default). None is treated as 0."
+    f"Maximum number of items to return (0=up to {DEFAULT_FETCH_ALL_LIMIT}, default). "
+    "None is treated as 0."
 )
 RECOMMENDATIONS_LIMIT_DESCRIPTION = (
-    "Number of recommendations to return (1-100, default 10)"
+    f"Number of recommendations to return (1-{DEFAULT_FETCH_ALL_LIMIT}, "
+    f"default {DEFAULT_LIMIT})"
 )
 
 # Period descriptions
