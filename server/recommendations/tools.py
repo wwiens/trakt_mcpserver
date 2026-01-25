@@ -2,12 +2,20 @@
 
 import logging
 from collections.abc import Awaitable, Callable
+from typing import Annotated
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
 
 from client.recommendations import RecommendationsClient
 from config.api import DEFAULT_LIMIT
+from config.mcp.descriptions import (
+    IGNORE_COLLECTED_DESCRIPTION,
+    IGNORE_WATCHLISTED_DESCRIPTION,
+    MOVIE_ID_DESCRIPTION,
+    RECOMMENDATIONS_LIMIT_DESCRIPTION,
+    SHOW_ID_DESCRIPTION,
+)
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.recommendations import RecommendationFormatters
 from server.base import BaseToolErrorMixin
@@ -248,9 +256,17 @@ def register_recommendation_tools(
         ),
     )
     async def fetch_movie_recommendations_tool(
-        limit: int = DEFAULT_LIMIT,
-        ignore_collected: bool = True,
-        ignore_watchlisted: bool = True,
+        limit: Annotated[
+            int,
+            Field(ge=1, le=100, description=RECOMMENDATIONS_LIMIT_DESCRIPTION),
+        ] = DEFAULT_LIMIT,
+        ignore_collected: Annotated[
+            bool, Field(description=IGNORE_COLLECTED_DESCRIPTION)
+        ] = True,
+        ignore_watchlisted: Annotated[
+            bool,
+            Field(description=IGNORE_WATCHLISTED_DESCRIPTION),
+        ] = True,
     ) -> str:
         """MCP tool: fetch personalized movie recommendations."""
         return await fetch_movie_recommendations(
@@ -266,9 +282,16 @@ def register_recommendation_tools(
         ),
     )
     async def fetch_show_recommendations_tool(
-        limit: int = DEFAULT_LIMIT,
-        ignore_collected: bool = True,
-        ignore_watchlisted: bool = True,
+        limit: Annotated[
+            int,
+            Field(ge=1, le=100, description=RECOMMENDATIONS_LIMIT_DESCRIPTION),
+        ] = DEFAULT_LIMIT,
+        ignore_collected: Annotated[
+            bool, Field(description=IGNORE_COLLECTED_DESCRIPTION)
+        ] = True,
+        ignore_watchlisted: Annotated[
+            bool, Field(description=IGNORE_WATCHLISTED_DESCRIPTION)
+        ] = True,
     ) -> str:
         """MCP tool: fetch personalized show recommendations."""
         return await fetch_show_recommendations(
@@ -282,7 +305,9 @@ def register_recommendation_tools(
             "Use Trakt ID, slug, or IMDB ID to identify the movie."
         ),
     )
-    async def hide_movie_recommendation_tool(movie_id: str) -> str:
+    async def hide_movie_recommendation_tool(
+        movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
+    ) -> str:
         """MCP tool: hide a movie from future recommendations."""
         return await hide_movie_recommendation(movie_id)
 
@@ -293,7 +318,9 @@ def register_recommendation_tools(
             "Use Trakt ID, slug, or IMDB ID to identify the show."
         ),
     )
-    async def hide_show_recommendation_tool(show_id: str) -> str:
+    async def hide_show_recommendation_tool(
+        show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
+    ) -> str:
         """MCP tool: hide a show from future recommendations."""
         return await hide_show_recommendation(show_id)
 
@@ -305,7 +332,9 @@ def register_recommendation_tools(
             "Use Trakt ID, slug, or IMDB ID to identify the movie."
         ),
     )
-    async def unhide_movie_recommendation_tool(movie_id: str) -> str:
+    async def unhide_movie_recommendation_tool(
+        movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
+    ) -> str:
         """MCP tool: unhide a movie to restore it in recommendations."""
         return await unhide_movie_recommendation(movie_id)
 
@@ -317,7 +346,9 @@ def register_recommendation_tools(
             "Use Trakt ID, slug, or IMDB ID to identify the show."
         ),
     )
-    async def unhide_show_recommendation_tool(show_id: str) -> str:
+    async def unhide_show_recommendation_tool(
+        show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
+    ) -> str:
         """MCP tool: unhide a show to restore it in recommendations."""
         return await unhide_show_recommendation(show_id)
 

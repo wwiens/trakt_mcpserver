@@ -3,7 +3,7 @@
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
@@ -14,6 +14,14 @@ from client.shows.popular import PopularShowsClient
 from client.shows.stats import ShowStatsClient
 from client.shows.trending import TrendingShowsClient
 from config.api import DEFAULT_LIMIT
+from config.mcp.descriptions import (
+    EMBED_MARKDOWN_DESCRIPTION,
+    EXTENDED_DESCRIPTION,
+    LIMIT_DESCRIPTION,
+    PAGE_DESCRIPTION,
+    PERIOD_DESCRIPTION,
+    SHOW_ID_DESCRIPTION,
+)
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.shows import ShowFormatters
 from models.formatters.videos import VideoFormatters
@@ -32,7 +40,11 @@ ToolHandler = Callable[..., Awaitable[str]]
 class ShowIdParam(BaseModel):
     """Parameters for tools that require a show ID."""
 
-    show_id: str = Field(..., min_length=1, description="Non-empty Trakt show ID")
+    show_id: str = Field(
+        ...,
+        min_length=1,
+        description=SHOW_ID_DESCRIPTION,
+    )
 
     @field_validator("show_id", mode="before")
     @classmethod
@@ -194,7 +206,7 @@ async def fetch_show_ratings(show_id: str) -> str:
     """Fetch ratings for a show from Trakt.
 
     Args:
-        show_id: Trakt ID of the show
+        show_id: Trakt ID, Trakt slug, or IMDB ID (e.g., '1', 'breaking-bad', 'tt0903747')
 
     Returns:
         Information about show ratings including average and distribution
@@ -244,7 +256,7 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
     """Fetch show summary from Trakt.
 
     Args:
-        show_id: Trakt ID of the show
+        show_id: Trakt ID, Trakt slug, or IMDB ID (e.g., '1', 'breaking-bad', 'tt0903747')
         extended: If True, return comprehensive data with air times, production status and metadata.
                  If False, return basic show information (title, year, IDs).
 
@@ -357,7 +369,8 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_trending_shows_tool(
-        limit: int = DEFAULT_LIMIT, page: int | None = None
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await fetch_trending_shows(limit, page)
 
@@ -367,7 +380,8 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_popular_shows_tool(
-        limit: int = DEFAULT_LIMIT, page: int | None = None
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await fetch_popular_shows(limit, page)
 
@@ -377,9 +391,12 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_favorited_shows_tool(
-        limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
-        page: int | None = None,
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        period: Annotated[
+            Literal["daily", "weekly", "monthly", "yearly", "all"],
+            Field(description=PERIOD_DESCRIPTION),
+        ] = "weekly",
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await fetch_favorited_shows(limit, period, page)
 
@@ -389,9 +406,12 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_played_shows_tool(
-        limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
-        page: int | None = None,
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        period: Annotated[
+            Literal["daily", "weekly", "monthly", "yearly", "all"],
+            Field(description=PERIOD_DESCRIPTION),
+        ] = "weekly",
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await fetch_played_shows(limit, period, page)
 
@@ -401,9 +421,12 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     )
     @handle_api_errors_func
     async def fetch_watched_shows_tool(
-        limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
-        page: int | None = None,
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        period: Annotated[
+            Literal["daily", "weekly", "monthly", "yearly", "all"],
+            Field(description=PERIOD_DESCRIPTION),
+        ] = "weekly",
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await fetch_watched_shows(limit, period, page)
 
@@ -412,7 +435,9 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         description="Fetch ratings and voting statistics for a specific TV show",
     )
     @handle_api_errors_func
-    async def fetch_show_ratings_tool(show_id: str) -> str:
+    async def fetch_show_ratings_tool(
+        show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
+    ) -> str:
         # Validate parameters with Pydantic
         params = ShowIdParam(show_id=show_id)
         return await fetch_show_ratings(params.show_id)
@@ -422,7 +447,10 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         description="Get TV show summary from Trakt. Default behavior (extended=true): Returns comprehensive data including air times, production status, ratings, genres, runtime, network, and metadata. Basic mode (extended=false): Returns only title, year, and Trakt ID.",
     )
     @handle_api_errors_func
-    async def fetch_show_summary_tool(show_id: str, extended: bool = True) -> str:
+    async def fetch_show_summary_tool(
+        show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
+        extended: Annotated[bool, Field(description=EXTENDED_DESCRIPTION)] = True,
+    ) -> str:
         # Validate parameters with Pydantic
         params = ShowSummaryParams(show_id=show_id, extended=extended)
         return await fetch_show_summary(params.show_id, params.extended)
@@ -435,7 +463,13 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         ),
     )
     @handle_api_errors_func
-    async def fetch_show_videos_tool(show_id: str, embed_markdown: bool = True) -> str:
+    async def fetch_show_videos_tool(
+        show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
+        embed_markdown: Annotated[
+            bool,
+            Field(description=EMBED_MARKDOWN_DESCRIPTION),
+        ] = True,
+    ) -> str:
         """MCP tool wrapper for fetch_show_videos."""
         # Validate parameters with Pydantic
         params = ShowVideoParams(show_id=show_id, embed_markdown=embed_markdown)

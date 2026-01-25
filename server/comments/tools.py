@@ -1,7 +1,7 @@
 """Comment tools for the Trakt MCP server."""
 
 from collections.abc import Awaitable, Callable
-from typing import Literal, NoReturn, TypedDict
+from typing import Annotated, Literal, NoReturn, TypedDict
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, PositiveInt, ValidationError, field_validator
@@ -12,6 +12,19 @@ from client.comments.movie import MovieCommentsClient
 from client.comments.season import SeasonCommentsClient
 from client.comments.show import ShowCommentsClient
 from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
+from config.mcp.descriptions import (
+    COMMENT_ID_DESCRIPTION,
+    COMMENT_SORT_DESCRIPTION,
+    COMMENTS_LIMIT_DESCRIPTION,
+    EPISODE_DESCRIPTION,
+    MAX_PAGES_DESCRIPTION,
+    MOVIE_ID_DESCRIPTION,
+    PAGE_DESCRIPTION,
+    REPLIES_LIMIT_DESCRIPTION,
+    SEASON_DESCRIPTION,
+    SHOW_ID_DESCRIPTION,
+    SHOW_SPOILERS_DESCRIPTION,
+)
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.comments import CommentsFormatters
 from models.types import CommentResponse
@@ -37,7 +50,11 @@ class ValidationErrorDetail(TypedDict):
 class CommentIdParam(BaseModel):
     """Parameters for tools that require a comment ID."""
 
-    comment_id: str = Field(..., min_length=1, description="Non-empty Trakt comment ID")
+    comment_id: str = Field(
+        ...,
+        min_length=1,
+        description=COMMENT_ID_DESCRIPTION,
+    )
 
     @field_validator("comment_id", mode="before")
     @classmethod
@@ -48,8 +65,12 @@ class CommentIdParam(BaseModel):
 class SeasonParam(BaseModel):
     """Parameters for tools that require show ID and season."""
 
-    show_id: str = Field(..., min_length=1, description="Non-empty Trakt show ID")
-    season: PositiveInt = Field(..., description="Season number (positive integer)")
+    show_id: str = Field(
+        ...,
+        min_length=1,
+        description=SHOW_ID_DESCRIPTION,
+    )
+    season: PositiveInt = Field(..., description=SEASON_DESCRIPTION)
 
     @field_validator("show_id", mode="before")
     @classmethod
@@ -60,9 +81,13 @@ class SeasonParam(BaseModel):
 class EpisodeParam(BaseModel):
     """Parameters for tools that require show ID, season, and episode."""
 
-    show_id: str = Field(..., min_length=1, description="Non-empty Trakt show ID")
-    season: PositiveInt = Field(..., description="Season number (positive integer)")
-    episode: PositiveInt = Field(..., description="Episode number (positive integer)")
+    show_id: str = Field(
+        ...,
+        min_length=1,
+        description=SHOW_ID_DESCRIPTION,
+    )
+    season: PositiveInt = Field(..., description=SEASON_DESCRIPTION)
+    episode: PositiveInt = Field(..., description=EPISODE_DESCRIPTION)
 
     @field_validator("show_id", mode="before")
     @classmethod
@@ -77,15 +102,18 @@ class CommentsListOptionsParam(LimitPageValidatorMixin):
         DEFAULT_LIMIT,
         ge=0,
         le=100,
-        description="Maximum number of comments to return (0=all up to 100, default=10)",
+        description=COMMENTS_LIMIT_DESCRIPTION,
     )
     page: int | None = Field(
         default=None,
         ge=1,
-        description="Optional page number for pagination (1-based, positive integer)",
+        description=PAGE_DESCRIPTION,
     )
-    sort: CommentSort = Field("newest", description="Sort order for comments")
-    show_spoilers: bool = Field(False, description="Whether to show spoiler content")
+    sort: CommentSort = Field(
+        "newest",
+        description=COMMENT_SORT_DESCRIPTION,
+    )
+    show_spoilers: bool = Field(False, description=SHOW_SPOILERS_DESCRIPTION)
 
 
 class RepliesListOptionsParam(LimitPageValidatorMixin):
@@ -95,14 +123,14 @@ class RepliesListOptionsParam(LimitPageValidatorMixin):
         DEFAULT_LIMIT,
         ge=0,
         le=100,
-        description="Maximum number of replies to return (0=all up to 100, default=10)",
+        description=REPLIES_LIMIT_DESCRIPTION,
     )
     page: int | None = Field(
         default=None,
         ge=1,
-        description="Optional page number for pagination (1-based, positive integer)",
+        description=PAGE_DESCRIPTION,
     )
-    show_spoilers: bool = Field(False, description="Whether to show spoiler content")
+    show_spoilers: bool = Field(False, description=SHOW_SPOILERS_DESCRIPTION)
 
 
 def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
@@ -577,12 +605,20 @@ def register_comment_tools(
         description="Fetch comments for a specific movie from Trakt. Supports optional pagination with 'page' parameter and safety cap 'max_pages'.",
     )
     async def fetch_movie_comments_tool(
-        movie_id: str,
-        limit: int = DEFAULT_LIMIT,
-        show_spoilers: bool = False,
-        sort: CommentSort = "newest",
-        page: int | None = None,
-        max_pages: int = DEFAULT_MAX_PAGES,
+        movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
+        limit: Annotated[
+            int, Field(description=COMMENTS_LIMIT_DESCRIPTION)
+        ] = DEFAULT_LIMIT,
+        show_spoilers: Annotated[
+            bool, Field(description=SHOW_SPOILERS_DESCRIPTION)
+        ] = False,
+        sort: Annotated[
+            CommentSort, Field(description=COMMENT_SORT_DESCRIPTION)
+        ] = "newest",
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+        max_pages: Annotated[
+            int, Field(description=MAX_PAGES_DESCRIPTION)
+        ] = DEFAULT_MAX_PAGES,
     ) -> str:
         return await fetch_movie_comments(
             movie_id, limit, show_spoilers, sort, page, max_pages
@@ -593,12 +629,20 @@ def register_comment_tools(
         description="Fetch comments for a specific TV show from Trakt. Supports optional pagination with 'page' parameter and safety cap 'max_pages'.",
     )
     async def fetch_show_comments_tool(
-        show_id: str,
-        limit: int = DEFAULT_LIMIT,
-        show_spoilers: bool = False,
-        sort: CommentSort = "newest",
-        page: int | None = None,
-        max_pages: int = DEFAULT_MAX_PAGES,
+        show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
+        limit: Annotated[
+            int, Field(description=COMMENTS_LIMIT_DESCRIPTION)
+        ] = DEFAULT_LIMIT,
+        show_spoilers: Annotated[
+            bool, Field(description=SHOW_SPOILERS_DESCRIPTION)
+        ] = False,
+        sort: Annotated[
+            CommentSort, Field(description=COMMENT_SORT_DESCRIPTION)
+        ] = "newest",
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+        max_pages: Annotated[
+            int, Field(description=MAX_PAGES_DESCRIPTION)
+        ] = DEFAULT_MAX_PAGES,
     ) -> str:
         return await fetch_show_comments(
             show_id, limit, show_spoilers, sort, page, max_pages
@@ -609,13 +653,21 @@ def register_comment_tools(
         description="Fetch comments for a specific TV show season from Trakt. Supports optional pagination with 'page' parameter and safety cap 'max_pages'.",
     )
     async def fetch_season_comments_tool(
-        show_id: str,
-        season: int,
-        limit: int = DEFAULT_LIMIT,
-        show_spoilers: bool = False,
-        sort: CommentSort = "newest",
-        page: int | None = None,
-        max_pages: int = DEFAULT_MAX_PAGES,
+        show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
+        season: Annotated[int, Field(description=SEASON_DESCRIPTION)],
+        limit: Annotated[
+            int, Field(description=COMMENTS_LIMIT_DESCRIPTION)
+        ] = DEFAULT_LIMIT,
+        show_spoilers: Annotated[
+            bool, Field(description=SHOW_SPOILERS_DESCRIPTION)
+        ] = False,
+        sort: Annotated[
+            CommentSort, Field(description=COMMENT_SORT_DESCRIPTION)
+        ] = "newest",
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+        max_pages: Annotated[
+            int, Field(description=MAX_PAGES_DESCRIPTION)
+        ] = DEFAULT_MAX_PAGES,
     ) -> str:
         return await fetch_season_comments(
             show_id, season, limit, show_spoilers, sort, page, max_pages
@@ -626,14 +678,22 @@ def register_comment_tools(
         description="Fetch comments for a specific TV show episode from Trakt. Supports optional pagination with 'page' parameter and safety cap 'max_pages'.",
     )
     async def fetch_episode_comments_tool(
-        show_id: str,
-        season: int,
-        episode: int,
-        limit: int = DEFAULT_LIMIT,
-        show_spoilers: bool = False,
-        sort: CommentSort = "newest",
-        page: int | None = None,
-        max_pages: int = DEFAULT_MAX_PAGES,
+        show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
+        season: Annotated[int, Field(description=SEASON_DESCRIPTION)],
+        episode: Annotated[int, Field(description=EPISODE_DESCRIPTION)],
+        limit: Annotated[
+            int, Field(description=COMMENTS_LIMIT_DESCRIPTION)
+        ] = DEFAULT_LIMIT,
+        show_spoilers: Annotated[
+            bool, Field(description=SHOW_SPOILERS_DESCRIPTION)
+        ] = False,
+        sort: Annotated[
+            CommentSort, Field(description=COMMENT_SORT_DESCRIPTION)
+        ] = "newest",
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+        max_pages: Annotated[
+            int, Field(description=MAX_PAGES_DESCRIPTION)
+        ] = DEFAULT_MAX_PAGES,
     ) -> str:
         return await fetch_episode_comments(
             show_id, season, episode, limit, show_spoilers, sort, page, max_pages
@@ -643,7 +703,14 @@ def register_comment_tools(
         name=TOOL_NAMES["fetch_comment"],
         description="Fetch a specific comment from Trakt",
     )
-    async def fetch_comment_tool(comment_id: str, show_spoilers: bool = False) -> str:
+    async def fetch_comment_tool(
+        comment_id: Annotated[
+            str, Field(min_length=1, description=COMMENT_ID_DESCRIPTION)
+        ],
+        show_spoilers: Annotated[
+            bool, Field(description=SHOW_SPOILERS_DESCRIPTION)
+        ] = False,
+    ) -> str:
         return await fetch_comment(comment_id, show_spoilers)
 
     @mcp.tool(
@@ -651,11 +718,19 @@ def register_comment_tools(
         description="Fetch replies for a specific comment from Trakt. Supports optional pagination with 'page' parameter and safety cap 'max_pages'.",
     )
     async def fetch_comment_replies_tool(
-        comment_id: str,
-        limit: int = DEFAULT_LIMIT,
-        show_spoilers: bool = False,
-        page: int | None = None,
-        max_pages: int = DEFAULT_MAX_PAGES,
+        comment_id: Annotated[
+            str, Field(min_length=1, description=COMMENT_ID_DESCRIPTION)
+        ],
+        limit: Annotated[
+            int, Field(description=REPLIES_LIMIT_DESCRIPTION)
+        ] = DEFAULT_LIMIT,
+        show_spoilers: Annotated[
+            bool, Field(description=SHOW_SPOILERS_DESCRIPTION)
+        ] = False,
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+        max_pages: Annotated[
+            int, Field(description=MAX_PAGES_DESCRIPTION)
+        ] = DEFAULT_MAX_PAGES,
     ) -> str:
         return await fetch_comment_replies(
             comment_id, limit, show_spoilers, page, max_pages

@@ -1,6 +1,8 @@
 """Trakt API endpoints for recommendations."""
 
-RECOMMENDATIONS_ENDPOINTS = {
+from typing import Final
+
+RECOMMENDATIONS_ENDPOINTS: Final[dict[str, str]] = {
     "recommendations_movies": "/recommendations/movies",
     "recommendations_shows": "/recommendations/shows",
     "hide_movie_recommendation": "/recommendations/movies/:id",

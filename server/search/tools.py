@@ -1,13 +1,18 @@
 """Search tools for the Trakt MCP server."""
 
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Annotated, Any
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field, ValidationError, field_validator
 
 from client.search.client import SearchClient
 from config.api import DEFAULT_LIMIT
+from config.mcp.descriptions import (
+    PAGE_DESCRIPTION,
+    SEARCH_LIMIT_DESCRIPTION,
+    SEARCH_QUERY_DESCRIPTION,
+)
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.search import SearchFormatters
 from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
@@ -24,18 +29,18 @@ class QueryParam(LimitPageValidatorMixin):
         ...,
         min_length=1,
         max_length=200,
-        description="Non-empty, non-whitespace search query",
+        description=SEARCH_QUERY_DESCRIPTION,
     )
     limit: int = Field(
         DEFAULT_LIMIT,
         ge=0,
         le=100,
-        description="Maximum results to return (0=all up to 100, default=10)",
+        description=SEARCH_LIMIT_DESCRIPTION,
     )
     page: int | None = Field(
         default=None,
         ge=1,
-        description="Page number for pagination (optional). If not provided, auto-paginates.",
+        description=PAGE_DESCRIPTION,
     )
 
     @field_validator("query", mode="before")
@@ -190,7 +195,14 @@ def register_search_tools(
         description="Search for TV shows on Trakt by title",
     )
     async def search_shows_tool(
-        query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
+        query: Annotated[
+            str,
+            Field(min_length=1, max_length=200, description=SEARCH_QUERY_DESCRIPTION),
+        ],
+        limit: Annotated[
+            int, Field(ge=0, le=100, description=SEARCH_LIMIT_DESCRIPTION)
+        ] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(ge=1, description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await search_shows(query, limit, page)
 
@@ -199,7 +211,14 @@ def register_search_tools(
         description="Search for movies on Trakt by title",
     )
     async def search_movies_tool(
-        query: str, limit: int = DEFAULT_LIMIT, page: int | None = None
+        query: Annotated[
+            str,
+            Field(min_length=1, max_length=200, description=SEARCH_QUERY_DESCRIPTION),
+        ],
+        limit: Annotated[
+            int, Field(ge=0, le=100, description=SEARCH_LIMIT_DESCRIPTION)
+        ] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(ge=1, description=PAGE_DESCRIPTION)] = None,
     ) -> str:
         return await search_movies(query, limit, page)
 

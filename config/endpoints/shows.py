@@ -1,6 +1,8 @@
 """Show endpoints."""
 
-SHOWS_ENDPOINTS = {
+from typing import Final
+
+SHOWS_ENDPOINTS: Final[dict[str, str]] = {
     # Show endpoints
     "shows_trending": "/shows/trending",
     "shows_popular": "/shows/popular",
