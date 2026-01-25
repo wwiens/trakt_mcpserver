@@ -92,6 +92,19 @@ Add to your Claude Desktop MCP configuration file:
   - Filter by type (all, movies, shows, seasons, episodes)
   - Sort by multiple criteria (rank, added, title, released, runtime, popularity, percentage, votes)
   - Add optional notes to watchlist items (VIP feature, 500 char limit)
+- **Track show progress**: See your watched progress for any TV show
+  - View episodes watched vs aired with completion percentage
+  - See your next episode to watch
+  - View per-season breakdown with progress stats
+  - Include hidden seasons and specials optionally
+- **Manage playback progress**: View and clear paused playback items
+  - See movies and episodes you paused mid-watch
+  - View progress percentage and when you paused
+  - Clear playback items you no longer need
+- **Manage watch history**: Add and remove items from your history
+  - Mark movies, shows, seasons, or episodes as watched
+  - Optionally specify when you watched them
+  - Remove items from your watch history
 - Secure authentication with Trakt through device code flow
 - Personal data is fetched directly from your Trakt account
 
@@ -352,6 +365,86 @@ fetch_comment_replies(comment_id="789", limit=10, show_spoilers=False, sort="old
 
 </details>
 
+<details>
+<summary><strong>Progress Tools</strong></summary>
+
+```python
+# Get watched progress for a TV show
+fetch_show_progress(show_id="breaking-bad")
+
+# Get show progress with specials and hidden seasons included
+fetch_show_progress(
+    show_id="game-of-thrones",
+    hidden=True,       # Include hidden seasons
+    specials=True,     # Include season 0 (specials)
+    count_specials=True,  # Count specials in overall stats
+    last_activity="watched"  # Calculate next episode based on watched order
+)
+
+# Get paused playback progress (all types)
+fetch_playback_progress()
+
+# Get paused playback progress (movies only)
+fetch_playback_progress(playback_type="movies")
+
+# Get paused playback progress (episodes only)
+fetch_playback_progress(playback_type="episodes")
+
+# Remove a paused playback item (get ID from fetch_playback_progress)
+remove_playback_item(playback_id=12345)
+
+# Check if a movie has been watched (returns watch dates and count)
+fetch_history(history_type="movies", item_id="314")  # The Dark Knight
+
+# Check watch history for a show
+fetch_history(history_type="shows", item_id="1388")  # Breaking Bad
+
+# Browse all movie watch history
+fetch_history(history_type="movies")
+
+# Browse all watch history (all types)
+fetch_history()
+
+# Filter history by date range
+fetch_history(
+    history_type="movies",
+    start_at="2024-01-01T00:00:00.000Z",
+    end_at="2024-12-31T23:59:59.000Z"
+)
+
+# Add movies to watch history
+add_to_history(
+    history_type="movies",
+    items=[{"trakt_id": "314"}]  # The Dark Knight
+)
+
+# Add movies with custom watched date
+add_to_history(
+    history_type="movies",
+    items=[{"trakt_id": "314", "watched_at": "2024-01-15T20:30:00.000Z"}]
+)
+
+# Add episodes to watch history
+add_to_history(
+    history_type="episodes",
+    items=[{"trakt_id": "62085"}]  # Breaking Bad S01E01
+)
+
+# Remove movies from watch history
+remove_from_history(
+    history_type="movies",
+    items=[{"trakt_id": "314"}]
+)
+
+# Remove episodes from watch history
+remove_from_history(
+    history_type="episodes",
+    items=[{"trakt_id": "62085"}]
+)
+```
+
+</details>
+
 ## 📝 Using with Claude
 
 Once installed, Claude can use this MCP server to answer questions about entertainment data. Here are some examples to get you started.
@@ -390,6 +483,9 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 - "What was the last show I watched?"
 - "Show me the movies I've watched"
 - "What was the last movie I watched?"
+- "Have I seen The Dark Knight?"
+- "Have I watched Inception?"
+- "When did I watch The Matrix?"
 - "Show me my 10/10 rated movies"
 - "Add a 9/10 rating for Breaking Bad"
 - "Show me my watchlist"
@@ -400,6 +496,14 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 - "Show me my watchlist sorted by when I added them"
 - "Check me in to Season 2 Episode 5 of Breaking Bad"
 - "Check me in to Season 1 Episode 3 of show ID 1388"
+- "What's my progress on Breaking Bad?"
+- "How far am I through Game of Thrones?"
+- "What's my next episode of Stranger Things?"
+- "Show me any paused movies or episodes"
+- "Clear my paused playback for that movie"
+- "Mark The Dark Knight as watched"
+- "Add Breaking Bad Season 1 to my watch history"
+- "Remove Inception from my watch history"
 
 </details>
 
@@ -415,6 +519,9 @@ With authentication, you can access:
 - Your complete watchlist with filtering and sorting options
 - Add and remove items from your watchlist
 - Add personal notes to watchlist items (VIP feature)
+- **Show progress tracking**: See how far you are through any TV show, with next episode recommendations
+- **Playback progress**: View and clear any movies or episodes you paused mid-watch
+- **Watch history management**: Add or remove items from your watch history with optional timestamps
 
 All data is fetched directly from your Trakt account in real-time.
 

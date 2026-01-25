@@ -24,6 +24,13 @@ __all__ = [
     "EMBED_MARKDOWN_DESCRIPTION",
     "EPISODE_DESCRIPTION",
     "EXTENDED_DESCRIPTION",
+    "HISTORY_END_AT_DESCRIPTION",
+    "HISTORY_ITEMS_DESCRIPTION",
+    "HISTORY_ITEM_ID_DESCRIPTION",
+    "HISTORY_QUERY_TYPE_DESCRIPTION",
+    "HISTORY_REMOVE_ITEMS_DESCRIPTION",
+    "HISTORY_START_AT_DESCRIPTION",
+    "HISTORY_TYPE_DESCRIPTION",
     "IGNORE_COLLECTED_DESCRIPTION",
     "IGNORE_WATCHLISTED_DESCRIPTION",
     "LIMIT_DESCRIPTION",
@@ -31,6 +38,8 @@ __all__ = [
     "MOVIE_ID_DESCRIPTION",
     "PAGE_DESCRIPTION",
     "PERIOD_DESCRIPTION",
+    "PLAYBACK_ID_DESCRIPTION",
+    "PLAYBACK_TYPE_DESCRIPTION",
     "RATING_FILTER_DESCRIPTION",
     "RATING_ITEMS_DESCRIPTION",
     "RATING_REMOVE_ITEMS_DESCRIPTION",
@@ -41,6 +50,10 @@ __all__ = [
     "SEARCH_QUERY_DESCRIPTION",
     "SEASON_DESCRIPTION",
     "SHOW_ID_DESCRIPTION",
+    "SHOW_PROGRESS_COUNT_SPECIALS_DESCRIPTION",
+    "SHOW_PROGRESS_HIDDEN_DESCRIPTION",
+    "SHOW_PROGRESS_LAST_ACTIVITY_DESCRIPTION",
+    "SHOW_PROGRESS_SPECIALS_DESCRIPTION",
     "SHOW_SPOILERS_DESCRIPTION",
     "SORT_DIRECTION_DESCRIPTION",
     "USER_LIMIT_DESCRIPTION",
@@ -174,6 +187,54 @@ WATCHLIST_ITEMS_DESCRIPTION: Final[str] = (
 )
 WATCHLIST_REMOVE_ITEMS_DESCRIPTION: Final[str] = (
     "List of items to remove from watchlist. Each item must include "
+    "either an identifier (trakt_id, slug, imdb_id, tmdb_id, tvdb_id) "
+    "or both 'title' and 'year'"
+)
+
+# Progress descriptions
+SHOW_PROGRESS_HIDDEN_DESCRIPTION: Final[str] = (
+    "Include hidden seasons in progress calculation (default: false)"
+)
+SHOW_PROGRESS_SPECIALS_DESCRIPTION: Final[str] = (
+    "Include specials as season 0 in progress (default: false)"
+)
+SHOW_PROGRESS_COUNT_SPECIALS_DESCRIPTION: Final[str] = (
+    "Count specials in overall stats when specials are included (default: true)"
+)
+SHOW_PROGRESS_LAST_ACTIVITY_DESCRIPTION: Final[str] = (
+    "Calculate last/next episode based on: 'aired' (default) or 'watched'"
+)
+PLAYBACK_TYPE_DESCRIPTION: Final[str] = (
+    "Type of playback progress: 'movies', 'episodes', or omit for all"
+)
+PLAYBACK_ID_DESCRIPTION: Final[str] = (
+    "Playback item ID to remove (from fetch_playback_progress results)"
+)
+HISTORY_TYPE_DESCRIPTION: Final[str] = (
+    "Type of content: 'movies', 'shows', 'seasons', or 'episodes'"
+)
+HISTORY_QUERY_TYPE_DESCRIPTION: Final[str] = (
+    "Content type to filter history: 'movies', 'shows', 'seasons', or 'episodes'. "
+    "Required when querying a specific item."
+)
+HISTORY_ITEM_ID_DESCRIPTION: Final[str] = (
+    "Trakt ID (numeric) of the specific item to check. "
+    "Examples: '1388', '5106'. "
+    "Requires history_type to be specified."
+)
+HISTORY_START_AT_DESCRIPTION: Final[str] = (
+    "Filter watches after this date (ISO 8601, e.g., '2024-01-01T00:00:00.000Z')"
+)
+HISTORY_END_AT_DESCRIPTION: Final[str] = (
+    "Filter watches before this date (ISO 8601, e.g., '2024-12-31T23:59:59.000Z')"
+)
+HISTORY_ITEMS_DESCRIPTION: Final[str] = (
+    "List of items to add to history. Each item must include "
+    "either an identifier (trakt_id, slug, imdb_id, tmdb_id, tvdb_id) "
+    "or both 'title' and 'year'. Optional 'watched_at' (ISO 8601 timestamp)"
+)
+HISTORY_REMOVE_ITEMS_DESCRIPTION: Final[str] = (
+    "List of items to remove from history. Each item must include "
     "either an identifier (trakt_id, slug, imdb_id, tmdb_id, tvdb_id) "
     "or both 'title' and 'year'"
 )

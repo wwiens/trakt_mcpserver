@@ -4,6 +4,7 @@ from .auth import AUTH_TOOLS
 from .checkin import CHECKIN_TOOLS
 from .comments import COMMENT_TOOLS
 from .movies import MOVIE_TOOLS
+from .progress import PROGRESS_TOOLS
 from .recommendations import RECOMMENDATIONS_TOOLS
 from .search import SEARCH_TOOLS
 from .shows import SHOW_TOOLS
@@ -18,6 +19,7 @@ TOOL_NAMES = {
     **USER_TOOLS,
     **CHECKIN_TOOLS,
     **COMMENT_TOOLS,
+    **PROGRESS_TOOLS,
     **RECOMMENDATIONS_TOOLS,
     **SEARCH_TOOLS,
     **SYNC_TOOLS,
@@ -28,6 +30,7 @@ __all__ = [
     "CHECKIN_TOOLS",
     "COMMENT_TOOLS",
     "MOVIE_TOOLS",
+    "PROGRESS_TOOLS",
     "RECOMMENDATIONS_TOOLS",
     "SEARCH_TOOLS",
     "SHOW_TOOLS",

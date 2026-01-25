@@ -1,0 +1,176 @@
+"""Progress formatting methods for the Trakt MCP server."""
+
+from datetime import datetime
+
+from models.progress.playback import PlaybackProgressResponse
+from models.progress.show_progress import ShowProgressResponse
+
+
+class ProgressFormatters:
+    """Helper class for formatting progress data for MCP responses."""
+
+    @staticmethod
+    def format_show_progress(data: ShowProgressResponse, show_id: str) -> str:
+        """Format show watched progress as markdown.
+
+        Args:
+            data: Show progress response from API
+            show_id: The show ID that was queried
+
+        Returns:
+            Formatted markdown text with show progress details
+        """
+        aired = data["aired"]
+        completed = data["completed"]
+        percentage = (completed / aired * 100) if aired > 0 else 0
+
+        result = f"# Show Progress: {show_id}\n\n"
+        result += "## Overall Progress\n\n"
+        result += f"- **Watched:** {completed}/{aired} episodes ({percentage:.1f}%)\n"
+
+        # Format last watched timestamp
+        last_watched = data.get("last_watched_at")
+        if last_watched:
+            try:
+                dt = datetime.fromisoformat(last_watched.replace("Z", "+00:00"))
+                result += f"- **Last Watched:** {dt.strftime('%Y-%m-%d %H:%M')}\n"
+            except ValueError:
+                result += f"- **Last Watched:** {last_watched}\n"
+
+        # Show reset info if present
+        reset_at = data.get("reset_at")
+        if reset_at:
+            result += f"- **Progress Reset At:** {reset_at}\n"
+
+        result += "\n"
+
+        # Show next episode if available
+        next_ep = data.get("next_episode")
+        if next_ep:
+            result += "## Up Next\n\n"
+            season = next_ep.get("season", 0)
+            number = next_ep.get("number", 0)
+            title = next_ep.get("title", "")
+            ep_str = f"S{season:02d}E{number:02d}"
+            if title:
+                ep_str += f": {title}"
+            result += f"- **{ep_str}**\n\n"
+
+        # Show last watched episode if available
+        last_ep = data.get("last_episode")
+        if last_ep:
+            result += "## Last Watched\n\n"
+            season = last_ep.get("season", 0)
+            number = last_ep.get("number", 0)
+            title = last_ep.get("title", "")
+            ep_str = f"S{season:02d}E{number:02d}"
+            if title:
+                ep_str += f": {title}"
+            result += f"- **{ep_str}**\n\n"
+
+        # Show season progress
+        seasons = data.get("seasons", [])
+        if seasons:
+            result += "## Season Progress\n\n"
+            for season in seasons:
+                season_num = season["number"]
+                season_aired = season["aired"]
+                season_completed = season["completed"]
+                season_pct = (
+                    (season_completed / season_aired * 100) if season_aired > 0 else 0
+                )
+
+                if season_completed == season_aired and season_aired > 0:
+                    status = "Complete (100%)"
+                else:
+                    status = f"{season_completed}/{season_aired} ({season_pct:.0f}%)"
+
+                season_label = "Specials" if season_num == 0 else f"Season {season_num}"
+                result += f"- **{season_label}:** {status}\n"
+
+        # Show hidden seasons if present
+        hidden_seasons = data.get("hidden_seasons", [])
+        if hidden_seasons:
+            result += "\n## Hidden Seasons\n\n"
+            for hidden in hidden_seasons:
+                result += f"- Season {hidden['number']}\n"
+
+        return result
+
+    @staticmethod
+    def format_playback_progress(items: list[PlaybackProgressResponse]) -> str:
+        """Format playback progress items as markdown.
+
+        Args:
+            items: List of playback progress items from API
+
+        Returns:
+            Formatted markdown text with playback items
+        """
+        if not items:
+            return (
+                "# Playback Progress\n\n"
+                "No paused playback items found.\n\n"
+                "Items appear here when you pause a movie or episode during playback."
+            )
+
+        result = f"# Playback Progress ({len(items)} item{'s' if len(items) != 1 else ''})\n\n"
+
+        # Group by type
+        movies = [i for i in items if i["type"] == "movie"]
+        episodes = [i for i in items if i["type"] == "episode"]
+
+        if movies:
+            result += "## Movies\n\n"
+            for item in movies:
+                movie = item.get("movie", {})
+                title = movie.get("title", "Unknown")
+                year = movie.get("year")
+                progress = item["progress"]
+                paused_at = item["paused_at"]
+                playback_id = item["id"]
+
+                title_str = f"{title} ({year})" if year else title
+
+                # Format paused timestamp
+                try:
+                    dt = datetime.fromisoformat(paused_at.replace("Z", "+00:00"))
+                    paused_str = dt.strftime("%Y-%m-%d %H:%M")
+                except ValueError:
+                    paused_str = paused_at
+
+                result += f"- **{title_str}**\n"
+                result += f"  - Progress: {progress:.1f}%\n"
+                result += f"  - Paused: {paused_str}\n"
+                result += f"  - ID: {playback_id} (use with `remove_playback_item`)\n\n"
+
+        if episodes:
+            result += "## Episodes\n\n"
+            for item in episodes:
+                episode = item.get("episode", {})
+                show = item.get("show", {})
+                show_title = show.get("title", "Unknown Show")
+                season = episode.get("season", 0)
+                number = episode.get("number", 0)
+                ep_title = episode.get("title", "")
+                progress = item["progress"]
+                paused_at = item["paused_at"]
+                playback_id = item["id"]
+
+                ep_str = f"{show_title} - S{season:02d}E{number:02d}"
+                if ep_title:
+                    ep_str += f": {ep_title}"
+
+                # Format paused timestamp
+                try:
+                    dt = datetime.fromisoformat(paused_at.replace("Z", "+00:00"))
+                    paused_str = dt.strftime("%Y-%m-%d %H:%M")
+                except ValueError:
+                    paused_str = paused_at
+
+                result += f"- **{ep_str}**\n"
+                result += f"  - Progress: {progress:.1f}%\n"
+                result += f"  - Paused: {paused_str}\n"
+                result += f"  - ID: {playback_id} (use with `remove_playback_item`)\n\n"
+
+        return result
