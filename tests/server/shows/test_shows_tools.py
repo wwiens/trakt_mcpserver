@@ -16,6 +16,7 @@ from server.shows.tools import (
     fetch_favorited_shows,
     fetch_played_shows,
     fetch_popular_shows,
+    fetch_related_shows,
     fetch_show_ratings,
     fetch_show_summary,
     fetch_show_videos,
@@ -581,3 +582,104 @@ async def test_fetch_show_videos_string_error_handling():
         # Should use fallback title since string error triggers fallback behavior
         assert "Show ID: test-show" in result
         assert "<iframe" in result  # Videos should still be processed
+
+
+@pytest.mark.asyncio
+async def test_fetch_related_shows():
+    """Test fetching related shows."""
+    sample_shows = [
+        {
+            "title": "Better Call Saul",
+            "year": 2015,
+            "overview": "A prequel to the award-winning series Breaking Bad.",
+            "ids": {"trakt": 59660, "slug": "better-call-saul"},
+        },
+        {
+            "title": "The Wire",
+            "year": 2002,
+            "overview": "A crime drama set in Baltimore.",
+            "ids": {"trakt": 1234, "slug": "the-wire"},
+        },
+    ]
+
+    with patch("server.shows.tools.RelatedShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_related_shows = AsyncMock(return_value=sample_shows)
+
+        result = await fetch_related_shows(show_id="breaking-bad", limit=10)
+
+        assert "# Related Shows" in result
+        assert "Better Call Saul (2015)" in result
+        assert "The Wire (2002)" in result
+        assert "A prequel to the award-winning series Breaking Bad." in result
+
+        mock_client.get_related_shows.assert_called_once_with(
+            show_id="breaking-bad", limit=10, page=None
+        )
+
+
+@pytest.mark.asyncio
+async def test_fetch_related_shows_empty():
+    """Test fetching related shows with no results."""
+    with patch("server.shows.tools.RelatedShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_related_shows = AsyncMock(return_value=[])
+
+        result = await fetch_related_shows(show_id="obscure-show", limit=10)
+
+        assert "# Related Shows" in result
+        assert "No related shows found." in result
+
+        mock_client.get_related_shows.assert_called_once_with(
+            show_id="obscure-show", limit=10, page=None
+        )
+
+
+@pytest.mark.asyncio
+async def test_fetch_related_shows_with_page():
+    """Test fetching related shows with pagination."""
+    from models.types.pagination import PaginatedResponse, PaginationMetadata
+
+    sample_shows = [
+        {
+            "title": "Better Call Saul",
+            "year": 2015,
+            "ids": {"trakt": 59660, "slug": "better-call-saul"},
+        }
+    ]
+
+    paginated_response = PaginatedResponse(
+        data=sample_shows,
+        pagination=PaginationMetadata(
+            current_page=2,
+            items_per_page=10,
+            total_pages=3,
+            total_items=25,
+        ),
+    )
+
+    with patch("server.shows.tools.RelatedShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_related_shows = AsyncMock(return_value=paginated_response)
+
+        result = await fetch_related_shows(show_id="breaking-bad", limit=10, page=2)
+
+        assert "# Related Shows" in result
+        assert "Better Call Saul (2015)" in result
+        # Should include pagination info
+        assert "Page 2" in result or "page" in result.lower()
+
+        mock_client.get_related_shows.assert_called_once_with(
+            show_id="breaking-bad", limit=10, page=2
+        )
+
+
+@pytest.mark.asyncio
+async def test_fetch_related_shows_error():
+    """Test fetching related shows with error."""
+    with patch("server.shows.tools.RelatedShowsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_related_shows = AsyncMock(side_effect=Exception("API error"))
+
+        with pytest.raises(InternalError):
+            await fetch_related_shows(show_id="breaking-bad", limit=10)

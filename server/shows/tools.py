@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 from client.shows.client import ShowsClient
 from client.shows.details import ShowDetailsClient
 from client.shows.popular import PopularShowsClient
+from client.shows.related import RelatedShowsClient
 from client.shows.stats import ShowStatsClient
 from client.shows.trending import TrendingShowsClient
 from config.api import DEFAULT_LIMIT
@@ -356,6 +357,39 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
         raise
 
 
+@handle_api_errors_func
+async def fetch_related_shows(
+    show_id: str,
+    limit: int = DEFAULT_LIMIT,
+    page: int | None = None,
+) -> str:
+    """Fetch shows related to a specific show.
+
+    Args:
+        show_id: Trakt ID, Trakt slug, or IMDB ID
+        limit: Maximum shows to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number. If None, auto-paginates up to 'limit' total shows.
+            If specified, returns that page with pagination metadata.
+
+    Returns:
+        Information about related shows.
+    """
+    # Validate show_id
+    id_params = ShowIdParam(show_id=show_id)
+    # Validate limit/page
+    params = LimitOnly(limit=limit, page=page)
+
+    client = RelatedShowsClient()
+    shows = await client.get_related_shows(
+        show_id=id_params.show_id,
+        limit=params.limit,
+        page=params.page,
+    )
+
+    return ShowFormatters.format_related_shows(shows)
+
+
 def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """Register show tools with the MCP server.
 
@@ -475,6 +509,18 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         params = ShowVideoParams(show_id=show_id, embed_markdown=embed_markdown)
         return await fetch_show_videos(params.show_id, params.embed_markdown)
 
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_related_shows"],
+        description="Fetch TV shows related to a specific show. Returns similar shows based on genres, themes, and viewer patterns. Use page parameter for paginated results, or omit for all results.",
+    )
+    @handle_api_errors_func
+    async def fetch_related_shows_tool(
+        show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+    ) -> str:
+        return await fetch_related_shows(show_id, limit, page)
+
     # Return handlers for type checker visibility
     return (
         fetch_trending_shows_tool,
@@ -485,4 +531,5 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         fetch_show_ratings_tool,
         fetch_show_summary_tool,
         fetch_show_videos_tool,
+        fetch_related_shows_tool,
     )

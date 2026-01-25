@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, cast
 
 from models.formatters.shows import ShowFormatters
+from models.types.pagination import PaginatedResponse, PaginationMetadata
 
 if TYPE_CHECKING:
     from models.types import ShowResponse, TrendingWrapper
@@ -198,3 +199,97 @@ class TestShowFormatters:
         result = ShowFormatters.format_show_extended(show_data)
         assert isinstance(result, str)
         assert "- Air Time: at 20:00 (UTC)" in result
+
+    def test_format_related_shows_exists(self) -> None:
+        """Test that format_related_shows method exists."""
+        assert hasattr(ShowFormatters, "format_related_shows")
+        assert callable(ShowFormatters.format_related_shows)
+
+    def test_format_related_shows_with_data(self) -> None:
+        """Test formatting related shows with sample data."""
+        sample_shows: list["ShowResponse"] = [
+            cast(
+                "ShowResponse",
+                {
+                    "title": "Better Call Saul",
+                    "year": 2015,
+                    "overview": "A prequel to the award-winning series Breaking Bad.",
+                    "ids": {"trakt": 59660, "slug": "better-call-saul"},
+                },
+            ),
+            cast(
+                "ShowResponse",
+                {
+                    "title": "The Wire",
+                    "year": 2002,
+                    "overview": "A crime drama set in Baltimore.",
+                    "ids": {"trakt": 1234, "slug": "the-wire"},
+                },
+            ),
+        ]
+        result = ShowFormatters.format_related_shows(sample_shows)
+        assert isinstance(result, str)
+        assert "# Related Shows" in result
+        assert "Better Call Saul (2015)" in result
+        assert "The Wire (2002)" in result
+        assert "A prequel to the award-winning series Breaking Bad." in result
+
+    def test_format_related_shows_empty(self) -> None:
+        """Test formatting empty related shows list."""
+        result = ShowFormatters.format_related_shows([])
+        assert isinstance(result, str)
+        assert "# Related Shows" in result
+        assert "No related shows found." in result
+
+    def test_format_related_shows_with_pagination(self) -> None:
+        """Test formatting related shows with pagination metadata."""
+        sample_shows: list["ShowResponse"] = [
+            cast(
+                "ShowResponse",
+                {
+                    "title": "Better Call Saul",
+                    "year": 2015,
+                    "ids": {"trakt": 59660, "slug": "better-call-saul"},
+                },
+            )
+        ]
+        paginated_response: PaginatedResponse["ShowResponse"] = PaginatedResponse(
+            data=sample_shows,
+            pagination=PaginationMetadata(
+                current_page=2,
+                items_per_page=10,
+                total_pages=3,
+                total_items=25,
+            ),
+        )
+        result = ShowFormatters.format_related_shows(paginated_response)
+        assert isinstance(result, str)
+        assert "# Related Shows" in result
+        assert "Better Call Saul (2015)" in result
+        # Assert specific pagination output from format_pagination_header
+        assert "Page 2 of 3" in result
+        assert "of 25" in result  # Total items shown as "items X-Y of 25"
+        # Navigation hints should appear since page 2 has both previous and next
+        assert "Previous: page 1" in result
+        assert "Next: page 3" in result
+
+    def test_format_related_shows_truncates_overview(self) -> None:
+        """Test that long overviews are truncated to 200 characters."""
+        long_overview = "A" * 300  # 300 character overview
+        sample_shows: list["ShowResponse"] = [
+            cast(
+                "ShowResponse",
+                {
+                    "title": "Test Show",
+                    "year": 2023,
+                    "overview": long_overview,
+                    "ids": {"trakt": 1, "slug": "test-show"},
+                },
+            )
+        ]
+        result = ShowFormatters.format_related_shows(sample_shows)
+        assert isinstance(result, str)
+        # Should be truncated with ellipsis
+        assert "..." in result
+        # Should not contain the full 300 character string
+        assert long_overview not in result

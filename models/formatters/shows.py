@@ -368,3 +368,43 @@ class ShowFormatters:
         result += f"\nTrakt ID: {trakt_id}\n"
 
         return result
+
+    @staticmethod
+    def format_related_shows(
+        data: list[ShowResponse] | PaginatedResponse[ShowResponse],
+    ) -> str:
+        """Format related shows data for MCP resource.
+
+        Args:
+            data: Either a list of all related shows or a paginated response
+
+        Returns:
+            Formatted markdown text with related shows
+        """
+        result = "# Related Shows\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += format_pagination_header(data)
+            shows = data.data
+        else:
+            shows = data
+
+        if not shows:
+            return result + "No related shows found.\n"
+
+        for show in shows:
+            title = show.get("title", "Unknown")
+            year = show.get("year", "")
+            year_str = f" ({year})" if year else ""
+
+            result += f"- **{title}{year_str}**\n"
+
+            if overview := show.get("overview"):
+                if len(overview) > 200:
+                    overview = overview[:197] + "..."
+                result += f"  {overview}\n"
+
+            result += "\n"
+
+        return result

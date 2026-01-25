@@ -205,6 +205,12 @@ fetch_show_videos(show_id="game-of-thrones")
 # Get videos for a show (simple text links)
 fetch_show_videos(show_id="game-of-thrones", embed_markdown=False)
 
+# Get related shows (similar shows based on genres, themes, and viewer patterns)
+fetch_related_shows(show_id="game-of-thrones", limit=10)
+
+# Get related shows with pagination metadata
+fetch_related_shows(show_id="game-of-thrones", limit=10, page=1)
+
 # Search for movies: auto-paginate all results (omit page parameter)
 search_movies(query="The Godfather", limit=5)
 
@@ -250,6 +256,12 @@ fetch_movie_videos(movie_id="tron-legacy-2010")
 
 # Get videos for a movie (simple text links)
 fetch_movie_videos(movie_id="tron-legacy-2010", embed_markdown=False)
+
+# Get related movies (similar movies based on genres, themes, and viewer patterns)
+fetch_related_movies(movie_id="tron-legacy-2010", limit=10)
+
+# Get related movies with pagination metadata
+fetch_related_movies(movie_id="tron-legacy-2010", limit=10, page=1)
 ```
 
 </details>
@@ -385,6 +397,9 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 - "Get a detailed summary of Breaking Bad"
 - "Show me details about The Godfather movie"
 - "Give me basic info for Game of Thrones"
+- "Show me shows similar to Breaking Bad"
+- "What movies are related to TRON: Legacy?"
+- "Find shows like Game of Thrones"
 
 **Personal Data (Requires Authentication):**
 - "What was the last show I watched?"

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from models.formatters.movies import MovieFormatters
+from models.types.pagination import PaginatedResponse, PaginationMetadata
 
 if TYPE_CHECKING:
     from models.types.api_responses import MovieResponse, TrendingWrapper
@@ -231,3 +232,85 @@ class TestMovieFormatters:
         result = MovieFormatters.format_movie_extended(movie_data)
         assert isinstance(result, str)
         assert "- Languages: en, fr" in result
+
+    def test_format_related_movies_exists(self) -> None:
+        """Test that format_related_movies method exists."""
+        assert hasattr(MovieFormatters, "format_related_movies")
+        assert callable(MovieFormatters.format_related_movies)
+
+    def test_format_related_movies_with_data(self) -> None:
+        """Test formatting related movies with sample data."""
+        sample_movies: list[MovieResponse] = [
+            make_movie_response(
+                title="The Dark Knight Rises",
+                year=2012,
+                trakt=28,
+                slug="the-dark-knight-rises",
+                overview="Eight years after the Joker's reign of anarchy.",
+            ),
+            make_movie_response(
+                title="Batman Begins",
+                year=2005,
+                trakt=155,
+                slug="batman-begins",
+                overview="A young Bruce Wayne travels to the Far East.",
+            ),
+        ]
+        result = MovieFormatters.format_related_movies(sample_movies)
+        assert isinstance(result, str)
+        assert "# Related Movies" in result
+        assert "The Dark Knight Rises (2012)" in result
+        assert "Batman Begins (2005)" in result
+        assert "Eight years after the Joker's reign of anarchy." in result
+
+    def test_format_related_movies_empty(self) -> None:
+        """Test formatting empty related movies list."""
+        result = MovieFormatters.format_related_movies([])
+        assert isinstance(result, str)
+        assert "# Related Movies" in result
+        assert "No related movies found." in result
+
+    def test_format_related_movies_with_pagination(self) -> None:
+        """Test formatting related movies with pagination metadata."""
+        sample_movies: list[MovieResponse] = [
+            make_movie_response(
+                title="The Dark Knight Rises",
+                year=2012,
+                trakt=28,
+                slug="the-dark-knight-rises",
+            )
+        ]
+        paginated_response: PaginatedResponse[MovieResponse] = PaginatedResponse(
+            data=sample_movies,
+            pagination=PaginationMetadata(
+                current_page=2,
+                items_per_page=10,
+                total_pages=3,
+                total_items=25,
+            ),
+        )
+        result = MovieFormatters.format_related_movies(paginated_response)
+        assert isinstance(result, str)
+        assert "# Related Movies" in result
+        assert "The Dark Knight Rises (2012)" in result
+        # Should include pagination info
+        assert "Page 2" in result or "page" in result.lower()
+
+    def test_format_related_movies_truncates_overview(self) -> None:
+        """Test that long overviews are truncated to 200 characters."""
+        long_overview = "A" * 300  # 300 character overview
+        sample_movies: list[MovieResponse] = [
+            make_movie_response(
+                title="Test Movie",
+                year=2023,
+                trakt=1,
+                slug="test-movie",
+                overview=long_overview,
+            )
+        ]
+        result = MovieFormatters.format_related_movies(sample_movies)
+        assert isinstance(result, str)
+        # Should be truncated with ellipsis
+        assert "..." in result
+        # Should not contain the full 300 character string
+        assert long_overview not in result
