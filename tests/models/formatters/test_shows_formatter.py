@@ -207,7 +207,7 @@ class TestShowFormatters:
 
     def test_format_related_shows_with_data(self) -> None:
         """Test formatting related shows with sample data."""
-        sample_shows: list[ShowResponse] = [
+        sample_shows: list["ShowResponse"] = [
             cast(
                 "ShowResponse",
                 {
@@ -243,7 +243,7 @@ class TestShowFormatters:
 
     def test_format_related_shows_with_pagination(self) -> None:
         """Test formatting related shows with pagination metadata."""
-        sample_shows: list[ShowResponse] = [
+        sample_shows: list["ShowResponse"] = [
             cast(
                 "ShowResponse",
                 {
@@ -253,7 +253,7 @@ class TestShowFormatters:
                 },
             )
         ]
-        paginated_response: PaginatedResponse[ShowResponse] = PaginatedResponse(
+        paginated_response: PaginatedResponse["ShowResponse"] = PaginatedResponse(
             data=sample_shows,
             pagination=PaginationMetadata(
                 current_page=2,
@@ -276,7 +276,7 @@ class TestShowFormatters:
     def test_format_related_shows_truncates_overview(self) -> None:
         """Test that long overviews are truncated to 200 characters."""
         long_overview = "A" * 300  # 300 character overview
-        sample_shows: list[ShowResponse] = [
+        sample_shows: list["ShowResponse"] = [
             cast(
                 "ShowResponse",
                 {
