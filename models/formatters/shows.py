@@ -401,6 +401,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}**\n"
 
             if overview := show.get("overview"):
+                if len(overview) > 200:
+                    overview = overview[:197] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
