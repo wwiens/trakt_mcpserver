@@ -3,9 +3,11 @@
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 
 from client.movies.related import RelatedMoviesClient
+from utils.api.error_types import TraktResourceNotFoundError
 
 
 @pytest.mark.asyncio
@@ -132,14 +134,15 @@ async def test_get_related_movies_url_encoding():
         mock_client.return_value = mock_instance
 
         client = RelatedMoviesClient()
-        # Test with IMDB ID format
-        await client.get_related_movies("tt0468569", limit=5)
+        # Test with a slug containing special characters that need encoding
+        # / -> %2F, : -> %3A, & -> %26
+        await client.get_related_movies("movie/with:special&chars", limit=5)
 
         # Verify the request was made
         mock_instance.get.assert_called()
         call_args = mock_instance.get.call_args
-        # The endpoint should contain the encoded movie_id
-        assert "tt0468569" in str(call_args)
+        # The endpoint should contain the URL-encoded movie_id
+        assert "movie%2Fwith%3Aspecial%26chars" in str(call_args)
 
         mock_instance.aclose.assert_awaited_once()
 
@@ -177,3 +180,31 @@ async def test_get_related_movies_empty_results():
         assert len(result) == 0
 
         mock_instance.aclose.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_get_related_movies_api_error():
+    """Test get_related_movies handles API errors correctly."""
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "Not Found",
+        request=MagicMock(),
+        response=MagicMock(status_code=404),
+    )
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+        pytest.raises(TraktResourceNotFoundError),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.get = AsyncMock(return_value=mock_response)
+        mock_instance.post = AsyncMock()
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        client = RelatedMoviesClient()
+        await client.get_related_movies("nonexistent-movie", limit=10)

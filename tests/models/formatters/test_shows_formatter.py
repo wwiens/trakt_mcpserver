@@ -266,8 +266,12 @@ class TestShowFormatters:
         assert isinstance(result, str)
         assert "# Related Shows" in result
         assert "Better Call Saul (2015)" in result
-        # Should include pagination info
-        assert "Page 2" in result or "page" in result.lower()
+        # Assert specific pagination output from format_pagination_header
+        assert "Page 2 of 3" in result
+        assert "of 25" in result  # Total items shown as "items X-Y of 25"
+        # Navigation hints should appear since page 2 has both previous and next
+        assert "Previous: page 1" in result
+        assert "Next: page 3" in result
 
     def test_format_related_shows_truncates_overview(self) -> None:
         """Test that long overviews are truncated to 200 characters."""

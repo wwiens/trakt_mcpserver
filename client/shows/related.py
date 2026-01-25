@@ -44,7 +44,7 @@ class RelatedShowsClient(BaseClient):
         """Get shows related to a specific show.
 
         Args:
-            show_id: Trakt ID, Trakt slug, or IMDB ID
+            show_id: Show identifier (Trakt ID, Trakt slug, IMDB, TMDB, or TVDB ID)
             limit: Controls result size based on pagination mode:
                 - Auto-pagination (page=None): Maximum TOTAL items to return
                 - Single page (page=N): Items per page in the response
@@ -70,6 +70,10 @@ class RelatedShowsClient(BaseClient):
                 max_items=eff.max_items,
             )
         else:
+            if page < 1:
+                raise ValueError(f"page must be >= 1, got {page}")
+            if limit < 1:
+                raise ValueError(f"limit must be >= 1, got {limit}")
             return await self._make_paginated_request(
                 endpoint,
                 response_type=ShowResponse,

@@ -132,14 +132,15 @@ async def test_get_related_shows_url_encoding():
         mock_client.return_value = mock_instance
 
         client = RelatedShowsClient()
-        # Test with IMDB ID format
-        await client.get_related_shows("tt0903747", limit=5)
+        # Test with a slug containing special characters that need encoding
+        # / -> %2F, : -> %3A, & -> %26
+        await client.get_related_shows("show/with:special&chars", limit=5)
 
         # Verify the request was made
         mock_instance.get.assert_called()
         call_args = mock_instance.get.call_args
-        # The endpoint should contain the encoded show_id
-        assert "tt0903747" in str(call_args)
+        # The endpoint should contain the URL-encoded show_id
+        assert "show%2Fwith%3Aspecial%26chars" in str(call_args)
 
         mock_instance.aclose.assert_awaited_once()
 
