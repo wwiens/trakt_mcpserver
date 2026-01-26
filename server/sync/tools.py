@@ -537,20 +537,24 @@ async def remove_user_watchlist(
         raise
 
 
-class HistoryRequestItem(IdentifierValidatorMixin):
-    """Single history item for add operations."""
+class HistoryItemBase(IdentifierValidatorMixin):
+    """Base class for history item operations."""
 
     _identifier_error_prefix: ClassVar[str] = "History item"
+
+
+class HistoryRequestItem(HistoryItemBase):
+    """Single history item for add operations."""
 
     watched_at: str | None = Field(
         default=None, description="ISO 8601 timestamp when watched"
     )
 
 
-class HistoryRemoveItem(IdentifierValidatorMixin):
+class HistoryRemoveItem(HistoryItemBase):
     """History item identifier for removal operations."""
 
-    _identifier_error_prefix: ClassVar[str] = "History item"
+    pass
 
 
 @handle_api_errors_func

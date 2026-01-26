@@ -381,6 +381,9 @@ fetch_show_progress(
     last_activity="watched"  # Calculate next episode based on watched order
 )
 
+# Get detailed episode-by-episode progress with watch dates
+fetch_show_progress(show_id="breaking-bad", verbose=True)
+
 # Get paused playback progress (all types)
 fetch_playback_progress()
 
