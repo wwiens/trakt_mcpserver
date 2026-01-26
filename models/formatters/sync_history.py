@@ -156,9 +156,10 @@ class SyncHistoryFormatters:
         if counts:
             total = getattr(counts, content_type, 0)
             if total > 0:
+                preposition = "to" if operation == "added" else "from"
                 result += (
                     f"Successfully {operation} **{total}** "
-                    f"{content_type} to watch history.\n\n"
+                    f"{content_type} {preposition} watch history.\n\n"
                 )
 
                 # Show breakdown by type if multiple types were processed
