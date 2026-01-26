@@ -20,7 +20,7 @@ from config.mcp.descriptions import (
 from config.mcp.tools.progress import PROGRESS_TOOLS
 from models.formatters.progress import ProgressFormatters
 from server.base import BaseToolErrorMixin
-from utils.api.errors import MCPError, handle_api_errors_func
+from utils.api.errors import handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -53,30 +53,27 @@ async def fetch_show_progress(
     """
     logger.debug("fetch_show_progress called with show_id=%s", show_id)
 
-    try:
-        client = ProgressClient()
+    client = ProgressClient()
 
-        result = await client.get_show_progress(
-            show_id,
-            hidden=hidden,
-            specials=specials,
-            count_specials=count_specials,
-            last_activity=last_activity,
+    result = await client.get_show_progress(
+        show_id,
+        hidden=hidden,
+        specials=specials,
+        count_specials=count_specials,
+        last_activity=last_activity,
+    )
+
+    # Handle transitional case where API returns error strings
+    if isinstance(result, str):
+        error = BaseToolErrorMixin.handle_api_string_error(
+            resource_type="show_progress",
+            resource_id=show_id,
+            error_message=result,
+            operation="fetch_show_progress",
         )
+        raise error
 
-        # Handle transitional case where API returns error strings
-        if isinstance(result, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show_progress",
-                resource_id=show_id,
-                error_message=result,
-                operation="fetch_show_progress",
-            )
-            raise error
-
-        return ProgressFormatters.format_show_progress(result, show_id)
-    except MCPError:
-        raise
+    return ProgressFormatters.format_show_progress(result, show_id)
 
 
 @handle_api_errors_func
@@ -96,24 +93,21 @@ async def fetch_playback_progress(
     """
     logger.debug("fetch_playback_progress called with type=%s", playback_type)
 
-    try:
-        client = ProgressClient()
+    client = ProgressClient()
 
-        result = await client.get_playback_progress(playback_type)
+    result = await client.get_playback_progress(playback_type)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(result, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
-                resource_type="playback_progress",
-                resource_id=playback_type or "all",
-                error_message=result,
-                operation="fetch_playback_progress",
-            )
-            raise error
+    # Handle transitional case where API returns error strings
+    if isinstance(result, str):
+        error = BaseToolErrorMixin.handle_api_string_error(
+            resource_type="playback_progress",
+            resource_id=playback_type or "all",
+            error_message=result,
+            operation="fetch_playback_progress",
+        )
+        raise error
 
-        return ProgressFormatters.format_playback_progress(result)
-    except MCPError:
-        raise
+    return ProgressFormatters.format_playback_progress(result)
 
 
 @handle_api_errors_func
@@ -131,14 +125,11 @@ async def remove_playback_item(playback_id: int) -> str:
     """
     logger.debug("remove_playback_item called with id=%s", playback_id)
 
-    try:
-        client = ProgressClient()
+    client = ProgressClient()
 
-        await client.remove_playback_item(playback_id)
+    await client.remove_playback_item(playback_id)
 
-        return f"Successfully removed playback item with ID {playback_id}."
-    except MCPError:
-        raise
+    return f"Successfully removed playback item with ID {playback_id}."
 
 
 def register_progress_tools(

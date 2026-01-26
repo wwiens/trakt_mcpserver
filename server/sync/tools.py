@@ -576,29 +576,26 @@ async def fetch_history(
     """
     logger.debug("fetch_history called with type=%s, item_id=%s", history_type, item_id)
 
-    try:
-        client = SyncClient()
+    client = SyncClient()
 
-        result = await client.get_history(
-            history_type=history_type,
-            item_id=item_id,
-            start_at=start_at,
-            end_at=end_at,
+    result = await client.get_history(
+        history_type=history_type,
+        item_id=item_id,
+        start_at=start_at,
+        end_at=end_at,
+    )
+
+    # Handle transitional case where API returns error strings
+    if isinstance(result, str):
+        error = BaseToolErrorMixin.handle_api_string_error(
+            resource_type="history",
+            resource_id=item_id or "all",
+            error_message=result,
+            operation="fetch_history",
         )
+        raise error
 
-        # Handle transitional case where API returns error strings
-        if isinstance(result, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
-                resource_type="history",
-                resource_id=item_id or "all",
-                error_message=result,
-                operation="fetch_history",
-            )
-            raise error
-
-        return SyncHistoryFormatters.format_watch_history(result, history_type, item_id)
-    except MCPError:
-        raise
+    return SyncHistoryFormatters.format_watch_history(result, history_type, item_id)
 
 
 @handle_api_errors_func
@@ -620,47 +617,42 @@ async def add_to_history(
     """
     logger.debug("add_to_history called with type=%s", history_type)
 
-    try:
-        client = SyncClient()
+    client = SyncClient()
 
-        # Convert to history request format
-        history_items: list[TraktHistoryItem] = []
-        for item in items:
-            # Create history item
-            item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
+    # Convert to history request format
+    history_items: list[TraktHistoryItem] = []
+    for item in items:
+        # Create history item
+        item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 
-            # Add title and year if provided
-            if item.title:
-                item_data["title"] = item.title
-            if item.year:
-                item_data["year"] = item.year
-            # Add watched_at if provided
-            if item.watched_at:
-                item_data["watched_at"] = item.watched_at
+        # Add title and year if provided
+        if item.title:
+            item_data["title"] = item.title
+        if item.year:
+            item_data["year"] = item.year
+        # Add watched_at if provided
+        if item.watched_at:
+            item_data["watched_at"] = item.watched_at
 
-            history_items.append(TraktHistoryItem(**item_data))
+        history_items.append(TraktHistoryItem(**item_data))
 
-        # Create request with the appropriate type
-        request_data: dict[str, Any] = {history_type: history_items}
-        request = TraktHistoryRequest(**request_data)
+    # Create request with the appropriate type
+    request_data: dict[str, Any] = {history_type: history_items}
+    request = TraktHistoryRequest(**request_data)
 
-        summary: HistorySummary = await client.add_to_history(request)
+    summary: HistorySummary = await client.add_to_history(request)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(summary, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
-                resource_type=f"add_history_{history_type}",
-                resource_id=f"add_history_{history_type}",
-                error_message=summary,
-                operation="add_to_history",
-            )
-            raise error
-
-        return SyncHistoryFormatters.format_history_summary(
-            summary, "added", history_type
+    # Handle transitional case where API returns error strings
+    if isinstance(summary, str):
+        error = BaseToolErrorMixin.handle_api_string_error(
+            resource_type=f"add_history_{history_type}",
+            resource_id=f"add_history_{history_type}",
+            error_message=summary,
+            operation="add_to_history",
         )
-    except MCPError:
-        raise
+        raise error
+
+    return SyncHistoryFormatters.format_history_summary(summary, "added", history_type)
 
 
 @handle_api_errors_func
@@ -682,44 +674,41 @@ async def remove_from_history(
     """
     logger.debug("remove_from_history called with type=%s", history_type)
 
-    try:
-        client = SyncClient()
+    client = SyncClient()
 
-        # Convert to history request format
-        history_items: list[TraktHistoryItem] = []
-        for item in items:
-            # Create history item (no watched_at for removal)
-            item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
+    # Convert to history request format
+    history_items: list[TraktHistoryItem] = []
+    for item in items:
+        # Create history item (no watched_at for removal)
+        item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
 
-            # Add title and year if provided
-            if item.title:
-                item_data["title"] = item.title
-            if item.year:
-                item_data["year"] = item.year
+        # Add title and year if provided
+        if item.title:
+            item_data["title"] = item.title
+        if item.year:
+            item_data["year"] = item.year
 
-            history_items.append(TraktHistoryItem(**item_data))
+        history_items.append(TraktHistoryItem(**item_data))
 
-        # Create request with the appropriate type
-        request_data: dict[str, Any] = {history_type: history_items}
-        request = TraktHistoryRequest(**request_data)
+    # Create request with the appropriate type
+    request_data: dict[str, Any] = {history_type: history_items}
+    request = TraktHistoryRequest(**request_data)
 
-        summary: HistorySummary = await client.remove_from_history(request)
+    summary: HistorySummary = await client.remove_from_history(request)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(summary, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
-                resource_type=f"remove_history_{history_type}",
-                resource_id=f"remove_history_{history_type}",
-                error_message=summary,
-                operation="remove_from_history",
-            )
-            raise error
-
-        return SyncHistoryFormatters.format_history_summary(
-            summary, "removed", history_type
+    # Handle transitional case where API returns error strings
+    if isinstance(summary, str):
+        error = BaseToolErrorMixin.handle_api_string_error(
+            resource_type=f"remove_history_{history_type}",
+            resource_id=f"remove_history_{history_type}",
+            error_message=summary,
+            operation="remove_from_history",
         )
-    except MCPError:
-        raise
+        raise error
+
+    return SyncHistoryFormatters.format_history_summary(
+        summary, "removed", history_type
+    )
 
 
 def register_sync_tools(

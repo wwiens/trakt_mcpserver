@@ -1,9 +1,9 @@
 """Shared formatting utilities for Trakt MCP server."""
 
-from datetime import datetime
 from typing import TypeVar
 
 from models.types.pagination import PaginatedResponse
+from utils.formatting import format_iso_timestamp
 
 T = TypeVar("T")
 
@@ -43,11 +43,4 @@ def format_display_time(timestamp: str) -> str:
         Formatted timestamp string (e.g., "2023-01-01 12:34:56")
         Falls back to original string if parsing fails
     """
-    try:
-        # Support 'Z' timezone notation
-        normalized = timestamp.replace("Z", "+00:00")
-        dt = datetime.fromisoformat(normalized)
-        return dt.strftime("%Y-%m-%d %H:%M:%S")
-    except ValueError:
-        # Fallback to original timestamp if parsing fails
-        return timestamp
+    return format_iso_timestamp(timestamp, fmt="%Y-%m-%d %H:%M:%S")

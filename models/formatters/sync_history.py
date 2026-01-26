@@ -1,8 +1,7 @@
 """Sync history formatting methods for the Trakt MCP server."""
 
-from datetime import datetime
-
 from models.sync.history import HistorySummary, WatchHistoryItem
+from utils.formatting import format_iso_timestamp
 
 
 class SyncHistoryFormatters:
@@ -56,12 +55,7 @@ class SyncHistoryFormatters:
 
             result += "## Watch Events\n\n"
             for item in items:
-                # Format timestamp
-                try:
-                    dt = datetime.fromisoformat(item.watched_at.replace("Z", "+00:00"))
-                    watched_str = dt.strftime("%Y-%m-%d %H:%M")
-                except ValueError:
-                    watched_str = item.watched_at
+                watched_str = format_iso_timestamp(item.watched_at)
 
                 if item.type == "episode" and item.episode:
                     ep = item.episode
@@ -94,15 +88,7 @@ class SyncHistoryFormatters:
                     title = item.movie.title
                     year = item.movie.year
                     title_str = f"{title} ({year})" if year else title
-
-                    # Format timestamp
-                    try:
-                        dt = datetime.fromisoformat(
-                            item.watched_at.replace("Z", "+00:00")
-                        )
-                        watched_str = dt.strftime("%Y-%m-%d %H:%M")
-                    except ValueError:
-                        watched_str = item.watched_at
+                    watched_str = format_iso_timestamp(item.watched_at)
 
                     result += f"- **{title_str}** - {watched_str}\n"
 
@@ -118,14 +104,7 @@ class SyncHistoryFormatters:
                     if ep.title:
                         ep_str += f": {ep.title}"
 
-                    # Format timestamp
-                    try:
-                        dt = datetime.fromisoformat(
-                            item.watched_at.replace("Z", "+00:00")
-                        )
-                        watched_str = dt.strftime("%Y-%m-%d %H:%M")
-                    except ValueError:
-                        watched_str = item.watched_at
+                    watched_str = format_iso_timestamp(item.watched_at)
 
                     result += f"- **{ep_str}** - {watched_str}\n"
 

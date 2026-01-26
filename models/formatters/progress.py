@@ -1,9 +1,8 @@
 """Progress formatting methods for the Trakt MCP server."""
 
-from datetime import datetime
-
 from models.progress.playback import PlaybackProgressResponse
 from models.progress.show_progress import ShowProgressResponse
+from utils.formatting import format_iso_timestamp
 
 
 class ProgressFormatters:
@@ -31,11 +30,7 @@ class ProgressFormatters:
         # Format last watched timestamp
         last_watched = data.get("last_watched_at")
         if last_watched:
-            try:
-                dt = datetime.fromisoformat(last_watched.replace("Z", "+00:00"))
-                result += f"- **Last Watched:** {dt.strftime('%Y-%m-%d %H:%M')}\n"
-            except ValueError:
-                result += f"- **Last Watched:** {last_watched}\n"
+            result += f"- **Last Watched:** {format_iso_timestamp(last_watched)}\n"
 
         # Show reset info if present
         reset_at = data.get("reset_at")
@@ -131,13 +126,7 @@ class ProgressFormatters:
                 playback_id = item["id"]
 
                 title_str = f"{title} ({year})" if year else title
-
-                # Format paused timestamp
-                try:
-                    dt = datetime.fromisoformat(paused_at.replace("Z", "+00:00"))
-                    paused_str = dt.strftime("%Y-%m-%d %H:%M")
-                except ValueError:
-                    paused_str = paused_at
+                paused_str = format_iso_timestamp(paused_at)
 
                 result += f"- **{title_str}**\n"
                 result += f"  - Progress: {progress:.1f}%\n"
@@ -161,12 +150,7 @@ class ProgressFormatters:
                 if ep_title:
                     ep_str += f": {ep_title}"
 
-                # Format paused timestamp
-                try:
-                    dt = datetime.fromisoformat(paused_at.replace("Z", "+00:00"))
-                    paused_str = dt.strftime("%Y-%m-%d %H:%M")
-                except ValueError:
-                    paused_str = paused_at
+                paused_str = format_iso_timestamp(paused_at)
 
                 result += f"- **{ep_str}**\n"
                 result += f"  - Progress: {progress:.1f}%\n"
