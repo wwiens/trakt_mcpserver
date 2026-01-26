@@ -20,6 +20,7 @@ from models.sync.history import (
     TraktHistoryRequest,
     WatchHistoryItem,
 )
+from models.types.pagination import PaginatedResponse, PaginationMetadata
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -113,6 +114,21 @@ def create_history_summary(
     )
 
 
+def create_paginated_response(
+    items: list[WatchHistoryItem],
+) -> PaginatedResponse[WatchHistoryItem]:
+    """Create a paginated response wrapper for testing."""
+    return PaginatedResponse(
+        data=items,
+        pagination=PaginationMetadata(
+            current_page=1,
+            items_per_page=10,
+            total_pages=1,
+            total_items=len(items),
+        ),
+    )
+
+
 @pytest.fixture
 def mock_auth_token() -> TraktAuthToken:
     """Create a mock auth token for testing."""
@@ -155,14 +171,14 @@ class TestSyncHistoryClient:
     ) -> None:
         """Test retrieval of all watch history."""
         with patch.object(
-            authenticated_sync_client, "_make_typed_list_request"
+            authenticated_sync_client, "_make_paginated_request"
         ) as mock_request:
             mock_items = [create_movie_history_item(), create_episode_history_item()]
-            mock_request.return_value = mock_items
+            mock_request.return_value = create_paginated_response(mock_items)
 
             result = await authenticated_sync_client.get_history()
 
-            assert len(result) == 2
+            assert len(result.data) == 2
             mock_request.assert_called_once()
 
     @pytest.mark.asyncio
@@ -172,14 +188,16 @@ class TestSyncHistoryClient:
     ) -> None:
         """Test retrieval of movies watch history."""
         with patch.object(
-            authenticated_sync_client, "_make_typed_list_request"
+            authenticated_sync_client, "_make_paginated_request"
         ) as mock_request:
-            mock_request.return_value = [create_movie_history_item()]
+            mock_request.return_value = create_paginated_response(
+                [create_movie_history_item()]
+            )
 
             result = await authenticated_sync_client.get_history(history_type="movies")
 
-            assert len(result) == 1
-            assert result[0].type == "movie"
+            assert len(result.data) == 1
+            assert result.data[0].type == "movie"
 
             # Verify endpoint contains movies
             call_args = mock_request.call_args
@@ -193,17 +211,19 @@ class TestSyncHistoryClient:
     ) -> None:
         """Test retrieval of watch history for a specific item."""
         with patch.object(
-            authenticated_sync_client, "_make_typed_list_request"
+            authenticated_sync_client, "_make_paginated_request"
         ) as mock_request:
-            mock_request.return_value = [create_movie_history_item()]
+            mock_request.return_value = create_paginated_response(
+                [create_movie_history_item()]
+            )
 
             result = await authenticated_sync_client.get_history(
                 history_type="movies",
                 item_id="16662",
             )
 
-            assert len(result) == 1
-            assert result[0].movie.title == "Inception"
+            assert len(result.data) == 1
+            assert result.data[0].movie.title == "Inception"
 
             # Verify endpoint contains item_id
             call_args = mock_request.call_args
@@ -217,9 +237,11 @@ class TestSyncHistoryClient:
     ) -> None:
         """Test retrieval with date range filters."""
         with patch.object(
-            authenticated_sync_client, "_make_typed_list_request"
+            authenticated_sync_client, "_make_paginated_request"
         ) as mock_request:
-            mock_request.return_value = [create_movie_history_item()]
+            mock_request.return_value = create_paginated_response(
+                [create_movie_history_item()]
+            )
 
             await authenticated_sync_client.get_history(
                 start_at="2024-01-01T00:00:00.000Z",

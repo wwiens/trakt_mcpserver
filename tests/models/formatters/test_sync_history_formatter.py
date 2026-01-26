@@ -11,6 +11,22 @@ from models.sync.history import (
     TraktHistoryItem,
     WatchHistoryItem,
 )
+from models.types.pagination import PaginatedResponse, PaginationMetadata
+
+
+def _wrap_in_paginated_response(
+    items: list[WatchHistoryItem],
+) -> PaginatedResponse[WatchHistoryItem]:
+    """Wrap a list of items in a PaginatedResponse for testing."""
+    return PaginatedResponse(
+        data=items,
+        pagination=PaginationMetadata(
+            current_page=1,
+            items_per_page=10,
+            total_pages=1,
+            total_items=len(items),
+        ),
+    )
 
 
 class TestSyncHistoryFormatters:
@@ -18,14 +34,18 @@ class TestSyncHistoryFormatters:
 
     def test_format_watch_history_empty(self) -> None:
         """Test formatting empty watch history."""
-        result = SyncHistoryFormatters.format_watch_history([])
+        result = SyncHistoryFormatters.format_watch_history(
+            _wrap_in_paginated_response([])
+        )
 
         assert "# Watch History" in result
         assert "No items in watch history" in result
 
     def test_format_watch_history_empty_movies(self) -> None:
         """Test formatting empty movies watch history."""
-        result = SyncHistoryFormatters.format_watch_history([], query_type="movies")
+        result = SyncHistoryFormatters.format_watch_history(
+            _wrap_in_paginated_response([]), query_type="movies"
+        )
 
         assert "No movies in watch history" in result
 
@@ -45,7 +65,9 @@ class TestSyncHistoryFormatters:
             )
         ]
 
-        result = SyncHistoryFormatters.format_watch_history(items)
+        result = SyncHistoryFormatters.format_watch_history(
+            _wrap_in_paginated_response(items)
+        )
 
         assert "# Watch History (1 item)" in result
         assert "## Movies" in result
@@ -74,7 +96,9 @@ class TestSyncHistoryFormatters:
             )
         ]
 
-        result = SyncHistoryFormatters.format_watch_history(items)
+        result = SyncHistoryFormatters.format_watch_history(
+            _wrap_in_paginated_response(items)
+        )
 
         assert "## Episodes" in result
         assert "Breaking Bad - S01E01" in result
@@ -83,7 +107,7 @@ class TestSyncHistoryFormatters:
     def test_format_watch_history_specific_item_not_watched(self) -> None:
         """Test formatting when specific item has not been watched."""
         result = SyncHistoryFormatters.format_watch_history(
-            [],
+            _wrap_in_paginated_response([]),
             query_type="movies",
             item_id="16662",
         )
@@ -119,7 +143,7 @@ class TestSyncHistoryFormatters:
         ]
 
         result = SyncHistoryFormatters.format_watch_history(
-            items,
+            _wrap_in_paginated_response(items),
             query_type="movies",
             item_id="16662",
         )
@@ -192,6 +216,89 @@ class TestSyncHistoryFormatters:
         assert "Unknown Movie (2024)" in result
         assert "imdb: tt9999999" in result
         assert "could not be found on Trakt" in result
+
+    def test_format_watch_history_pagination_info(self) -> None:
+        """Test pagination information is displayed."""
+        items = [
+            WatchHistoryItem(
+                id=123456,
+                watched_at="2024-01-15T20:30:00.000Z",
+                action="watch",
+                type="movie",
+                movie=HistoryMovieInfo(
+                    title="Inception",
+                    year=2010,
+                    ids={"trakt": 16662},
+                ),
+            )
+        ]
+
+        paginated_response = PaginatedResponse(
+            data=items,
+            pagination=PaginationMetadata(
+                current_page=1,
+                items_per_page=10,
+                total_pages=5,
+                total_items=42,
+            ),
+        )
+
+        result = SyncHistoryFormatters.format_watch_history(paginated_response)
+
+        # Should show pagination summary
+        assert "Page 1 of 5" in result
+        assert "42" in result  # total items
+
+    def test_format_watch_history_pagination_navigation(self) -> None:
+        """Test pagination navigation hints are displayed."""
+        items = [
+            WatchHistoryItem(
+                id=123456,
+                watched_at="2024-01-15T20:30:00.000Z",
+                action="watch",
+                type="movie",
+                movie=HistoryMovieInfo(
+                    title="Inception",
+                    year=2010,
+                    ids={"trakt": 16662},
+                ),
+            )
+        ]
+
+        paginated_response = PaginatedResponse(
+            data=items,
+            pagination=PaginationMetadata(
+                current_page=2,
+                items_per_page=10,
+                total_pages=5,
+                total_items=42,
+            ),
+        )
+
+        result = SyncHistoryFormatters.format_watch_history(paginated_response)
+
+        # Should show navigation hints
+        assert "Navigation:" in result
+        assert "Previous: page 1" in result
+        assert "Next: page 3" in result
+
+    def test_format_watch_history_empty_with_pagination_info(self) -> None:
+        """Test empty watch history shows pagination info."""
+        paginated_response = PaginatedResponse[WatchHistoryItem](
+            data=[],
+            pagination=PaginationMetadata(
+                current_page=1,
+                items_per_page=10,
+                total_pages=0,
+                total_items=0,
+            ),
+        )
+
+        result = SyncHistoryFormatters.format_watch_history(paginated_response)
+
+        # Should show empty message with pagination info
+        assert "No items in watch history" in result
+        assert "Pagination Info:" in result
 
     def test_format_history_summary_mixed_types(self) -> None:
         """Test formatting summary with multiple types added."""

@@ -8,6 +8,7 @@ from models.sync.history import (
     TraktHistoryRequest,
     WatchHistoryItem,
 )
+from models.types.pagination import PaginatedResponse, PaginationParams
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -23,7 +24,8 @@ class SyncHistoryClient(AuthClient):
         item_id: str | None = None,
         start_at: str | None = None,
         end_at: str | None = None,
-    ) -> list[WatchHistoryItem]:
+        pagination: PaginationParams | None = None,
+    ) -> PaginatedResponse[WatchHistoryItem]:
         """Fetch watch history, optionally filtered by type and/or specific item.
 
         Args:
@@ -31,9 +33,10 @@ class SyncHistoryClient(AuthClient):
             item_id: Trakt ID for a specific item (requires history_type)
             start_at: Filter watches after this date (ISO 8601)
             end_at: Filter watches before this date (ISO 8601)
+            pagination: Optional pagination parameters (page, limit)
 
         Returns:
-            List of watch history items
+            Paginated response with watch history items and pagination metadata
 
         Raises:
             ValueError: If not authenticated or item_id provided without history_type
@@ -59,13 +62,15 @@ class SyncHistoryClient(AuthClient):
         endpoint = endpoint.replace("//", "/").rstrip("/")
 
         # Build query params
-        params: dict[str, str] = {}
+        params: dict[str, Any] = {}
         if start_at:
             params["start_at"] = start_at
         if end_at:
             params["end_at"] = end_at
+        if pagination:
+            params.update(pagination.model_dump())
 
-        return await self._make_typed_list_request(
+        return await self._make_paginated_request(
             endpoint,
             response_type=WatchHistoryItem,
             params=params if params else None,

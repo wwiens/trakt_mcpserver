@@ -233,3 +233,133 @@ class TestProgressFormatters:
         assert "# Playback Progress (2 items)" in result
         assert "## Movies" in result
         assert "## Episodes" in result
+
+    def test_format_show_progress_verbose_mode(self) -> None:
+        """Test verbose mode shows episode-by-episode watch dates."""
+        progress: ShowProgressResponse = {
+            "aired": 5,
+            "completed": 3,
+            "last_watched_at": "2024-01-15T20:30:00.000Z",
+            "seasons": [
+                {
+                    "number": 1,
+                    "aired": 5,
+                    "completed": 3,
+                    "episodes": [
+                        {
+                            "number": 1,
+                            "completed": True,
+                            "last_watched_at": "2024-01-13T19:00:00.000Z",
+                        },
+                        {
+                            "number": 2,
+                            "completed": True,
+                            "last_watched_at": "2024-01-14T20:00:00.000Z",
+                        },
+                        {
+                            "number": 3,
+                            "completed": True,
+                            "last_watched_at": "2024-01-15T20:30:00.000Z",
+                        },
+                        {"number": 4, "completed": False, "last_watched_at": None},
+                        {"number": 5, "completed": False, "last_watched_at": None},
+                    ],
+                }
+            ],
+        }
+
+        result = ProgressFormatters.format_show_progress(
+            progress, "test-show", verbose=True
+        )
+
+        # Should show season as header with progress
+        assert "### Season 1" in result
+        assert "**Progress:** 3/5 (60%)" in result
+
+        # Should show individual episodes with watch dates
+        assert "[x] **E01**" in result
+        assert "Watched: 2024-01-13" in result
+        assert "[x] **E02**" in result
+        assert "[x] **E03**" in result
+        assert "[ ] **E04**" in result
+        assert "Not watched" in result
+
+    def test_format_show_progress_verbose_mode_no_watch_dates(self) -> None:
+        """Test verbose mode handles episodes without watch dates gracefully."""
+        progress: ShowProgressResponse = {
+            "aired": 3,
+            "completed": 2,
+            "last_watched_at": "2024-01-15T20:30:00.000Z",
+            "seasons": [
+                {
+                    "number": 1,
+                    "aired": 3,
+                    "completed": 2,
+                    "episodes": [
+                        {
+                            "number": 1,
+                            "completed": True,
+                            "last_watched_at": None,
+                        },  # Watched but no date
+                        {
+                            "number": 2,
+                            "completed": True,
+                            "last_watched_at": "2024-01-14T20:00:00.000Z",
+                        },
+                        {"number": 3, "completed": False, "last_watched_at": None},
+                    ],
+                }
+            ],
+        }
+
+        result = ProgressFormatters.format_show_progress(
+            progress, "test-show", verbose=True
+        )
+
+        # Episode 1 should show as watched but without specific date
+        assert "[x] **E01** - Watched" in result
+        # Episode 2 should show with date
+        assert "[x] **E02** - Watched: 2024-01-14" in result
+        # Episode 3 should show as not watched
+        assert "[ ] **E03** - Not watched" in result
+
+    def test_format_show_progress_verbose_false_is_compact(self) -> None:
+        """Test that verbose=False (default) uses compact format."""
+        progress: ShowProgressResponse = {
+            "aired": 5,
+            "completed": 3,
+            "last_watched_at": "2024-01-15T20:30:00.000Z",
+            "seasons": [
+                {
+                    "number": 1,
+                    "aired": 5,
+                    "completed": 3,
+                    "episodes": [
+                        {
+                            "number": 1,
+                            "completed": True,
+                            "last_watched_at": "2024-01-13T19:00:00.000Z",
+                        },
+                        {
+                            "number": 2,
+                            "completed": True,
+                            "last_watched_at": "2024-01-14T20:00:00.000Z",
+                        },
+                        {"number": 3, "completed": True, "last_watched_at": None},
+                        {"number": 4, "completed": False, "last_watched_at": None},
+                        {"number": 5, "completed": False, "last_watched_at": None},
+                    ],
+                }
+            ],
+        }
+
+        result = ProgressFormatters.format_show_progress(
+            progress, "test-show", verbose=False
+        )
+
+        # Compact format should show season summary only
+        assert "- **Season 1:** 3/5 (60%)" in result
+        # Should NOT show individual episode details
+        assert "[x]" not in result
+        assert "[ ]" not in result
+        assert "E01" not in result

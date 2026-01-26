@@ -1,6 +1,7 @@
 """Sync history formatting methods for the Trakt MCP server."""
 
 from models.sync.history import HistorySummary, WatchHistoryItem
+from models.types.pagination import PaginatedResponse
 from utils.formatting import format_iso_timestamp
 
 
@@ -9,20 +10,24 @@ class SyncHistoryFormatters:
 
     @staticmethod
     def format_watch_history(
-        items: list[WatchHistoryItem],
+        paginated_items: PaginatedResponse[WatchHistoryItem],
         query_type: str | None = None,
         item_id: str | None = None,
     ) -> str:
         """Format watch history response as markdown.
 
         Args:
-            items: List of watch history items from API
+            paginated_items: Paginated response with watch history items
+                and pagination metadata
             query_type: Type filter used in query (movies, shows, etc.)
             item_id: Specific item ID that was queried
 
         Returns:
-            Formatted markdown text with watch history
+            Formatted markdown text with watch history and pagination information
         """
+        items = paginated_items.data
+        pagination = paginated_items.pagination
+
         # If querying a specific item, show targeted response
         if item_id:
             if not items:
@@ -71,11 +76,26 @@ class SyncHistoryFormatters:
         # General history listing
         if not items:
             type_label = query_type if query_type else "items"
-            return f"# Watch History\n\nNo {type_label} in watch history.\n"
+            result = f"# Watch History\n\nNo {type_label} in watch history.\n\n"
+            result += f"📄 **Pagination Info:** {paginated_items.page_info_summary()}\n"
+            return result
 
         result = (
             f"# Watch History ({len(items)} item{'s' if len(items) != 1 else ''})\n\n"
         )
+
+        # Show pagination summary at the top
+        result += f"📄 **{paginated_items.page_info_summary()}**\n\n"
+
+        # Show page navigation hints
+        navigation_hints: list[str] = []
+        if pagination.has_previous_page:
+            navigation_hints.append(f"Previous: page {pagination.previous_page()}")
+        if pagination.has_next_page:
+            navigation_hints.append(f"Next: page {pagination.next_page()}")
+
+        if navigation_hints:
+            result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
 
         # Group by type
         movies = [i for i in items if i.type == "movie"]

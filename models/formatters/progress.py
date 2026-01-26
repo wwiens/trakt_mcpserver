@@ -9,12 +9,15 @@ class ProgressFormatters:
     """Helper class for formatting progress data for MCP responses."""
 
     @staticmethod
-    def format_show_progress(data: ShowProgressResponse, show_id: str) -> str:
+    def format_show_progress(
+        data: ShowProgressResponse, show_id: str, verbose: bool = False
+    ) -> str:
         """Format show watched progress as markdown.
 
         Args:
             data: Show progress response from API
             show_id: The show ID that was queried
+            verbose: Show episode-by-episode watch dates (default: False)
 
         Returns:
             Formatted markdown text with show progress details
@@ -75,13 +78,51 @@ class ProgressFormatters:
                     (season_completed / season_aired * 100) if season_aired > 0 else 0
                 )
 
-                if season_completed == season_aired and season_aired > 0:
-                    status = "Complete (100%)"
-                else:
-                    status = f"{season_completed}/{season_aired} ({season_pct:.0f}%)"
-
                 season_label = "Specials" if season_num == 0 else f"Season {season_num}"
-                result += f"- **{season_label}:** {status}\n"
+
+                if verbose:
+                    # Show detailed episode-by-episode progress
+                    if season_completed == season_aired and season_aired > 0:
+                        status = "Complete (100%)"
+                    else:
+                        status = (
+                            f"{season_completed}/{season_aired} ({season_pct:.0f}%)"
+                        )
+
+                    result += f"### {season_label}\n\n"
+                    result += f"**Progress:** {status}\n\n"
+
+                    episodes = season.get("episodes", [])
+                    if episodes:
+                        for ep in episodes:
+                            ep_num = ep["number"]
+                            ep_completed = ep["completed"]
+                            last_watched = ep.get("last_watched_at")
+
+                            status_icon = "x" if ep_completed else " "
+                            ep_str = f"E{ep_num:02d}"
+
+                            if ep_completed and last_watched:
+                                watched_str = format_iso_timestamp(last_watched)
+                                result += f"- [{status_icon}] **{ep_str}** - Watched: {watched_str}\n"
+                            elif ep_completed:
+                                result += f"- [{status_icon}] **{ep_str}** - Watched\n"
+                            else:
+                                result += (
+                                    f"- [{status_icon}] **{ep_str}** - Not watched\n"
+                                )
+
+                    result += "\n"
+                else:
+                    # Compact format (default)
+                    if season_completed == season_aired and season_aired > 0:
+                        status = "Complete (100%)"
+                    else:
+                        status = (
+                            f"{season_completed}/{season_aired} ({season_pct:.0f}%)"
+                        )
+
+                    result += f"- **{season_label}:** {status}\n"
 
         # Show hidden seasons if present
         hidden_seasons = data.get("hidden_seasons", [])

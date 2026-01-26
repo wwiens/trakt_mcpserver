@@ -16,6 +16,7 @@ from config.mcp.descriptions import (
     SHOW_PROGRESS_HIDDEN_DESCRIPTION,
     SHOW_PROGRESS_LAST_ACTIVITY_DESCRIPTION,
     SHOW_PROGRESS_SPECIALS_DESCRIPTION,
+    SHOW_PROGRESS_VERBOSE_DESCRIPTION,
 )
 from config.mcp.tools.progress import PROGRESS_TOOLS
 from models.formatters.progress import ProgressFormatters
@@ -35,6 +36,7 @@ async def fetch_show_progress(
     specials: bool = False,
     count_specials: bool = True,
     last_activity: Literal["aired", "watched"] = "aired",
+    verbose: bool = False,
 ) -> str:
     """Fetch watched progress for a TV show.
 
@@ -44,6 +46,7 @@ async def fetch_show_progress(
         specials: Include specials as season 0 in progress
         count_specials: Count specials in overall stats when specials included
         last_activity: Calculate last/next episode based on 'aired' or 'watched'
+        verbose: Show episode-by-episode watch dates
 
     Returns:
         Show progress formatted as markdown
@@ -73,7 +76,7 @@ async def fetch_show_progress(
         )
         raise error
 
-    return ProgressFormatters.format_show_progress(result, show_id)
+    return ProgressFormatters.format_show_progress(result, show_id, verbose=verbose)
 
 
 @handle_api_errors_func
@@ -166,9 +169,12 @@ def register_progress_tools(
             Literal["aired", "watched"],
             Field(description=SHOW_PROGRESS_LAST_ACTIVITY_DESCRIPTION),
         ] = "aired",
+        verbose: Annotated[
+            bool, Field(description=SHOW_PROGRESS_VERBOSE_DESCRIPTION)
+        ] = False,
     ) -> str:
         return await fetch_show_progress(
-            show_id, hidden, specials, count_specials, last_activity
+            show_id, hidden, specials, count_specials, last_activity, verbose
         )
 
     @mcp.tool(

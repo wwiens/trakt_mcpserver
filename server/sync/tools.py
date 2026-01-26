@@ -559,6 +559,7 @@ async def fetch_history(
     item_id: str | None = None,
     start_at: str | None = None,
     end_at: str | None = None,
+    page: int | None = None,
 ) -> str:
     """Fetch watch history, optionally filtered by type and/or specific item.
 
@@ -567,9 +568,10 @@ async def fetch_history(
         item_id: Trakt ID for a specific item (requires history_type)
         start_at: Filter watches after this date (ISO 8601)
         end_at: Filter watches before this date (ISO 8601)
+        page: Page number for paginated results (1-based)
 
     Returns:
-        Watch history formatted as markdown
+        Watch history formatted as markdown with pagination info
 
     Raises:
         AuthenticationRequiredError: If user is not authenticated
@@ -578,11 +580,17 @@ async def fetch_history(
 
     client = SyncClient()
 
+    # Create pagination params if page is specified
+    pagination_params = (
+        PaginationParams(page=page, limit=DEFAULT_LIMIT) if page is not None else None
+    )
+
     result = await client.get_history(
         history_type=history_type,
         item_id=item_id,
         start_at=start_at,
         end_at=end_at,
+        pagination=pagination_params,
     )
 
     # Handle transitional case where API returns error strings
@@ -879,6 +887,7 @@ def register_sync_tools(
             "Check if a movie or show has been watched, or browse watch history. "
             "For 'Have I seen [movie]?': provide history_type='movies' and item_id. "
             "Returns watch dates and count. Empty result means not watched. "
+            "Supports optional pagination with 'page' parameter. "
             "Requires OAuth authentication."
         ),
     )
@@ -899,8 +908,12 @@ def register_sync_tools(
             str | None,
             Field(description=HISTORY_END_AT_DESCRIPTION),
         ] = None,
+        page: Annotated[
+            int | None,
+            Field(ge=1, description=PAGE_DESCRIPTION),
+        ] = None,
     ) -> str:
-        return await fetch_history(history_type, item_id, start_at, end_at)
+        return await fetch_history(history_type, item_id, start_at, end_at, page)
 
     @mcp.tool(
         name=SYNC_TOOLS["add_to_history"],

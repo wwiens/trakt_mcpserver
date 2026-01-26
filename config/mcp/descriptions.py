@@ -54,6 +54,7 @@ __all__ = [
     "SHOW_PROGRESS_HIDDEN_DESCRIPTION",
     "SHOW_PROGRESS_LAST_ACTIVITY_DESCRIPTION",
     "SHOW_PROGRESS_SPECIALS_DESCRIPTION",
+    "SHOW_PROGRESS_VERBOSE_DESCRIPTION",
     "SHOW_SPOILERS_DESCRIPTION",
     "SORT_DIRECTION_DESCRIPTION",
     "USER_LIMIT_DESCRIPTION",
@@ -203,6 +204,9 @@ SHOW_PROGRESS_COUNT_SPECIALS_DESCRIPTION: Final[str] = (
 )
 SHOW_PROGRESS_LAST_ACTIVITY_DESCRIPTION: Final[str] = (
     "Calculate last/next episode based on: 'aired' (default) or 'watched'"
+)
+SHOW_PROGRESS_VERBOSE_DESCRIPTION: Final[str] = (
+    "Show episode-by-episode watch dates within each season (default: false)"
 )
 PLAYBACK_TYPE_DESCRIPTION: Final[str] = (
     "Type of playback progress: 'movies', 'episodes', or omit for all"
