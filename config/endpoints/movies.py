@@ -13,4 +13,6 @@ MOVIES_ENDPOINTS: Final[dict[str, str]] = {
     "movie_ratings": "/movies/:id/ratings",
     # Video endpoints
     "movie_videos": "/movies/:id/videos",
+    # Related endpoints
+    "movies_related": "/movies/:id/related",
 }

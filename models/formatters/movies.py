@@ -355,3 +355,43 @@ class MovieFormatters:
         result += f"\nTrakt ID: {trakt_id}\n"
 
         return result
+
+    @staticmethod
+    def format_related_movies(
+        data: list[MovieResponse] | PaginatedResponse[MovieResponse],
+    ) -> str:
+        """Format related movies data for MCP resource.
+
+        Args:
+            data: Either a list of all related movies or a paginated response
+
+        Returns:
+            Formatted markdown text with related movies
+        """
+        result = "# Related Movies\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += format_pagination_header(data)
+            movies = data.data
+        else:
+            movies = data
+
+        if not movies:
+            return result + "No related movies found.\n"
+
+        for movie in movies:
+            title = movie.get("title", "Unknown")
+            year = movie.get("year", "")
+            year_str = f" ({year})" if year else ""
+
+            result += f"- **{title}{year_str}**\n"
+
+            if overview := movie.get("overview"):
+                if len(overview) > 200:
+                    overview = overview[:197] + "..."
+                result += f"  {overview}\n"
+
+            result += "\n"
+
+        return result

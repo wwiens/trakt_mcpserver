@@ -2,6 +2,7 @@
 
 from .details import ShowDetailsClient
 from .popular import PopularShowsClient
+from .related import RelatedShowsClient
 from .stats import ShowStatsClient
 from .trending import TrendingShowsClient
 from .videos import ShowVideosClient
@@ -13,6 +14,7 @@ class ShowsClient(
     ShowStatsClient,
     ShowDetailsClient,
     ShowVideosClient,
+    RelatedShowsClient,
 ):
     """Unified client for all show-related operations.
 
@@ -22,6 +24,7 @@ class ShowsClient(
     - ShowStatsClient: get_favorited_shows(), get_played_shows(), get_watched_shows()
     - ShowDetailsClient: get_show(), get_show_ratings()
     - ShowVideosClient: get_videos()
+    - RelatedShowsClient: get_related_shows()
     """
 
     pass
