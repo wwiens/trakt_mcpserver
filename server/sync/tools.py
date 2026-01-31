@@ -10,6 +10,13 @@ from pydantic import BaseModel, Field, field_validator
 from client.sync.client import SyncClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.descriptions import (
+    HISTORY_END_AT_DESCRIPTION,
+    HISTORY_ITEM_ID_DESCRIPTION,
+    HISTORY_ITEMS_DESCRIPTION,
+    HISTORY_QUERY_TYPE_DESCRIPTION,
+    HISTORY_REMOVE_ITEMS_DESCRIPTION,
+    HISTORY_START_AT_DESCRIPTION,
+    HISTORY_TYPE_DESCRIPTION,
     PAGE_DESCRIPTION,
     RATING_FILTER_DESCRIPTION,
     RATING_ITEMS_DESCRIPTION,
@@ -23,8 +30,14 @@ from config.mcp.descriptions import (
     WATCHLIST_TYPE_REQUIRED_DESCRIPTION,
 )
 from config.mcp.tools.sync import SYNC_TOOLS
+from models.formatters.sync_history import SyncHistoryFormatters
 from models.formatters.sync_ratings import SyncRatingsFormatters
 from models.formatters.sync_watchlist import SyncWatchlistFormatters
+from models.sync.history import (
+    HistorySummary,
+    TraktHistoryItem,
+    TraktHistoryRequest,
+)
 from models.sync.ratings import (
     SyncRatingsSummary,
     TraktSyncRating,
@@ -524,12 +537,206 @@ async def remove_user_watchlist(
         raise
 
 
+class HistoryItemBase(IdentifierValidatorMixin):
+    """Base class for history item operations."""
+
+    _identifier_error_prefix: ClassVar[str] = "History item"
+
+
+class HistoryRequestItem(HistoryItemBase):
+    """Single history item for add operations."""
+
+    watched_at: str | None = Field(
+        default=None, description="ISO 8601 timestamp when watched"
+    )
+
+
+class HistoryRemoveItem(HistoryItemBase):
+    """History item identifier for removal operations."""
+
+    pass
+
+
+@handle_api_errors_func
+async def fetch_history(
+    history_type: Literal["movies", "shows", "seasons", "episodes"] | None = None,
+    item_id: str | None = None,
+    start_at: str | None = None,
+    end_at: str | None = None,
+    page: int | None = None,
+) -> str:
+    """Fetch watch history, optionally filtered by type and/or specific item.
+
+    Args:
+        history_type: Type of content to filter (movies, shows, seasons, episodes)
+        item_id: Trakt ID for a specific item (requires history_type)
+        start_at: Filter watches after this date (ISO 8601)
+        end_at: Filter watches before this date (ISO 8601)
+        page: Page number for paginated results (1-based)
+
+    Returns:
+        Watch history formatted as markdown with pagination info
+
+    Raises:
+        AuthenticationRequiredError: If user is not authenticated
+    """
+    logger.debug("fetch_history called with type=%s, item_id=%s", history_type, item_id)
+
+    client = SyncClient()
+
+    # Create pagination params if page is specified
+    pagination_params = (
+        PaginationParams(page=page, limit=DEFAULT_LIMIT) if page is not None else None
+    )
+
+    result = await client.get_history(
+        history_type=history_type,
+        item_id=item_id,
+        start_at=start_at,
+        end_at=end_at,
+        pagination=pagination_params,
+    )
+
+    # Handle transitional case where API returns error strings
+    if isinstance(result, str):
+        error = BaseToolErrorMixin.handle_api_string_error(
+            resource_type="history",
+            resource_id=item_id or "all",
+            error_message=result,
+            operation="fetch_history",
+        )
+        raise error
+
+    return SyncHistoryFormatters.format_watch_history(result, history_type, item_id)
+
+
+@handle_api_errors_func
+async def add_to_history(
+    history_type: Literal["movies", "shows", "seasons", "episodes"],
+    items: list[HistoryRequestItem],
+) -> str:
+    """Add items to watch history.
+
+    Args:
+        history_type: Type of content to add (movies, shows, seasons, episodes)
+        items: List of items to add with identification info and optional watched_at
+
+    Returns:
+        Summary of added history items with counts
+
+    Raises:
+        AuthenticationRequiredError: If user is not authenticated
+    """
+    logger.debug("add_to_history called with type=%s", history_type)
+
+    client = SyncClient()
+
+    # Convert to history request format
+    history_items: list[TraktHistoryItem] = []
+    for item in items:
+        # Create history item
+        item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
+
+        # Add title and year if provided
+        if item.title:
+            item_data["title"] = item.title
+        if item.year:
+            item_data["year"] = item.year
+        # Add watched_at if provided
+        if item.watched_at:
+            item_data["watched_at"] = item.watched_at
+
+        history_items.append(TraktHistoryItem(**item_data))
+
+    # Create request with the appropriate type
+    request_data: dict[str, Any] = {history_type: history_items}
+    request = TraktHistoryRequest(**request_data)
+
+    summary: HistorySummary = await client.add_to_history(request)
+
+    # Handle transitional case where API returns error strings
+    if isinstance(summary, str):
+        error = BaseToolErrorMixin.handle_api_string_error(
+            resource_type=f"add_history_{history_type}",
+            resource_id=f"add_history_{history_type}",
+            error_message=summary,
+            operation="add_to_history",
+        )
+        raise error
+
+    return SyncHistoryFormatters.format_history_summary(summary, "added", history_type)
+
+
+@handle_api_errors_func
+async def remove_from_history(
+    history_type: Literal["movies", "shows", "seasons", "episodes"],
+    items: list[HistoryRemoveItem],
+) -> str:
+    """Remove items from watch history.
+
+    Args:
+        history_type: Type of content to remove (movies, shows, seasons, episodes)
+        items: List of items to remove with identification info
+
+    Returns:
+        Summary of removed history items with counts
+
+    Raises:
+        AuthenticationRequiredError: If user is not authenticated
+    """
+    logger.debug("remove_from_history called with type=%s", history_type)
+
+    client = SyncClient()
+
+    # Convert to history request format
+    history_items: list[TraktHistoryItem] = []
+    for item in items:
+        # Create history item (no watched_at for removal)
+        item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
+
+        # Add title and year if provided
+        if item.title:
+            item_data["title"] = item.title
+        if item.year:
+            item_data["year"] = item.year
+
+        history_items.append(TraktHistoryItem(**item_data))
+
+    # Create request with the appropriate type
+    request_data: dict[str, Any] = {history_type: history_items}
+    request = TraktHistoryRequest(**request_data)
+
+    summary: HistorySummary = await client.remove_from_history(request)
+
+    # Handle transitional case where API returns error strings
+    if isinstance(summary, str):
+        error = BaseToolErrorMixin.handle_api_string_error(
+            resource_type=f"remove_history_{history_type}",
+            resource_id=f"remove_history_{history_type}",
+            error_message=summary,
+            operation="remove_from_history",
+        )
+        raise error
+
+    return SyncHistoryFormatters.format_history_summary(
+        summary, "removed", history_type
+    )
+
+
 def register_sync_tools(
     mcp: FastMCP,
 ) -> tuple[
-    ToolHandler, ToolHandler, ToolHandler, ToolHandler, ToolHandler, ToolHandler
+    ToolHandler,
+    ToolHandler,
+    ToolHandler,
+    ToolHandler,
+    ToolHandler,
+    ToolHandler,
+    ToolHandler,
+    ToolHandler,
+    ToolHandler,
 ]:
-    """Register sync rating and watchlist tools with the MCP server.
+    """Register sync tools (ratings, watchlist, history) with the MCP server.
 
     Returns:
         Tuple of tool handlers for type checker visibility
@@ -678,6 +885,80 @@ def register_sync_tools(
     ) -> str:
         return await remove_user_watchlist(watchlist_type, items)
 
+    @mcp.tool(
+        name=SYNC_TOOLS["fetch_history"],
+        description=(
+            "Check if a movie or show has been watched, or browse watch history. "
+            "For 'Have I seen [movie]?': provide history_type='movies' and item_id. "
+            "Returns watch dates and count. Empty result means not watched. "
+            "Supports optional pagination with 'page' parameter. "
+            "Requires OAuth authentication."
+        ),
+    )
+    async def fetch_history_tool(
+        history_type: Annotated[
+            Literal["movies", "shows", "seasons", "episodes"] | None,
+            Field(description=HISTORY_QUERY_TYPE_DESCRIPTION),
+        ] = None,
+        item_id: Annotated[
+            str | None,
+            Field(description=HISTORY_ITEM_ID_DESCRIPTION),
+        ] = None,
+        start_at: Annotated[
+            str | None,
+            Field(description=HISTORY_START_AT_DESCRIPTION),
+        ] = None,
+        end_at: Annotated[
+            str | None,
+            Field(description=HISTORY_END_AT_DESCRIPTION),
+        ] = None,
+        page: Annotated[
+            int | None,
+            Field(ge=1, description=PAGE_DESCRIPTION),
+        ] = None,
+    ) -> str:
+        return await fetch_history(history_type, item_id, start_at, end_at, page)
+
+    @mcp.tool(
+        name=SYNC_TOOLS["add_to_history"],
+        description=(
+            "Add items to watch history. Marks movies, shows, seasons, or episodes "
+            "as watched. Optionally specify when they were watched. "
+            "Requires OAuth authentication."
+        ),
+    )
+    async def add_to_history_tool(
+        history_type: Annotated[
+            Literal["movies", "shows", "seasons", "episodes"],
+            Field(description=HISTORY_TYPE_DESCRIPTION),
+        ],
+        items: Annotated[
+            list[HistoryRequestItem],
+            Field(min_length=1, description=HISTORY_ITEMS_DESCRIPTION),
+        ],
+    ) -> str:
+        return await add_to_history(history_type, items)
+
+    @mcp.tool(
+        name=SYNC_TOOLS["remove_from_history"],
+        description=(
+            "Remove items from watch history. Removes movies, shows, seasons, "
+            "or episodes from your watched history. "
+            "Requires OAuth authentication."
+        ),
+    )
+    async def remove_from_history_tool(
+        history_type: Annotated[
+            Literal["movies", "shows", "seasons", "episodes"],
+            Field(description=HISTORY_TYPE_DESCRIPTION),
+        ],
+        items: Annotated[
+            list[HistoryRemoveItem],
+            Field(min_length=1, description=HISTORY_REMOVE_ITEMS_DESCRIPTION),
+        ],
+    ) -> str:
+        return await remove_from_history(history_type, items)
+
     # Return handlers for type checker visibility
     return (
         fetch_user_ratings_tool,
@@ -686,4 +967,7 @@ def register_sync_tools(
         fetch_user_watchlist_tool,
         add_user_watchlist_tool,
         remove_user_watchlist_tool,
+        fetch_history_tool,
+        add_to_history_tool,
+        remove_from_history_tool,
     )

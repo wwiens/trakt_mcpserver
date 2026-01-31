@@ -10,6 +10,7 @@ from .auth import register_auth_resources, register_auth_tools
 from .checkin import register_checkin_tools
 from .comments import register_comment_tools
 from .movies import register_movie_resources, register_movie_tools
+from .progress import register_progress_tools
 from .prompts.basic import register_basic_prompts
 from .recommendations import register_recommendation_tools
 from .search import register_search_tools
@@ -51,6 +52,7 @@ def create_server() -> FastMCP:
     _ = register_search_tools(mcp)
     _ = register_checkin_tools(mcp)
     _ = register_sync_tools(mcp)
+    _ = register_progress_tools(mcp)
     _ = register_recommendation_tools(mcp)
 
     # Register prompts and capture handlers for type checker

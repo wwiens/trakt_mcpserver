@@ -16,4 +16,8 @@ SYNC_ENDPOINTS: Final[Mapping[str, str]] = {
     "sync_watchlist_get_all": "/sync/watchlist",
     "sync_watchlist_get_type": "/sync/watchlist/:type",
     "sync_watchlist_remove": "/sync/watchlist/remove",
+    # History endpoints
+    "sync_history_get": "/sync/history/{type}/{item_id}",
+    "sync_history_add": "/sync/history",
+    "sync_history_remove": "/sync/history/remove",
 }
