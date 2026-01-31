@@ -14,6 +14,7 @@ from server.movies.tools import (
     fetch_movie_ratings,
     fetch_movie_summary,
     fetch_movie_videos,
+    fetch_related_movies,
     fetch_trending_movies,
 )
 from utils.api.error_types import (
@@ -414,3 +415,110 @@ async def test_fetch_movie_videos_no_videos():
         # Should handle empty video list gracefully
         assert "# Videos for Test Movie" in result
         assert "No videos available." in result
+
+
+@pytest.mark.asyncio
+async def test_fetch_related_movies():
+    """Test fetching related movies."""
+    sample_movies = [
+        {
+            "title": "The Dark Knight Rises",
+            "year": 2012,
+            "overview": "Eight years after the Joker's reign of anarchy.",
+            "ids": {"trakt": 28, "slug": "the-dark-knight-rises"},
+        },
+        {
+            "title": "Batman Begins",
+            "year": 2005,
+            "overview": "A young Bruce Wayne travels to the Far East.",
+            "ids": {"trakt": 155, "slug": "batman-begins"},
+        },
+    ]
+
+    with patch("server.movies.tools.RelatedMoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_related_movies = AsyncMock(return_value=sample_movies)
+
+        result = await fetch_related_movies(movie_id="the-dark-knight", limit=10)
+
+        assert "# Related Movies" in result
+        assert "The Dark Knight Rises (2012)" in result
+        assert "Batman Begins (2005)" in result
+        assert "Eight years after the Joker's reign of anarchy." in result
+
+        mock_client.get_related_movies.assert_called_once_with(
+            movie_id="the-dark-knight", limit=10, page=None
+        )
+
+
+@pytest.mark.asyncio
+async def test_fetch_related_movies_empty():
+    """Test fetching related movies with no results."""
+    with patch("server.movies.tools.RelatedMoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_related_movies = AsyncMock(return_value=[])
+
+        result = await fetch_related_movies(movie_id="obscure-movie", limit=10)
+
+        assert "# Related Movies" in result
+        assert "No related movies found." in result
+
+        mock_client.get_related_movies.assert_called_once_with(
+            movie_id="obscure-movie", limit=10, page=None
+        )
+
+
+@pytest.mark.asyncio
+async def test_fetch_related_movies_with_page():
+    """Test fetching related movies with pagination."""
+    from models.types.pagination import PaginatedResponse, PaginationMetadata
+
+    sample_movies = [
+        {
+            "title": "The Dark Knight Rises",
+            "year": 2012,
+            "ids": {"trakt": 28, "slug": "the-dark-knight-rises"},
+        }
+    ]
+
+    paginated_response = PaginatedResponse(
+        data=sample_movies,
+        pagination=PaginationMetadata(
+            current_page=2,
+            items_per_page=10,
+            total_pages=3,
+            total_items=25,
+        ),
+    )
+
+    with patch("server.movies.tools.RelatedMoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_related_movies = AsyncMock(return_value=paginated_response)
+
+        result = await fetch_related_movies(
+            movie_id="the-dark-knight", limit=10, page=2
+        )
+
+        assert "# Related Movies" in result
+        assert "The Dark Knight Rises (2012)" in result
+        # Assert specific pagination output from format_pagination_header
+        assert "Page 2 of 3" in result
+        assert "of 25" in result  # Total items shown as "items X-Y of 25"
+        # Navigation hints should appear since page 2 has both previous and next
+        assert "Previous: page 1" in result
+        assert "Next: page 3" in result
+
+        mock_client.get_related_movies.assert_called_once_with(
+            movie_id="the-dark-knight", limit=10, page=2
+        )
+
+
+@pytest.mark.asyncio
+async def test_fetch_related_movies_error():
+    """Test fetching related movies with error."""
+    with patch("server.movies.tools.RelatedMoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_related_movies = AsyncMock(side_effect=Exception("API error"))
+
+        with pytest.raises(InternalError):
+            await fetch_related_movies(movie_id="the-dark-knight", limit=10)

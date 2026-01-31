@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 from client.movies.client import MoviesClient
 from client.movies.details import MovieDetailsClient
 from client.movies.popular import PopularMoviesClient
+from client.movies.related import RelatedMoviesClient
 from client.movies.stats import MovieStatsClient
 from client.movies.trending import TrendingMoviesClient
 from config.api import DEFAULT_LIMIT
@@ -360,6 +361,39 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
         raise
 
 
+@handle_api_errors_func
+async def fetch_related_movies(
+    movie_id: str,
+    limit: int = DEFAULT_LIMIT,
+    page: int | None = None,
+) -> str:
+    """Fetch movies related to a specific movie.
+
+    Args:
+        movie_id: Trakt ID, Trakt slug, or IMDB ID
+        limit: Maximum movies to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number. If None, auto-paginates up to 'limit' total movies.
+            If specified, returns that page with pagination metadata.
+
+    Returns:
+        Information about related movies.
+    """
+    # Validate movie_id
+    id_params = MovieIdParam(movie_id=movie_id)
+    # Validate limit/page
+    params = LimitOnly(limit=limit, page=page)
+
+    client = RelatedMoviesClient()
+    movies = await client.get_related_movies(
+        movie_id=id_params.movie_id,
+        limit=params.limit,
+        page=params.page,
+    )
+
+    return MovieFormatters.format_related_movies(movies)
+
+
 def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """Register movie tools with the MCP server.
 
@@ -479,6 +513,18 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         params = MovieVideoParams(movie_id=movie_id, embed_markdown=embed_markdown)
         return await fetch_movie_videos(params.movie_id, params.embed_markdown)
 
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_related_movies"],
+        description="Fetch movies related to a specific movie. Returns similar movies based on genres, themes, and viewer patterns. Use page parameter for paginated results, or omit for all results.",
+    )
+    @handle_api_errors_func
+    async def fetch_related_movies_tool(
+        movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+    ) -> str:
+        return await fetch_related_movies(movie_id, limit, page)
+
     # Return handlers for type checker visibility
     return (
         fetch_trending_movies_tool,
@@ -489,4 +535,5 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         fetch_movie_ratings_tool,
         fetch_movie_summary_tool,
         fetch_movie_videos_tool,
+        fetch_related_movies_tool,
     )
