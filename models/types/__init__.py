@@ -28,6 +28,7 @@ from .api_responses import (
 )
 from .common import (
     ErrorResponse,
+    JSONValue,
     T,
     TraktHeaders,
     TRequest,
@@ -65,6 +66,7 @@ __all__ = [
     "ErrorResponse",
     "FavoritedMovieWrapper",
     "FavoritedShowWrapper",
+    "JSONValue",
     "MovieCommentSort",
     "MovieResponse",
     "MoviesClientProtocol",

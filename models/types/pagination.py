@@ -23,6 +23,15 @@ class PaginationParams(BaseModel):
         default=DEFAULT_LIMIT, description="Number of items per page"
     )
 
+    def to_query_params(self) -> dict[str, int]:
+        """Convert pagination parameters to query params dict.
+
+        Returns:
+            Dictionary with 'page' and 'limit' keys as integers,
+            suitable for HTTP query parameters.
+        """
+        return {"page": self.page, "limit": self.limit}
+
 
 class PaginationMetadata(BaseModel):
     """Pagination metadata extracted from Trakt API response headers.

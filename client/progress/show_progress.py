@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from config.endpoints.progress import PROGRESS_ENDPOINTS
 from models.progress.show_progress import ShowProgressResponse
+from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -54,10 +55,10 @@ class ShowProgressClient(AuthClient):
             Show progress response with aired/completed counts and episode details
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
         """
         if not self.is_authenticated():
-            raise ValueError("You must be authenticated to access show progress")
+            raise AuthenticationRequiredError(action="access show progress")
 
         validated = ShowProgressParams(
             show_id=show_id,

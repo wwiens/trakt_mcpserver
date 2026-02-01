@@ -30,8 +30,8 @@ class TestPlaybackClient:
             result = await authenticated_progress_client.get_playback_progress()
 
             assert len(result) == 2
-            assert result[0]["type"] == "movie"
-            assert result[1]["type"] == "episode"
+            assert result[0].type == "movie"
+            assert result[1].type == "episode"
             mock_request.assert_called_once()
 
     @pytest.mark.asyncio
@@ -51,7 +51,7 @@ class TestPlaybackClient:
             )
 
             assert len(result) == 1
-            assert result[0]["type"] == "movie"
+            assert result[0].type == "movie"
 
             # Verify endpoint contains movies
             call_args = mock_request.call_args
@@ -79,7 +79,7 @@ class TestPlaybackClient:
             )
 
             assert len(result) == 1
-            assert result[0]["type"] == "episode"
+            assert result[0].type == "episode"
 
             # Verify endpoint contains episodes
             call_args = mock_request.call_args

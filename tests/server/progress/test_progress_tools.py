@@ -1,14 +1,20 @@
 """Tests for the progress tools."""
 
-from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-if TYPE_CHECKING:
-    from models.progress.playback import PlaybackProgressResponse
-    from models.progress.show_progress import ShowProgressResponse
-
+from models.progress.playback import (
+    PlaybackEpisodeInfo,
+    PlaybackMovieInfo,
+    PlaybackProgressResponse,
+    PlaybackShowInfo,
+)
+from models.progress.show_progress import (
+    EpisodeInfo,
+    SeasonProgressResponse,
+    ShowProgressResponse,
+)
 from server.progress.tools import (
     fetch_playback_progress,
     fetch_show_progress,
@@ -23,21 +29,21 @@ class TestFetchShowProgress:
     @pytest.mark.asyncio
     async def test_fetch_show_progress_success(self) -> None:
         """Test successful fetch of show progress."""
-        mock_progress: ShowProgressResponse = {
-            "aired": 62,
-            "completed": 45,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [
-                {"number": 1, "aired": 7, "completed": 7, "episodes": []},
-                {"number": 2, "aired": 13, "completed": 10, "episodes": []},
+        mock_progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=62,
+            completed=45,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[
+                SeasonProgressResponse(number=1, aired=7, completed=7, episodes=[]),
+                SeasonProgressResponse(number=2, aired=13, completed=10, episodes=[]),
             ],
-            "next_episode": {
-                "season": 2,
-                "number": 11,
-                "title": "Mandala",
-                "ids": {"trakt": 62095},
-            },
-        }
+            next_episode=EpisodeInfo(
+                season=2,
+                number=11,
+                title="Mandala",
+                ids={"trakt": 62095},
+            ),
+        )
 
         with patch("server.progress.tools.ProgressClient") as mock_client_class:
             mock_client = mock_client_class.return_value
@@ -53,18 +59,18 @@ class TestFetchShowProgress:
     @pytest.mark.asyncio
     async def test_fetch_show_progress_with_next_episode(self) -> None:
         """Test show progress with next episode information."""
-        mock_progress: ShowProgressResponse = {
-            "aired": 10,
-            "completed": 5,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [],
-            "next_episode": {
-                "season": 1,
-                "number": 6,
-                "title": "Next Episode Title",
-                "ids": {"trakt": 12345},
-            },
-        }
+        mock_progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=10,
+            completed=5,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[],
+            next_episode=EpisodeInfo(
+                season=1,
+                number=6,
+                title="Next Episode Title",
+                ids={"trakt": 12345},
+            ),
+        )
 
         with patch("server.progress.tools.ProgressClient") as mock_client_class:
             mock_client = mock_client_class.return_value
@@ -79,14 +85,14 @@ class TestFetchShowProgress:
     @pytest.mark.asyncio
     async def test_fetch_show_progress_completed_show(self) -> None:
         """Test show progress for a fully completed show."""
-        mock_progress: ShowProgressResponse = {
-            "aired": 62,
-            "completed": 62,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [
-                {"number": 1, "aired": 7, "completed": 7, "episodes": []},
+        mock_progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=62,
+            completed=62,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[
+                SeasonProgressResponse(number=1, aired=7, completed=7, episodes=[]),
             ],
-        }
+        )
 
         with patch("server.progress.tools.ProgressClient") as mock_client_class:
             mock_client = mock_client_class.return_value
@@ -115,18 +121,18 @@ class TestFetchPlaybackProgress:
     @pytest.mark.asyncio
     async def test_fetch_playback_progress_with_movies(self) -> None:
         """Test playback progress with movie items."""
-        mock_playback: list[PlaybackProgressResponse] = [
-            {
-                "progress": 45.5,
-                "paused_at": "2024-01-20T15:30:00.000Z",
-                "id": 12345,
-                "type": "movie",
-                "movie": {
-                    "title": "Inception",
-                    "year": 2010,
-                    "ids": {"trakt": 16662},
-                },
-            }
+        mock_playback = [
+            PlaybackProgressResponse(
+                progress=45.5,
+                paused_at="2024-01-20T15:30:00.000Z",
+                id=12345,
+                type="movie",
+                movie=PlaybackMovieInfo(
+                    title="Inception",
+                    year=2010,
+                    ids={"trakt": 16662},
+                ),
+            )
         ]
 
         with patch("server.progress.tools.ProgressClient") as mock_client_class:
@@ -143,24 +149,24 @@ class TestFetchPlaybackProgress:
     @pytest.mark.asyncio
     async def test_fetch_playback_progress_with_episodes(self) -> None:
         """Test playback progress with episode items."""
-        mock_playback: list[PlaybackProgressResponse] = [
-            {
-                "progress": 23.7,
-                "paused_at": "2024-01-21T20:00:00.000Z",
-                "id": 67890,
-                "type": "episode",
-                "episode": {
-                    "season": 1,
-                    "number": 5,
-                    "title": "Gray Matter",
-                    "ids": {"trakt": 62089},
-                },
-                "show": {
-                    "title": "Breaking Bad",
-                    "year": 2008,
-                    "ids": {"trakt": 1388},
-                },
-            }
+        mock_playback = [
+            PlaybackProgressResponse(
+                progress=23.7,
+                paused_at="2024-01-21T20:00:00.000Z",
+                id=67890,
+                type="episode",
+                episode=PlaybackEpisodeInfo(
+                    season=1,
+                    number=5,
+                    title="Gray Matter",
+                    ids={"trakt": 62089},
+                ),
+                show=PlaybackShowInfo(
+                    title="Breaking Bad",
+                    year=2008,
+                    ids={"trakt": 1388},
+                ),
+            )
         ]
 
         with patch("server.progress.tools.ProgressClient") as mock_client_class:

@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from models.formatters.progress import ProgressFormatters
-
-if TYPE_CHECKING:
-    from models.progress.playback import PlaybackProgressResponse
-    from models.progress.show_progress import ShowProgressResponse
+from models.progress.playback import (
+    PlaybackEpisodeInfo,
+    PlaybackMovieInfo,
+    PlaybackProgressResponse,
+    PlaybackShowInfo,
+)
+from models.progress.show_progress import (
+    EpisodeInfo,
+    EpisodeProgressResponse,
+    HiddenSeasonResponse,
+    SeasonProgressResponse,
+    ShowProgressResponse,
+)
 
 
 class TestProgressFormatters:
@@ -16,12 +23,12 @@ class TestProgressFormatters:
 
     def test_format_show_progress_basic(self) -> None:
         """Test basic show progress formatting."""
-        progress: ShowProgressResponse = {
-            "aired": 10,
-            "completed": 5,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [],
-        }
+        progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=10,
+            completed=5,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[],
+        )
 
         result = ProgressFormatters.format_show_progress(progress, "test-show")
 
@@ -32,15 +39,15 @@ class TestProgressFormatters:
 
     def test_format_show_progress_with_seasons(self) -> None:
         """Test show progress with season breakdown."""
-        progress: ShowProgressResponse = {
-            "aired": 20,
-            "completed": 17,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [
-                {"number": 1, "aired": 10, "completed": 10, "episodes": []},
-                {"number": 2, "aired": 10, "completed": 7, "episodes": []},
+        progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=20,
+            completed=17,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[
+                SeasonProgressResponse(number=1, aired=10, completed=10, episodes=[]),
+                SeasonProgressResponse(number=2, aired=10, completed=7, episodes=[]),
             ],
-        }
+        )
 
         result = ProgressFormatters.format_show_progress(progress, "test-show")
 
@@ -52,15 +59,15 @@ class TestProgressFormatters:
 
     def test_format_show_progress_with_specials(self) -> None:
         """Test show progress with specials season."""
-        progress: ShowProgressResponse = {
-            "aired": 12,
-            "completed": 10,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [
-                {"number": 0, "aired": 2, "completed": 2, "episodes": []},
-                {"number": 1, "aired": 10, "completed": 8, "episodes": []},
+        progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=12,
+            completed=10,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[
+                SeasonProgressResponse(number=0, aired=2, completed=2, episodes=[]),
+                SeasonProgressResponse(number=1, aired=10, completed=8, episodes=[]),
             ],
-        }
+        )
 
         result = ProgressFormatters.format_show_progress(progress, "test-show")
 
@@ -69,15 +76,15 @@ class TestProgressFormatters:
 
     def test_format_show_progress_completed(self) -> None:
         """Test show progress for 100% completed show."""
-        progress: ShowProgressResponse = {
-            "aired": 62,
-            "completed": 62,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [
-                {"number": 1, "aired": 7, "completed": 7, "episodes": []},
-                {"number": 2, "aired": 13, "completed": 13, "episodes": []},
+        progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=62,
+            completed=62,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[
+                SeasonProgressResponse(number=1, aired=7, completed=7, episodes=[]),
+                SeasonProgressResponse(number=2, aired=13, completed=13, episodes=[]),
             ],
-        }
+        )
 
         result = ProgressFormatters.format_show_progress(progress, "breaking-bad")
 
@@ -86,18 +93,18 @@ class TestProgressFormatters:
 
     def test_format_show_progress_with_next_episode(self) -> None:
         """Test show progress with next episode info."""
-        progress: ShowProgressResponse = {
-            "aired": 10,
-            "completed": 5,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [],
-            "next_episode": {
-                "season": 1,
-                "number": 6,
-                "title": "Next Episode",
-                "ids": {"trakt": 12345},
-            },
-        }
+        progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=10,
+            completed=5,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[],
+            next_episode=EpisodeInfo(
+                season=1,
+                number=6,
+                title="Next Episode",
+                ids={"trakt": 12345},
+            ),
+        )
 
         result = ProgressFormatters.format_show_progress(progress, "test-show")
 
@@ -107,18 +114,18 @@ class TestProgressFormatters:
 
     def test_format_show_progress_with_last_episode(self) -> None:
         """Test show progress with last watched episode info."""
-        progress: ShowProgressResponse = {
-            "aired": 10,
-            "completed": 5,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [],
-            "last_episode": {
-                "season": 1,
-                "number": 5,
-                "title": "Last Watched",
-                "ids": {"trakt": 12344},
-            },
-        }
+        progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=10,
+            completed=5,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[],
+            last_episode=EpisodeInfo(
+                season=1,
+                number=5,
+                title="Last Watched",
+                ids={"trakt": 12344},
+            ),
+        )
 
         result = ProgressFormatters.format_show_progress(progress, "test-show")
 
@@ -128,15 +135,15 @@ class TestProgressFormatters:
 
     def test_format_show_progress_with_hidden_seasons(self) -> None:
         """Test show progress with hidden seasons."""
-        progress: ShowProgressResponse = {
-            "aired": 10,
-            "completed": 5,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [],
-            "hidden_seasons": [
-                {"number": 3, "ids": {"trakt": 12345}},
+        progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=10,
+            completed=5,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[],
+            hidden_seasons=[
+                HiddenSeasonResponse(number=3, ids={"trakt": 12345}),
             ],
-        }
+        )
 
         result = ProgressFormatters.format_show_progress(progress, "test-show")
 
@@ -152,18 +159,18 @@ class TestProgressFormatters:
 
     def test_format_playback_progress_movies(self) -> None:
         """Test playback progress with movie items."""
-        items: list[PlaybackProgressResponse] = [
-            {
-                "progress": 45.5,
-                "paused_at": "2024-01-20T15:30:00.000Z",
-                "id": 12345,
-                "type": "movie",
-                "movie": {
-                    "title": "Inception",
-                    "year": 2010,
-                    "ids": {"trakt": 16662},
-                },
-            }
+        items = [
+            PlaybackProgressResponse(
+                progress=45.5,
+                paused_at="2024-01-20T15:30:00.000Z",
+                id=12345,
+                type="movie",
+                movie=PlaybackMovieInfo(
+                    title="Inception",
+                    year=2010,
+                    ids={"trakt": 16662},
+                ),
+            )
         ]
 
         result = ProgressFormatters.format_playback_progress(items)
@@ -176,24 +183,24 @@ class TestProgressFormatters:
 
     def test_format_playback_progress_episodes(self) -> None:
         """Test playback progress with episode items."""
-        items: list[PlaybackProgressResponse] = [
-            {
-                "progress": 23.7,
-                "paused_at": "2024-01-21T20:00:00.000Z",
-                "id": 67890,
-                "type": "episode",
-                "episode": {
-                    "season": 1,
-                    "number": 5,
-                    "title": "Gray Matter",
-                    "ids": {"trakt": 62089},
-                },
-                "show": {
-                    "title": "Breaking Bad",
-                    "year": 2008,
-                    "ids": {"trakt": 1388},
-                },
-            }
+        items = [
+            PlaybackProgressResponse(
+                progress=23.7,
+                paused_at="2024-01-21T20:00:00.000Z",
+                id=67890,
+                type="episode",
+                episode=PlaybackEpisodeInfo(
+                    season=1,
+                    number=5,
+                    title="Gray Matter",
+                    ids={"trakt": 62089},
+                ),
+                show=PlaybackShowInfo(
+                    title="Breaking Bad",
+                    year=2008,
+                    ids={"trakt": 1388},
+                ),
+            )
         ]
 
         result = ProgressFormatters.format_playback_progress(items)
@@ -205,27 +212,31 @@ class TestProgressFormatters:
 
     def test_format_playback_progress_multiple_items(self) -> None:
         """Test playback progress with multiple items."""
-        items: list[PlaybackProgressResponse] = [
-            {
-                "progress": 45.5,
-                "paused_at": "2024-01-20T15:30:00.000Z",
-                "id": 12345,
-                "type": "movie",
-                "movie": {"title": "Inception", "year": 2010, "ids": {"trakt": 16662}},
-            },
-            {
-                "progress": 23.7,
-                "paused_at": "2024-01-21T20:00:00.000Z",
-                "id": 67890,
-                "type": "episode",
-                "episode": {
-                    "season": 1,
-                    "number": 5,
-                    "title": "Gray Matter",
-                    "ids": {"trakt": 62089},
-                },
-                "show": {"title": "Breaking Bad", "year": 2008, "ids": {"trakt": 1388}},
-            },
+        items = [
+            PlaybackProgressResponse(
+                progress=45.5,
+                paused_at="2024-01-20T15:30:00.000Z",
+                id=12345,
+                type="movie",
+                movie=PlaybackMovieInfo(
+                    title="Inception", year=2010, ids={"trakt": 16662}
+                ),
+            ),
+            PlaybackProgressResponse(
+                progress=23.7,
+                paused_at="2024-01-21T20:00:00.000Z",
+                id=67890,
+                type="episode",
+                episode=PlaybackEpisodeInfo(
+                    season=1,
+                    number=5,
+                    title="Gray Matter",
+                    ids={"trakt": 62089},
+                ),
+                show=PlaybackShowInfo(
+                    title="Breaking Bad", year=2008, ids={"trakt": 1388}
+                ),
+            ),
         ]
 
         result = ProgressFormatters.format_playback_progress(items)
@@ -236,37 +247,41 @@ class TestProgressFormatters:
 
     def test_format_show_progress_verbose_mode(self) -> None:
         """Test verbose mode shows episode-by-episode watch dates."""
-        progress: ShowProgressResponse = {
-            "aired": 5,
-            "completed": 3,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [
-                {
-                    "number": 1,
-                    "aired": 5,
-                    "completed": 3,
-                    "episodes": [
-                        {
-                            "number": 1,
-                            "completed": True,
-                            "last_watched_at": "2024-01-13T19:00:00.000Z",
-                        },
-                        {
-                            "number": 2,
-                            "completed": True,
-                            "last_watched_at": "2024-01-14T20:00:00.000Z",
-                        },
-                        {
-                            "number": 3,
-                            "completed": True,
-                            "last_watched_at": "2024-01-15T20:30:00.000Z",
-                        },
-                        {"number": 4, "completed": False, "last_watched_at": None},
-                        {"number": 5, "completed": False, "last_watched_at": None},
+        progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=5,
+            completed=3,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[
+                SeasonProgressResponse(
+                    number=1,
+                    aired=5,
+                    completed=3,
+                    episodes=[
+                        EpisodeProgressResponse(
+                            number=1,
+                            completed=True,
+                            last_watched_at="2024-01-13T19:00:00.000Z",
+                        ),
+                        EpisodeProgressResponse(
+                            number=2,
+                            completed=True,
+                            last_watched_at="2024-01-14T20:00:00.000Z",
+                        ),
+                        EpisodeProgressResponse(
+                            number=3,
+                            completed=True,
+                            last_watched_at="2024-01-15T20:30:00.000Z",
+                        ),
+                        EpisodeProgressResponse(
+                            number=4, completed=False, last_watched_at=None
+                        ),
+                        EpisodeProgressResponse(
+                            number=5, completed=False, last_watched_at=None
+                        ),
                     ],
-                }
+                )
             ],
-        }
+        )
 
         result = ProgressFormatters.format_show_progress(
             progress, "test-show", verbose=True
@@ -283,31 +298,33 @@ class TestProgressFormatters:
 
     def test_format_show_progress_verbose_mode_no_watch_dates(self) -> None:
         """Test verbose mode handles episodes without watch dates gracefully."""
-        progress: ShowProgressResponse = {
-            "aired": 3,
-            "completed": 2,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [
-                {
-                    "number": 1,
-                    "aired": 3,
-                    "completed": 2,
-                    "episodes": [
-                        {
-                            "number": 1,
-                            "completed": True,
-                            "last_watched_at": None,
-                        },  # Watched but no date
-                        {
-                            "number": 2,
-                            "completed": True,
-                            "last_watched_at": "2024-01-14T20:00:00.000Z",
-                        },
-                        {"number": 3, "completed": False, "last_watched_at": None},
+        progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=3,
+            completed=2,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[
+                SeasonProgressResponse(
+                    number=1,
+                    aired=3,
+                    completed=2,
+                    episodes=[
+                        EpisodeProgressResponse(
+                            number=1,
+                            completed=True,
+                            last_watched_at=None,
+                        ),  # Watched but no date
+                        EpisodeProgressResponse(
+                            number=2,
+                            completed=True,
+                            last_watched_at="2024-01-14T20:00:00.000Z",
+                        ),
+                        EpisodeProgressResponse(
+                            number=3, completed=False, last_watched_at=None
+                        ),
                     ],
-                }
+                )
             ],
-        }
+        )
 
         result = ProgressFormatters.format_show_progress(
             progress, "test-show", verbose=True
@@ -319,33 +336,39 @@ class TestProgressFormatters:
 
     def test_format_show_progress_verbose_false_is_compact(self) -> None:
         """Test that verbose=False (default) uses compact format."""
-        progress: ShowProgressResponse = {
-            "aired": 5,
-            "completed": 3,
-            "last_watched_at": "2024-01-15T20:30:00.000Z",
-            "seasons": [
-                {
-                    "number": 1,
-                    "aired": 5,
-                    "completed": 3,
-                    "episodes": [
-                        {
-                            "number": 1,
-                            "completed": True,
-                            "last_watched_at": "2024-01-13T19:00:00.000Z",
-                        },
-                        {
-                            "number": 2,
-                            "completed": True,
-                            "last_watched_at": "2024-01-14T20:00:00.000Z",
-                        },
-                        {"number": 3, "completed": True, "last_watched_at": None},
-                        {"number": 4, "completed": False, "last_watched_at": None},
-                        {"number": 5, "completed": False, "last_watched_at": None},
+        progress = ShowProgressResponse(  # type: ignore[call-arg]
+            aired=5,
+            completed=3,
+            last_watched_at="2024-01-15T20:30:00.000Z",
+            seasons=[
+                SeasonProgressResponse(
+                    number=1,
+                    aired=5,
+                    completed=3,
+                    episodes=[
+                        EpisodeProgressResponse(
+                            number=1,
+                            completed=True,
+                            last_watched_at="2024-01-13T19:00:00.000Z",
+                        ),
+                        EpisodeProgressResponse(
+                            number=2,
+                            completed=True,
+                            last_watched_at="2024-01-14T20:00:00.000Z",
+                        ),
+                        EpisodeProgressResponse(
+                            number=3, completed=True, last_watched_at=None
+                        ),
+                        EpisodeProgressResponse(
+                            number=4, completed=False, last_watched_at=None
+                        ),
+                        EpisodeProgressResponse(
+                            number=5, completed=False, last_watched_at=None
+                        ),
                     ],
-                }
+                )
             ],
-        }
+        )
 
         result = ProgressFormatters.format_show_progress(
             progress, "test-show", verbose=False

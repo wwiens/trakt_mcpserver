@@ -7,6 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
+from utils.api.error_types import AuthenticationRequiredError
+
 if TYPE_CHECKING:
     from client.progress.client import ProgressClient
     from models.progress.show_progress import ShowProgressResponse
@@ -31,10 +33,11 @@ class TestShowProgressClient:
                 "breaking-bad"
             )
 
-            assert result["aired"] == 62
-            assert result["completed"] == 45
-            assert result["next_episode"]["season"] == 2
-            assert result["next_episode"]["number"] == 11
+            assert result.aired == 62
+            assert result.completed == 45
+            assert result.next_episode is not None
+            assert result.next_episode.season == 2
+            assert result.next_episode.number == 11
             mock_request.assert_called_once()
 
     @pytest.mark.asyncio
@@ -86,10 +89,10 @@ class TestShowProgressClient:
         self,
         authenticated_progress_client: ProgressClient,
     ) -> None:
-        """Test that unauthenticated requests raise ValueError."""
+        """Test that unauthenticated requests raise AuthenticationRequiredError."""
         authenticated_progress_client.auth_token = None
 
-        with pytest.raises(ValueError, match="authenticated"):
+        with pytest.raises(AuthenticationRequiredError):
             await authenticated_progress_client.get_show_progress("breaking-bad")
 
     @pytest.mark.asyncio

@@ -8,13 +8,24 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from models.progress.playback import (
+    PlaybackEpisodeInfo,
+    PlaybackMovieInfo,
+    PlaybackProgressResponse,
+    PlaybackShowInfo,
+)
+from models.progress.show_progress import (
+    EpisodeInfo,
+    EpisodeProgressResponse,
+    SeasonProgressResponse,
+    ShowProgressResponse,
+)
+
 if TYPE_CHECKING:
     from collections.abc import Generator
 
     from client.progress.client import ProgressClient
     from models.auth.auth import TraktAuthToken
-    from models.progress.playback import PlaybackProgressResponse
-    from models.progress.show_progress import ShowProgressResponse
 
 
 @pytest.fixture
@@ -53,153 +64,159 @@ def authenticated_progress_client(
 @pytest.fixture
 def sample_show_progress_response() -> ShowProgressResponse:
     """Sample show progress response data for testing."""
-    return {
-        "aired": 62,
-        "completed": 45,
-        "last_watched_at": "2024-01-15T20:30:00.000Z",
-        "reset_at": None,
-        "seasons": [
-            {
-                "number": 1,
-                "title": "Season 1",
-                "aired": 7,
-                "completed": 7,
-                "episodes": [
-                    {
-                        "number": 1,
-                        "completed": True,
-                        "last_watched_at": "2024-01-01T10:00:00.000Z",
-                    },
-                    {
-                        "number": 2,
-                        "completed": True,
-                        "last_watched_at": "2024-01-02T10:00:00.000Z",
-                    },
-                    {
-                        "number": 3,
-                        "completed": True,
-                        "last_watched_at": "2024-01-03T10:00:00.000Z",
-                    },
-                    {
-                        "number": 4,
-                        "completed": True,
-                        "last_watched_at": "2024-01-04T10:00:00.000Z",
-                    },
-                    {
-                        "number": 5,
-                        "completed": True,
-                        "last_watched_at": "2024-01-05T10:00:00.000Z",
-                    },
-                    {
-                        "number": 6,
-                        "completed": True,
-                        "last_watched_at": "2024-01-06T10:00:00.000Z",
-                    },
-                    {
-                        "number": 7,
-                        "completed": True,
-                        "last_watched_at": "2024-01-07T10:00:00.000Z",
-                    },
+    return ShowProgressResponse(
+        aired=62,
+        completed=45,
+        last_watched_at="2024-01-15T20:30:00.000Z",
+        reset_at=None,
+        seasons=[
+            SeasonProgressResponse(
+                number=1,
+                title="Season 1",
+                aired=7,
+                completed=7,
+                episodes=[
+                    EpisodeProgressResponse(
+                        number=1,
+                        completed=True,
+                        last_watched_at="2024-01-01T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=2,
+                        completed=True,
+                        last_watched_at="2024-01-02T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=3,
+                        completed=True,
+                        last_watched_at="2024-01-03T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=4,
+                        completed=True,
+                        last_watched_at="2024-01-04T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=5,
+                        completed=True,
+                        last_watched_at="2024-01-05T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=6,
+                        completed=True,
+                        last_watched_at="2024-01-06T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=7,
+                        completed=True,
+                        last_watched_at="2024-01-07T10:00:00.000Z",
+                    ),
                 ],
-            },
-            {
-                "number": 2,
-                "title": "Season 2",
-                "aired": 13,
-                "completed": 10,
-                "episodes": [
-                    {
-                        "number": 1,
-                        "completed": True,
-                        "last_watched_at": "2024-01-08T10:00:00.000Z",
-                    },
-                    {
-                        "number": 2,
-                        "completed": True,
-                        "last_watched_at": "2024-01-09T10:00:00.000Z",
-                    },
-                    {
-                        "number": 3,
-                        "completed": True,
-                        "last_watched_at": "2024-01-10T10:00:00.000Z",
-                    },
-                    {
-                        "number": 4,
-                        "completed": True,
-                        "last_watched_at": "2024-01-11T10:00:00.000Z",
-                    },
-                    {
-                        "number": 5,
-                        "completed": True,
-                        "last_watched_at": "2024-01-12T10:00:00.000Z",
-                    },
-                    {
-                        "number": 6,
-                        "completed": True,
-                        "last_watched_at": "2024-01-13T10:00:00.000Z",
-                    },
-                    {
-                        "number": 7,
-                        "completed": True,
-                        "last_watched_at": "2024-01-14T10:00:00.000Z",
-                    },
-                    {
-                        "number": 8,
-                        "completed": True,
-                        "last_watched_at": "2024-01-15T10:00:00.000Z",
-                    },
-                    {
-                        "number": 9,
-                        "completed": True,
-                        "last_watched_at": "2024-01-15T15:00:00.000Z",
-                    },
-                    {
-                        "number": 10,
-                        "completed": True,
-                        "last_watched_at": "2024-01-15T20:30:00.000Z",
-                    },
-                    {"number": 11, "completed": False, "last_watched_at": None},
-                    {"number": 12, "completed": False, "last_watched_at": None},
-                    {"number": 13, "completed": False, "last_watched_at": None},
+            ),
+            SeasonProgressResponse(
+                number=2,
+                title="Season 2",
+                aired=13,
+                completed=10,
+                episodes=[
+                    EpisodeProgressResponse(
+                        number=1,
+                        completed=True,
+                        last_watched_at="2024-01-08T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=2,
+                        completed=True,
+                        last_watched_at="2024-01-09T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=3,
+                        completed=True,
+                        last_watched_at="2024-01-10T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=4,
+                        completed=True,
+                        last_watched_at="2024-01-11T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=5,
+                        completed=True,
+                        last_watched_at="2024-01-12T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=6,
+                        completed=True,
+                        last_watched_at="2024-01-13T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=7,
+                        completed=True,
+                        last_watched_at="2024-01-14T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=8,
+                        completed=True,
+                        last_watched_at="2024-01-15T10:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=9,
+                        completed=True,
+                        last_watched_at="2024-01-15T15:00:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=10,
+                        completed=True,
+                        last_watched_at="2024-01-15T20:30:00.000Z",
+                    ),
+                    EpisodeProgressResponse(
+                        number=11, completed=False, last_watched_at=None
+                    ),
+                    EpisodeProgressResponse(
+                        number=12, completed=False, last_watched_at=None
+                    ),
+                    EpisodeProgressResponse(
+                        number=13, completed=False, last_watched_at=None
+                    ),
                 ],
-            },
+            ),
         ],
-        "hidden_seasons": [],
-        "next_episode": {
-            "season": 2,
-            "number": 11,
-            "title": "Mandala",
-            "ids": {"trakt": 62095, "tvdb": 349232, "imdb": "tt1232248", "tmdb": 62158},
-        },
-        "last_episode": {
-            "season": 2,
-            "number": 10,
-            "title": "Over",
-            "ids": {"trakt": 62094, "tvdb": 349231, "imdb": "tt1232247", "tmdb": 62157},
-        },
-    }
+        hidden_seasons=[],
+        next_episode=EpisodeInfo(
+            season=2,
+            number=11,
+            title="Mandala",
+            ids={"trakt": 62095, "tvdb": 349232, "imdb": "tt1232248", "tmdb": 62158},
+        ),
+        last_episode=EpisodeInfo(
+            season=2,
+            number=10,
+            title="Over",
+            ids={"trakt": 62094, "tvdb": 349231, "imdb": "tt1232247", "tmdb": 62157},
+        ),
+    )
 
 
 @pytest.fixture
 def sample_playback_progress_movies() -> list[PlaybackProgressResponse]:
     """Sample playback progress response for movies."""
     return [
-        {
-            "progress": 45.5,
-            "paused_at": "2024-01-20T15:30:00.000Z",
-            "id": 12345,
-            "type": "movie",
-            "movie": {
-                "title": "Inception",
-                "year": 2010,
-                "ids": {
+        PlaybackProgressResponse(
+            progress=45.5,
+            paused_at="2024-01-20T15:30:00.000Z",
+            id=12345,
+            type="movie",
+            movie=PlaybackMovieInfo(
+                title="Inception",
+                year=2010,
+                ids={
                     "trakt": 16662,
                     "slug": "inception-2010",
                     "imdb": "tt1375666",
                     "tmdb": 27205,
                 },
-            },
-        }
+            ),
+        )
     ]
 
 
@@ -207,34 +224,34 @@ def sample_playback_progress_movies() -> list[PlaybackProgressResponse]:
 def sample_playback_progress_episodes() -> list[PlaybackProgressResponse]:
     """Sample playback progress response for episodes."""
     return [
-        {
-            "progress": 23.7,
-            "paused_at": "2024-01-21T20:00:00.000Z",
-            "id": 67890,
-            "type": "episode",
-            "episode": {
-                "season": 1,
-                "number": 5,
-                "title": "Gray Matter",
-                "ids": {
+        PlaybackProgressResponse(
+            progress=23.7,
+            paused_at="2024-01-21T20:00:00.000Z",
+            id=67890,
+            type="episode",
+            episode=PlaybackEpisodeInfo(
+                season=1,
+                number=5,
+                title="Gray Matter",
+                ids={
                     "trakt": 62089,
                     "tvdb": 349226,
                     "imdb": "tt1054725",
                     "tmdb": 62152,
                 },
-            },
-            "show": {
-                "title": "Breaking Bad",
-                "year": 2008,
-                "ids": {
+            ),
+            show=PlaybackShowInfo(
+                title="Breaking Bad",
+                year=2008,
+                ids={
                     "trakt": 1388,
                     "slug": "breaking-bad",
                     "tvdb": 81189,
                     "imdb": "tt0903747",
                     "tmdb": 1396,
                 },
-            },
-        }
+            ),
+        )
     ]
 
 

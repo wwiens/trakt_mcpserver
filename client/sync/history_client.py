@@ -47,13 +47,19 @@ class SyncHistoryClient(AuthClient):
         if item_id and not history_type:
             raise ValueError("history_type is required when specifying item_id")
 
-        base_endpoint = SYNC_ENDPOINTS["sync_history_add"]
-        segments = [base_endpoint]
-        if history_type:
-            segments.append(history_type)
-            if item_id:
-                segments.append(item_id)
-        endpoint = "/".join(segments)
+        # Build endpoint URL based on provided filters
+        if history_type and item_id:
+            endpoint = (
+                SYNC_ENDPOINTS["sync_history_get"]
+                .replace(":type", history_type)
+                .replace(":item_id", item_id)
+            )
+        elif history_type:
+            endpoint = SYNC_ENDPOINTS["sync_history_get_type"].replace(
+                ":type", history_type
+            )
+        else:
+            endpoint = SYNC_ENDPOINTS["sync_history_add"]
 
         # Build query params
         params: dict[str, str | int] = {}
@@ -62,7 +68,7 @@ class SyncHistoryClient(AuthClient):
         if end_at:
             params["end_at"] = end_at
         if pagination:
-            params.update(pagination.model_dump())
+            params.update(pagination.to_query_params())
 
         return await self._make_paginated_request(
             endpoint,

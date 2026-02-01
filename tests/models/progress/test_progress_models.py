@@ -18,7 +18,7 @@ from models.progress.show_progress import (
 
 
 class TestShowProgressModels:
-    """Tests for show progress TypedDict models."""
+    """Tests for show progress Pydantic models."""
 
     def test_show_progress_response_structure(self) -> None:
         """Test ShowProgressResponse has expected fields."""
@@ -30,7 +30,7 @@ class TestShowProgressModels:
         assert "last_watched_at" in hints
         assert "seasons" in hints
 
-        # Optional fields (NotRequired)
+        # Optional fields
         assert "reset_at" in hints
         assert "hidden_seasons" in hints
         assert "next_episode" in hints
@@ -71,50 +71,53 @@ class TestShowProgressModels:
 
 
 class TestPlaybackProgressModels:
-    """Tests for playback progress TypedDict models."""
+    """Tests for playback progress Pydantic models."""
 
     def test_playback_progress_response_movie(self) -> None:
         """Test PlaybackProgressResponse with movie type."""
-        movie_item: PlaybackProgressResponse = {
-            "progress": 45.5,
-            "paused_at": "2024-01-20T15:30:00.000Z",
-            "id": 12345,
-            "type": "movie",
-            "movie": {
-                "title": "Inception",
-                "year": 2010,
-                "ids": {"trakt": 16662, "imdb": "tt1375666"},
-            },
-        }
+        movie_item = PlaybackProgressResponse(
+            progress=45.5,
+            paused_at="2024-01-20T15:30:00.000Z",
+            id=12345,
+            type="movie",
+            movie=PlaybackMovieInfo(
+                title="Inception",
+                year=2010,
+                ids={"trakt": 16662, "imdb": "tt1375666"},
+            ),
+        )
 
-        assert movie_item["type"] == "movie"
-        assert movie_item["progress"] == 45.5
-        assert movie_item["movie"]["title"] == "Inception"
+        assert movie_item.type == "movie"
+        assert movie_item.progress == 45.5
+        assert movie_item.movie is not None
+        assert movie_item.movie.title == "Inception"
 
     def test_playback_progress_response_episode(self) -> None:
         """Test PlaybackProgressResponse with episode type."""
-        episode_item: PlaybackProgressResponse = {
-            "progress": 23.7,
-            "paused_at": "2024-01-21T20:00:00.000Z",
-            "id": 67890,
-            "type": "episode",
-            "episode": {
-                "season": 1,
-                "number": 5,
-                "title": "Gray Matter",
-                "ids": {"trakt": 62089},
-            },
-            "show": {
-                "title": "Breaking Bad",
-                "year": 2008,
-                "ids": {"trakt": 1388},
-            },
-        }
+        episode_item = PlaybackProgressResponse(
+            progress=23.7,
+            paused_at="2024-01-21T20:00:00.000Z",
+            id=67890,
+            type="episode",
+            episode=PlaybackEpisodeInfo(
+                season=1,
+                number=5,
+                title="Gray Matter",
+                ids={"trakt": 62089},
+            ),
+            show=PlaybackShowInfo(
+                title="Breaking Bad",
+                year=2008,
+                ids={"trakt": 1388},
+            ),
+        )
 
-        assert episode_item["type"] == "episode"
-        assert episode_item["progress"] == 23.7
-        assert episode_item["episode"]["season"] == 1
-        assert episode_item["show"]["title"] == "Breaking Bad"
+        assert episode_item.type == "episode"
+        assert episode_item.progress == 23.7
+        assert episode_item.episode is not None
+        assert episode_item.episode.season == 1
+        assert episode_item.show is not None
+        assert episode_item.show.title == "Breaking Bad"
 
     def test_playback_movie_info_structure(self) -> None:
         """Test PlaybackMovieInfo has expected fields."""

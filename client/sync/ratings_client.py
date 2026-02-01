@@ -55,9 +55,9 @@ class SyncRatingsClient(AuthClient):
             )
 
         # Build query parameters with pagination
-        params: dict[str, Any] = {}
+        params: dict[str, int] = {}
         if pagination:
-            params.update(pagination.model_dump())
+            params.update(pagination.to_query_params())
 
         return await self._make_paginated_request(
             endpoint, response_type=TraktSyncRating, params=params
