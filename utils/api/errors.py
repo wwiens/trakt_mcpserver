@@ -3,7 +3,15 @@
 import functools
 import json
 from collections.abc import Awaitable, Callable
-from typing import Any, Concatenate, ParamSpec, Protocol, TypeVar, runtime_checkable
+from typing import (
+    Any,
+    Concatenate,
+    Final,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
 
 import httpx
 
@@ -13,11 +21,11 @@ from .structured_logging import get_structured_logger
 logger = get_structured_logger("trakt_mcp")
 
 # Standard MCP error codes (JSON-RPC 2.0)
-PARSE_ERROR = -32700
-INVALID_REQUEST = -32600
-METHOD_NOT_FOUND = -32601
-INVALID_PARAMS = -32602
-INTERNAL_ERROR = -32603
+PARSE_ERROR: Final[int] = -32700
+INVALID_REQUEST: Final[int] = -32600
+METHOD_NOT_FOUND: Final[int] = -32601
+INVALID_PARAMS: Final[int] = -32602
+INTERNAL_ERROR: Final[int] = -32603
 
 # Type variables
 P = ParamSpec("P")
@@ -30,7 +38,11 @@ class ClearableAuthClient(Protocol):
     """Protocol for clients that support clearing authentication tokens."""
 
     def clear_auth_token(self) -> bool:
-        """Clear the stored authentication token."""
+        """Clear the stored authentication token.
+
+        Returns:
+            True if token was cleared, False if no token existed or already cleared.
+        """
         ...
 
 
@@ -48,7 +60,7 @@ def _auto_clear_invalid_token(client: ClearableAuthClient | object) -> None:
         try:
             client.clear_auth_token()
             logger.info("Auto-cleared invalid authentication token after 401 response")
-        except Exception:
+        except OSError:
             logger.warning("Failed to auto-clear invalid token", exc_info=True)
 
 
