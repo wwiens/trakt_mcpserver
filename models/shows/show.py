@@ -1,5 +1,7 @@
 """Show models for the Trakt MCP server."""
 
+from __future__ import annotations
+
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -29,6 +31,6 @@ class TraktPopularShow(BaseModel):
     show: TraktShow = Field(description="The show information")
 
     @classmethod
-    def from_api_response(cls, api_data: dict[str, Any]) -> "TraktPopularShow":
+    def from_api_response(cls, api_data: dict[str, Any]) -> TraktPopularShow:
         """Create a TraktPopularShow instance from raw API data."""
         return cls(show=TraktShow(**api_data))

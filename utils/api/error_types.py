@@ -83,8 +83,8 @@ class AuthenticationRequiredError(InvalidRequestError):
                 "auth_url": auth_url,
                 "action": action,
                 "instructions": (
-                    "Your authentication token was invalid and has been cleared. "
-                    "Please use the `start_device_auth` tool to re-authenticate."
+                    f"Your authentication token was invalid while trying to {action}. "
+                    "The token has been cleared. Please use the `start_device_auth` tool to re-authenticate."
                 ),
             },
         )

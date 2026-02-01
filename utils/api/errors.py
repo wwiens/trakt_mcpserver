@@ -231,6 +231,10 @@ def handle_api_errors_func(
     This decorator is specifically designed for standalone functions (no self/cls parameter).
     For class methods, use @handle_api_errors instead.
 
+    Note: Unlike @handle_api_errors, this decorator does NOT auto-clear authentication
+    tokens on 401 responses because standalone functions don't have access to a client
+    instance. Server tools that need token clearing should handle this explicitly.
+
     Args:
         func: The async function to wrap
 

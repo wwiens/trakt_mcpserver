@@ -161,4 +161,5 @@ class AuthClient(BaseClient):
             if "Authorization" in self.headers:
                 del self.headers["Authorization"]
 
+            logger.debug("Cleared authentication token and Authorization header")
             return True

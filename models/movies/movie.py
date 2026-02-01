@@ -1,5 +1,7 @@
 """Movie models for the Trakt MCP server."""
 
+from __future__ import annotations
+
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -29,6 +31,6 @@ class TraktPopularMovie(BaseModel):
     movie: TraktMovie = Field(description="The movie information")
 
     @classmethod
-    def from_api_response(cls, api_data: dict[str, Any]) -> "TraktPopularMovie":
+    def from_api_response(cls, api_data: dict[str, Any]) -> TraktPopularMovie:
         """Create a TraktPopularMovie instance from raw API data."""
         return cls(movie=TraktMovie(**api_data))
