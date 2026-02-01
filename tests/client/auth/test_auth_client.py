@@ -412,3 +412,47 @@ def test_clear_auth_token_already_none(monkeypatch: pytest.MonkeyPatch) -> None:
         assert result is False
         # os.remove should never be called
         mock_remove.assert_not_called()
+
+
+def test_clear_auth_token_file_deleted_externally(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that clear_auth_token clears memory state even if file doesn't exist.
+
+    This handles the case where the auth file was deleted externally but the
+    token is still in memory.
+    """
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    # First, create the client normally (file doesn't exist during init)
+    with patch("dotenv.load_dotenv"):
+        client = AuthClient()
+
+    # Manually set token to simulate it being set in memory without file
+    # (e.g., token was saved, then file was deleted externally)
+    client.auth_token = TraktAuthToken(
+        access_token="test_token",
+        refresh_token="test_refresh",
+        expires_in=7200,
+        created_at=int(time.time()),
+        scope="public",
+        token_type="bearer",
+    )
+    client.headers["Authorization"] = f"Bearer {client.auth_token.access_token}"
+
+    # Now call clear_auth_token with file not existing (deleted externally)
+    with (
+        patch("os.path.exists", return_value=False),
+        patch("os.remove") as mock_remove,
+    ):
+        result = client.clear_auth_token()
+
+    # Should return True because we cleared the memory state
+    assert result is True
+    # Token should be cleared from memory
+    assert client.auth_token is None
+    # Authorization header should be removed
+    assert "Authorization" not in client.headers
+    # os.remove should NOT be called since file doesn't exist
+    mock_remove.assert_not_called()

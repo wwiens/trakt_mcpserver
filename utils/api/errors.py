@@ -3,7 +3,7 @@
 import functools
 import json
 from collections.abc import Awaitable, Callable
-from typing import Any, Concatenate, ParamSpec, TypeVar
+from typing import Any, Concatenate, ParamSpec, Protocol, TypeVar, runtime_checkable
 
 import httpx
 
@@ -25,7 +25,16 @@ R = TypeVar("R")
 Self = TypeVar("Self")
 
 
-def _auto_clear_invalid_token(client: Any) -> None:
+@runtime_checkable
+class ClearableAuthClient(Protocol):
+    """Protocol for clients that support clearing authentication tokens."""
+
+    def clear_auth_token(self) -> bool:
+        """Clear the stored authentication token."""
+        ...
+
+
+def _auto_clear_invalid_token(client: ClearableAuthClient | object) -> None:
     """Clear invalid auth token from client if it has one.
 
     Called when API returns 401 Unauthorized, indicating the saved
@@ -35,7 +44,7 @@ def _auto_clear_invalid_token(client: Any) -> None:
     Args:
         client: Client instance that may have a clear_auth_token method
     """
-    if hasattr(client, "clear_auth_token") and callable(client.clear_auth_token):
+    if isinstance(client, ClearableAuthClient):
         try:
             client.clear_auth_token()
             logger.info("Auto-cleared invalid authentication token after 401 response")

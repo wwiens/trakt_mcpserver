@@ -27,7 +27,7 @@ class AuthClient(BaseClient):
     def __init__(self):
         """Initialize the authentication client."""
         super().__init__()
-        self._clear_lock = threading.Lock()
+        self._clear_lock: threading.Lock = threading.Lock()
         # Try to load auth token if exists
         self.auth_token: TraktAuthToken | None = self._load_auth_token()
         if self.auth_token:
@@ -146,17 +146,19 @@ class AuthClient(BaseClient):
             if self.auth_token is None:
                 return False
 
+            # Attempt to remove file if it exists
             if os.path.exists(AUTH_TOKEN_FILE):
                 try:
                     os.remove(AUTH_TOKEN_FILE)
-                    self.auth_token = None
-                    # Remove auth header
-                    if "Authorization" in self.headers:
-                        del self.headers["Authorization"]
-                    return True
                 except OSError:
                     logger.exception(
                         "OS error clearing auth token file %s", AUTH_TOKEN_FILE
                     )
                     return False
-            return False
+
+            # Always clear in-memory state (handles case where file was deleted externally)
+            self.auth_token = None
+            if "Authorization" in self.headers:
+                del self.headers["Authorization"]
+
+            return True
