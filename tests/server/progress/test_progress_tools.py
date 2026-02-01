@@ -1,5 +1,6 @@
 """Tests for the progress tools."""
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -15,6 +16,7 @@ from models.progress.show_progress import (
     SeasonProgressResponse,
     ShowProgressResponse,
 )
+from models.types.ids import TraktIds
 from server.progress.tools import (
     fetch_playback_progress,
     fetch_show_progress,
@@ -41,7 +43,7 @@ class TestFetchShowProgress:
                 season=2,
                 number=11,
                 title="Mandala",
-                ids={"trakt": 62095},
+                ids=TraktIds(trakt=62095),
             ),
         )
 
@@ -68,7 +70,7 @@ class TestFetchShowProgress:
                 season=1,
                 number=6,
                 title="Next Episode Title",
-                ids={"trakt": 12345},
+                ids=TraktIds(trakt=12345),
             ),
         )
 
@@ -124,13 +126,13 @@ class TestFetchPlaybackProgress:
         mock_playback = [
             PlaybackProgressResponse(
                 progress=45.5,
-                paused_at="2024-01-20T15:30:00.000Z",
+                paused_at=datetime(2024, 1, 20, 15, 30, 0, tzinfo=UTC),
                 id=12345,
                 type="movie",
                 movie=PlaybackMovieInfo(
                     title="Inception",
                     year=2010,
-                    ids={"trakt": 16662},
+                    ids=TraktIds(trakt=16662),
                 ),
             )
         ]
@@ -152,19 +154,19 @@ class TestFetchPlaybackProgress:
         mock_playback = [
             PlaybackProgressResponse(
                 progress=23.7,
-                paused_at="2024-01-21T20:00:00.000Z",
+                paused_at=datetime(2024, 1, 21, 20, 0, 0, tzinfo=UTC),
                 id=67890,
                 type="episode",
                 episode=PlaybackEpisodeInfo(
                     season=1,
                     number=5,
                     title="Gray Matter",
-                    ids={"trakt": 62089},
+                    ids=TraktIds(trakt=62089),
                 ),
                 show=PlaybackShowInfo(
                     title="Breaking Bad",
                     year=2008,
-                    ids={"trakt": 1388},
+                    ids=TraktIds(trakt=1388),
                 ),
             )
         ]

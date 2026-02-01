@@ -1,8 +1,11 @@
 """Playback progress models for the Trakt MCP server."""
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
+
+from models.types.ids import TraktIds
 
 
 class PlaybackMovieInfo(BaseModel):
@@ -10,7 +13,7 @@ class PlaybackMovieInfo(BaseModel):
 
     title: str
     year: int | None = None
-    ids: dict[str, str | int | dict[str, str] | None] = Field(default_factory=dict)
+    ids: TraktIds = Field(default_factory=TraktIds)
 
 
 class PlaybackEpisodeInfo(BaseModel):
@@ -19,7 +22,7 @@ class PlaybackEpisodeInfo(BaseModel):
     season: int
     number: int
     title: str | None = None
-    ids: dict[str, str | int | dict[str, str] | None] = Field(default_factory=dict)
+    ids: TraktIds = Field(default_factory=TraktIds)
 
 
 class PlaybackShowInfo(BaseModel):
@@ -27,14 +30,14 @@ class PlaybackShowInfo(BaseModel):
 
     title: str
     year: int | None = None
-    ids: dict[str, str | int | dict[str, str] | None] = Field(default_factory=dict)
+    ids: TraktIds = Field(default_factory=TraktIds)
 
 
 class PlaybackProgressResponse(BaseModel):
     """Playback progress response from Trakt API."""
 
     progress: float = Field(ge=0, le=100, description="Progress percentage 0-100")
-    paused_at: str
+    paused_at: datetime
     id: int
     type: Literal["movie", "episode"]
     movie: PlaybackMovieInfo | None = None

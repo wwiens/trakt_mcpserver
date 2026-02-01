@@ -4,6 +4,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
+from models.types.ids import TraktIds
+
 
 class EpisodeProgressResponse(BaseModel):
     """Episode progress response from Trakt API."""
@@ -27,7 +29,7 @@ class HiddenSeasonResponse(BaseModel):
     """Hidden season response from Trakt API."""
 
     number: int
-    ids: dict[str, str | int | dict[str, str] | None] = Field(default_factory=dict)
+    ids: TraktIds = Field(default_factory=TraktIds)
 
 
 class EpisodeInfo(BaseModel):
@@ -36,7 +38,7 @@ class EpisodeInfo(BaseModel):
     season: int
     number: int
     title: str | None = None
-    ids: dict[str, str | int | dict[str, str] | None] = Field(default_factory=dict)
+    ids: TraktIds = Field(default_factory=TraktIds)
 
 
 class ShowProgressResponse(BaseModel):

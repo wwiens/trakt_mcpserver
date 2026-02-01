@@ -11,18 +11,29 @@ from models.types import (
     ShowResponse,
     ShowsClientProtocol,
     TraktIds,
+    TraktIdsDict,
     TraktRating,
     TrendingWrapper,
 )
 
 
-def test_traktids_structure():
-    """Test TraktIds has required fields."""
-    hints = get_type_hints(TraktIds)
+def test_traktidsdict_structure():
+    """Test TraktIdsDict TypedDict has required fields."""
+    hints = get_type_hints(TraktIdsDict)
     assert "trakt" in hints
     assert "slug" in hints
     assert hints["trakt"] is int
     assert hints["slug"] is str
+
+
+def test_traktids_pydantic_structure():
+    """Test TraktIds Pydantic model has correct fields."""
+    hints = get_type_hints(TraktIds)
+    assert "trakt" in hints
+    assert "slug" in hints
+    assert "imdb" in hints
+    assert "tmdb" in hints
+    assert "tvdb" in hints
 
 
 def test_show_response_structure():
@@ -157,8 +168,8 @@ def test_protocol_inheritance():
 
 def test_typed_dict_validation():
     """Test TypedDict validation works correctly."""
-    # Test that TraktIds can be created with proper structure
-    trakt_ids: TraktIds = {"trakt": 12345, "slug": "test-slug"}
+    # Test that TraktIdsDict can be created with proper structure
+    trakt_ids: TraktIdsDict = {"trakt": 12345, "slug": "test-slug"}
     assert trakt_ids["trakt"] == 12345
     assert trakt_ids["slug"] == "test-slug"
 
@@ -171,8 +182,8 @@ def test_typed_dict_validation():
 
 def test_optional_fields_handling():
     """Test that NotRequired fields work correctly."""
-    # TraktIds with optional fields
-    trakt_ids_full: TraktIds = {
+    # TraktIdsDict with optional fields
+    trakt_ids_full: TraktIdsDict = {
         "trakt": 12345,
         "slug": "test-slug",
         "imdb": "tt1234567",
@@ -181,8 +192,8 @@ def test_optional_fields_handling():
     assert "imdb" in trakt_ids_full
     assert "tmdb" in trakt_ids_full
 
-    # TraktIds with only required fields
-    trakt_ids_minimal: TraktIds = {"trakt": 12345, "slug": "test-slug"}
+    # TraktIdsDict with only required fields
+    trakt_ids_minimal: TraktIdsDict = {"trakt": 12345, "slug": "test-slug"}
     assert "imdb" not in trakt_ids_minimal
     assert "tmdb" not in trakt_ids_minimal
 

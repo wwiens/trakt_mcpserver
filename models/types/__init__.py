@@ -15,7 +15,7 @@ from .api_responses import (
     ShowResponse,
     StatsResponse,
     TokenResponse,
-    TraktIds,
+    TraktIdsDict,
     TraktRating,
     TrendingWrapper,
     UserResponse,
@@ -34,6 +34,7 @@ from .common import (
     TRequest,
     TResponse,
 )
+from .ids import TraktIds
 from .pagination import (
     PaginatedResponse,
     PaginationMetadata,
@@ -92,6 +93,7 @@ __all__ = [
     "TraktHeaders",
     # API Response Types
     "TraktIds",
+    "TraktIdsDict",
     "TraktRating",
     "TrendingWrapper",
     "UserClientProtocol",

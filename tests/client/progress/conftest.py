@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from contextlib import suppress
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import pytest
@@ -20,6 +21,7 @@ from models.progress.show_progress import (
     SeasonProgressResponse,
     ShowProgressResponse,
 )
+from models.types.ids import TraktIds
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -186,13 +188,13 @@ def sample_show_progress_response() -> ShowProgressResponse:
             season=2,
             number=11,
             title="Mandala",
-            ids={"trakt": 62095, "tvdb": 349232, "imdb": "tt1232248", "tmdb": 62158},
+            ids=TraktIds(trakt=62095, tvdb=349232, imdb="tt1232248", tmdb=62158),
         ),
         last_episode=EpisodeInfo(
             season=2,
             number=10,
             title="Over",
-            ids={"trakt": 62094, "tvdb": 349231, "imdb": "tt1232247", "tmdb": 62157},
+            ids=TraktIds(trakt=62094, tvdb=349231, imdb="tt1232247", tmdb=62157),
         ),
     )
 
@@ -203,18 +205,18 @@ def sample_playback_progress_movies() -> list[PlaybackProgressResponse]:
     return [
         PlaybackProgressResponse(
             progress=45.5,
-            paused_at="2024-01-20T15:30:00.000Z",
+            paused_at=datetime(2024, 1, 20, 15, 30, 0, tzinfo=UTC),
             id=12345,
             type="movie",
             movie=PlaybackMovieInfo(
                 title="Inception",
                 year=2010,
-                ids={
-                    "trakt": 16662,
-                    "slug": "inception-2010",
-                    "imdb": "tt1375666",
-                    "tmdb": 27205,
-                },
+                ids=TraktIds(
+                    trakt=16662,
+                    slug="inception-2010",
+                    imdb="tt1375666",
+                    tmdb=27205,
+                ),
             ),
         )
     ]
@@ -226,30 +228,30 @@ def sample_playback_progress_episodes() -> list[PlaybackProgressResponse]:
     return [
         PlaybackProgressResponse(
             progress=23.7,
-            paused_at="2024-01-21T20:00:00.000Z",
+            paused_at=datetime(2024, 1, 21, 20, 0, 0, tzinfo=UTC),
             id=67890,
             type="episode",
             episode=PlaybackEpisodeInfo(
                 season=1,
                 number=5,
                 title="Gray Matter",
-                ids={
-                    "trakt": 62089,
-                    "tvdb": 349226,
-                    "imdb": "tt1054725",
-                    "tmdb": 62152,
-                },
+                ids=TraktIds(
+                    trakt=62089,
+                    tvdb=349226,
+                    imdb="tt1054725",
+                    tmdb=62152,
+                ),
             ),
             show=PlaybackShowInfo(
                 title="Breaking Bad",
                 year=2008,
-                ids={
-                    "trakt": 1388,
-                    "slug": "breaking-bad",
-                    "tvdb": 81189,
-                    "imdb": "tt0903747",
-                    "tmdb": 1396,
-                },
+                ids=TraktIds(
+                    trakt=1388,
+                    slug="breaking-bad",
+                    tvdb=81189,
+                    imdb="tt0903747",
+                    tmdb=1396,
+                ),
             ),
         )
     ]

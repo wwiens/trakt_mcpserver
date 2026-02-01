@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from models.formatters.progress import ProgressFormatters
 from models.progress.playback import (
     PlaybackEpisodeInfo,
@@ -16,6 +18,7 @@ from models.progress.show_progress import (
     SeasonProgressResponse,
     ShowProgressResponse,
 )
+from models.types.ids import TraktIds
 
 
 class TestProgressFormatters:
@@ -102,7 +105,7 @@ class TestProgressFormatters:
                 season=1,
                 number=6,
                 title="Next Episode",
-                ids={"trakt": 12345},
+                ids=TraktIds(trakt=12345),
             ),
         )
 
@@ -123,7 +126,7 @@ class TestProgressFormatters:
                 season=1,
                 number=5,
                 title="Last Watched",
-                ids={"trakt": 12344},
+                ids=TraktIds(trakt=12344),
             ),
         )
 
@@ -141,7 +144,7 @@ class TestProgressFormatters:
             last_watched_at="2024-01-15T20:30:00.000Z",
             seasons=[],
             hidden_seasons=[
-                HiddenSeasonResponse(number=3, ids={"trakt": 12345}),
+                HiddenSeasonResponse(number=3, ids=TraktIds(trakt=12345)),
             ],
         )
 
@@ -162,13 +165,13 @@ class TestProgressFormatters:
         items = [
             PlaybackProgressResponse(
                 progress=45.5,
-                paused_at="2024-01-20T15:30:00.000Z",
+                paused_at=datetime(2024, 1, 20, 15, 30, 0, tzinfo=UTC),
                 id=12345,
                 type="movie",
                 movie=PlaybackMovieInfo(
                     title="Inception",
                     year=2010,
-                    ids={"trakt": 16662},
+                    ids=TraktIds(trakt=16662),
                 ),
             )
         ]
@@ -186,19 +189,19 @@ class TestProgressFormatters:
         items = [
             PlaybackProgressResponse(
                 progress=23.7,
-                paused_at="2024-01-21T20:00:00.000Z",
+                paused_at=datetime(2024, 1, 21, 20, 0, 0, tzinfo=UTC),
                 id=67890,
                 type="episode",
                 episode=PlaybackEpisodeInfo(
                     season=1,
                     number=5,
                     title="Gray Matter",
-                    ids={"trakt": 62089},
+                    ids=TraktIds(trakt=62089),
                 ),
                 show=PlaybackShowInfo(
                     title="Breaking Bad",
                     year=2008,
-                    ids={"trakt": 1388},
+                    ids=TraktIds(trakt=1388),
                 ),
             )
         ]
@@ -215,26 +218,26 @@ class TestProgressFormatters:
         items = [
             PlaybackProgressResponse(
                 progress=45.5,
-                paused_at="2024-01-20T15:30:00.000Z",
+                paused_at=datetime(2024, 1, 20, 15, 30, 0, tzinfo=UTC),
                 id=12345,
                 type="movie",
                 movie=PlaybackMovieInfo(
-                    title="Inception", year=2010, ids={"trakt": 16662}
+                    title="Inception", year=2010, ids=TraktIds(trakt=16662)
                 ),
             ),
             PlaybackProgressResponse(
                 progress=23.7,
-                paused_at="2024-01-21T20:00:00.000Z",
+                paused_at=datetime(2024, 1, 21, 20, 0, 0, tzinfo=UTC),
                 id=67890,
                 type="episode",
                 episode=PlaybackEpisodeInfo(
                     season=1,
                     number=5,
                     title="Gray Matter",
-                    ids={"trakt": 62089},
+                    ids=TraktIds(trakt=62089),
                 ),
                 show=PlaybackShowInfo(
-                    title="Breaking Bad", year=2008, ids={"trakt": 1388}
+                    title="Breaking Bad", year=2008, ids=TraktIds(trakt=1388)
                 ),
             ),
         ]
