@@ -47,19 +47,13 @@ class SyncHistoryClient(AuthClient):
         if item_id and not history_type:
             raise ValueError("history_type is required when specifying item_id")
 
-        # Build the endpoint URL
-        endpoint = SYNC_ENDPOINTS["sync_history_get"]
-
-        # Replace type placeholder (empty string if not provided)
-        type_part = history_type if history_type else ""
-        endpoint = endpoint.replace("{type}", type_part)
-
-        # Replace item_id placeholder (empty string if not provided)
-        id_part = item_id if item_id else ""
-        endpoint = endpoint.replace("{item_id}", id_part)
-
-        # Clean up double slashes and trailing slashes
-        endpoint = endpoint.replace("//", "/").rstrip("/")
+        # Build the endpoint URL from path segments
+        segments = ["/sync/history"]
+        if history_type:
+            segments.append(history_type)
+            if item_id:
+                segments.append(item_id)
+        endpoint = "/".join(segments)
 
         # Build query params
         params: dict[str, Any] = {}

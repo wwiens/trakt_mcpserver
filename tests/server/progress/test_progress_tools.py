@@ -1,9 +1,13 @@
 """Tests for the progress tools."""
 
-from typing import Any
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
 import pytest
+
+if TYPE_CHECKING:
+    from models.progress.playback import PlaybackProgressResponse
+    from models.progress.show_progress import ShowProgressResponse
 
 from server.progress.tools import (
     fetch_playback_progress,
@@ -19,7 +23,7 @@ class TestFetchShowProgress:
     @pytest.mark.asyncio
     async def test_fetch_show_progress_success(self) -> None:
         """Test successful fetch of show progress."""
-        mock_progress: dict[str, Any] = {
+        mock_progress: ShowProgressResponse = {
             "aired": 62,
             "completed": 45,
             "last_watched_at": "2024-01-15T20:30:00.000Z",
@@ -49,7 +53,7 @@ class TestFetchShowProgress:
     @pytest.mark.asyncio
     async def test_fetch_show_progress_with_next_episode(self) -> None:
         """Test show progress with next episode information."""
-        mock_progress: dict[str, Any] = {
+        mock_progress: ShowProgressResponse = {
             "aired": 10,
             "completed": 5,
             "last_watched_at": "2024-01-15T20:30:00.000Z",
@@ -75,7 +79,7 @@ class TestFetchShowProgress:
     @pytest.mark.asyncio
     async def test_fetch_show_progress_completed_show(self) -> None:
         """Test show progress for a fully completed show."""
-        mock_progress: dict[str, Any] = {
+        mock_progress: ShowProgressResponse = {
             "aired": 62,
             "completed": 62,
             "last_watched_at": "2024-01-15T20:30:00.000Z",
@@ -111,7 +115,7 @@ class TestFetchPlaybackProgress:
     @pytest.mark.asyncio
     async def test_fetch_playback_progress_with_movies(self) -> None:
         """Test playback progress with movie items."""
-        mock_playback: list[dict[str, Any]] = [
+        mock_playback: list[PlaybackProgressResponse] = [
             {
                 "progress": 45.5,
                 "paused_at": "2024-01-20T15:30:00.000Z",
@@ -139,7 +143,7 @@ class TestFetchPlaybackProgress:
     @pytest.mark.asyncio
     async def test_fetch_playback_progress_with_episodes(self) -> None:
         """Test playback progress with episode items."""
-        mock_playback: list[dict[str, Any]] = [
+        mock_playback: list[PlaybackProgressResponse] = [
             {
                 "progress": 23.7,
                 "paused_at": "2024-01-21T20:00:00.000Z",
@@ -197,11 +201,7 @@ class TestRegisterProgressTools:
 
         mock_mcp = MagicMock()
 
-        # Call register function
         handlers = register_progress_tools(mock_mcp)
 
-        # Verify we get the expected number of handlers
         assert len(handlers) == 3
-
-        # Verify tool decorator was called 3 times
         assert mock_mcp.tool.call_count == 3

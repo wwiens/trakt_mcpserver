@@ -17,7 +17,7 @@ from typing import Final
 
 from config.api.constants import DEFAULT_FETCH_ALL_LIMIT, DEFAULT_LIMIT
 
-__all__ = [
+__all__: Final[list[str]] = [
     "COMMENTS_LIMIT_DESCRIPTION",
     "COMMENT_ID_DESCRIPTION",
     "COMMENT_SORT_DESCRIPTION",

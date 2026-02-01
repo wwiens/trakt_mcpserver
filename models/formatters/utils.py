@@ -3,7 +3,7 @@
 from typing import TypeVar
 
 from models.types.pagination import PaginatedResponse
-from utils.formatting import format_iso_timestamp
+from utils.formatting import DISPLAY_DATETIME_FORMAT, format_iso_timestamp
 
 T = TypeVar("T")
 
@@ -43,4 +43,4 @@ def format_display_time(timestamp: str) -> str:
         Formatted timestamp string (e.g., "2023-01-01 12:34:56")
         Falls back to original string if parsing fails
     """
-    return format_iso_timestamp(timestamp, fmt="%Y-%m-%d %H:%M:%S")
+    return format_iso_timestamp(timestamp, fmt=DISPLAY_DATETIME_FORMAT)

@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Final
 
 DEFAULT_DATETIME_FORMAT: Final[str] = "%Y-%m-%d %H:%M"
+DISPLAY_DATETIME_FORMAT: Final[str] = "%Y-%m-%d %H:%M:%S"
 
 
 def format_iso_timestamp(timestamp: str, fmt: str = DEFAULT_DATETIME_FORMAT) -> str:

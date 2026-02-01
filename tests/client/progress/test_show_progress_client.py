@@ -55,7 +55,6 @@ class TestShowProgressClient:
                 count_specials=True,
             )
 
-            # Verify the params include specials settings
             call_kwargs = mock_request.call_args
             params = call_kwargs.kwargs.get("params", {})
             assert params["specials"] == "true"
@@ -78,7 +77,6 @@ class TestShowProgressClient:
                 hidden=True,
             )
 
-            # Verify the params include hidden setting
             call_kwargs = mock_request.call_args
             params = call_kwargs.kwargs.get("params", {})
             assert params["hidden"] == "true"
@@ -89,7 +87,6 @@ class TestShowProgressClient:
         authenticated_progress_client: ProgressClient,
     ) -> None:
         """Test that unauthenticated requests raise ValueError."""
-        # Remove authentication
         authenticated_progress_client.auth_token = None
 
         with pytest.raises(ValueError, match="authenticated"):
@@ -107,13 +104,10 @@ class TestShowProgressClient:
         ) as mock_request:
             mock_request.return_value = sample_show_progress_response
 
-            # Use a show ID with special characters
             await authenticated_progress_client.get_show_progress("show/with:special")
 
-            # Verify the endpoint was called (URL encoding happens internally)
             mock_request.assert_called_once()
             call_args = mock_request.call_args
-            # The endpoint should have the show_id URL-encoded
             endpoint = (
                 call_args.args[0]
                 if call_args.args
@@ -138,7 +132,6 @@ class TestShowProgressClient:
                 last_activity="watched",
             )
 
-            # Verify the params include last_activity setting
             call_kwargs = mock_request.call_args
             params = call_kwargs.kwargs.get("params", {})
             assert params["last_activity"] == "watched"

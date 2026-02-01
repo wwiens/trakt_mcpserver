@@ -52,7 +52,7 @@ class TraktHistoryItem(BaseModel):
         default=None, description="Timestamp when watched (UTC, ISO 8601)"
     )
     title: str | None = None
-    year: int | None = Field(default=None, gt=1800)
+    year: int | None = Field(default=None, ge=1800)
     ids: dict[str, str | int | None] | None = None
 
 

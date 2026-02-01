@@ -2,10 +2,11 @@
 
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Annotated, Any, ClassVar, Literal
+from datetime import datetime
+from typing import Annotated, Any, ClassVar, Literal, Self
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from client.sync.client import SyncClient
 from config.api import DEFAULT_LIMIT
@@ -557,6 +558,32 @@ class HistoryRemoveItem(HistoryItemBase):
     pass
 
 
+class HistoryQueryParams(BaseModel):
+    """Parameters for history query filtering."""
+
+    history_type: Literal["movies", "shows", "seasons", "episodes"] | None = None
+    item_id: str | None = None
+    start_at: str | None = None
+    end_at: str | None = None
+    page: int | None = Field(default=None, ge=1, description="Page number (1-based)")
+
+    @field_validator("history_type", "item_id", "start_at", "end_at", mode="before")
+    @classmethod
+    def _empty_to_none(cls, v: object) -> object:
+        """Convert empty strings to None."""
+        if isinstance(v, str):
+            stripped = v.strip()
+            return None if stripped == "" else stripped
+        return v
+
+    @model_validator(mode="after")
+    def _validate_item_requires_type(self) -> Self:
+        """Ensure item_id requires history_type."""
+        if self.item_id and not self.history_type:
+            raise ValueError("history_type is required when specifying item_id")
+        return self
+
+
 @handle_api_errors_func
 async def fetch_history(
     history_type: Literal["movies", "shows", "seasons", "episodes"] | None = None,
@@ -579,21 +606,37 @@ async def fetch_history(
 
     Raises:
         AuthenticationRequiredError: If user is not authenticated
+        ValidationError: If parameters are invalid
     """
-    logger.debug("fetch_history called with type=%s, item_id=%s", history_type, item_id)
+    # Validate parameters with Pydantic
+    params = HistoryQueryParams(
+        history_type=history_type,
+        item_id=item_id,
+        start_at=start_at,
+        end_at=end_at,
+        page=page,
+    )
+
+    logger.debug(
+        "fetch_history called with type=%s, item_id=%s",
+        params.history_type,
+        params.item_id,
+    )
 
     client = SyncClient()
 
     # Create pagination params if page is specified
     pagination_params = (
-        PaginationParams(page=page, limit=DEFAULT_LIMIT) if page is not None else None
+        PaginationParams(page=params.page, limit=DEFAULT_LIMIT)
+        if params.page is not None
+        else None
     )
 
     result = await client.get_history(
-        history_type=history_type,
-        item_id=item_id,
-        start_at=start_at,
-        end_at=end_at,
+        history_type=params.history_type,
+        item_id=params.item_id,
+        start_at=params.start_at,
+        end_at=params.end_at,
         pagination=pagination_params,
     )
 
@@ -601,13 +644,15 @@ async def fetch_history(
     if isinstance(result, str):
         error = BaseToolErrorMixin.handle_api_string_error(
             resource_type="history",
-            resource_id=item_id or "all",
+            resource_id=params.item_id or "all",
             error_message=result,
             operation="fetch_history",
         )
         raise error
 
-    return SyncHistoryFormatters.format_watch_history(result, history_type, item_id)
+    return SyncHistoryFormatters.format_watch_history(
+        result, params.history_type, params.item_id
+    )
 
 
 @handle_api_errors_func
@@ -631,26 +676,25 @@ async def add_to_history(
 
     client = SyncClient()
 
-    # Convert to history request format
     history_items: list[TraktHistoryItem] = []
     for item in items:
-        # Create history item
-        item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
-
-        # Add title and year if provided
-        if item.title:
-            item_data["title"] = item.title
-        if item.year:
-            item_data["year"] = item.year
-        # Add watched_at if provided
+        watched_at_dt: datetime | None = None
         if item.watched_at:
-            item_data["watched_at"] = item.watched_at
+            watched_at_dt = datetime.fromisoformat(
+                item.watched_at.replace("Z", "+00:00")
+            )
 
-        history_items.append(TraktHistoryItem(**item_data))
+        ids_dict: dict[str, str | int | None] = dict(item.build_ids_dict())
+        history_items.append(
+            TraktHistoryItem(
+                ids=ids_dict,
+                title=item.title,
+                year=item.year,
+                watched_at=watched_at_dt,
+            )
+        )
 
-    # Create request with the appropriate type
-    request_data: dict[str, Any] = {history_type: history_items}
-    request = TraktHistoryRequest(**request_data)
+    request = TraktHistoryRequest(**{history_type: history_items})
 
     summary: HistorySummary = await client.add_to_history(request)
 
@@ -688,23 +732,18 @@ async def remove_from_history(
 
     client = SyncClient()
 
-    # Convert to history request format
     history_items: list[TraktHistoryItem] = []
     for item in items:
-        # Create history item (no watched_at for removal)
-        item_data: dict[str, Any] = {"ids": item.build_ids_dict()}
+        ids_dict: dict[str, str | int | None] = dict(item.build_ids_dict())
+        history_items.append(
+            TraktHistoryItem(
+                ids=ids_dict,
+                title=item.title,
+                year=item.year,
+            )
+        )
 
-        # Add title and year if provided
-        if item.title:
-            item_data["title"] = item.title
-        if item.year:
-            item_data["year"] = item.year
-
-        history_items.append(TraktHistoryItem(**item_data))
-
-    # Create request with the appropriate type
-    request_data: dict[str, Any] = {history_type: history_items}
-    request = TraktHistoryRequest(**request_data)
+    request = TraktHistoryRequest(**{history_type: history_items})
 
     summary: HistorySummary = await client.remove_from_history(request)
 

@@ -38,7 +38,7 @@ class ProgressFormatters:
         # Show reset info if present
         reset_at = data.get("reset_at")
         if reset_at:
-            result += f"- **Progress Reset At:** {reset_at}\n"
+            result += f"- **Progress Reset At:** {format_iso_timestamp(reset_at)}\n"
 
         result += "\n"
 

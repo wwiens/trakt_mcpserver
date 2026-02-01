@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from contextlib import suppress
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 from unittest.mock import patch
 
 import pytest
@@ -29,8 +29,7 @@ if TYPE_CHECKING:
     from models.auth.auth import TraktAuthToken
 
 
-# Sample API response data
-SAMPLE_MOVIE_HISTORY_ITEM = {
+SAMPLE_MOVIE_HISTORY_ITEM: Final[dict[str, object]] = {
     "id": 123456,
     "watched_at": "2024-01-15T20:30:00.000Z",
     "action": "watch",
@@ -42,7 +41,7 @@ SAMPLE_MOVIE_HISTORY_ITEM = {
     },
 }
 
-SAMPLE_EPISODE_HISTORY_ITEM = {
+SAMPLE_EPISODE_HISTORY_ITEM: Final[dict[str, object]] = {
     "id": 123457,
     "watched_at": "2024-01-16T21:00:00.000Z",
     "action": "watch",

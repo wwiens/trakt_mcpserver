@@ -1,5 +1,7 @@
 """Progress models for the Trakt MCP server."""
 
+from typing import Final
+
 from .playback import (
     PlaybackEpisodeInfo,
     PlaybackMovieInfo,
@@ -14,7 +16,7 @@ from .show_progress import (
     ShowProgressResponse,
 )
 
-__all__ = [
+__all__: Final[list[str]] = [
     "EpisodeInfo",
     "EpisodeProgressResponse",
     "HiddenSeasonResponse",

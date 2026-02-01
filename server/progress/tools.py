@@ -5,7 +5,7 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import Field
+from pydantic import BaseModel, Field, field_validator
 
 from client.progress.client import ProgressClient
 from config.mcp.descriptions import (
@@ -27,6 +27,24 @@ logger = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
+
+
+class ShowIdParam(BaseModel):
+    """Parameters for tools that require a show ID."""
+
+    show_id: str = Field(..., min_length=1, description=SHOW_ID_DESCRIPTION)
+
+    @field_validator("show_id", mode="before")
+    @classmethod
+    def _strip_show_id(cls, v: object) -> object:
+        """Strip whitespace from show_id if string."""
+        return v.strip() if isinstance(v, str) else v
+
+
+class PlaybackIdParam(BaseModel):
+    """Parameters for playback item removal."""
+
+    playback_id: int = Field(..., gt=0, description=PLAYBACK_ID_DESCRIPTION)
 
 
 @handle_api_errors_func
@@ -54,6 +72,10 @@ async def fetch_show_progress(
     Raises:
         AuthenticationRequiredError: If user is not authenticated
     """
+    # Validate show_id
+    params = ShowIdParam(show_id=show_id)
+    show_id = params.show_id
+
     logger.debug("fetch_show_progress called with show_id=%s", show_id)
 
     client = ProgressClient()
@@ -126,13 +148,16 @@ async def remove_playback_item(playback_id: int) -> str:
     Raises:
         AuthenticationRequiredError: If user is not authenticated
     """
-    logger.debug("remove_playback_item called with id=%s", playback_id)
+    # Validate playback_id (ensures > 0)
+    params = PlaybackIdParam(playback_id=playback_id)
+
+    logger.debug("remove_playback_item called with id=%s", params.playback_id)
 
     client = ProgressClient()
 
-    await client.remove_playback_item(playback_id)
+    await client.remove_playback_item(params.playback_id)
 
-    return f"Successfully removed playback item with ID {playback_id}."
+    return f"Successfully removed playback item with ID {params.playback_id}."
 
 
 def register_progress_tools(

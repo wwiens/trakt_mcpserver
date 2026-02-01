@@ -28,7 +28,6 @@ class SyncHistoryFormatters:
         items = paginated_items.data
         pagination = paginated_items.pagination
 
-        # If querying a specific item, show targeted response
         if item_id:
             if not items:
                 type_label = query_type.rstrip("s") if query_type else "item"
@@ -37,11 +36,9 @@ class SyncHistoryFormatters:
                     f"This {type_label} has **not been watched**.\n"
                 )
 
-            # Count unique watches
             watch_count = len(items)
             first_item = items[0]
 
-            # Get title from the item
             if first_item.type == "movie" and first_item.movie:
                 title = first_item.movie.title
                 year = first_item.movie.year
@@ -63,17 +60,16 @@ class SyncHistoryFormatters:
                 watched_str = format_iso_timestamp(item.watched_at)
 
                 if item.type == "episode" and item.episode:
-                    ep = item.episode
-                    ep_str = f"S{ep.season:02d}E{ep.number:02d}"
-                    if ep.title:
-                        ep_str += f": {ep.title}"
-                    result += f"- **{ep_str}** - {watched_str} ({item.action})\n"
+                    episode = item.episode
+                    episode_label = f"S{episode.season:02d}E{episode.number:02d}"
+                    if episode.title:
+                        episode_label += f": {episode.title}"
+                    result += f"- **{episode_label}** - {watched_str} ({item.action})\n"
                 else:
                     result += f"- {watched_str} ({item.action})\n"
 
             return result
 
-        # General history listing
         if not items:
             type_label = query_type if query_type else "items"
             result = f"# Watch History\n\nNo {type_label} in watch history.\n\n"
@@ -84,10 +80,8 @@ class SyncHistoryFormatters:
             f"# Watch History ({len(items)} item{'s' if len(items) != 1 else ''})\n\n"
         )
 
-        # Show pagination summary at the top
         result += f"📄 **{paginated_items.page_info_summary()}**\n\n"
 
-        # Show page navigation hints
         navigation_hints: list[str] = []
         if pagination.has_previous_page:
             navigation_hints.append(f"Previous: page {pagination.previous_page()}")
@@ -97,7 +91,6 @@ class SyncHistoryFormatters:
         if navigation_hints:
             result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
 
-        # Group by type
         movies = [i for i in items if i.type == "movie"]
         episodes = [i for i in items if i.type == "episode"]
 
@@ -119,14 +112,16 @@ class SyncHistoryFormatters:
             for item in episodes:
                 if item.episode and item.show:
                     show_title = item.show.title
-                    ep = item.episode
-                    ep_str = f"{show_title} - S{ep.season:02d}E{ep.number:02d}"
-                    if ep.title:
-                        ep_str += f": {ep.title}"
+                    episode = item.episode
+                    episode_label = (
+                        f"{show_title} - S{episode.season:02d}E{episode.number:02d}"
+                    )
+                    if episode.title:
+                        episode_label += f": {episode.title}"
 
                     watched_str = format_iso_timestamp(item.watched_at)
 
-                    result += f"- **{ep_str}** - {watched_str}\n"
+                    result += f"- **{episode_label}** - {watched_str}\n"
 
         return result
 

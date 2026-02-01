@@ -1,6 +1,6 @@
 """Show progress client for Trakt API."""
 
-from typing import Any, Literal
+from typing import Literal
 from urllib.parse import quote
 
 from config.endpoints.progress import PROGRESS_ENDPOINTS
@@ -47,7 +47,7 @@ class ShowProgressClient(AuthClient):
         )
 
         # Build query parameters
-        params: dict[str, Any] = {
+        params: dict[str, str] = {
             "hidden": str(hidden).lower(),
             "specials": str(specials).lower(),
             "count_specials": str(count_specials).lower(),
