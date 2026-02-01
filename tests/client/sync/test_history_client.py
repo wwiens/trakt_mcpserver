@@ -20,6 +20,7 @@ from models.sync.history import (
     TraktHistoryRequest,
     WatchHistoryItem,
 )
+from models.types.ids import TraktIds
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 
 if TYPE_CHECKING:
@@ -70,7 +71,7 @@ def create_movie_history_item() -> WatchHistoryItem:
         movie=HistoryMovieInfo(
             title="Inception",
             year=2010,
-            ids={"trakt": 16662, "imdb": "tt1375666"},
+            ids=TraktIds(trakt=16662, imdb="tt1375666"),
         ),
     )
 
@@ -86,12 +87,12 @@ def create_episode_history_item() -> WatchHistoryItem:
             season=1,
             number=1,
             title="Pilot",
-            ids={"trakt": 62085},
+            ids=TraktIds(trakt=62085),
         ),
         show=HistoryShowInfo(
             title="Breaking Bad",
             year=2008,
-            ids={"trakt": 1388},
+            ids=TraktIds(trakt=1388),
         ),
     )
 
@@ -285,7 +286,7 @@ class TestSyncHistoryClient:
             mock_request.return_value = create_history_summary(added_movies=1)
 
             request = TraktHistoryRequest(
-                movies=[TraktHistoryItem(ids={"trakt": 16662})],
+                movies=[TraktHistoryItem(ids=TraktIds(trakt=16662))],
                 shows=[],
                 seasons=[],
                 episodes=[],
@@ -308,7 +309,7 @@ class TestSyncHistoryClient:
             mock_request.return_value = create_history_summary(deleted_movies=1)
 
             request = TraktHistoryRequest(
-                movies=[TraktHistoryItem(ids={"trakt": 16662})],
+                movies=[TraktHistoryItem(ids=TraktIds(trakt=16662))],
                 shows=[],
                 seasons=[],
                 episodes=[],

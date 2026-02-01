@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel
 
+from models.types.ids import TraktIds
+
 
 class TraktEpisode(BaseModel):
     """Represents a Trakt episode."""
@@ -9,5 +11,5 @@ class TraktEpisode(BaseModel):
     season: int
     number: int
     title: str | None = None
-    ids: dict[str, str | int | None] | None = None
+    ids: TraktIds | None = None
     last_watched_at: str | None = None

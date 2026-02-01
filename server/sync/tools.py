@@ -52,6 +52,7 @@ from models.sync.watchlist import (
     TraktSyncWatchlistRequest,
     TraktWatchlistItem,
 )
+from models.types.ids import TraktIds
 from models.types.pagination import PaginatedResponse, PaginationParams
 from server.base import BaseToolErrorMixin, IdentifierValidatorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
@@ -653,10 +654,10 @@ async def add_to_history(
 
     history_items: list[TraktHistoryItem] = []
     for item in items:
-        ids_dict: dict[str, str | int | None] = dict(item.build_ids_dict())
+        ids_dict = dict(item.build_ids_dict())
         history_items.append(
             TraktHistoryItem(
-                ids=ids_dict,
+                ids=TraktIds.model_validate(ids_dict),
                 title=item.title,
                 year=item.year,
                 watched_at=item.watched_at,
@@ -703,10 +704,10 @@ async def remove_from_history(
 
     history_items: list[TraktHistoryItem] = []
     for item in items:
-        ids_dict: dict[str, str | int | None] = dict(item.build_ids_dict())
+        ids_dict = dict(item.build_ids_dict())
         history_items.append(
             TraktHistoryItem(
-                ids=ids_dict,
+                ids=TraktIds.model_validate(ids_dict),
                 title=item.title,
                 year=item.year,
             )

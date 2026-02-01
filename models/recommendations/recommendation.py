@@ -4,6 +4,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
+from models.types.ids import TraktIds
+
 
 class UserIds(BaseModel):
     """User ID information."""
@@ -34,9 +36,7 @@ class TraktRecommendedMovie(BaseModel):
 
     title: str
     year: int | None = None
-    ids: dict[str, str | int | None] = Field(
-        description="Various IDs (trakt, slug, imdb, tmdb)"
-    )
+    ids: TraktIds = Field(description="Various IDs (trakt, slug, imdb, tmdb)")
     favorited_by: Annotated[
         list[FavoritedByEntry],
         Field(
@@ -51,9 +51,7 @@ class TraktRecommendedShow(BaseModel):
 
     title: str
     year: int | None = None
-    ids: dict[str, str | int | None] = Field(
-        description="Various IDs (trakt, slug, tvdb, imdb, tmdb)"
-    )
+    ids: TraktIds = Field(description="Various IDs (trakt, slug, tvdb, imdb, tmdb)")
     favorited_by: Annotated[
         list[FavoritedByEntry],
         Field(

@@ -196,7 +196,9 @@ class SyncHistoryFormatters:
                             display_name += f" ({item_year})"
                     elif item_ids:
                         id_parts: list[str] = []
-                        for id_type, id_value in item_ids.items():
+                        for id_type, id_value in item_ids.model_dump(
+                            exclude_none=True
+                        ).items():
                             if id_value:
                                 id_parts.append(f"{id_type}: {id_value}")
                         display_name = (

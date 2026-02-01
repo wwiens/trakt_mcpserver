@@ -14,6 +14,7 @@ from models.sync.watchlist import (
     TraktSyncWatchlistItem,
     TraktWatchlistItem,
 )
+from models.types.ids import TraktIds
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 
 
@@ -206,7 +207,7 @@ class TestSyncWatchlistFormatters:
             not_found=SyncWatchlistNotFound(
                 movies=[
                     TraktSyncWatchlistItem(
-                        title="Unknown Movie", year=2099, ids={"imdb": "tt9999999"}
+                        title="Unknown Movie", year=2099, ids=TraktIds(imdb="tt9999999")
                     )
                 ],
                 shows=[],
@@ -255,10 +256,12 @@ class TestSyncWatchlistFormatters:
             not_found=SyncWatchlistNotFound(
                 movies=[
                     TraktSyncWatchlistItem(
-                        title="Unknown Movie 1", year=2099, ids={"imdb": "tt1111111"}
+                        title="Unknown Movie 1",
+                        year=2099,
+                        ids=TraktIds(imdb="tt1111111"),
                     ),
                     TraktSyncWatchlistItem(
-                        title="Unknown Movie 2", year=2100, ids={"tmdb": "999999"}
+                        title="Unknown Movie 2", year=2100, ids=TraktIds(tmdb=999999)
                     ),
                 ],
                 shows=[],
@@ -319,7 +322,7 @@ class TestSyncWatchlistFormatters:
             added=SyncWatchlistSummaryCount(movies=0),
             not_found=SyncWatchlistNotFound(
                 movies=[
-                    TraktSyncWatchlistItem(ids={"imdb": "tt1234567", "tmdb": "12345"}),
+                    TraktSyncWatchlistItem(ids=TraktIds(imdb="tt1234567", tmdb=12345)),
                 ],
                 shows=[],
                 seasons=[],
@@ -400,7 +403,7 @@ def create_movie_watchlist_item(
     movie = TraktMovie(
         title=title,
         year=year,
-        ids={"trakt": str(rank), "slug": f"{title.lower().replace(' ', '-')}-{year}"},
+        ids=TraktIds(trakt=rank, slug=f"{title.lower().replace(' ', '-')}-{year}"),
     )
     return TraktWatchlistItem(
         rank=rank,
@@ -419,7 +422,7 @@ def create_show_watchlist_item(
     show = TraktShow(
         title=title,
         year=year,
-        ids={"trakt": str(rank), "slug": title.lower().replace(" ", "-")},
+        ids=TraktIds(trakt=rank, slug=title.lower().replace(" ", "-")),
     )
     return TraktWatchlistItem(
         rank=rank,
@@ -444,13 +447,13 @@ def create_episode_watchlist_item(
     show = TraktShow(
         title=show_title,
         year=show_year,
-        ids={"trakt": str(rank), "slug": show_title.lower().replace(" ", "-")},
+        ids=TraktIds(trakt=rank, slug=show_title.lower().replace(" ", "-")),
     )
     episode = TraktEpisode(
         season=season_number,
         number=episode_number,
         title=f"Episode {episode_number}",
-        ids={"trakt": f"{rank}_{season_number}_{episode_number}"},
+        ids=TraktIds(trakt=rank * 1000 + season_number * 100 + episode_number),
     )
     return TraktWatchlistItem(
         rank=rank,
@@ -475,9 +478,11 @@ def create_season_watchlist_item(
     show = TraktShow(
         title=show_title,
         year=show_year,
-        ids={"trakt": str(rank), "slug": show_title.lower().replace(" ", "-")},
+        ids=TraktIds(trakt=rank, slug=show_title.lower().replace(" ", "-")),
     )
-    season = TraktSeason(number=season_number, ids={"trakt": f"{rank}_{season_number}"})
+    season = TraktSeason(
+        number=season_number, ids=TraktIds(trakt=rank * 100 + season_number)
+    )
     return TraktWatchlistItem(
         rank=rank,
         id=rank * 1000 + season_number * 100,

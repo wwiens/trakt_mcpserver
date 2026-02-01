@@ -21,14 +21,31 @@ class TraktIds(BaseModel):
     @field_validator("trakt", "tmdb", "tvdb", mode="before")
     @classmethod
     def coerce_to_int(cls, v: object) -> int | None:
-        """Coerce string numeric values to integers."""
+        """Coerce string numeric values to positive integers."""
         if v is None:
             return None
         if isinstance(v, int):
+            if v <= 0:
+                raise ValueError(f"Expected positive integer, got: {v}")
             return v
         if isinstance(v, str) and v.isdigit():
-            return int(v)
-        raise ValueError(f"Expected integer or numeric string, got: {v!r}")
+            result = int(v)
+            if result <= 0:
+                raise ValueError(f"Expected positive integer, got: {result}")
+            return result
+        raise ValueError(f"Expected positive integer or numeric string, got: {v!r}")
+
+    @field_validator("slug", mode="before")
+    @classmethod
+    def validate_slug(cls, v: object) -> str | None:
+        """Validate slug format (lowercase alphanumerics and hyphens)."""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            if re.match(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", v):
+                return v
+            raise ValueError(f"slug must match ^[a-z0-9]+(?:-[a-z0-9]+)*$, got: {v!r}")
+        raise ValueError(f"slug must be a string, got: {type(v).__name__}")
 
     @field_validator("imdb", mode="before")
     @classmethod

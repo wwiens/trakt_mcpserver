@@ -11,6 +11,7 @@ from models.sync.history import (
     TraktHistoryItem,
     WatchHistoryItem,
 )
+from models.types.ids import TraktIds
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 
 
@@ -60,7 +61,7 @@ class TestSyncHistoryFormatters:
                 movie=HistoryMovieInfo(
                     title="Inception",
                     year=2010,
-                    ids={"trakt": 16662},
+                    ids=TraktIds(trakt=16662),
                 ),
             )
         ]
@@ -86,12 +87,12 @@ class TestSyncHistoryFormatters:
                     season=1,
                     number=1,
                     title="Pilot",
-                    ids={"trakt": 62085},
+                    ids=TraktIds(trakt=62085),
                 ),
                 show=HistoryShowInfo(
                     title="Breaking Bad",
                     year=2008,
-                    ids={"trakt": 1388},
+                    ids=TraktIds(trakt=1388),
                 ),
             )
         ]
@@ -126,7 +127,7 @@ class TestSyncHistoryFormatters:
                 movie=HistoryMovieInfo(
                     title="Inception",
                     year=2010,
-                    ids={"trakt": 16662},
+                    ids=TraktIds(trakt=16662),
                 ),
             ),
             WatchHistoryItem(
@@ -137,7 +138,7 @@ class TestSyncHistoryFormatters:
                 movie=HistoryMovieInfo(
                     title="Inception",
                     year=2010,
-                    ids={"trakt": 16662},
+                    ids=TraktIds(trakt=16662),
                 ),
             ),
         ]
@@ -200,7 +201,7 @@ class TestSyncHistoryFormatters:
             not_found=HistoryNotFound(
                 movies=[
                     TraktHistoryItem(title="Unknown Movie", year=2024),
-                    TraktHistoryItem(ids={"imdb": "tt9999999"}),
+                    TraktHistoryItem(ids=TraktIds(imdb="tt9999999")),
                 ],
                 shows=[],
                 seasons=[],
@@ -228,7 +229,7 @@ class TestSyncHistoryFormatters:
                 movie=HistoryMovieInfo(
                     title="Inception",
                     year=2010,
-                    ids={"trakt": 16662},
+                    ids=TraktIds(trakt=16662),
                 ),
             )
         ]
@@ -260,7 +261,7 @@ class TestSyncHistoryFormatters:
                 movie=HistoryMovieInfo(
                     title="Inception",
                     year=2010,
-                    ids={"trakt": 16662},
+                    ids=TraktIds(trakt=16662),
                 ),
             )
         ]

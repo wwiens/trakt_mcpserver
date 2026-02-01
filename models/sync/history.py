@@ -5,13 +5,15 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from models.types.ids import TraktIds
+
 
 class HistoryMovieInfo(BaseModel):
     """Movie information in history response."""
 
     title: str
     year: int | None = None
-    ids: dict[str, str | int | None] = Field(default_factory=dict)
+    ids: TraktIds = Field(default_factory=TraktIds)
 
 
 class HistoryShowInfo(BaseModel):
@@ -19,7 +21,7 @@ class HistoryShowInfo(BaseModel):
 
     title: str
     year: int | None = None
-    ids: dict[str, str | int | None] = Field(default_factory=dict)
+    ids: TraktIds = Field(default_factory=TraktIds)
 
 
 class HistoryEpisodeInfo(BaseModel):
@@ -28,7 +30,7 @@ class HistoryEpisodeInfo(BaseModel):
     season: int
     number: int
     title: str | None = None
-    ids: dict[str, str | int | None] = Field(default_factory=dict)
+    ids: TraktIds = Field(default_factory=TraktIds)
 
 
 class WatchHistoryItem(BaseModel):
@@ -53,7 +55,7 @@ class TraktHistoryItem(BaseModel):
     )
     title: str | None = None
     year: int | None = Field(default=None, ge=1800)
-    ids: dict[str, str | int | None] | None = None
+    ids: TraktIds | None = None
 
 
 class TraktHistoryRequest(BaseModel):
