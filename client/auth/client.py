@@ -4,6 +4,7 @@ import contextlib
 import json
 import logging
 import os
+import threading
 import time
 from typing import Final
 
@@ -26,6 +27,7 @@ class AuthClient(BaseClient):
     def __init__(self):
         """Initialize the authentication client."""
         super().__init__()
+        self._clear_lock = threading.Lock()
         # Try to load auth token if exists
         self.auth_token: TraktAuthToken | None = self._load_auth_token()
         if self.auth_token:
@@ -133,20 +135,28 @@ class AuthClient(BaseClient):
     def clear_auth_token(self) -> bool:
         """Clear the stored authentication token.
 
+        Thread-safe: Uses a lock to prevent race conditions when multiple
+        concurrent 401 responses trigger token clearing.
+
         Returns:
-            True if token was cleared, False if no token existed
+            True if token was cleared, False if no token existed or already cleared
         """
-        if os.path.exists(AUTH_TOKEN_FILE):
-            try:
-                os.remove(AUTH_TOKEN_FILE)
-                self.auth_token = None
-                # Remove auth header
-                if "Authorization" in self.headers:
-                    del self.headers["Authorization"]
-                return True
-            except OSError:
-                logger.exception(
-                    "OS error clearing auth token file %s", AUTH_TOKEN_FILE
-                )
+        with self._clear_lock:
+            # Early exit if already cleared by another concurrent call
+            if self.auth_token is None:
                 return False
-        return False
+
+            if os.path.exists(AUTH_TOKEN_FILE):
+                try:
+                    os.remove(AUTH_TOKEN_FILE)
+                    self.auth_token = None
+                    # Remove auth header
+                    if "Authorization" in self.headers:
+                        del self.headers["Authorization"]
+                    return True
+                except OSError:
+                    logger.exception(
+                        "OS error clearing auth token file %s", AUTH_TOKEN_FILE
+                    )
+                    return False
+            return False
