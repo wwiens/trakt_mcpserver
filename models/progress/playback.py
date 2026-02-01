@@ -10,7 +10,7 @@ class PlaybackMovieInfo(BaseModel):
 
     title: str
     year: int | None = None
-    ids: dict[str, str | int | None] = Field(default_factory=dict)
+    ids: dict[str, str | int | dict[str, str] | None] = Field(default_factory=dict)
 
 
 class PlaybackEpisodeInfo(BaseModel):
@@ -19,7 +19,7 @@ class PlaybackEpisodeInfo(BaseModel):
     season: int
     number: int
     title: str | None = None
-    ids: dict[str, str | int | None] = Field(default_factory=dict)
+    ids: dict[str, str | int | dict[str, str] | None] = Field(default_factory=dict)
 
 
 class PlaybackShowInfo(BaseModel):
@@ -27,7 +27,7 @@ class PlaybackShowInfo(BaseModel):
 
     title: str
     year: int | None = None
-    ids: dict[str, str | int | None] = Field(default_factory=dict)
+    ids: dict[str, str | int | dict[str, str] | None] = Field(default_factory=dict)
 
 
 class PlaybackProgressResponse(BaseModel):
