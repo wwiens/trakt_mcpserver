@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import time
+from typing import Final
 
 from config.endpoints import TRAKT_ENDPOINTS
 from models.auth import DeviceTokenRequest, TraktAuthToken, TraktDeviceCode
@@ -15,7 +16,8 @@ from ..base import BaseClient
 logger = logging.getLogger(__name__)
 
 # User authentication token storage path
-AUTH_TOKEN_FILE = "auth_token.json"  # noqa: S105 # File path, not a password
+# Docker sets TRAKT_AUTH_TOKEN_PATH for volume-based persistence
+AUTH_TOKEN_FILE: Final[str] = os.environ.get("TRAKT_AUTH_TOKEN_PATH", "auth_token.json")
 
 
 class AuthClient(BaseClient):

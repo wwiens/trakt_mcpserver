@@ -24,6 +24,9 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Back to root workdir
 WORKDIR /app
 
+# Create data directory for auth token persistence
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
 # Change ownership of application files to non-root user
 RUN chown -R appuser:appuser /app
 

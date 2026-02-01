@@ -25,6 +25,24 @@ R = TypeVar("R")
 Self = TypeVar("Self")
 
 
+def _auto_clear_invalid_token(client: Any) -> None:
+    """Clear invalid auth token from client if it has one.
+
+    Called when API returns 401 Unauthorized, indicating the saved
+    token is invalid, expired, or revoked. Clears the token to allow
+    fresh authentication.
+
+    Args:
+        client: Client instance that may have a clear_auth_token method
+    """
+    if hasattr(client, "clear_auth_token") and callable(client.clear_auth_token):
+        try:
+            client.clear_auth_token()
+            logger.info("Auto-cleared invalid authentication token after 401 response")
+        except Exception:
+            logger.warning("Failed to auto-clear invalid token", exc_info=True)
+
+
 class MCPError(Exception):
     """Base MCP-compliant error following JSON-RPC 2.0 specification."""
 
@@ -109,6 +127,11 @@ def handle_api_errors(
             # Add full request context to error data
             if context:
                 error.data = add_context_to_error_data(error.data or {})
+
+            # Auto-clear invalid tokens on 401 Unauthorized
+            if e.response.status_code == 401:
+                _auto_clear_invalid_token(self)
+
             raise error from e
         except httpx.RequestError as e:
             # Create base error data with context

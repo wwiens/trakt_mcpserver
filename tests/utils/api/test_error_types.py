@@ -101,6 +101,8 @@ class TestAuthenticationRequiredError:
         assert error.data["action"] == "access shows"
         assert "auth_url" in error.data
         assert "instructions" in error.data
+        # Verify instructions mention start_device_auth tool
+        assert "start_device_auth" in error.data["instructions"]
 
     def test_init_with_custom_auth_url(self) -> None:
         """Test initialization with custom auth URL."""
