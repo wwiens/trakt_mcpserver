@@ -47,8 +47,8 @@ class SyncHistoryClient(AuthClient):
         if item_id and not history_type:
             raise ValueError("history_type is required when specifying item_id")
 
-        # Build the endpoint URL from path segments
-        segments = ["/sync/history"]
+        base_endpoint = SYNC_ENDPOINTS["sync_history_add"]
+        segments = [base_endpoint]
         if history_type:
             segments.append(history_type)
             if item_id:
@@ -56,7 +56,7 @@ class SyncHistoryClient(AuthClient):
         endpoint = "/".join(segments)
 
         # Build query params
-        params: dict[str, Any] = {}
+        params: dict[str, str | int] = {}
         if start_at:
             params["start_at"] = start_at
         if end_at:

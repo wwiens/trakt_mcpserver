@@ -547,7 +547,7 @@ class HistoryItemBase(IdentifierValidatorMixin):
 class HistoryRequestItem(HistoryItemBase):
     """Single history item for add operations."""
 
-    watched_at: str | None = Field(
+    watched_at: datetime | None = Field(
         default=None, description="ISO 8601 timestamp when watched"
     )
 
@@ -678,19 +678,13 @@ async def add_to_history(
 
     history_items: list[TraktHistoryItem] = []
     for item in items:
-        watched_at_dt: datetime | None = None
-        if item.watched_at:
-            watched_at_dt = datetime.fromisoformat(
-                item.watched_at.replace("Z", "+00:00")
-            )
-
         ids_dict: dict[str, str | int | None] = dict(item.build_ids_dict())
         history_items.append(
             TraktHistoryItem(
                 ids=ids_dict,
                 title=item.title,
                 year=item.year,
-                watched_at=watched_at_dt,
+                watched_at=item.watched_at,
             )
         )
 

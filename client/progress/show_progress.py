@@ -3,11 +3,29 @@
 from typing import Literal
 from urllib.parse import quote
 
+from pydantic import BaseModel, Field, field_validator
+
 from config.endpoints.progress import PROGRESS_ENDPOINTS
 from models.progress.show_progress import ShowProgressResponse
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
+
+
+class ShowProgressParams(BaseModel):
+    """Parameters for show progress API requests."""
+
+    show_id: str = Field(..., min_length=1)
+    hidden: bool = False
+    specials: bool = False
+    count_specials: bool = True
+    last_activity: Literal["aired", "watched"] = "aired"
+
+    @field_validator("show_id", mode="before")
+    @classmethod
+    def _strip_show_id(cls, v: object) -> object:
+        """Strip whitespace from show_id if string."""
+        return v.strip() if isinstance(v, str) else v
 
 
 class ShowProgressClient(AuthClient):
@@ -41,17 +59,23 @@ class ShowProgressClient(AuthClient):
         if not self.is_authenticated():
             raise ValueError("You must be authenticated to access show progress")
 
-        # Build the endpoint URL with URL-encoded show_id
-        endpoint = PROGRESS_ENDPOINTS["show_progress_watched"].replace(
-            ":id", quote(show_id, safe="")
+        validated = ShowProgressParams(
+            show_id=show_id,
+            hidden=hidden,
+            specials=specials,
+            count_specials=count_specials,
+            last_activity=last_activity,
         )
 
-        # Build query parameters
+        endpoint = PROGRESS_ENDPOINTS["show_progress_watched"].replace(
+            ":id", quote(validated.show_id, safe="")
+        )
+
         params: dict[str, str] = {
-            "hidden": str(hidden).lower(),
-            "specials": str(specials).lower(),
-            "count_specials": str(count_specials).lower(),
-            "last_activity": last_activity,
+            "hidden": str(validated.hidden).lower(),
+            "specials": str(validated.specials).lower(),
+            "count_specials": str(validated.count_specials).lower(),
+            "last_activity": validated.last_activity,
         }
 
         return await self._make_typed_request(

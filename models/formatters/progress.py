@@ -30,63 +30,66 @@ class ProgressFormatters:
         result += "## Overall Progress\n\n"
         result += f"- **Watched:** {completed}/{aired} episodes ({percentage:.1f}%)\n"
 
-        # Format last watched timestamp
         last_watched = data.get("last_watched_at")
         if last_watched:
             result += f"- **Last Watched:** {format_iso_timestamp(last_watched)}\n"
 
-        # Show reset info if present
         reset_at = data.get("reset_at")
         if reset_at:
             result += f"- **Progress Reset At:** {format_iso_timestamp(reset_at)}\n"
 
         result += "\n"
 
-        # Show next episode if available
-        next_ep = data.get("next_episode")
-        if next_ep:
+        next_episode = data.get("next_episode")
+        if next_episode:
             result += "## Up Next\n\n"
-            season = next_ep.get("season", 0)
-            number = next_ep.get("number", 0)
-            title = next_ep.get("title", "")
-            ep_str = f"S{season:02d}E{number:02d}"
+            season = next_episode.get("season", 0)
+            number = next_episode.get("number", 0)
+            title = next_episode.get("title", "")
+            episode_label = f"S{season:02d}E{number:02d}"
             if title:
-                ep_str += f": {title}"
-            result += f"- **{ep_str}**\n\n"
+                episode_label += f": {title}"
+            result += f"- **{episode_label}**\n\n"
 
-        # Show last watched episode if available
-        last_ep = data.get("last_episode")
-        if last_ep:
+        last_episode = data.get("last_episode")
+        if last_episode:
             result += "## Last Watched\n\n"
-            season = last_ep.get("season", 0)
-            number = last_ep.get("number", 0)
-            title = last_ep.get("title", "")
-            ep_str = f"S{season:02d}E{number:02d}"
+            season = last_episode.get("season", 0)
+            number = last_episode.get("number", 0)
+            title = last_episode.get("title", "")
+            episode_label = f"S{season:02d}E{number:02d}"
             if title:
-                ep_str += f": {title}"
-            result += f"- **{ep_str}**\n\n"
+                episode_label += f": {title}"
+            result += f"- **{episode_label}**\n\n"
 
         # Show season progress
         seasons = data.get("seasons", [])
         if seasons:
             result += "## Season Progress\n\n"
             for season in seasons:
-                season_num = season["number"]
-                season_aired = season["aired"]
+                season_number = season["number"]
+                season_aired_count = season["aired"]
                 season_completed = season["completed"]
-                season_pct = (
-                    (season_completed / season_aired * 100) if season_aired > 0 else 0
+                season_percentage = (
+                    (season_completed / season_aired_count * 100)
+                    if season_aired_count > 0
+                    else 0
                 )
 
-                season_label = "Specials" if season_num == 0 else f"Season {season_num}"
+                season_label = (
+                    "Specials" if season_number == 0 else f"Season {season_number}"
+                )
 
                 if verbose:
-                    # Show detailed episode-by-episode progress
-                    if season_completed == season_aired and season_aired > 0:
+                    if (
+                        season_completed == season_aired_count
+                        and season_aired_count > 0
+                    ):
                         status = "Complete (100%)"
                     else:
                         status = (
-                            f"{season_completed}/{season_aired} ({season_pct:.0f}%)"
+                            f"{season_completed}/{season_aired_count} "
+                            f"({season_percentage:.0f}%)"
                         )
 
                     result += f"### {season_label}\n\n"
@@ -94,32 +97,41 @@ class ProgressFormatters:
 
                     episodes = season.get("episodes", [])
                     if episodes:
-                        for ep in episodes:
-                            ep_num = ep["number"]
-                            ep_completed = ep["completed"]
-                            last_watched = ep.get("last_watched_at")
+                        for episode in episodes:
+                            episode_number = episode["number"]
+                            episode_completed = episode["completed"]
+                            last_watched = episode.get("last_watched_at")
 
-                            status_icon = "x" if ep_completed else " "
-                            ep_str = f"E{ep_num:02d}"
+                            status_icon = "x" if episode_completed else " "
+                            episode_label = f"E{episode_number:02d}"
 
-                            if ep_completed and last_watched:
+                            if episode_completed and last_watched:
                                 watched_str = format_iso_timestamp(last_watched)
-                                result += f"- [{status_icon}] **{ep_str}** - Watched: {watched_str}\n"
-                            elif ep_completed:
-                                result += f"- [{status_icon}] **{ep_str}** - Watched\n"
+                                result += (
+                                    f"- [{status_icon}] **{episode_label}** - "
+                                    f"Watched: {watched_str}\n"
+                                )
+                            elif episode_completed:
+                                result += (
+                                    f"- [{status_icon}] **{episode_label}** - Watched\n"
+                                )
                             else:
                                 result += (
-                                    f"- [{status_icon}] **{ep_str}** - Not watched\n"
+                                    f"- [{status_icon}] **{episode_label}** - "
+                                    f"Not watched\n"
                                 )
 
                     result += "\n"
                 else:
-                    # Compact format (default)
-                    if season_completed == season_aired and season_aired > 0:
+                    if (
+                        season_completed == season_aired_count
+                        and season_aired_count > 0
+                    ):
                         status = "Complete (100%)"
                     else:
                         status = (
-                            f"{season_completed}/{season_aired} ({season_pct:.0f}%)"
+                            f"{season_completed}/{season_aired_count} "
+                            f"({season_percentage:.0f}%)"
                         )
 
                     result += f"- **{season_label}:** {status}\n"
