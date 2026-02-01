@@ -1,9 +1,9 @@
 """Sync history models for the Trakt MCP server."""
 
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class HistoryMovieInfo(BaseModel):
@@ -94,3 +94,37 @@ class HistorySummary(BaseModel):
     added: HistorySummaryCount | None = None
     deleted: HistorySummaryCount | None = None
     not_found: HistoryNotFound = Field(default_factory=_create_history_not_found)
+
+
+class HistoryQueryParams(BaseModel):
+    """Parameters for history query filtering with validation."""
+
+    history_type: Literal["movies", "shows", "seasons", "episodes"] | None = None
+    item_id: str | None = None
+    start_at: str | None = None
+    end_at: str | None = None
+    page: int | None = Field(default=None, ge=1, description="Page number (1-based)")
+
+    @field_validator("history_type", "item_id", "start_at", "end_at", mode="before")
+    @classmethod
+    def _empty_to_none(cls, v: object) -> object:
+        """Convert empty strings to None."""
+        if isinstance(v, str):
+            stripped = v.strip()
+            return None if stripped == "" else stripped
+        return v
+
+    @field_validator("start_at", "end_at")
+    @classmethod
+    def _validate_iso8601(cls, v: str | None) -> str | None:
+        """Validate ISO 8601 date format."""
+        if v is not None:
+            datetime.fromisoformat(v.replace("Z", "+00:00"))
+        return v
+
+    @model_validator(mode="after")
+    def _validate_item_requires_type(self) -> Self:
+        """Ensure item_id requires history_type."""
+        if self.item_id and not self.history_type:
+            raise ValueError("history_type is required when specifying item_id")
+        return self

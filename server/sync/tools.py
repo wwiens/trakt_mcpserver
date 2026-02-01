@@ -3,10 +3,10 @@
 import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Annotated, Any, ClassVar, Literal, Self
+from typing import Annotated, Any, ClassVar, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from client.sync.client import SyncClient
 from config.api import DEFAULT_LIMIT
@@ -35,6 +35,7 @@ from models.formatters.sync_history import SyncHistoryFormatters
 from models.formatters.sync_ratings import SyncRatingsFormatters
 from models.formatters.sync_watchlist import SyncWatchlistFormatters
 from models.sync.history import (
+    HistoryQueryParams,
     HistorySummary,
     TraktHistoryItem,
     TraktHistoryRequest,
@@ -556,32 +557,6 @@ class HistoryRemoveItem(HistoryItemBase):
     """History item identifier for removal operations."""
 
     pass
-
-
-class HistoryQueryParams(BaseModel):
-    """Parameters for history query filtering."""
-
-    history_type: Literal["movies", "shows", "seasons", "episodes"] | None = None
-    item_id: str | None = None
-    start_at: str | None = None
-    end_at: str | None = None
-    page: int | None = Field(default=None, ge=1, description="Page number (1-based)")
-
-    @field_validator("history_type", "item_id", "start_at", "end_at", mode="before")
-    @classmethod
-    def _empty_to_none(cls, v: object) -> object:
-        """Convert empty strings to None."""
-        if isinstance(v, str):
-            stripped = v.strip()
-            return None if stripped == "" else stripped
-        return v
-
-    @model_validator(mode="after")
-    def _validate_item_requires_type(self) -> Self:
-        """Ensure item_id requires history_type."""
-        if self.item_id and not self.history_type:
-            raise ValueError("history_type is required when specifying item_id")
-        return self
 
 
 @handle_api_errors_func

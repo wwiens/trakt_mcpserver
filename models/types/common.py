@@ -7,7 +7,6 @@ T = TypeVar("T")
 TRequest = TypeVar("TRequest")
 TResponse = TypeVar("TResponse")
 
-# JSON-serializable value type for API payloads
 JSONValue = str | int | float | bool | None | dict[str, "JSONValue"] | list["JSONValue"]
 
 

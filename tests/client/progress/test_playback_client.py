@@ -7,6 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
+from utils.api.error_types import AuthenticationRequiredError
+
 if TYPE_CHECKING:
     from client.progress.client import ProgressClient
     from models.progress.playback import PlaybackProgressResponse
@@ -95,11 +97,11 @@ class TestPlaybackClient:
         self,
         authenticated_progress_client: ProgressClient,
     ) -> None:
-        """Test that unauthenticated requests raise ValueError."""
+        """Test that unauthenticated requests raise AuthenticationRequiredError."""
         # Remove authentication
         authenticated_progress_client.auth_token = None
 
-        with pytest.raises(ValueError, match="authenticated"):
+        with pytest.raises(AuthenticationRequiredError):
             await authenticated_progress_client.get_playback_progress()
 
     @pytest.mark.asyncio
@@ -129,9 +131,9 @@ class TestPlaybackClient:
         self,
         authenticated_progress_client: ProgressClient,
     ) -> None:
-        """Test that unauthenticated removal raises ValueError."""
+        """Test that unauthenticated removal raises AuthenticationRequiredError."""
         # Remove authentication
         authenticated_progress_client.auth_token = None
 
-        with pytest.raises(ValueError, match="authenticated"):
+        with pytest.raises(AuthenticationRequiredError):
             await authenticated_progress_client.remove_playback_item(12345)

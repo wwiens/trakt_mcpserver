@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from config.endpoints.progress import PROGRESS_ENDPOINTS
 from models.progress.playback import PlaybackProgressResponse
+from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -48,11 +49,11 @@ class PlaybackClient(AuthClient):
             List of playback progress items with progress percentage and metadata
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
             ValidationError: If playback_type is invalid
         """
         if not self.is_authenticated():
-            raise ValueError("You must be authenticated to access playback progress")
+            raise AuthenticationRequiredError(action="access playback progress")
 
         # Validate input
         params = PlaybackTypeParam(playback_type=playback_type)
@@ -78,11 +79,11 @@ class PlaybackClient(AuthClient):
             playback_id: ID of the playback item to remove
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
             ValidationError: If playback_id is not a positive integer
         """
         if not self.is_authenticated():
-            raise ValueError("You must be authenticated to remove playback items")
+            raise AuthenticationRequiredError(action="remove playback items")
 
         # Validate input (ensures playback_id > 0)
         params = PlaybackIdParam(playback_id=playback_id)
