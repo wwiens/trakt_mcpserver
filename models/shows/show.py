@@ -4,13 +4,15 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from models.types.ids import TraktIds
+
 
 class TraktShow(BaseModel):
     """Represents a Trakt show."""
 
     title: str
     year: int | None = None
-    ids: dict[str, str | int | None] = Field(
+    ids: TraktIds = Field(
         description="Various IDs for the show (trakt, slug, tvdb, imdb, tmdb)"
     )
     overview: str | None = None

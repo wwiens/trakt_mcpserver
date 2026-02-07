@@ -7,6 +7,8 @@ T = TypeVar("T")
 TRequest = TypeVar("TRequest")
 TResponse = TypeVar("TResponse")
 
+JSONValue = str | int | float | bool | None | dict[str, "JSONValue"] | list["JSONValue"]
+
 
 # Common response types
 class ErrorResponse(TypedDict):

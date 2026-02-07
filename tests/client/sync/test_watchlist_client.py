@@ -20,6 +20,7 @@ from models.sync.watchlist import (
     TraktSyncWatchlistRequest,
     TraktWatchlistItem,
 )
+from models.types.ids import TraktIds
 from models.types.pagination import (
     PaginatedResponse,
     PaginationMetadata,
@@ -301,7 +302,7 @@ class TestSyncWatchlistClient:
             TraktSyncWatchlistItem(
                 title="Inception",
                 year=2010,
-                ids={"imdb": "tt1375666"},
+                ids=TraktIds(imdb="tt1375666"),
                 notes="Must watch!",
             )
         ]
@@ -321,7 +322,7 @@ class TestSyncWatchlistClient:
                         TraktSyncWatchlistItem(
                             title="Unknown Movie",
                             year=2099,
-                            ids={"imdb": "tt9999999"},
+                            ids=TraktIds(imdb="tt9999999"),
                         )
                     ],
                     shows=[],
@@ -360,7 +361,7 @@ class TestSyncWatchlistClient:
             TraktSyncWatchlistItem(
                 title="Interstellar",
                 year=2014,
-                ids={"imdb": "tt0816692"},
+                ids=TraktIds(imdb="tt0816692"),
                 notes="Watch on IMAX" * 10,  # VIP notes up to 500 chars
             )
         ]
@@ -391,7 +392,7 @@ class TestSyncWatchlistClient:
     ) -> None:
         """Test that unauthenticated add requests raise ValueError."""
         request = TraktSyncWatchlistRequest(
-            movies=[TraktSyncWatchlistItem(ids={"trakt": 123})]
+            movies=[TraktSyncWatchlistItem(ids=TraktIds(trakt=123))]
         )
 
         with pytest.raises(
@@ -407,7 +408,7 @@ class TestSyncWatchlistClient:
         # Prepare request data (no notes needed for removal)
         movies = [
             TraktSyncWatchlistItem(
-                ids={"imdb": "tt1375666"}, title="Inception", year=2010
+                ids=TraktIds(imdb="tt1375666"), title="Inception", year=2010
             )
         ]
         request = TraktSyncWatchlistRequest(movies=movies)
@@ -448,7 +449,7 @@ class TestSyncWatchlistClient:
     ) -> None:
         """Test that unauthenticated remove requests raise ValueError."""
         request = TraktSyncWatchlistRequest(
-            movies=[TraktSyncWatchlistItem(ids={"trakt": 123})]
+            movies=[TraktSyncWatchlistItem(ids=TraktIds(trakt=123))]
         )
 
         with pytest.raises(
@@ -486,7 +487,7 @@ class TestSyncWatchlistClient:
             mock_request.side_effect = Exception("HTTP error")
 
             request = TraktSyncWatchlistRequest(
-                movies=[TraktSyncWatchlistItem(ids={"trakt": 123})]
+                movies=[TraktSyncWatchlistItem(ids=TraktIds(trakt=123))]
             )
 
             with pytest.raises(Exception, match="HTTP error"):
@@ -739,7 +740,9 @@ def create_movie_watchlist_item(
     movie = TraktMovie(
         title=title,
         year=year,
-        ids={"trakt": trakt_id, "slug": f"{title.lower().replace(' ', '-')}-{year}"},
+        ids=TraktIds(
+            trakt=int(trakt_id), slug=f"{title.lower().replace(' ', '-')}-{year}"
+        ),
     )
     return TraktWatchlistItem(
         rank=rank,
@@ -758,7 +761,7 @@ def create_show_watchlist_item(
     show = TraktShow(
         title=title,
         year=year,
-        ids={"trakt": trakt_id, "slug": title.lower().replace(" ", "-")},
+        ids=TraktIds(trakt=int(trakt_id), slug=title.lower().replace(" ", "-")),
     )
     return TraktWatchlistItem(
         rank=rank,
@@ -783,13 +786,13 @@ def create_episode_watchlist_item(
     show = TraktShow(
         title=show_title,
         year=show_year,
-        ids={"trakt": trakt_id, "slug": show_title.lower().replace(" ", "-")},
+        ids=TraktIds(trakt=int(trakt_id), slug=show_title.lower().replace(" ", "-")),
     )
     episode = TraktEpisode(
         season=season_number,
         number=episode_number,
         title=f"Episode {episode_number}",
-        ids={"trakt": f"{trakt_id}_{season_number}_{episode_number}"},
+        ids=TraktIds(trakt=int(trakt_id) * 1000 + season_number * 100 + episode_number),
     )
     return TraktWatchlistItem(
         rank=rank,

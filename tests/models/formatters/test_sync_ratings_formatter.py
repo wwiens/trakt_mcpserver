@@ -9,6 +9,7 @@ from models.movies.movie import TraktMovie
 from models.shows.episode import TraktEpisode
 from models.shows.show import TraktShow
 from models.sync.ratings import TraktSeason, TraktSyncRating
+from models.types.ids import TraktIds
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 
 
@@ -26,23 +27,18 @@ class TestSyncRatingsFormatters:
                 season=2,
                 number=5,
                 title="Dead Freight",
-                ids={
-                    "trakt": "123",
-                    "tvdb": "456",
-                    "imdb": "tt789",
-                    "tmdb": "101112",
-                },
+                ids=TraktIds(trakt=123, tvdb=456, imdb="tt789", tmdb=101112),
             ),
             show=TraktShow(
                 title="Breaking Bad",
                 year=2008,
-                ids={
-                    "trakt": "1",
-                    "slug": "breaking-bad",
-                    "tvdb": "81189",
-                    "imdb": "tt0903747",
-                    "tmdb": "1396",
-                },
+                ids=TraktIds(
+                    trakt=1,
+                    slug="breaking-bad",
+                    tvdb=81189,
+                    imdb="tt0903747",
+                    tmdb=1396,
+                ),
             ),
         )
 
@@ -71,12 +67,12 @@ class TestSyncRatingsFormatters:
                 season=1,
                 number=3,
                 title=None,  # No title
-                ids={"trakt": "123"},
+                ids=TraktIds(trakt=123),
             ),
             show=TraktShow(
                 title="Test Show",
                 year=2020,
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
         )
 
@@ -101,11 +97,11 @@ class TestSyncRatingsFormatters:
             rated_at=datetime.fromisoformat("2024-01-01T10:00:00.000+00:00"),
             rating=8,
             type="season",
-            season=TraktSeason(number=3, ids={"trakt": "456", "tvdb": "789"}),
+            season=TraktSeason(number=3, ids=TraktIds(trakt=456, tvdb=789)),
             show=TraktShow(
                 title="Game of Thrones",
                 year=2011,
-                ids={"trakt": "1", "slug": "game-of-thrones"},
+                ids=TraktIds(trakt=1, slug="game-of-thrones"),
             ),
         )
 
@@ -133,7 +129,7 @@ class TestSyncRatingsFormatters:
             show=TraktShow(
                 title="The Wire",
                 year=2002,
-                ids={"trakt": "1", "slug": "the-wire"},
+                ids=TraktIds(trakt=1, slug="the-wire"),
             ),
         )
 
@@ -161,7 +157,7 @@ class TestSyncRatingsFormatters:
             movie=TraktMovie(
                 title="Inception",
                 year=2010,
-                ids={"trakt": "1", "slug": "inception-2010", "imdb": "tt1375666"},
+                ids=TraktIds(trakt=1, slug="inception-2010", imdb="tt1375666"),
             ),
         )
 
@@ -191,12 +187,12 @@ class TestSyncRatingsFormatters:
                 season=1,
                 number=1,
                 title="Pilot",
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
             show=TraktShow(
                 title="Test Show",
                 year=2020,
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
         )
 
@@ -204,11 +200,11 @@ class TestSyncRatingsFormatters:
             rated_at=datetime.fromisoformat("2024-01-01T10:00:00.000+00:00"),
             rating=8,
             type="season",
-            season=TraktSeason(number=1, ids={"trakt": "1"}),
+            season=TraktSeason(number=1, ids=TraktIds(trakt=1)),
             show=TraktShow(
                 title="Test Show",
                 year=2020,
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
         )
 
@@ -219,7 +215,7 @@ class TestSyncRatingsFormatters:
             show=TraktShow(
                 title="Test Show",
                 year=2020,
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
         )
 
@@ -250,12 +246,12 @@ class TestSyncRatingsFormatters:
                 season=1,
                 number=1,
                 title="Episode One",
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
             show=TraktShow(
                 title="Zero Year Show",
                 year=0,
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
         )
 
@@ -286,12 +282,12 @@ class TestSyncRatingsFormatters:
                 season=12,
                 number=34,
                 title="Big Numbers",
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
             show=TraktShow(
                 title="Long Running Show",
                 year=1990,
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
         )
 
@@ -319,12 +315,12 @@ class TestSyncRatingsFormatters:
                 season=1,
                 number=9,
                 title="Single Digit",
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
             show=TraktShow(
                 title="New Show",
                 year=2024,
-                ids={"trakt": "1"},
+                ids=TraktIds(trakt=1),
             ),
         )
 

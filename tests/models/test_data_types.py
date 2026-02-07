@@ -3,8 +3,10 @@
 from datetime import datetime
 from typing import Literal, NotRequired, TypeAlias, TypedDict
 
+from models.types.ids import TraktIds
+
 # Shared type aliases to reduce repetition and keep lines under 88 chars
-IDsDict: TypeAlias = dict[str, str | int | None]
+IDsDict: TypeAlias = TraktIds | dict[str, str | int | None]
 RatingValue: TypeAlias = Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 

@@ -1,5 +1,6 @@
 """Tests for the client.sync.ratings_client module."""
 
+import re
 from datetime import datetime
 from unittest.mock import patch
 
@@ -17,6 +18,7 @@ from models.sync.ratings import (
     TraktSyncRatingItem,
     TraktSyncRatingsRequest,
 )
+from models.types.ids import TraktIds
 from models.types.pagination import (
     PaginatedResponse,
     PaginationMetadata,
@@ -206,7 +208,7 @@ class TestSyncRatingsClient:
         # Prepare request data
         movies = [
             TraktSyncRatingItem(
-                rating=9, title="Inception", year=2010, ids={"imdb": "tt1375666"}
+                rating=9, title="Inception", year=2010, ids=TraktIds(imdb="tt1375666")
             )
         ]
         request = TraktSyncRatingsRequest(movies=movies)
@@ -218,7 +220,9 @@ class TestSyncRatingsClient:
             mock_summary = SyncRatingsSummary(
                 added=SyncRatingsSummaryCount(movies=1, shows=1, seasons=1, episodes=2),
                 not_found=SyncRatingsNotFound(
-                    movies=[TraktSyncRatingItem(rating=10, ids={"imdb": "tt0000111"})],
+                    movies=[
+                        TraktSyncRatingItem(rating=10, ids=TraktIds(imdb="tt0000111"))
+                    ],
                     shows=[],
                     seasons=[],
                     episodes=[],
@@ -250,7 +254,7 @@ class TestSyncRatingsClient:
     ) -> None:
         """Test that unauthenticated add requests raise ValueError."""
         request = TraktSyncRatingsRequest(
-            movies=[TraktSyncRatingItem(rating=8, ids={"trakt": 123})]
+            movies=[TraktSyncRatingItem(rating=8, ids=TraktIds(trakt=123))]
         )
 
         with pytest.raises(
@@ -265,7 +269,9 @@ class TestSyncRatingsClient:
         """Test successful removal of ratings."""
         # Prepare request data (no ratings needed for removal)
         movies = [
-            TraktSyncRatingItem(ids={"imdb": "tt1375666"}, title="Inception", year=2010)
+            TraktSyncRatingItem(
+                ids=TraktIds(imdb="tt1375666"), title="Inception", year=2010
+            )
         ]
         request = TraktSyncRatingsRequest(movies=movies)
 
@@ -310,7 +316,7 @@ class TestSyncRatingsClient:
     ) -> None:
         """Test that unauthenticated remove requests raise ValueError."""
         request = TraktSyncRatingsRequest(
-            movies=[TraktSyncRatingItem(ids={"trakt": 123})]
+            movies=[TraktSyncRatingItem(ids=TraktIds(trakt=123))]
         )
 
         with pytest.raises(
@@ -347,7 +353,7 @@ class TestSyncRatingsClient:
             mock_request.side_effect = Exception("HTTP error")
 
             request = TraktSyncRatingsRequest(
-                movies=[TraktSyncRatingItem(rating=8, ids={"trakt": 123})]
+                movies=[TraktSyncRatingItem(rating=8, ids=TraktIds(trakt=123))]
             )
 
             with pytest.raises(Exception, match="HTTP error"):
@@ -635,6 +641,14 @@ def create_mock_auth_token() -> TraktAuthToken:
     )
 
 
+def _make_slug(title: str, year: int | None = None) -> str:
+    """Convert title to valid Trakt slug format."""
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+    if year:
+        slug = f"{slug}-{year}"
+    return slug
+
+
 def create_movie_rating(
     title: str, year: int, trakt_id: str, rating: int
 ) -> TraktSyncRating:
@@ -642,7 +656,7 @@ def create_movie_rating(
     movie = TraktMovie(
         title=title,
         year=year,
-        ids={"trakt": trakt_id, "slug": f"{title.lower().replace(' ', '-')}-{year}"},
+        ids=TraktIds(trakt=int(trakt_id), slug=_make_slug(title, year)),
     )
     return TraktSyncRating(
         rated_at=datetime.fromisoformat("2014-09-01T09:10:11.000+00:00"),
@@ -659,7 +673,7 @@ def create_show_rating(
     show = TraktShow(
         title=title,
         year=year,
-        ids={"trakt": trakt_id, "slug": title.lower().replace(" ", "-")},
+        ids=TraktIds(trakt=int(trakt_id), slug=_make_slug(title)),
     )
     return TraktSyncRating(
         rated_at=datetime.fromisoformat("2014-09-01T09:10:11.000+00:00"),

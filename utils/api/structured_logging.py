@@ -11,10 +11,9 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
-from .request_context import get_current_context
+from models.types.common import JSONValue
 
-# Type for JSON-serializable values in log fields
-JSONValue = str | int | float | bool | None | dict[str, "JSONValue"] | list["JSONValue"]
+from .request_context import get_current_context
 
 
 class LogRecordExtended(logging.LogRecord):

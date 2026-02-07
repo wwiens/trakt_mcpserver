@@ -15,7 +15,7 @@ from .api_responses import (
     ShowResponse,
     StatsResponse,
     TokenResponse,
-    TraktIds,
+    TraktIdsDict,
     TraktRating,
     TrendingWrapper,
     UserResponse,
@@ -28,11 +28,13 @@ from .api_responses import (
 )
 from .common import (
     ErrorResponse,
+    JSONValue,
     T,
     TraktHeaders,
     TRequest,
     TResponse,
 )
+from .ids import TraktIds
 from .pagination import (
     PaginatedResponse,
     PaginationMetadata,
@@ -65,6 +67,7 @@ __all__ = [
     "ErrorResponse",
     "FavoritedMovieWrapper",
     "FavoritedShowWrapper",
+    "JSONValue",
     "MovieCommentSort",
     "MovieResponse",
     "MoviesClientProtocol",
@@ -90,6 +93,7 @@ __all__ = [
     "TraktHeaders",
     # API Response Types
     "TraktIds",
+    "TraktIdsDict",
     "TraktRating",
     "TrendingWrapper",
     "UserClientProtocol",

@@ -9,12 +9,12 @@ from pydantic import ValidationError
 
 from models.movies import TraktMovie, TraktPopularMovie, TraktTrendingMovie
 from models.shows import TraktEpisode, TraktPopularShow, TraktShow, TraktTrendingShow
+from models.types.ids import TraktIds
 
 if TYPE_CHECKING:
     from typing import TypedDict
 
     from tests.models.test_data_types import (
-        EpisodeTestData,
         MovieTestData,
         ShowTestData,
     )
@@ -47,24 +47,24 @@ class TestTraktShow:
 
     def test_valid_show_creation(self) -> None:
         """Test creating a valid TraktShow instance."""
-        show_data: ShowTestData = {
-            "title": "Breaking Bad",
-            "year": 2008,
-            "ids": {
-                "trakt": "1",
-                "slug": "breaking-bad",
-                "tvdb": "81189",
-                "imdb": "tt0903747",
-                "tmdb": "1396",
-            },
-            "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
-        }
-
-        show = TraktShow(**show_data)
+        show = TraktShow(
+            title="Breaking Bad",
+            year=2008,
+            ids=TraktIds(
+                trakt=1,
+                slug="breaking-bad",
+                tvdb=81189,
+                imdb="tt0903747",
+                tmdb=1396,
+            ),
+            overview="A high school chemistry teacher diagnosed with inoperable lung cancer.",
+        )
 
         assert show.title == "Breaking Bad"
         assert show.year == 2008
-        assert show.ids == show_data["ids"]
+        assert show.ids.trakt == 1
+        assert show.ids.slug == "breaking-bad"
+        assert show.ids.imdb == "tt0903747"
         assert (
             show.overview
             == "A high school chemistry teacher diagnosed with inoperable lung cancer."
@@ -72,17 +72,15 @@ class TestTraktShow:
 
     def test_show_minimal_data(self) -> None:
         """Test creating show with minimal required data."""
-        minimal_data: ShowTestData = {
-            "title": "Test Show",
-            "year": 2020,
-            "ids": {"trakt": "123"},
-        }
-
-        show = TraktShow(**minimal_data)
+        show = TraktShow(
+            title="Test Show",
+            year=2020,
+            ids=TraktIds(trakt=123),
+        )
 
         assert show.title == "Test Show"
         assert show.year == 2020
-        assert show.ids == {"trakt": "123"}
+        assert show.ids.trakt == 123
         assert show.overview is None
 
     def test_show_missing_title(self) -> None:
@@ -117,28 +115,28 @@ class TestTraktShow:
 
     def test_show_serialization(self) -> None:
         """Test that TraktShow can be serialized."""
-        show_data: ShowTestData = {
-            "title": "Breaking Bad",
-            "year": 2008,
-            "ids": {"trakt": "1", "slug": "breaking-bad"},
-            "overview": "Great show",
-        }
-
-        show = TraktShow(**show_data)
+        show = TraktShow(
+            title="Breaking Bad",
+            year=2008,
+            ids=TraktIds(trakt=1, slug="breaking-bad"),
+            overview="Great show",
+        )
         serialized = show.model_dump()
 
-        assert serialized == show_data
+        assert serialized["title"] == "Breaking Bad"
+        assert serialized["year"] == 2008
+        assert serialized["overview"] == "Great show"
+        assert serialized["ids"]["trakt"] == 1
+        assert serialized["ids"]["slug"] == "breaking-bad"
 
     def test_show_with_none_values(self) -> None:
         """Test show with explicit None values."""
-        show_data: ShowTestData = {
-            "title": "Test Show",
-            "year": 2021,
-            "ids": {"trakt": "123"},
-            "overview": None,
-        }
-
-        show = TraktShow(**show_data)
+        show = TraktShow(
+            title="Test Show",
+            year=2021,
+            ids=TraktIds(trakt=123),
+            overview=None,
+        )
 
         assert show.title == "Test Show"
         assert show.year == 2021
@@ -150,23 +148,23 @@ class TestTraktMovie:
 
     def test_valid_movie_creation(self) -> None:
         """Test creating a valid TraktMovie instance."""
-        movie_data: MovieTestData = {
-            "title": "Inception",
-            "year": 2010,
-            "ids": {
-                "trakt": "1",
-                "slug": "inception-2010",
-                "imdb": "tt1375666",
-                "tmdb": "27205",
-            },
-            "overview": "A thief who steals corporate secrets through dream-sharing technology.",
-        }
-
-        movie = TraktMovie(**movie_data)
+        movie = TraktMovie(
+            title="Inception",
+            year=2010,
+            ids=TraktIds(
+                trakt=1,
+                slug="inception-2010",
+                imdb="tt1375666",
+                tmdb=27205,
+            ),
+            overview="A thief who steals corporate secrets through dream-sharing technology.",
+        )
 
         assert movie.title == "Inception"
         assert movie.year == 2010
-        assert movie.ids == movie_data["ids"]
+        assert movie.ids.trakt == 1
+        assert movie.ids.slug == "inception-2010"
+        assert movie.ids.imdb == "tt1375666"
         assert (
             movie.overview
             == "A thief who steals corporate secrets through dream-sharing technology."
@@ -174,17 +172,15 @@ class TestTraktMovie:
 
     def test_movie_minimal_data(self) -> None:
         """Test creating movie with minimal required data."""
-        minimal_data: MovieTestData = {
-            "title": "Test Movie",
-            "year": 2019,
-            "ids": {"trakt": "456"},
-        }
-
-        movie = TraktMovie(**minimal_data)
+        movie = TraktMovie(
+            title="Test Movie",
+            year=2019,
+            ids=TraktIds(trakt=456),
+        )
 
         assert movie.title == "Test Movie"
         assert movie.year == 2019
-        assert movie.ids == {"trakt": "456"}
+        assert movie.ids.trakt == 456
         assert movie.overview is None
 
     def test_movie_required_fields(self) -> None:
@@ -208,17 +204,18 @@ class TestTraktMovie:
 
     def test_movie_serialization(self) -> None:
         """Test that TraktMovie can be serialized."""
-        movie_data: MovieTestData = {
-            "title": "Inception",
-            "year": 2010,
-            "ids": {"trakt": "1"},
-            "overview": "Great movie",
-        }
-
-        movie = TraktMovie(**movie_data)
+        movie = TraktMovie(
+            title="Inception",
+            year=2010,
+            ids=TraktIds(trakt=1),
+            overview="Great movie",
+        )
         serialized = movie.model_dump()
 
-        assert serialized == movie_data
+        assert serialized["title"] == "Inception"
+        assert serialized["year"] == 2010
+        assert serialized["overview"] == "Great movie"
+        assert serialized["ids"]["trakt"] == 1
 
 
 class TestTraktEpisode:
@@ -226,30 +223,25 @@ class TestTraktEpisode:
 
     def test_valid_episode_creation(self) -> None:
         """Test creating a valid TraktEpisode instance."""
-        episode_data: EpisodeTestData = {
-            "season": 1,
-            "number": 1,
-            "title": "Pilot",
-            "ids": {"trakt": "123", "tvdb": "456"},
-            "last_watched_at": "2023-01-15T20:30:00Z",
-        }
-
-        episode = TraktEpisode(**episode_data)
+        episode = TraktEpisode(
+            season=1,
+            number=1,
+            title="Pilot",
+            ids=TraktIds(trakt=123, tvdb=456),
+            last_watched_at="2023-01-15T20:30:00Z",
+        )
 
         assert episode.season == 1
         assert episode.number == 1
         assert episode.title == "Pilot"
-        assert episode.ids == {"trakt": "123", "tvdb": "456"}
+        assert episode.ids is not None
+        assert episode.ids.trakt == 123
+        assert episode.ids.tvdb == 456
         assert episode.last_watched_at == "2023-01-15T20:30:00Z"
 
     def test_episode_minimal_data(self) -> None:
         """Test creating episode with minimal required data."""
-        minimal_data: EpisodeTestData = {
-            "season": 2,
-            "number": 5,
-        }
-
-        episode = TraktEpisode(**minimal_data)
+        episode = TraktEpisode(season=2, number=5)
 
         assert episode.season == 2
         assert episode.number == 5
@@ -278,18 +270,20 @@ class TestTraktEpisode:
 
     def test_episode_serialization(self) -> None:
         """Test that TraktEpisode can be serialized."""
-        episode_data: EpisodeTestData = {
-            "season": 1,
-            "number": 1,
-            "title": "Pilot",
-            "ids": {"trakt": "123"},
-            "last_watched_at": "2023-01-15T20:30:00Z",
-        }
-
-        episode = TraktEpisode(**episode_data)
+        episode = TraktEpisode(
+            season=1,
+            number=1,
+            title="Pilot",
+            ids=TraktIds(trakt=123),
+            last_watched_at="2023-01-15T20:30:00Z",
+        )
         serialized = episode.model_dump()
 
-        assert serialized == episode_data
+        assert serialized["season"] == 1
+        assert serialized["number"] == 1
+        assert serialized["title"] == "Pilot"
+        assert serialized["ids"]["trakt"] == 123
+        assert serialized["last_watched_at"] == "2023-01-15T20:30:00Z"
 
 
 class TestTraktTrendingShow:
@@ -347,7 +341,9 @@ class TestTraktTrendingShow:
         trending_show = TraktTrendingShow(**trending_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         serialized = trending_show.model_dump()
 
-        assert serialized == trending_data
+        assert serialized["watchers"] == 150
+        assert serialized["show"]["title"] == "Breaking Bad"
+        assert serialized["show"]["ids"]["trakt"] == 1  # String coerced to int
 
 
 class TestTraktTrendingMovie:
@@ -424,7 +420,7 @@ class TestTraktPopularShow:
 
         assert popular_show.show.title == "Breaking Bad"
         assert popular_show.show.year == 2008
-        assert popular_show.show.ids == {"trakt": "1"}
+        assert popular_show.show.ids.trakt == 1  # String coerced to int
 
     def test_popular_show_required_fields(self) -> None:
         """Test that required fields must be provided."""
@@ -448,7 +444,9 @@ class TestTraktPopularShow:
         popular_show = TraktPopularShow(**popular_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         serialized = popular_show.model_dump()
 
-        assert serialized == popular_data
+        assert serialized["show"]["title"] == "Breaking Bad"
+        assert serialized["show"]["year"] == 2008
+        assert serialized["show"]["ids"]["trakt"] == 1  # String coerced to int
 
 
 class TestTraktPopularMovie:
@@ -484,7 +482,7 @@ class TestTraktPopularMovie:
 
         assert popular_movie.movie.title == "Inception"
         assert popular_movie.movie.year == 2010
-        assert popular_movie.movie.ids == {"trakt": "1"}
+        assert popular_movie.movie.ids.trakt == 1  # String coerced to int
 
     def test_popular_movie_required_fields(self) -> None:
         """Test that required fields must be provided."""
@@ -508,7 +506,9 @@ class TestTraktPopularMovie:
         popular_movie = TraktPopularMovie(**popular_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
         serialized = popular_movie.model_dump()
 
-        assert serialized == popular_data
+        assert serialized["movie"]["title"] == "Inception"
+        assert serialized["movie"]["year"] == 2010
+        assert serialized["movie"]["ids"]["trakt"] == 1  # String coerced to int
 
 
 class TestMediaModelIntegration:
@@ -516,80 +516,76 @@ class TestMediaModelIntegration:
 
     def test_complex_show_data_structure(self) -> None:
         """Test complex show data structure with all fields."""
-        complex_show_data: ShowTestData = {
-            "title": "Game of Thrones",
-            "year": 2011,
-            "ids": {
-                "trakt": "1390",
-                "slug": "game-of-thrones",
-                "tvdb": "121361",
-                "imdb": "tt0944947",
-                "tmdb": "1399",
-            },
-            "overview": "Seven noble families fight for control of the mythical land of Westeros.",
-        }
+        show = TraktShow(
+            title="Game of Thrones",
+            year=2011,
+            ids=TraktIds(
+                trakt=1390,
+                slug="game-of-thrones",
+                tvdb=121361,
+                imdb="tt0944947",
+                tmdb=1399,
+            ),
+            overview="Seven noble families fight for control of the mythical land of Westeros.",
+        )
 
         # Test direct show creation
-        show = TraktShow(**complex_show_data)
         assert show.title == "Game of Thrones"
 
         # Test in trending context
-        trending_show = TraktTrendingShow(watchers=5000, show=complex_show_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
+        trending_show = TraktTrendingShow(watchers=5000, show=show)
         assert trending_show.watchers == 5000
         assert trending_show.show.title == "Game of Thrones"
 
         # Test in popular context
-        popular_show = TraktPopularShow(show=complex_show_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
+        popular_show = TraktPopularShow(show=show)
         assert popular_show.show.title == "Game of Thrones"
 
     def test_complex_movie_data_structure(self) -> None:
         """Test complex movie data structure with all fields."""
-        complex_movie_data: MovieTestData = {
-            "title": "The Dark Knight",
-            "year": 2008,
-            "ids": {
-                "trakt": "1",
-                "slug": "the-dark-knight-2008",
-                "imdb": "tt0468569",
-                "tmdb": "155",
-            },
-            "overview": "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham.",
-        }
+        movie = TraktMovie(
+            title="The Dark Knight",
+            year=2008,
+            ids=TraktIds(
+                trakt=1,
+                slug="the-dark-knight-2008",
+                imdb="tt0468569",
+                tmdb=155,
+            ),
+            overview="When the menace known as the Joker wreaks havoc and chaos on the people of Gotham.",
+        )
 
         # Test direct movie creation
-        movie = TraktMovie(**complex_movie_data)
         assert movie.title == "The Dark Knight"
 
         # Test in trending context
-        trending_movie = TraktTrendingMovie(watchers=3000, movie=complex_movie_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
+        trending_movie = TraktTrendingMovie(watchers=3000, movie=movie)
         assert trending_movie.watchers == 3000
         assert trending_movie.movie.title == "The Dark Knight"
 
         # Test in popular context
-        popular_movie = TraktPopularMovie(movie=complex_movie_data)  # type: ignore[arg-type] # Testing: Pydantic validation with dict input
+        popular_movie = TraktPopularMovie(movie=movie)
         assert popular_movie.movie.title == "The Dark Knight"
 
     def test_episode_integration(self) -> None:
         """Test episode model integration scenarios."""
-        episode_data: EpisodeTestData = {
-            "season": 1,
-            "number": 1,
-            "title": "Winter Is Coming",
-            "ids": {
-                "trakt": "73640",
-                "tvdb": "349232",
-                "imdb": "tt1596220",
-                "tmdb": "63056",
-            },
-            "last_watched_at": "2023-12-01T21:00:00Z",
-        }
-
-        episode = TraktEpisode(**episode_data)
+        episode = TraktEpisode(
+            season=1,
+            number=1,
+            title="Winter Is Coming",
+            ids=TraktIds(
+                trakt=73640,
+                tvdb=349232,
+                imdb="tt1596220",
+                tmdb=63056,
+            ),
+            last_watched_at="2023-12-01T21:00:00Z",
+        )
 
         assert episode.season == 1
         assert episode.number == 1
         assert episode.title == "Winter Is Coming"
-        assert episode.ids is not None and "trakt" in episode.ids
+        assert episode.ids is not None and episode.ids.trakt is not None
         assert episode.last_watched_at == "2023-12-01T21:00:00Z"
 
         # Test serialization round-trip

@@ -15,9 +15,10 @@ from models.sync.ratings import (
     TraktSyncRatingItem,
     TraktSyncRatingsRequest,
 )
+from models.types.ids import TraktIds
 
 if TYPE_CHECKING:
-    from tests.models.test_data_types import SyncRatingItemTestData, SyncRatingTestData
+    from tests.models.test_data_types import SyncRatingTestData
 
 
 class TestTraktSeason:
@@ -26,14 +27,14 @@ class TestTraktSeason:
     def test_valid_season_creation(self) -> None:
         """Test creating a valid TraktSeason instance."""
         season = TraktSeason(
-            number=1, ids={"trakt": "140912", "tvdb": "703353", "tmdb": "81266"}
+            number=1, ids=TraktIds(trakt=140912, tvdb=703353, tmdb=81266)
         )
 
         assert season.number == 1
         assert season.ids is not None
-        assert season.ids["trakt"] == "140912"
-        assert season.ids["tvdb"] == "703353"
-        assert season.ids["tmdb"] == "81266"
+        assert season.ids.trakt == 140912
+        assert season.ids.tvdb == 703353
+        assert season.ids.tmdb == 81266
 
     def test_season_without_ids(self) -> None:
         """Test creating season without IDs."""
@@ -224,32 +225,28 @@ class TestTraktSyncRatingItem:
 
     def test_valid_rating_item_for_add(self) -> None:
         """Test creating a rating item for add operation."""
-        item_data: SyncRatingItemTestData = {
-            "rating": 9,
-            "rated_at": datetime.fromisoformat("2014-09-01T09:10:11.000+00:00"),
-            "title": "Inception",
-            "year": 2010,
-            "ids": {"trakt": "1", "imdb": "tt1375666", "tmdb": "27205"},
-        }
-
-        item = TraktSyncRatingItem(**item_data)
+        item = TraktSyncRatingItem(
+            rating=9,
+            rated_at=datetime.fromisoformat("2014-09-01T09:10:11.000+00:00"),
+            title="Inception",
+            year=2010,
+            ids=TraktIds(trakt=1, imdb="tt1375666", tmdb=27205),
+        )
 
         assert item.rating == 9
         assert item.rated_at == datetime.fromisoformat("2014-09-01T09:10:11.000+00:00")
         assert item.title == "Inception"
         assert item.year == 2010
         assert item.ids is not None
-        assert item.ids["trakt"] == "1"
+        assert item.ids.trakt == 1
 
     def test_valid_rating_item_for_remove(self) -> None:
         """Test creating a rating item for remove operation (no rating required)."""
-        item_data: SyncRatingItemTestData = {
-            "title": "Inception",
-            "year": 2010,
-            "ids": {"trakt": "1", "imdb": "tt1375666"},
-        }
-
-        item = TraktSyncRatingItem(**item_data)
+        item = TraktSyncRatingItem(
+            title="Inception",
+            year=2010,
+            ids=TraktIds(trakt=1, imdb="tt1375666"),
+        )
 
         assert item.rating is None
         assert item.title == "Inception"
@@ -258,24 +255,25 @@ class TestTraktSyncRatingItem:
 
     def test_minimal_rating_item(self) -> None:
         """Test creating minimal rating item with just IDs."""
-        item = TraktSyncRatingItem(ids={"trakt": "123"})
+        item = TraktSyncRatingItem(ids=TraktIds(trakt=123))
 
         assert item.rating is None
         assert item.title is None
         assert item.year is None
-        assert item.ids == {"trakt": "123"}
+        assert item.ids is not None
+        assert item.ids.trakt == 123
 
     def test_rating_bounds_validation(self) -> None:
         """Test rating validation bounds for rating items."""
         # Valid ratings
         for valid_rating in [1, 5, 10]:
-            item = TraktSyncRatingItem(rating=valid_rating, ids={"trakt": "123"})
+            item = TraktSyncRatingItem(rating=valid_rating, ids=TraktIds(trakt=123))
             assert item.rating == valid_rating
 
         # Invalid ratings
         for invalid_rating in [0, 11, -1]:
             with pytest.raises(ValidationError) as exc_info:
-                TraktSyncRatingItem(rating=invalid_rating, ids={"trakt": "123"})
+                TraktSyncRatingItem(rating=invalid_rating, ids=TraktIds(trakt=123))
             errors = exc_info.value.errors()
             assert any(
                 error["type"] in ["greater_than_equal", "less_than_equal"]
@@ -290,7 +288,7 @@ class TestTraktSyncRatingsRequest:
         """Test creating a request with movie ratings."""
         movies = [
             TraktSyncRatingItem(
-                rating=9, title="Inception", year=2010, ids={"imdb": "tt1375666"}
+                rating=9, title="Inception", year=2010, ids=TraktIds(imdb="tt1375666")
             )
         ]
 
@@ -305,8 +303,8 @@ class TestTraktSyncRatingsRequest:
 
     def test_mixed_ratings_request(self) -> None:
         """Test that requests with multiple content types are rejected."""
-        movies = [TraktSyncRatingItem(rating=8, ids={"imdb": "tt1375666"})]
-        shows = [TraktSyncRatingItem(rating=9, ids={"trakt": "123"})]
+        movies = [TraktSyncRatingItem(rating=8, ids=TraktIds(imdb="tt1375666"))]
+        shows = [TraktSyncRatingItem(rating=9, ids=TraktIds(trakt=123))]
 
         with pytest.raises(ValidationError) as exc_info:
             TraktSyncRatingsRequest(movies=movies, shows=shows)
@@ -361,7 +359,7 @@ class TestSyncRatingsNotFound:
 
     def test_not_found_with_items(self) -> None:
         """Test not found with actual items."""
-        not_found_movie = TraktSyncRatingItem(rating=10, ids={"imdb": "tt0000111"})
+        not_found_movie = TraktSyncRatingItem(rating=10, ids=TraktIds(imdb="tt0000111"))
 
         not_found = SyncRatingsNotFound(
             movies=[not_found_movie], shows=[], seasons=[], episodes=[]
@@ -402,7 +400,7 @@ class TestSyncRatingsSummary:
 
     def test_summary_with_not_found_items(self) -> None:
         """Test summary with not found items from API response."""
-        not_found_item = TraktSyncRatingItem(rating=10, ids={"imdb": "tt0000111"})
+        not_found_item = TraktSyncRatingItem(rating=10, ids=TraktIds(imdb="tt0000111"))
         not_found = SyncRatingsNotFound(
             movies=[not_found_item], shows=[], seasons=[], episodes=[]
         )

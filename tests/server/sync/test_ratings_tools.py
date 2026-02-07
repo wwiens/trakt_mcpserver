@@ -11,6 +11,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from models.movies.movie import TraktMovie
 from models.sync.ratings import TraktSyncRating
+from models.types.ids import TraktIds
 from server.sync.tools import (
     UserRatingIdentifier,
     UserRatingRequestItem,
@@ -34,12 +35,9 @@ async def test_fetch_user_ratings_movies_success() -> None:
         movie = TraktMovie(
             title="TRON: Legacy",
             year=2010,
-            ids={
-                "trakt": "1",
-                "slug": "tron-legacy-2010",
-                "imdb": "tt1104001",
-                "tmdb": "20526",
-            },
+            ids=TraktIds(
+                trakt=1, slug="tron-legacy-2010", imdb="tt1104001", tmdb=20526
+            ),
         )
         from models.sync.ratings import TraktSyncRating
 
@@ -91,12 +89,9 @@ async def test_fetch_user_ratings_with_rating_filter() -> None:
         movie = TraktMovie(
             title="TRON: Legacy",
             year=2010,
-            ids={
-                "trakt": "1",
-                "slug": "tron-legacy-2010",
-                "imdb": "tt1104001",
-                "tmdb": "20526",
-            },
+            ids=TraktIds(
+                trakt=1, slug="tron-legacy-2010", imdb="tt1104001", tmdb=20526
+            ),
         )
         from models.sync.ratings import TraktSyncRating
 
@@ -208,7 +203,7 @@ async def test_add_user_ratings_success() -> None:
         summary_response = SyncRatingsSummary(
             added=SyncRatingsSummaryCount(movies=1, shows=1, seasons=1, episodes=2),
             not_found=SyncRatingsNotFound(
-                movies=[TraktSyncRatingItem(rating=10, ids={"imdb": "tt0000111"})],
+                movies=[TraktSyncRatingItem(rating=10, ids=TraktIds(imdb="tt0000111"))],
                 shows=[],
                 seasons=[],
                 episodes=[],
@@ -322,7 +317,7 @@ async def test_remove_user_ratings_with_not_found() -> None:
             deleted=SyncRatingsSummaryCount(movies=0, shows=0, seasons=0, episodes=0),
             not_found=SyncRatingsNotFound(
                 movies=[],
-                shows=[TraktSyncRatingItem(ids={"trakt": "123"})],
+                shows=[TraktSyncRatingItem(ids=TraktIds(trakt=123))],
                 seasons=[],
                 episodes=[],
             ),
@@ -431,12 +426,9 @@ async def test_fetch_user_ratings_paginated_success() -> None:
         movie = TraktMovie(
             title="TRON: Legacy",
             year=2010,
-            ids={
-                "trakt": "1",
-                "slug": "tron-legacy-2010",
-                "imdb": "tt1104001",
-                "tmdb": "20526",
-            },
+            ids=TraktIds(
+                trakt=1, slug="tron-legacy-2010", imdb="tt1104001", tmdb=20526
+            ),
         )
         from models.sync.ratings import TraktSyncRating
         from models.types.pagination import PaginatedResponse, PaginationMetadata
@@ -493,12 +485,9 @@ async def test_fetch_user_ratings_paginated_with_filter() -> None:
         movie = TraktMovie(
             title="The Dark Knight",
             year=2008,
-            ids={
-                "trakt": "6",
-                "slug": "the-dark-knight-2008",
-                "imdb": "tt0468569",
-                "tmdb": "155",
-            },
+            ids=TraktIds(
+                trakt=6, slug="the-dark-knight-2008", imdb="tt0468569", tmdb=155
+            ),
         )
         from models.sync.ratings import TraktSyncRating
         from models.types.pagination import PaginatedResponse, PaginationMetadata

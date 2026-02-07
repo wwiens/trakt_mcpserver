@@ -8,13 +8,14 @@ from pydantic import BaseModel, Field
 from models.movies.movie import TraktMovie
 from models.shows.episode import TraktEpisode
 from models.shows.show import TraktShow
+from models.types.ids import TraktIds
 
 
 class TraktSeason(BaseModel):
     """Represents a Trakt season for watchlist."""
 
     number: int = Field(ge=0)  # Season 0 is typically specials
-    ids: dict[str, str | int | None] | None = None
+    ids: TraktIds | None = None
 
 
 class TraktSyncEpisodeWatchlist(BaseModel):
@@ -41,7 +42,7 @@ class TraktSyncWatchlistItem(BaseModel):
 
     title: str | None = None
     year: int | None = Field(default=None, gt=1800)  # Reasonable year constraint
-    ids: dict[str, str | int | None] | None = None
+    ids: TraktIds | None = None
     notes: str | None = Field(
         default=None, max_length=500, description="User notes (VIP only)"
     )
