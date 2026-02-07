@@ -11,6 +11,9 @@ SYNC_TOOLS: Final[Mapping[str, str]] = {
     "fetch_user_watchlist": "fetch_user_watchlist",
     "add_user_watchlist": "add_user_watchlist",
     "remove_user_watchlist": "remove_user_watchlist",
+    "fetch_history": "fetch_history",
+    "add_to_history": "add_to_history",
+    "remove_from_history": "remove_from_history",
 }
 
 __all__ = ["SYNC_TOOLS"]

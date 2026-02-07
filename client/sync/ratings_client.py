@@ -1,6 +1,6 @@
 """Sync ratings functionality for Trakt."""
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 from config.endpoints.sync import SYNC_ENDPOINTS
 from models.sync.ratings import (
@@ -12,6 +12,9 @@ from models.types.pagination import PaginatedResponse, PaginationParams
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
+
+if TYPE_CHECKING:
+    from models.types.common import JSONValue
 
 
 class SyncRatingsClient(AuthClient):
@@ -55,9 +58,9 @@ class SyncRatingsClient(AuthClient):
             )
 
         # Build query parameters with pagination
-        params: dict[str, Any] = {}
+        params: dict[str, int] = {}
         if pagination:
-            params.update(pagination.model_dump())
+            params.update(pagination.to_query_params())
 
         return await self._make_paginated_request(
             endpoint, response_type=TraktSyncRating, params=params
@@ -82,7 +85,8 @@ class SyncRatingsClient(AuthClient):
             raise ValueError("You must be authenticated to add personal ratings")
 
         # Convert request to dict, excluding None values
-        data: dict[str, Any] = request.model_dump(exclude_none=True)
+        # Use mode='json' to serialize datetime fields to ISO 8601 strings
+        data: dict[str, JSONValue] = request.model_dump(mode="json", exclude_none=True)
 
         return await self._post_typed_request(
             SYNC_ENDPOINTS["sync_ratings_add"], data, response_type=SyncRatingsSummary
@@ -107,7 +111,8 @@ class SyncRatingsClient(AuthClient):
             raise ValueError("You must be authenticated to remove personal ratings")
 
         # Convert request to dict, excluding None values
-        data: dict[str, Any] = request.model_dump(exclude_none=True)
+        # Use mode='json' to serialize datetime fields to ISO 8601 strings
+        data: dict[str, JSONValue] = request.model_dump(mode="json", exclude_none=True)
 
         # Use POST method for sync ratings removal
         return await self._post_typed_request(

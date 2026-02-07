@@ -24,8 +24,8 @@ class VideoResponse(TypedDict):
 
 
 # Base types
-class TraktIds(TypedDict):
-    """Standard ID structure used across all Trakt resources."""
+class TraktIdsDict(TypedDict):
+    """Standard ID structure used in raw API responses (TypedDict)."""
 
     trakt: int
     slug: str
@@ -48,7 +48,7 @@ class ShowResponse(TypedDict):
 
     title: str
     year: int
-    ids: TraktIds
+    ids: TraktIdsDict
     overview: NotRequired[str]
     first_aired: NotRequired[str]
     airs: NotRequired[dict[str, str]]
@@ -74,7 +74,7 @@ class EpisodeResponse(TypedDict):
     season: int
     number: int
     title: NotRequired[str]
-    ids: TraktIds
+    ids: TraktIdsDict
     number_abs: NotRequired[int]
     overview: NotRequired[str]
     first_aired: NotRequired[str]
@@ -89,7 +89,7 @@ class SeasonResponse(TypedDict):
     """Season data structure."""
 
     number: int
-    ids: TraktIds
+    ids: TraktIdsDict
     rating: NotRequired[float]
     votes: NotRequired[int]
     episode_count: NotRequired[int]
@@ -106,7 +106,7 @@ class MovieResponse(TypedDict):
 
     title: str
     year: int
-    ids: TraktIds
+    ids: TraktIdsDict
     tagline: NotRequired[str]
     overview: NotRequired[str]
     released: NotRequired[str]

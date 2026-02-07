@@ -6,13 +6,15 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from models.types.ids import TraktIds
+
 
 class TraktMovie(BaseModel):
     """Represents a Trakt movie."""
 
     title: str
     year: int | None = None
-    ids: dict[str, str | int | None] = Field(
+    ids: TraktIds = Field(
         description="Various IDs for the movie (trakt, slug, tmdb, imdb)"
     )
     overview: str | None = None

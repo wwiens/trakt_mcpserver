@@ -7,6 +7,7 @@ from models.recommendations.recommendation import (
     TraktRecommendedMovie,
     TraktRecommendedShow,
 )
+from models.types.ids import TraktIds
 
 
 class _RecommendationItem(Protocol):
@@ -14,7 +15,7 @@ class _RecommendationItem(Protocol):
 
     title: str
     year: int | None
-    ids: dict[str, str | int | None]
+    ids: TraktIds
     favorited_by: list[FavoritedByEntry]
 
 
@@ -32,8 +33,8 @@ class RecommendationFormatters:
             Formatted markdown text for the item
         """
         year_str = f" ({item.year})" if item.year else ""
-        trakt_id = item.ids.get("trakt", "")
-        imdb_id = item.ids.get("imdb", "")
+        trakt_id = item.ids.trakt or ""
+        imdb_id = item.ids.imdb or ""
 
         result = f"### {item.title}{year_str}\n"
         if trakt_id:

@@ -112,8 +112,8 @@ class TestIDValidationInSyncTools:
             assert len(call_args.movies) == 1
 
             movie_item = call_args.movies[0]
-            assert movie_item.ids["trakt"] == 123  # Should be integer
-            assert movie_item.ids["tmdb"] == 456  # Should be integer
+            assert movie_item.ids.trakt == 123  # Should be integer
+            assert movie_item.ids.tmdb == 456  # Should be integer
 
     def test_remove_user_ratings_invalid_trakt_id(self) -> None:
         """Test remove_user_ratings with invalid trakt_id (upstream validation)."""
@@ -179,8 +179,8 @@ class TestIDValidationInSyncTools:
             assert len(call_args.movies) == 1
 
             movie_item = call_args.movies[0]
-            assert movie_item.ids["trakt"] == 789  # Should be integer
-            assert movie_item.ids["tmdb"] == 101112  # Should be integer
+            assert movie_item.ids.trakt == 789  # Should be integer
+            assert movie_item.ids.tmdb == 101112  # Should be integer
 
     def test_pydantic_validation_error_details(self) -> None:
         """Test that Pydantic validation provides clear error details."""
