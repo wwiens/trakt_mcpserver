@@ -342,6 +342,7 @@ def handle_api_errors_func(
 
 
 __all__ = [
+    "ClearableAuthClient",
     "InternalError",
     "InvalidParamsError",
     "InvalidRequestError",

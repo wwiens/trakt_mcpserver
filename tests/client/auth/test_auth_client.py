@@ -266,7 +266,7 @@ def test_clear_auth_token_no_file(monkeypatch: pytest.MonkeyPatch):
         assert client.auth_token is None
 
 
-def test_clear_auth_token_remove_error(
+def test_clear_auth_token_remove_error_returns_true(
     monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture
 ) -> None:
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
@@ -287,12 +287,12 @@ def test_clear_auth_token_remove_error(
     with patch("os.remove", side_effect=OSError("Permission denied")):
         result = client.clear_auth_token()
 
-    assert result is False
+    assert result is True
     # In-memory state should be cleared even when file deletion fails
     assert client.auth_token is None
     assert "Authorization" not in client.headers
-    # Check that the error message was logged
-    assert "OS error clearing auth token file" in caplog.text
+    # Check that the warning message was logged
+    assert "Failed to remove auth token file" in caplog.text
     assert "Permission denied" in caplog.text
 
 

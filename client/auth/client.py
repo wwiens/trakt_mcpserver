@@ -157,10 +157,11 @@ class AuthClient(BaseClient):
             except FileNotFoundError:
                 pass
             except OSError:
-                logger.exception(
-                    "OS error clearing auth token file %s", AUTH_TOKEN_FILE
+                logger.warning(
+                    "Failed to remove auth token file %s; orphaned file may remain",
+                    AUTH_TOKEN_FILE,
+                    exc_info=True,
                 )
-                return False
 
             logger.debug("Cleared authentication token and Authorization header")
             return True
