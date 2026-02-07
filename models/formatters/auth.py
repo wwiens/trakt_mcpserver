@@ -29,7 +29,7 @@ class AuthFormatters:
         """Format device authentication instructions."""
         minutes = int(expires_in / 60)
         # Trakt supports path-based pre-fill: https://trakt.tv/activate/{user_code}
-        direct_link = f"{verification_url}/{user_code}"
+        direct_link = f"{verification_url.rstrip('/')}/{user_code}"
         return f"""# Trakt Authentication Required
 
 To access your personal Trakt data, you need to authenticate with Trakt.

@@ -269,46 +269,31 @@ def test_clear_auth_token_no_file(monkeypatch: pytest.MonkeyPatch):
 def test_clear_auth_token_remove_error(
     monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture
 ) -> None:
-    # Use a list to track call count (mutable in closure)
-    call_count = [0]
-
-    def path_exists_side_effect(path: str) -> bool:
-        # Return False for auth_token.json during init to avoid loading
-        # Return True for auth_token.json during clear_auth_token
-        call_count[0] += 1
-
-        # First call is during init, return False to skip loading
-        # Second call is during clear_auth_token, return True
-        if path == "auth_token.json":
-            return call_count[0] > 1
-        return True
-
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
     monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
 
-    with (
-        patch("dotenv.load_dotenv"),
-        patch("os.path.exists", side_effect=path_exists_side_effect),
-        patch("os.remove", side_effect=OSError("Permission denied")),
-    ):
+    with patch("dotenv.load_dotenv"):
         client = AuthClient()
-        client.auth_token = TraktAuthToken(
-            access_token="test_token",
-            refresh_token="test_refresh",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
 
+    client.auth_token = TraktAuthToken(
+        access_token="test_token",
+        refresh_token="test_refresh",
+        expires_in=7200,
+        created_at=int(time.time()),
+        scope="public",
+        token_type="bearer",
+    )
+
+    with patch("os.remove", side_effect=OSError("Permission denied")):
         result = client.clear_auth_token()
 
-        assert result is False
-        # Token should remain unchanged on error
-        assert client.auth_token is not None
-        # Check that the error message was logged
-        assert "OS error clearing auth token file" in caplog.text
-        assert "Permission denied" in caplog.text
+    assert result is False
+    # In-memory state should be cleared even when file deletion fails
+    assert client.auth_token is None
+    assert "Authorization" not in client.headers
+    # Check that the error message was logged
+    assert "OS error clearing auth token file" in caplog.text
+    assert "Permission denied" in caplog.text
 
 
 @pytest.mark.asyncio
@@ -348,30 +333,28 @@ def test_clear_auth_token_concurrent_calls(monkeypatch: pytest.MonkeyPatch) -> N
         # Simulate some I/O delay to increase chance of race
         time.sleep(0.01)
 
-    with (
-        patch("dotenv.load_dotenv"),
-        patch("os.path.exists", return_value=True),
-        patch("os.remove", side_effect=mock_remove),
-    ):
+    with patch("dotenv.load_dotenv"):
         client = AuthClient()
-        client.auth_token = TraktAuthToken(
-            access_token="test_token",
-            refresh_token="test_refresh",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
-        client.headers["Authorization"] = f"Bearer {client.auth_token.access_token}"
 
-        results: list[bool] = []
-        results_lock = threading.Lock()
+    client.auth_token = TraktAuthToken(
+        access_token="test_token",
+        refresh_token="test_refresh",
+        expires_in=7200,
+        created_at=int(time.time()),
+        scope="public",
+        token_type="bearer",
+    )
+    client.headers["Authorization"] = f"Bearer {client.auth_token.access_token}"
 
-        def call_clear() -> None:
-            result = client.clear_auth_token()
-            with results_lock:
-                results.append(result)
+    results: list[bool] = []
+    results_lock = threading.Lock()
 
+    def call_clear() -> None:
+        result = client.clear_auth_token()
+        with results_lock:
+            results.append(result)
+
+    with patch("os.remove", side_effect=mock_remove):
         # Launch multiple threads to call clear_auth_token concurrently
         threads = [threading.Thread(target=call_clear) for _ in range(5)]
         for t in threads:
@@ -379,14 +362,14 @@ def test_clear_auth_token_concurrent_calls(monkeypatch: pytest.MonkeyPatch) -> N
         for t in threads:
             t.join()
 
-        # Only one call should return True (actually cleared)
-        assert results.count(True) == 1
-        # Others should return False (already cleared)
-        assert results.count(False) == 4
-        # File removal should only be called once
-        assert remove_call_count == 1
-        # Token should be cleared
-        assert client.auth_token is None
+    # Only one call should return True (actually cleared)
+    assert results.count(True) == 1
+    # Others should return False (already cleared)
+    assert results.count(False) == 4
+    # File removal should only be called once
+    assert remove_call_count == 1
+    # Token should be cleared
+    assert client.auth_token is None
 
 
 def test_clear_auth_token_already_none(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -442,10 +425,8 @@ def test_clear_auth_token_file_deleted_externally(
     client.headers["Authorization"] = f"Bearer {client.auth_token.access_token}"
 
     # Now call clear_auth_token with file not existing (deleted externally)
-    with (
-        patch("os.path.exists", return_value=False),
-        patch("os.remove") as mock_remove,
-    ):
+    # os.remove raises FileNotFoundError, which is suppressed
+    with patch("os.remove", side_effect=FileNotFoundError):
         result = client.clear_auth_token()
 
     # Should return True because we cleared the memory state
@@ -454,5 +435,3 @@ def test_clear_auth_token_file_deleted_externally(
     assert client.auth_token is None
     # Authorization header should be removed
     assert "Authorization" not in client.headers
-    # os.remove should NOT be called since file doesn't exist
-    mock_remove.assert_not_called()

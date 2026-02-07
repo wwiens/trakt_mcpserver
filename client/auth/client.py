@@ -146,20 +146,21 @@ class AuthClient(BaseClient):
             if self.auth_token is None:
                 return False
 
-            # Attempt to remove file if it exists
-            if os.path.exists(AUTH_TOKEN_FILE):
-                try:
-                    os.remove(AUTH_TOKEN_FILE)
-                except OSError:
-                    logger.exception(
-                        "OS error clearing auth token file %s", AUTH_TOKEN_FILE
-                    )
-                    return False
-
-            # Always clear in-memory state (handles case where file was deleted externally)
+            # Always clear in-memory state first (handles case where file was deleted externally)
             self.auth_token = None
             if "Authorization" in self.headers:
                 del self.headers["Authorization"]
+
+            # Attempt to remove file (suppress if already deleted)
+            try:
+                os.remove(AUTH_TOKEN_FILE)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                logger.exception(
+                    "OS error clearing auth token file %s", AUTH_TOKEN_FILE
+                )
+                return False
 
             logger.debug("Cleared authentication token and Authorization header")
             return True

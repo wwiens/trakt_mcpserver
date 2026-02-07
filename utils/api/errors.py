@@ -58,8 +58,13 @@ def _auto_clear_invalid_token(client: ClearableAuthClient | object) -> None:
     """
     if isinstance(client, ClearableAuthClient):
         try:
-            client.clear_auth_token()
-            logger.info("Auto-cleared invalid authentication token after 401 response")
+            cleared = client.clear_auth_token()
+            if cleared:
+                logger.info(
+                    "Auto-cleared invalid authentication token after 401 response"
+                )
+            else:
+                logger.debug("Token already cleared or absent after 401 response")
         except OSError:
             logger.warning("Failed to auto-clear invalid token", exc_info=True)
 

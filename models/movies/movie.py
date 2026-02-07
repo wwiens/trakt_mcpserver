@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from models.types.ids import TraktIds
+from models.types.ids import TraktIds  # noqa: TC001  # Required at runtime by Pydantic
 
 
 class TraktMovie(BaseModel):

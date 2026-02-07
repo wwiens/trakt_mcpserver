@@ -303,6 +303,18 @@ class TestHandleApiErrorsMethodDecorator:
                 message="401 Unauthorized", request=MagicMock(), response=mock_response
             )
 
+        @handle_api_errors
+        async def method_that_raises_404(self) -> str:
+            """Test method that raises a 404 HTTP error."""
+            mock_response = MagicMock()
+            mock_response.status_code = 404
+            mock_response.text = "Not Found"
+            raise httpx.HTTPStatusError(
+                message="404 Not Found",
+                request=MagicMock(),
+                response=mock_response,
+            )
+
     @pytest.mark.asyncio
     async def test_method_decorator_successful_call(self) -> None:
         """Test decorator works correctly on class methods for successful calls."""
@@ -357,27 +369,7 @@ class TestHandleApiErrorsMethodDecorator:
     @pytest.mark.asyncio
     async def test_method_decorator_does_not_clear_token_on_other_errors(self) -> None:
         """Test decorator does not clear token for non-401 errors."""
-
-        class MockServiceWith404:
-            def __init__(self) -> None:
-                self.clear_auth_token_called = False
-
-            def clear_auth_token(self) -> bool:
-                self.clear_auth_token_called = True
-                return True
-
-            @handle_api_errors
-            async def method_that_raises_404(self) -> str:
-                mock_response = MagicMock()
-                mock_response.status_code = 404
-                mock_response.text = "Not Found"
-                raise httpx.HTTPStatusError(
-                    message="404 Not Found",
-                    request=MagicMock(),
-                    response=mock_response,
-                )
-
-        service = MockServiceWith404()
+        service = self.MockServiceWithClearAuth()
 
         with pytest.raises(TraktResourceNotFoundError):
             await service.method_that_raises_404()

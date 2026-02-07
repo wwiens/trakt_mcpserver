@@ -63,7 +63,7 @@ class AuthenticationRequiredError(InvalidRequestError):
     def __init__(
         self,
         action: str,
-        auth_url: str = "https://trakt.tv/pin/346",
+        auth_url: str = "https://trakt.tv/activate",
         message: str | None = None,
     ) -> None:
         """Initialize authentication required error.
@@ -84,7 +84,8 @@ class AuthenticationRequiredError(InvalidRequestError):
                 "action": action,
                 "instructions": (
                     f"Your authentication token was invalid while trying to {action}. "
-                    "The token has been cleared. Please use the `start_device_auth` tool to re-authenticate."
+                    "The token has been cleared if present. "
+                    "Please use the `start_device_auth` tool to re-authenticate."
                 ),
             },
         )
