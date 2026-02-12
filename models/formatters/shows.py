@@ -1,6 +1,6 @@
 """Show formatting methods for the Trakt MCP server."""
 
-from models.formatters.utils import format_pagination_header
+from models.formatters.utils import MAX_OVERVIEW_LENGTH, format_pagination_header
 from models.types import (
     AnticipatedShowWrapper,
     FavoritedShowWrapper,
@@ -51,6 +51,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}** - {watchers} watchers\n"
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -86,6 +88,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}**\n"
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -125,6 +129,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}** - Favorited by {user_count} users\n"
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -167,6 +173,8 @@ class ShowFormatters:
             )
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -205,6 +213,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}** - Watched by {watcher_count} users\n"
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -243,6 +253,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}** - On {list_count} lists\n"
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -440,8 +452,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}**\n"
 
             if overview := show.get("overview"):
-                if len(overview) > 200:
-                    overview = overview[:197] + "..."
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"

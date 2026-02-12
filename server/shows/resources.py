@@ -116,7 +116,7 @@ async def get_anticipated_shows() -> str:
     Returns:
         Formatted markdown text with anticipated shows
     """
-    client: ShowsClient = ShowsClient()
+    client = ShowsClient()
     shows = await client.get_anticipated_shows(limit=DEFAULT_LIMIT)
     return ShowFormatters.format_anticipated_shows(shows)
 

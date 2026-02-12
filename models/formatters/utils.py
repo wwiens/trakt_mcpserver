@@ -1,11 +1,13 @@
 """Shared formatting utilities for Trakt MCP server."""
 
-from typing import TypeVar
+from typing import Final, TypeVar
 
 from models.types.pagination import PaginatedResponse
 from utils.formatting import DISPLAY_DATETIME_FORMAT, format_iso_timestamp
 
 T = TypeVar("T")
+
+MAX_OVERVIEW_LENGTH: Final[int] = 200
 
 
 def format_pagination_header(results: PaginatedResponse[T]) -> str:
