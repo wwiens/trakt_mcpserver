@@ -7,6 +7,7 @@ from models.types.pagination import PaginatedResponse, PaginationMetadata
 
 if TYPE_CHECKING:
     from models.types import ShowResponse, TrendingWrapper
+    from models.types.api_responses import AnticipatedShowWrapper
 
 
 class TestShowFormatters:
@@ -57,6 +58,7 @@ class TestShowFormatters:
         expected_methods = [
             "format_trending_shows",
             "format_popular_shows",
+            "format_anticipated_shows",
             "format_favorited_shows",
             "format_played_shows",
             "format_watched_shows",
@@ -199,6 +201,44 @@ class TestShowFormatters:
         result = ShowFormatters.format_show_extended(show_data)
         assert isinstance(result, str)
         assert "- Air Time: at 20:00 (UTC)" in result
+
+    def test_format_anticipated_shows_exists(self) -> None:
+        """Test that format_anticipated_shows method exists."""
+        assert hasattr(ShowFormatters, "format_anticipated_shows")
+        assert callable(ShowFormatters.format_anticipated_shows)
+
+    def test_format_anticipated_shows_with_empty_list(self) -> None:
+        """Test formatting empty anticipated shows list."""
+        result = ShowFormatters.format_anticipated_shows([])
+        assert isinstance(result, str)
+        assert "# Most Anticipated Shows on Trakt" in result
+
+    def test_format_anticipated_shows_with_data(self) -> None:
+        """Test formatting anticipated shows with sample data."""
+        sample_shows: list[AnticipatedShowWrapper] = [
+            {
+                "list_count": 5383,
+                "show": {
+                    "title": "Test Show 1",
+                    "year": 2023,
+                    "ids": {"trakt": 1, "slug": "test-show-1"},
+                },
+            },
+            {
+                "list_count": 3210,
+                "show": {
+                    "title": "Test Show 2",
+                    "year": 2024,
+                    "ids": {"trakt": 2, "slug": "test-show-2"},
+                },
+            },
+        ]
+        result = ShowFormatters.format_anticipated_shows(sample_shows)
+        assert isinstance(result, str)
+        assert "Test Show 1 (2023)" in result
+        assert "On 5383 lists" in result
+        assert "Test Show 2 (2024)" in result
+        assert "On 3210 lists" in result
 
     def test_format_related_shows_exists(self) -> None:
         """Test that format_related_shows method exists."""

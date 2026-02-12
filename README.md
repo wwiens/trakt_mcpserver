@@ -73,7 +73,7 @@ Add to your Claude Desktop MCP configuration file:
 
 ### 🌎 Public Trakt Data
 - Access trending and popular shows and movies
-- Discover the most favorited, played, and watched content
+- Discover the most anticipated, favorited, played, and watched content
 - Get real-time data from Trakt's global community
 - Formatted responses with titles, years, and popularity metrics
 - **View detailed ratings** for shows and movies including average scores and distribution
@@ -122,7 +122,7 @@ Add to your Claude Desktop MCP configuration file:
 - Provides tools for fetching real-time entertainment information
 - Enables AI models to offer personalized entertainment recommendations
 - Simple authentication and logout process
-- **Pagination support** for list endpoints (trending, popular, favorited, played, watched, search, comments, ratings, watchlist):
+- **Pagination support** for list endpoints (trending, popular, anticipated, favorited, played, watched, search, comments, ratings, watchlist):
   - Pass `page: int` for single-page results with pagination metadata
   - Omit `page` to auto-paginate and return up to `limit` total items as a flat list
   - Use `limit=0` to fetch all available results (capped at 100 for safety)
@@ -145,6 +145,7 @@ MCP resources provide static data endpoints that AI models can access. These URI
 |----------|-------------|--------------|
 | `trakt://shows/trending` | Most watched shows over the last 24 hours | Show title, year, watchers count |
 | `trakt://shows/popular` | Most popular shows based on ratings | Show title, year, popular score |
+| `trakt://shows/anticipated` | Most anticipated shows sorted by list count | Show title, year, list count |
 | `trakt://shows/favorited` | Most favorited shows | Show title, year, favorites count |
 | `trakt://shows/played` | Most played shows | Show title, year, play count |
 | `trakt://shows/watched` | Most watched shows by unique users | Show title, year, watcher count |
@@ -154,6 +155,7 @@ MCP resources provide static data endpoints that AI models can access. These URI
 |----------|-------------|--------------|
 | `trakt://movies/trending` | Most watched movies over the last 24 hours | Movie title, year, watchers count |
 | `trakt://movies/popular` | Most popular movies based on ratings | Movie title, year, popular score |
+| `trakt://movies/anticipated` | Most anticipated movies sorted by list count | Movie title, year, list count |
 | `trakt://movies/favorited` | Most favorited movies | Movie title, year, favorites count |
 | `trakt://movies/played` | Most played movies | Movie title, year, play count |
 | `trakt://movies/watched` | Most watched movies by unique users | Movie title, year, watcher count |
@@ -187,6 +189,9 @@ fetch_trending_shows(limit=10, page=1)
 
 # Get popular shows with optional limit parameter
 fetch_popular_shows(limit=10)
+
+# Get anticipated shows with optional limit parameter
+fetch_anticipated_shows(limit=10)
 
 # Get favorited shows with optional limit and period parameters
 fetch_favorited_shows(limit=10, period="weekly")
@@ -245,6 +250,9 @@ fetch_trending_movies(limit=10, page=1)
 
 # Get popular movies with optional limit parameter
 fetch_popular_movies(limit=10)
+
+# Get anticipated movies with optional limit parameter
+fetch_anticipated_movies(limit=10)
 
 # Get favorited movies with optional limit and period parameters
 fetch_favorited_movies(limit=10, period="weekly")
@@ -472,6 +480,8 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 <summary><strong>View more example questions</strong></summary>
 
 **Public Data (No Authentication Required):**
+- "What are the most anticipated shows right now?"
+- "Show me the most anticipated upcoming movies"
 - "Can you recommend some popular movies this week?"
 - "What are the most watched shows of the month?"
 - "Search for shows like 'Breaking Bad'"

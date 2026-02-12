@@ -10,6 +10,7 @@ import pytest
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.movies.resources import (
+    get_anticipated_movies,
     get_movie_ratings,
     get_popular_movies,
     get_trending_movies,
@@ -78,6 +79,40 @@ async def test_get_popular_movies():
 
         # Verify the client methods were called
         mock_client.get_popular_movies.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_anticipated_movies():
+    sample_movies = [
+        {
+            "list_count": 5362,
+            "movie": {
+                "title": "Inception",
+                "year": 2010,
+                "overview": "A thief who steals corporate secrets through dream-sharing technology.",
+            },
+        }
+    ]
+
+    with patch("server.movies.resources.MoviesClient") as mock_client_class:
+        # Configure the mock
+        mock_client = mock_client_class.return_value
+
+        # Create awaitable result
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_result(sample_movies)
+        mock_client.get_anticipated_movies.return_value = future
+
+        # Call the resource function
+        result = await get_anticipated_movies()
+
+        # Verify the result
+        assert "# Most Anticipated Movies on Trakt" in result
+        assert "Inception (2010)" in result
+        assert "On 5362 lists" in result
+
+        # Verify the client methods were called
+        mock_client.get_anticipated_movies.assert_called_once()
 
 
 @pytest.mark.asyncio

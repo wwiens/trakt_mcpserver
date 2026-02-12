@@ -19,6 +19,7 @@ class TestMcpResources:
             "shows_favorited",
             "shows_played",
             "shows_watched",
+            "shows_anticipated",
         ]
         for resource in show_resources:
             assert resource in MCP_RESOURCES
@@ -32,6 +33,7 @@ class TestMcpResources:
             "movies_favorited",
             "movies_played",
             "movies_watched",
+            "movies_anticipated",
         ]
         for resource in movie_resources:
             assert resource in MCP_RESOURCES
@@ -86,6 +88,7 @@ class TestMcpResources:
             "shows_favorited",
             "shows_played",
             "shows_watched",
+            "shows_anticipated",
         ]
         for resource in show_resources:
             uri = MCP_RESOURCES[resource]
@@ -101,6 +104,7 @@ class TestMcpResources:
             "movies_favorited",
             "movies_played",
             "movies_watched",
+            "movies_anticipated",
         ]
         for resource in movie_resources:
             uri = MCP_RESOURCES[resource]

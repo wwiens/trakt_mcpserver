@@ -108,6 +108,20 @@ async def get_watched_shows() -> str:
 
 
 @handle_api_errors_func
+async def get_anticipated_shows() -> str:
+    """Returns the most anticipated shows from Trakt, sorted by list count.
+
+    Shows that appear on the most user lists are returned first.
+
+    Returns:
+        Formatted markdown text with anticipated shows
+    """
+    client: ShowsClient = ShowsClient()
+    shows = await client.get_anticipated_shows(limit=DEFAULT_LIMIT)
+    return ShowFormatters.format_anticipated_shows(shows)
+
+
+@handle_api_errors_func
 async def get_show_ratings(show_id: str) -> str:
     """Returns ratings for a specific show from Trakt.
 
@@ -167,7 +181,12 @@ async def get_show_ratings(show_id: str) -> str:
 def register_show_resources(
     mcp: FastMCP,
 ) -> tuple[
-    ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
 ]:
     """Register show resources with the MCP server.
 
@@ -220,6 +239,15 @@ def register_show_resources(
     async def shows_watched_resource() -> str:
         return await get_watched_shows()
 
+    @mcp.resource(
+        uri=MCP_RESOURCES["shows_anticipated"],
+        name="shows_anticipated",
+        description="Most anticipated TV shows from Trakt sorted by user list count",
+        mime_type="text/markdown",
+    )
+    async def shows_anticipated_resource() -> str:
+        return await get_anticipated_shows()
+
     # Note: show_ratings moved to tools.py as @mcp.tool since it requires parameters
 
     # Return handlers for type checker visibility
@@ -229,4 +257,5 @@ def register_show_resources(
         shows_favorited_resource,
         shows_played_resource,
         shows_watched_resource,
+        shows_anticipated_resource,
     )

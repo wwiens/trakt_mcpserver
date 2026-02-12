@@ -112,6 +112,20 @@ async def get_watched_movies() -> str:
 
 
 @handle_api_errors_func
+async def get_anticipated_movies() -> str:
+    """Returns the most anticipated movies from Trakt, sorted by list count.
+
+    Movies that appear on the most user lists are returned first.
+
+    Returns:
+        Formatted markdown text with anticipated movies
+    """
+    client = MoviesClient()
+    movies = await client.get_anticipated_movies(limit=DEFAULT_LIMIT)
+    return MovieFormatters.format_anticipated_movies(movies)
+
+
+@handle_api_errors_func
 async def get_movie_ratings(movie_id: str) -> str:
     """Returns ratings for a specific movie from Trakt.
 
@@ -172,7 +186,12 @@ async def get_movie_ratings(movie_id: str) -> str:
 def register_movie_resources(
     mcp: FastMCP,
 ) -> tuple[
-    ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
 ]:
     """Register movie resources with the MCP server.
 
@@ -225,6 +244,15 @@ def register_movie_resources(
     async def movies_watched_resource() -> str:
         return await get_watched_movies()
 
+    @mcp.resource(
+        uri=MCP_RESOURCES["movies_anticipated"],
+        name="movies_anticipated",
+        description="Most anticipated movies from Trakt sorted by user list count",
+        mime_type="text/markdown",
+    )
+    async def movies_anticipated_resource() -> str:
+        return await get_anticipated_movies()
+
     # Note: movie_ratings moved to tools.py as @mcp.tool since it requires parameters
 
     # Return handlers for type checker visibility
@@ -234,4 +262,5 @@ def register_movie_resources(
         movies_favorited_resource,
         movies_played_resource,
         movies_watched_resource,
+        movies_anticipated_resource,
     )

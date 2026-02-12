@@ -9,6 +9,7 @@ SHOW_TOOLS: Final[dict[str, str]] = {
     "fetch_favorited_shows": "fetch_favorited_shows",
     "fetch_played_shows": "fetch_played_shows",
     "fetch_watched_shows": "fetch_watched_shows",
+    "fetch_anticipated_shows": "fetch_anticipated_shows",
     "fetch_show_ratings": "fetch_show_ratings",
     "fetch_show_summary": "fetch_show_summary",
     "fetch_show_videos": "fetch_show_videos",

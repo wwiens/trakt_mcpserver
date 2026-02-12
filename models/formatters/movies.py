@@ -2,6 +2,7 @@
 
 from models.formatters.utils import format_pagination_header
 from models.types import (
+    AnticipatedMovieWrapper,
     FavoritedMovieWrapper,
     MovieResponse,
     PlayedMovieWrapper,
@@ -207,6 +208,47 @@ class MovieFormatters:
             year_str = f" ({year})" if year else ""
 
             result += f"- **{title}{year_str}** - Watched by {watcher_count} users\n"
+
+            if overview := movie.get("overview"):
+                if len(overview) > 200:
+                    overview = overview[:197] + "..."
+                result += f"  {overview}\n"
+
+            result += "\n"
+
+        return result
+
+    @staticmethod
+    def format_anticipated_movies(
+        data: list[AnticipatedMovieWrapper]
+        | PaginatedResponse[AnticipatedMovieWrapper],
+    ) -> str:
+        """Format anticipated movies data for MCP resource.
+
+        Args:
+            data: Either a list of all anticipated movies or a paginated response
+
+        Returns:
+            Formatted markdown text with anticipated movies
+        """
+        result = "# Most Anticipated Movies on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += format_pagination_header(data)
+            movies = data.data
+        else:
+            movies = data
+
+        for item in movies:
+            movie = item.get("movie", {})
+            list_count = item.get("list_count", 0)
+
+            title = movie.get("title", "Unknown")
+            year = movie.get("year", "")
+            year_str = f" ({year})" if year else ""
+
+            result += f"- **{title}{year_str}** - On {list_count} lists\n"
 
             if overview := movie.get("overview"):
                 if len(overview) > 200:

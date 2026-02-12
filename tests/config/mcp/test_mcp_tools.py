@@ -19,6 +19,7 @@ class TestToolNames:
             "fetch_favorited_shows",
             "fetch_played_shows",
             "fetch_watched_shows",
+            "fetch_anticipated_shows",
         ]
         for tool in show_tools:
             assert tool in TOOL_NAMES
@@ -32,6 +33,7 @@ class TestToolNames:
             "fetch_favorited_movies",
             "fetch_played_movies",
             "fetch_watched_movies",
+            "fetch_anticipated_movies",
         ]
         for tool in movie_tools:
             assert tool in TOOL_NAMES

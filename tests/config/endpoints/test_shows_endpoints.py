@@ -19,6 +19,7 @@ class TestShowsEndpoints:
             "shows_favorited",
             "shows_played",
             "shows_watched",
+            "shows_anticipated",
         ]
         for endpoint in show_endpoints:
             assert endpoint in SHOWS_ENDPOINTS
@@ -38,6 +39,7 @@ class TestShowsEndpoints:
         assert SHOWS_ENDPOINTS["shows_favorited"] == "/shows/favorited"
         assert SHOWS_ENDPOINTS["shows_played"] == "/shows/played"
         assert SHOWS_ENDPOINTS["shows_watched"] == "/shows/watched"
+        assert SHOWS_ENDPOINTS["shows_anticipated"] == "/shows/anticipated"
 
     def test_rating_endpoint_format(self) -> None:
         """Test show rating endpoint format."""

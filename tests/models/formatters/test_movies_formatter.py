@@ -8,7 +8,11 @@ from models.formatters.movies import MovieFormatters
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 
 if TYPE_CHECKING:
-    from models.types.api_responses import MovieResponse, TrendingWrapper
+    from models.types.api_responses import (
+        AnticipatedMovieWrapper,
+        MovieResponse,
+        TrendingWrapper,
+    )
 
 
 def make_movie_response(
@@ -93,6 +97,7 @@ class TestMovieFormatters:
         expected_methods = [
             "format_trending_movies",
             "format_popular_movies",
+            "format_anticipated_movies",
             "format_favorited_movies",
             "format_played_movies",
             "format_watched_movies",
@@ -232,6 +237,46 @@ class TestMovieFormatters:
         result = MovieFormatters.format_movie_extended(movie_data)
         assert isinstance(result, str)
         assert "- Languages: en, fr" in result
+
+    def test_format_anticipated_movies_exists(self) -> None:
+        """Test that format_anticipated_movies method exists."""
+        assert hasattr(MovieFormatters, "format_anticipated_movies")
+        assert callable(MovieFormatters.format_anticipated_movies)
+
+    def test_format_anticipated_movies_with_empty_list(self) -> None:
+        """Test formatting empty anticipated movies list."""
+        result = MovieFormatters.format_anticipated_movies([])
+        assert isinstance(result, str)
+        assert "# Most Anticipated Movies on Trakt" in result
+
+    def test_format_anticipated_movies_with_data(self) -> None:
+        """Test formatting anticipated movies with sample data."""
+        sample_movies: list[AnticipatedMovieWrapper] = [
+            {
+                "list_count": 5362,
+                "movie": make_movie_response(
+                    title="Test Movie 1",
+                    year=2023,
+                    trakt=1,
+                    slug="test-movie-1",
+                ),
+            },
+            {
+                "list_count": 3210,
+                "movie": make_movie_response(
+                    title="Test Movie 2",
+                    year=2024,
+                    trakt=2,
+                    slug="test-movie-2",
+                ),
+            },
+        ]
+        result = MovieFormatters.format_anticipated_movies(sample_movies)
+        assert isinstance(result, str)
+        assert "Test Movie 1 (2023)" in result
+        assert "On 5362 lists" in result
+        assert "Test Movie 2 (2024)" in result
+        assert "On 3210 lists" in result
 
     def test_format_related_movies_exists(self) -> None:
         """Test that format_related_movies method exists."""
