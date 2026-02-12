@@ -66,6 +66,8 @@ class MovieStatsClient(BaseClient):
             )
 
         # Single page with metadata
+        if page < 1:
+            raise ValueError(f"page must be >= 1, got {page}")
         eff = effective_limit(limit)
         return await self._make_paginated_request(
             TRAKT_ENDPOINTS["movies_favorited"],
@@ -125,6 +127,8 @@ class MovieStatsClient(BaseClient):
             )
 
         # Single page with metadata
+        if page < 1:
+            raise ValueError(f"page must be >= 1, got {page}")
         eff = effective_limit(limit)
         return await self._make_paginated_request(
             TRAKT_ENDPOINTS["movies_played"],
@@ -184,6 +188,8 @@ class MovieStatsClient(BaseClient):
             )
 
         # Single page with metadata
+        if page < 1:
+            raise ValueError(f"page must be >= 1, got {page}")
         eff = effective_limit(limit)
         return await self._make_paginated_request(
             TRAKT_ENDPOINTS["movies_watched"],

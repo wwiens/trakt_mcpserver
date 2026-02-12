@@ -88,6 +88,8 @@ class EpisodeCommentsClient(BaseClient):
             )
         else:
             # Single page with metadata
+            if page < 1:
+                raise ValueError(f"page must be >= 1, got {page}")
             eff = effective_limit(limit)
             return await self._make_paginated_request(
                 endpoint,
