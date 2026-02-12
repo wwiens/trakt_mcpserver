@@ -96,7 +96,17 @@ class ShowsClientProtocol(Protocol):
         page: int | None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[AnticipatedShowWrapper] | PaginatedResponse[AnticipatedShowWrapper]:
-        """Get anticipated shows."""
+        """Get anticipated shows.
+
+        Args:
+            limit: Items per page
+            page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+
+        Returns:
+            If page is None: List of all anticipated shows across all pages (up to max_pages)
+            If page specified: Paginated response with metadata for that page
+        """
         ...
 
     async def get_show_summary(
@@ -169,7 +179,17 @@ class MoviesClientProtocol(Protocol):
         page: int | None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[AnticipatedMovieWrapper] | PaginatedResponse[AnticipatedMovieWrapper]:
-        """Get anticipated movies."""
+        """Get anticipated movies.
+
+        Args:
+            limit: Items per page
+            page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+
+        Returns:
+            If page is None: List of all anticipated movies across all pages (up to max_pages)
+            If page specified: Paginated response with metadata for that page
+        """
         ...
 
     async def get_movie_summary(

@@ -66,10 +66,11 @@ class ShowStatsClient(BaseClient):
             )
 
         # Single page with metadata
+        eff = effective_limit(limit)
         return await self._make_paginated_request(
             TRAKT_ENDPOINTS["shows_favorited"],
             response_type=FavoritedShowWrapper,
-            params={"page": page, "limit": limit, "period": period},
+            params={"page": page, "limit": eff.api_limit, "period": period},
         )
 
     @overload
@@ -124,10 +125,11 @@ class ShowStatsClient(BaseClient):
             )
 
         # Single page with metadata
+        eff = effective_limit(limit)
         return await self._make_paginated_request(
             TRAKT_ENDPOINTS["shows_played"],
             response_type=PlayedShowWrapper,
-            params={"page": page, "limit": limit, "period": period},
+            params={"page": page, "limit": eff.api_limit, "period": period},
         )
 
     @overload
@@ -182,8 +184,9 @@ class ShowStatsClient(BaseClient):
             )
 
         # Single page with metadata
+        eff = effective_limit(limit)
         return await self._make_paginated_request(
             TRAKT_ENDPOINTS["shows_watched"],
             response_type=WatchedShowWrapper,
-            params={"page": page, "limit": limit, "period": period},
+            params={"page": page, "limit": eff.api_limit, "period": period},
         )

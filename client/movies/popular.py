@@ -62,8 +62,9 @@ class PopularMoviesClient(BaseClient):
             )
         else:
             # Single page with metadata
+            eff = effective_limit(limit)
             return await self._make_paginated_request(
                 TRAKT_ENDPOINTS["movies_popular"],
                 response_type=MovieResponse,
-                params={"page": page, "limit": limit},
+                params={"page": page, "limit": eff.api_limit},
             )

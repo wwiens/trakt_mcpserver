@@ -72,10 +72,9 @@ class RelatedShowsClient(BaseClient):
         else:
             if page < 1:
                 raise ValueError(f"page must be >= 1, got {page}")
-            if limit < 1:
-                raise ValueError(f"limit must be >= 1, got {limit}")
+            eff = effective_limit(limit)
             return await self._make_paginated_request(
                 endpoint,
                 response_type=ShowResponse,
-                params={"page": page, "limit": limit},
+                params={"page": page, "limit": eff.api_limit},
             )

@@ -62,8 +62,9 @@ class AnticipatedMoviesClient(BaseClient):
             )
         else:
             # Single page with metadata
+            eff = effective_limit(limit)
             return await self._make_paginated_request(
                 TRAKT_ENDPOINTS["movies_anticipated"],
                 response_type=AnticipatedMovieWrapper,
-                params={"page": page, "limit": limit},
+                params={"page": page, "limit": eff.api_limit},
             )

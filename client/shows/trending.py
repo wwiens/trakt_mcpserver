@@ -62,8 +62,9 @@ class TrendingShowsClient(BaseClient):
             )
         else:
             # Single page with metadata
+            eff = effective_limit(limit)
             return await self._make_paginated_request(
                 TRAKT_ENDPOINTS["shows_trending"],
                 response_type=TrendingWrapper,
-                params={"page": page, "limit": limit},
+                params={"page": page, "limit": eff.api_limit},
             )
