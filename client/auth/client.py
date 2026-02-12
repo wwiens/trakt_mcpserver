@@ -4,7 +4,9 @@ import contextlib
 import json
 import logging
 import os
+import threading
 import time
+from typing import Final
 
 from config.endpoints import TRAKT_ENDPOINTS
 from models.auth import DeviceTokenRequest, TraktAuthToken, TraktDeviceCode
@@ -15,7 +17,8 @@ from ..base import BaseClient
 logger = logging.getLogger(__name__)
 
 # User authentication token storage path
-AUTH_TOKEN_FILE = "auth_token.json"  # noqa: S105 # File path, not a password
+# Docker sets TRAKT_AUTH_TOKEN_PATH for volume-based persistence
+AUTH_TOKEN_FILE: Final[str] = os.environ.get("TRAKT_AUTH_TOKEN_PATH", "auth_token.json")
 
 
 class AuthClient(BaseClient):
@@ -24,6 +27,7 @@ class AuthClient(BaseClient):
     def __init__(self):
         """Initialize the authentication client."""
         super().__init__()
+        self._clear_lock: threading.Lock = threading.Lock()
         # Try to load auth token if exists
         self.auth_token: TraktAuthToken | None = self._load_auth_token()
         if self.auth_token:
@@ -131,20 +135,33 @@ class AuthClient(BaseClient):
     def clear_auth_token(self) -> bool:
         """Clear the stored authentication token.
 
+        Thread-safe: Uses a lock to prevent race conditions when multiple
+        concurrent 401 responses trigger token clearing.
+
         Returns:
-            True if token was cleared, False if no token existed
+            True if token was cleared, False if no token existed or already cleared
         """
-        if os.path.exists(AUTH_TOKEN_FILE):
+        with self._clear_lock:
+            # Early exit if already cleared by another concurrent call
+            if self.auth_token is None:
+                return False
+
+            # Always clear in-memory state first (handles case where file was deleted externally)
+            self.auth_token = None
+            if "Authorization" in self.headers:
+                del self.headers["Authorization"]
+
+            # Attempt to remove file (suppress if already deleted)
             try:
                 os.remove(AUTH_TOKEN_FILE)
-                self.auth_token = None
-                # Remove auth header
-                if "Authorization" in self.headers:
-                    del self.headers["Authorization"]
-                return True
+            except FileNotFoundError:
+                pass
             except OSError:
-                logger.exception(
-                    "OS error clearing auth token file %s", AUTH_TOKEN_FILE
+                logger.warning(
+                    "Failed to remove auth token file %s; orphaned file may remain",
+                    AUTH_TOKEN_FILE,
+                    exc_info=True,
                 )
-                return False
-        return False
+
+            logger.debug("Cleared authentication token and Authorization header")
+            return True

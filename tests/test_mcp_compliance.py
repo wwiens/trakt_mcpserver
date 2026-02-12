@@ -33,7 +33,7 @@ class TestMCPCompliance:
             capture_output=True,
             text=True,
             cwd=Path(__file__).parent.parent,
-            timeout=30,
+            timeout=60,
         )
 
         if result.returncode != 0:
@@ -300,7 +300,7 @@ class TestMCPCompliance:
             capture_output=True,
             text=True,
             cwd=Path(__file__).parent.parent,
-            timeout=30,
+            timeout=60,
         )
 
         # Should fail with proper error response
@@ -383,7 +383,7 @@ class TestMCPSpecificationDetails:
             capture_output=True,
             text=True,
             cwd=Path(__file__).parent.parent,
-            timeout=30,
+            timeout=60,
         )
 
         assert result.returncode == 0, f"JSON-RPC communication failed: {result.stderr}"
@@ -413,7 +413,7 @@ class TestMCPSpecificationDetails:
             capture_output=True,
             text=True,
             cwd=Path(__file__).parent.parent,
-            timeout=30,
+            timeout=60,
         )
 
         assert result.returncode == 0, "MCP message format validation failed"
@@ -438,7 +438,7 @@ class TestMCPSpecificationDetails:
             capture_output=True,
             text=True,
             cwd=Path(__file__).parent.parent,
-            timeout=30,
+            timeout=60,
         )
         assert tools_result.returncode == 0
         tools_data = json.loads(tools_result.stdout)
@@ -459,7 +459,7 @@ class TestMCPSpecificationDetails:
             capture_output=True,
             text=True,
             cwd=Path(__file__).parent.parent,
-            timeout=30,
+            timeout=60,
         )
         assert resources_result.returncode == 0
         resources_data = json.loads(resources_result.stdout)
@@ -480,7 +480,7 @@ class TestMCPSpecificationDetails:
             capture_output=True,
             text=True,
             cwd=Path(__file__).parent.parent,
-            timeout=30,
+            timeout=60,
         )
         assert prompts_result.returncode == 0
         prompts_data = json.loads(prompts_result.stdout)

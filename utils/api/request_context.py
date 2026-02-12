@@ -4,6 +4,8 @@ This module provides request context tracking including correlation IDs,
 endpoint information, and request parameters for enhanced debugging.
 """
 
+from __future__ import annotations
+
 import time
 import uuid
 from contextvars import ContextVar
@@ -28,7 +30,7 @@ class RequestContext:
     parameters: dict[str, Any] = field(default_factory=lambda: {})
     start_time: float = field(default_factory=time.time)
 
-    def with_endpoint(self, endpoint: str, method: str = "GET") -> "RequestContext":
+    def with_endpoint(self, endpoint: str, method: str = "GET") -> RequestContext:
         """Create a new context with endpoint information.
 
         Args:
@@ -40,7 +42,7 @@ class RequestContext:
         """
         return replace(self, endpoint=endpoint, method=method)
 
-    def with_resource(self, resource_type: str, resource_id: str) -> "RequestContext":
+    def with_resource(self, resource_type: str, resource_id: str) -> RequestContext:
         """Create a new context with resource information.
 
         Args:
@@ -52,7 +54,7 @@ class RequestContext:
         """
         return replace(self, resource_type=resource_type, resource_id=resource_id)
 
-    def with_parameters(self, **params: Any) -> "RequestContext":
+    def with_parameters(self, **params: Any) -> RequestContext:
         """Create a new context with additional parameters.
 
         Args:
@@ -65,7 +67,7 @@ class RequestContext:
         new_params.update(params)
         return replace(self, parameters=new_params)
 
-    def with_user(self, user_id: str) -> "RequestContext":
+    def with_user(self, user_id: str) -> RequestContext:
         """Create a new context with user information.
 
         Args:

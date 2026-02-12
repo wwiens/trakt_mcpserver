@@ -25,6 +25,10 @@ COPY . .
 # Environment variables (can be overridden at runtime)
 ENV TRAKT_CLIENT_ID=""
 ENV TRAKT_CLIENT_SECRET=""
+ENV TRAKT_AUTH_TOKEN_PATH=/data/auth_token.json
+
+# Create data directory for auth token persistence
+RUN mkdir -p /data && chown -R appuser:appuser /data
 
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app

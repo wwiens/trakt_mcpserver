@@ -3,7 +3,15 @@
 import functools
 import json
 from collections.abc import Awaitable, Callable
-from typing import Any, Concatenate, ParamSpec, TypeVar
+from typing import (
+    Any,
+    Concatenate,
+    Final,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
 
 import httpx
 
@@ -13,16 +21,52 @@ from .structured_logging import get_structured_logger
 logger = get_structured_logger("trakt_mcp")
 
 # Standard MCP error codes (JSON-RPC 2.0)
-PARSE_ERROR = -32700
-INVALID_REQUEST = -32600
-METHOD_NOT_FOUND = -32601
-INVALID_PARAMS = -32602
-INTERNAL_ERROR = -32603
+PARSE_ERROR: Final[int] = -32700
+INVALID_REQUEST: Final[int] = -32600
+METHOD_NOT_FOUND: Final[int] = -32601
+INVALID_PARAMS: Final[int] = -32602
+INTERNAL_ERROR: Final[int] = -32603
 
 # Type variables
 P = ParamSpec("P")
 R = TypeVar("R")
 Self = TypeVar("Self")
+
+
+@runtime_checkable
+class ClearableAuthClient(Protocol):
+    """Protocol for clients that support clearing authentication tokens."""
+
+    def clear_auth_token(self) -> bool:
+        """Clear the stored authentication token.
+
+        Returns:
+            True if token was cleared, False if no token existed or already cleared.
+        """
+        ...
+
+
+def _auto_clear_invalid_token(client: ClearableAuthClient | object) -> None:
+    """Clear invalid auth token from client if it has one.
+
+    Called when API returns 401 Unauthorized, indicating the saved
+    token is invalid, expired, or revoked. Clears the token to allow
+    fresh authentication.
+
+    Args:
+        client: Client instance that may have a clear_auth_token method
+    """
+    if isinstance(client, ClearableAuthClient):
+        try:
+            cleared = client.clear_auth_token()
+            if cleared:
+                logger.info(
+                    "Auto-cleared invalid authentication token after 401 response"
+                )
+            else:
+                logger.debug("Token already cleared or absent after 401 response")
+        except OSError:
+            logger.warning("Failed to auto-clear invalid token", exc_info=True)
 
 
 class MCPError(Exception):
@@ -109,6 +153,11 @@ def handle_api_errors(
             # Add full request context to error data
             if context:
                 error.data = add_context_to_error_data(error.data or {})
+
+            # Auto-clear invalid tokens on 401 Unauthorized
+            if e.response.status_code == 401:
+                _auto_clear_invalid_token(self)
+
             raise error from e
         except httpx.RequestError as e:
             # Create base error data with context
@@ -186,6 +235,10 @@ def handle_api_errors_func(
 
     This decorator is specifically designed for standalone functions (no self/cls parameter).
     For class methods, use @handle_api_errors instead.
+
+    Note: Unlike @handle_api_errors, this decorator does NOT auto-clear authentication
+    tokens on 401 responses because standalone functions don't have access to a client
+    instance. Server tools that need token clearing should handle this explicitly.
 
     Args:
         func: The async function to wrap
@@ -289,6 +342,7 @@ def handle_api_errors_func(
 
 
 __all__ = [
+    "ClearableAuthClient",
     "InternalError",
     "InvalidParamsError",
     "InvalidRequestError",

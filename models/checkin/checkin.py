@@ -1,5 +1,7 @@
 """Checkin models for the Trakt MCP server."""
 
+from __future__ import annotations
+
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -24,6 +26,6 @@ class TraktCheckin(BaseModel):
     )
 
     @classmethod
-    def from_api_response(cls, api_data: dict[str, Any]) -> "TraktCheckin":
+    def from_api_response(cls, api_data: dict[str, Any]) -> TraktCheckin:
         """Create a TraktCheckin instance from raw API data."""
         return cls(**api_data)

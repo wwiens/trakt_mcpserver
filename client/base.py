@@ -1,5 +1,7 @@
 """Base client for common HTTP functionality."""
 
+from __future__ import annotations
+
 import os
 from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, TypeVar, overload
 
@@ -71,7 +73,7 @@ class BaseClient:
         if self.auth_token:
             self.headers["Authorization"] = f"Bearer {self.auth_token.access_token}"
 
-    async def __aenter__(self) -> "BaseClient":
+    async def __aenter__(self) -> BaseClient:
         """Enter async context and initialize shared client."""
         self._client = httpx.AsyncClient(
             base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT
@@ -101,7 +103,7 @@ class BaseClient:
         return httpx.AsyncClient(base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT)
 
     def _extract_pagination_headers(
-        self, response: "httpx.Response"
+        self, response: httpx.Response
     ) -> PaginationMetadata:
         """Extract pagination metadata from Trakt API response headers.
 

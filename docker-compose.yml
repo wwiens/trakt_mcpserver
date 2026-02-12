@@ -11,6 +11,9 @@ services:
     environment:
       - TRAKT_CLIENT_ID=${TRAKT_CLIENT_ID:-}
       - TRAKT_CLIENT_SECRET=${TRAKT_CLIENT_SECRET:-}
+      - TRAKT_AUTH_TOKEN_PATH=/data/auth_token.json
+    volumes:
+      - trakt_auth:/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
@@ -18,3 +21,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  trakt_auth:

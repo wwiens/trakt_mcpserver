@@ -24,12 +24,16 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Back to root workdir
 WORKDIR /app
 
+# Create data directory for auth token persistence
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
 # Change ownership of application files to non-root user
 RUN chown -R appuser:appuser /app
 
 # Environment variables (pass at runtime via -e or --env-file)
 ENV TRAKT_CLIENT_ID=""
 ENV TRAKT_CLIENT_SECRET=""
+ENV TRAKT_AUTH_TOKEN_PATH=/data/auth_token.json
 
 # Expose SSE port (will be overridden by runtime environment)
 EXPOSE 8080

@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 import time
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
@@ -265,49 +266,34 @@ def test_clear_auth_token_no_file(monkeypatch: pytest.MonkeyPatch):
         assert client.auth_token is None
 
 
-def test_clear_auth_token_remove_error(
+def test_clear_auth_token_remove_error_returns_true(
     monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture
 ) -> None:
-    # Use a list to track call count (mutable in closure)
-    call_count = [0]
-
-    def path_exists_side_effect(path: str) -> bool:
-        # Return False for auth_token.json during init to avoid loading
-        # Return True for auth_token.json during clear_auth_token
-        call_count[0] += 1
-
-        # First call is during init, return False to skip loading
-        # Second call is during clear_auth_token, return True
-        if path == "auth_token.json":
-            return call_count[0] > 1
-        return True
-
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
     monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
 
-    with (
-        patch("dotenv.load_dotenv"),
-        patch("os.path.exists", side_effect=path_exists_side_effect),
-        patch("os.remove", side_effect=OSError("Permission denied")),
-    ):
+    with patch("dotenv.load_dotenv"):
         client = AuthClient()
-        client.auth_token = TraktAuthToken(
-            access_token="test_token",
-            refresh_token="test_refresh",
-            expires_in=7200,
-            created_at=int(time.time()),
-            scope="public",
-            token_type="bearer",
-        )
 
+    client.auth_token = TraktAuthToken(
+        access_token="test_token",
+        refresh_token="test_refresh",
+        expires_in=7200,
+        created_at=int(time.time()),
+        scope="public",
+        token_type="bearer",
+    )
+
+    with patch("os.remove", side_effect=OSError("Permission denied")):
         result = client.clear_auth_token()
 
-        assert result is False
-        # Token should remain unchanged on error
-        assert client.auth_token is not None
-        # Check that the error message was logged
-        assert "OS error clearing auth token file" in caplog.text
-        assert "Permission denied" in caplog.text
+    assert result is True
+    # In-memory state should be cleared even when file deletion fails
+    assert client.auth_token is None
+    assert "Authorization" not in client.headers
+    # Check that the warning message was logged
+    assert "Failed to remove auth token file" in caplog.text
+    assert "Permission denied" in caplog.text
 
 
 @pytest.mark.asyncio
@@ -327,3 +313,125 @@ async def test_handle_api_errors_decorator():
     assert exc_info.value.data is not None
     assert exc_info.value.data.get("http_status") == 404
     assert exc_info.value.code == -32600
+
+
+def test_clear_auth_token_concurrent_calls(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that concurrent clear_auth_token calls are thread-safe.
+
+    Only one call should actually clear the token; others should return False.
+    """
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    remove_call_count = 0
+    remove_lock = threading.Lock()
+
+    def mock_remove(path: str) -> None:
+        nonlocal remove_call_count
+        with remove_lock:
+            remove_call_count += 1
+        # Simulate some I/O delay to increase chance of race
+        time.sleep(0.01)
+
+    with patch("dotenv.load_dotenv"):
+        client = AuthClient()
+
+    client.auth_token = TraktAuthToken(
+        access_token="test_token",
+        refresh_token="test_refresh",
+        expires_in=7200,
+        created_at=int(time.time()),
+        scope="public",
+        token_type="bearer",
+    )
+    client.headers["Authorization"] = f"Bearer {client.auth_token.access_token}"
+
+    results: list[bool] = []
+    results_lock = threading.Lock()
+
+    def call_clear() -> None:
+        result = client.clear_auth_token()
+        with results_lock:
+            results.append(result)
+
+    with patch("os.remove", side_effect=mock_remove):
+        # Launch multiple threads to call clear_auth_token concurrently
+        threads = [threading.Thread(target=call_clear) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    # Only one call should return True (actually cleared)
+    assert results.count(True) == 1
+    # Others should return False (already cleared)
+    assert results.count(False) == 4
+    # File removal should only be called once
+    assert remove_call_count == 1
+    # Token should be cleared
+    assert client.auth_token is None
+
+
+def test_clear_auth_token_already_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that clear_auth_token returns False when token is already None."""
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    def path_exists_side_effect(path: str) -> bool:
+        # Return False for auth_token.json to skip loading
+        return path != "auth_token.json"
+
+    with (
+        patch("dotenv.load_dotenv"),
+        patch("os.path.exists", side_effect=path_exists_side_effect),
+        patch("os.remove") as mock_remove,
+    ):
+        client = AuthClient()
+        # auth_token is already None from init
+        assert client.auth_token is None
+
+        result = client.clear_auth_token()
+
+        assert result is False
+        # os.remove should never be called
+        mock_remove.assert_not_called()
+
+
+def test_clear_auth_token_file_deleted_externally(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that clear_auth_token clears memory state even if file doesn't exist.
+
+    This handles the case where the auth file was deleted externally but the
+    token is still in memory.
+    """
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    # First, create the client normally (file doesn't exist during init)
+    with patch("dotenv.load_dotenv"):
+        client = AuthClient()
+
+    # Manually set token to simulate it being set in memory without file
+    # (e.g., token was saved, then file was deleted externally)
+    client.auth_token = TraktAuthToken(
+        access_token="test_token",
+        refresh_token="test_refresh",
+        expires_in=7200,
+        created_at=int(time.time()),
+        scope="public",
+        token_type="bearer",
+    )
+    client.headers["Authorization"] = f"Bearer {client.auth_token.access_token}"
+
+    # Now call clear_auth_token with file not existing (deleted externally)
+    # os.remove raises FileNotFoundError, which is suppressed
+    with patch("os.remove", side_effect=FileNotFoundError):
+        result = client.clear_auth_token()
+
+    # Should return True because we cleared the memory state
+    assert result is True
+    # Token should be cleared from memory
+    assert client.auth_token is None
+    # Authorization header should be removed
+    assert "Authorization" not in client.headers
