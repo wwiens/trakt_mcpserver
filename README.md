@@ -74,6 +74,7 @@ Add to your Claude Desktop MCP configuration file:
 ### 🌎 Public Trakt Data
 - Access trending and popular shows and movies
 - Discover the most anticipated, favorited, played, and watched content
+- See the top grossing U.S. box office movies from last weekend
 - Get real-time data from Trakt's global community
 - Formatted responses with titles, years, and popularity metrics
 - **View detailed ratings** for shows and movies including average scores and distribution
@@ -159,6 +160,7 @@ MCP resources provide static data endpoints that AI models can access. These URI
 | `trakt://movies/favorited` | Most favorited movies | Movie title, year, favorites count |
 | `trakt://movies/played` | Most played movies | Movie title, year, play count |
 | `trakt://movies/watched` | Most watched movies by unique users | Movie title, year, watcher count |
+| `trakt://movies/boxoffice` | Top 10 grossing U.S. box office movies last weekend | Movie title, year, revenue |
 
 ### User Resources
 | Resource | Description | Example Data |
@@ -262,6 +264,9 @@ fetch_played_movies(limit=10, period="weekly")
 
 # Get most watched movies with optional limit and period parameters
 fetch_watched_movies(limit=10, period="weekly")
+
+# Get the top 10 U.S. box office movies from last weekend
+fetch_boxoffice_movies()
 
 # Get ratings for a movie
 fetch_movie_ratings(movie_id="tron-legacy-2010")
@@ -482,6 +487,8 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 **Public Data (No Authentication Required):**
 - "What are the most anticipated shows right now?"
 - "Show me the most anticipated upcoming movies"
+- "What movies are at the box office this weekend?"
+- "Show me the top grossing movies right now"
 - "Can you recommend some popular movies this week?"
 - "What are the most watched shows of the month?"
 - "Search for shows like 'Breaking Bad'"

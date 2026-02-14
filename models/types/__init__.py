@@ -3,6 +3,7 @@
 from .api_responses import (
     AnticipatedMovieWrapper,
     AnticipatedShowWrapper,
+    BoxOfficeMovieWrapper,
     CheckinResponse,
     CommentResponse,
     DeviceCodeResponse,
@@ -58,11 +59,10 @@ from .sort import (
 )
 
 __all__ = [
-    # Anticipated Types
     "AnticipatedMovieWrapper",
     "AnticipatedShowWrapper",
-    # Protocol Types
     "AuthClientProtocol",
+    "BoxOfficeMovieWrapper",
     "CheckinClientProtocol",
     "CheckinResponse",
     "CommentResponse",
@@ -76,7 +76,6 @@ __all__ = [
     "MovieCommentSort",
     "MovieResponse",
     "MoviesClientProtocol",
-    # Pagination Types
     "PaginatedResponse",
     "PaginationMetadata",
     "PaginationParams",
@@ -89,14 +88,12 @@ __all__ = [
     "ShowCommentSort",
     "ShowResponse",
     "ShowsClientProtocol",
-    # Sort Types
     "StatsResponse",
     "T",
     "TRequest",
     "TResponse",
     "TokenResponse",
     "TraktHeaders",
-    # API Response Types
     "TraktIds",
     "TraktIdsDict",
     "TraktRating",

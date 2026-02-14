@@ -9,6 +9,7 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
 
 from client.movies.anticipated import AnticipatedMoviesClient
+from client.movies.boxoffice import BoxOfficeMoviesClient
 from client.movies.client import MoviesClient
 from client.movies.details import MovieDetailsClient
 from client.movies.popular import PopularMoviesClient
@@ -225,6 +226,20 @@ async def fetch_anticipated_movies(
     client = AnticipatedMoviesClient()
     movies = await client.get_anticipated_movies(limit=limit, page=page)
     return MovieFormatters.format_anticipated_movies(movies)
+
+
+@handle_api_errors_func
+async def fetch_boxoffice_movies() -> str:
+    """Fetch the top 10 grossing movies in the U.S. box office last weekend.
+
+    Updated every Monday morning. Returns exactly 10 movies with revenue data.
+
+    Returns:
+        Information about box office movies with revenue.
+    """
+    client = BoxOfficeMoviesClient()
+    movies = await client.get_boxoffice_movies()
+    return MovieFormatters.format_boxoffice_movies(movies)
 
 
 @handle_api_errors_func
@@ -505,6 +520,14 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_anticipated_movies(limit, page)
 
     @mcp.tool(
+        name=TOOL_NAMES["fetch_boxoffice_movies"],
+        description="Fetch the top 10 grossing movies in the U.S. box office last weekend. Updated every Monday morning.",
+    )
+    @handle_api_errors_func
+    async def fetch_boxoffice_movies_tool() -> str:
+        return await fetch_boxoffice_movies()
+
+    @mcp.tool(
         name=TOOL_NAMES["fetch_movie_ratings"],
         description="Fetch ratings and voting statistics for a specific movie",
     )
@@ -566,6 +589,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         fetch_trending_movies_tool,
         fetch_popular_movies_tool,
         fetch_anticipated_movies_tool,
+        fetch_boxoffice_movies_tool,
         fetch_favorited_movies_tool,
         fetch_played_movies_tool,
         fetch_watched_movies_tool,

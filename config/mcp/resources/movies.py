@@ -10,4 +10,5 @@ MOVIE_RESOURCES: Final[dict[str, str]] = {
     "movies_played": "trakt://movies/played",
     "movies_watched": "trakt://movies/watched",
     "movies_anticipated": "trakt://movies/anticipated",
+    "movies_boxoffice": "trakt://movies/boxoffice",
 }
