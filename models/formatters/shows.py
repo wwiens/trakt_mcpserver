@@ -1,7 +1,8 @@
 """Show formatting methods for the Trakt MCP server."""
 
-from models.formatters.utils import format_pagination_header
+from models.formatters.utils import MAX_OVERVIEW_LENGTH, format_pagination_header
 from models.types import (
+    AnticipatedShowWrapper,
     FavoritedShowWrapper,
     PlayedShowWrapper,
     ShowResponse,
@@ -50,6 +51,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}** - {watchers} watchers\n"
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -85,6 +88,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}**\n"
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -124,6 +129,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}** - Favorited by {user_count} users\n"
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -166,6 +173,8 @@ class ShowFormatters:
             )
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -204,6 +213,48 @@ class ShowFormatters:
             result += f"- **{title}{year_str}** - Watched by {watcher_count} users\n"
 
             if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
+                result += f"  {overview}\n"
+
+            result += "\n"
+
+        return result
+
+    @staticmethod
+    def format_anticipated_shows(
+        data: list[AnticipatedShowWrapper] | PaginatedResponse[AnticipatedShowWrapper],
+    ) -> str:
+        """Format anticipated shows data for MCP resource.
+
+        Args:
+            data: Either a list of all anticipated shows or a paginated response
+
+        Returns:
+            Formatted markdown text with anticipated shows
+        """
+        result = "# Most Anticipated Shows on Trakt\n\n"
+
+        # Handle pagination metadata if present
+        if isinstance(data, PaginatedResponse):
+            result += format_pagination_header(data)
+            shows = data.data
+        else:
+            shows = data
+
+        for item in shows:
+            show = item.get("show", {})
+            list_count = item.get("list_count", 0)
+
+            title = show.get("title", "Unknown")
+            year = show.get("year", "")
+            year_str = f" ({year})" if year else ""
+
+            result += f"- **{title}{year_str}** - On {list_count} lists\n"
+
+            if overview := show.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"
@@ -401,8 +452,8 @@ class ShowFormatters:
             result += f"- **{title}{year_str}**\n"
 
             if overview := show.get("overview"):
-                if len(overview) > 200:
-                    overview = overview[:197] + "..."
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {overview}\n"
 
             result += "\n"

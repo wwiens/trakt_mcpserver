@@ -1,6 +1,6 @@
 """Search formatting methods for the Trakt MCP server."""
 
-from models.formatters.utils import format_pagination_header
+from models.formatters.utils import MAX_OVERVIEW_LENGTH, format_pagination_header
 from models.types import SearchResult
 from models.types.pagination import PaginatedResponse
 
@@ -61,8 +61,8 @@ class SearchFormatters:
             # Add overview if available
             if overview := show.get("overview"):
                 # Truncate long overviews
-                if len(overview) > 200:
-                    overview = overview[:197] + "..."
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 message += f"  {overview}\n"
 
             # Add a note about using this ID for check-ins
@@ -124,8 +124,8 @@ class SearchFormatters:
             message += f"**{index}. {title}{year_str}** (ID: {trakt_id})\n"
 
             if overview := movie.get("overview"):
-                if len(overview) > 200:
-                    overview = overview[:197] + "..."
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 message += f"  {overview}\n"
 
             message += f"  *Use this ID for comments: `{trakt_id}`*\n\n"

@@ -10,6 +10,7 @@ import pytest
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.shows.resources import (
+    get_anticipated_shows,
     get_favorited_shows,
     get_played_shows,
     get_popular_shows,
@@ -178,6 +179,40 @@ async def test_get_watched_shows():
 
         # Verify the client methods were called
         mock_client.get_watched_shows.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_anticipated_shows():
+    sample_shows = [
+        {
+            "list_count": 5383,
+            "show": {
+                "title": "Breaking Bad",
+                "year": 2008,
+                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+            },
+        }
+    ]
+
+    with patch("server.shows.resources.ShowsClient") as mock_client_class:
+        # Configure the mock
+        mock_client = mock_client_class.return_value
+
+        # Create awaitable result
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_result(sample_shows)
+        mock_client.get_anticipated_shows.return_value = future
+
+        # Call the resource function
+        result = await get_anticipated_shows()
+
+        # Verify the result
+        assert "# Most Anticipated Shows on Trakt" in result
+        assert "Breaking Bad (2008)" in result
+        assert "On 5383 lists" in result
+
+        # Verify the client methods were called
+        mock_client.get_anticipated_shows.assert_called_once()
 
 
 @pytest.mark.asyncio

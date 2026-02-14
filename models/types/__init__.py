@@ -1,6 +1,8 @@
 """Type definitions for Trakt API."""
 
 from .api_responses import (
+    AnticipatedMovieWrapper,
+    AnticipatedShowWrapper,
     CheckinResponse,
     CommentResponse,
     DeviceCodeResponse,
@@ -56,6 +58,9 @@ from .sort import (
 )
 
 __all__ = [
+    # Anticipated Types
+    "AnticipatedMovieWrapper",
+    "AnticipatedShowWrapper",
     # Protocol Types
     "AuthClientProtocol",
     "CheckinClientProtocol",

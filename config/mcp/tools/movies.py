@@ -9,6 +9,7 @@ MOVIE_TOOLS: Final[dict[str, str]] = {
     "fetch_favorited_movies": "fetch_favorited_movies",
     "fetch_played_movies": "fetch_played_movies",
     "fetch_watched_movies": "fetch_watched_movies",
+    "fetch_anticipated_movies": "fetch_anticipated_movies",
     "fetch_movie_ratings": "fetch_movie_ratings",
     "fetch_movie_summary": "fetch_movie_summary",
     "fetch_movie_videos": "fetch_movie_videos",

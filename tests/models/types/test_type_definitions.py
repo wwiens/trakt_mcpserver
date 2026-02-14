@@ -147,6 +147,11 @@ def test_protocol_inheritance():
         async def get_popular_shows(self, limit: int = 10, extended: bool = False):
             pass
 
+        async def get_anticipated_shows(
+            self, limit: int = 10, page: int | None = None, max_pages: int = 100
+        ):
+            pass
+
         async def get_show_summary(self, show_id: str, extended: bool = True):
             pass
 

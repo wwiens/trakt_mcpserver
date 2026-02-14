@@ -36,7 +36,7 @@ async def get_trending_movies() -> str:
     Returns:
         Formatted markdown text with trending movies
     """
-    client = MoviesClient()
+    client: MoviesClient = MoviesClient()
     movies = await client.get_trending_movies(limit=DEFAULT_LIMIT)
     return MovieFormatters.format_trending_movies(movies)
 
@@ -50,7 +50,7 @@ async def get_popular_movies() -> str:
     Returns:
         Formatted markdown text with popular movies
     """
-    client = MoviesClient()
+    client: MoviesClient = MoviesClient()
     movies = await client.get_popular_movies(limit=DEFAULT_LIMIT)
     return MovieFormatters.format_popular_movies(movies)
 
@@ -64,7 +64,7 @@ async def get_favorited_movies() -> str:
     Returns:
         Formatted markdown text with most favorited movies
     """
-    client = MoviesClient()
+    client: MoviesClient = MoviesClient()
     movies = await client.get_favorited_movies(limit=DEFAULT_LIMIT)
 
     # Debug log for API response structure analysis
@@ -91,7 +91,7 @@ async def get_played_movies() -> str:
     Returns:
         Formatted markdown text with most played movies
     """
-    client = MoviesClient()
+    client: MoviesClient = MoviesClient()
     movies = await client.get_played_movies(limit=DEFAULT_LIMIT)
     return MovieFormatters.format_played_movies(movies)
 
@@ -106,9 +106,23 @@ async def get_watched_movies() -> str:
     Returns:
         Formatted markdown text with most watched movies
     """
-    client = MoviesClient()
+    client: MoviesClient = MoviesClient()
     movies = await client.get_watched_movies(limit=DEFAULT_LIMIT)
     return MovieFormatters.format_watched_movies(movies)
+
+
+@handle_api_errors_func
+async def get_anticipated_movies() -> str:
+    """Returns the most anticipated movies from Trakt, sorted by list count.
+
+    Movies that appear on the most user lists are returned first.
+
+    Returns:
+        Formatted markdown text with anticipated movies
+    """
+    client: MoviesClient = MoviesClient()
+    movies = await client.get_anticipated_movies(limit=DEFAULT_LIMIT)
+    return MovieFormatters.format_anticipated_movies(movies)
 
 
 @handle_api_errors_func
@@ -125,7 +139,7 @@ async def get_movie_ratings(movie_id: str) -> str:
         InvalidParamsError: If movie_id is invalid
         InternalError: If an error occurs fetching movie or ratings data
     """
-    client = MoviesClient()
+    client: MoviesClient = MoviesClient()
 
     # Validate parameters with Pydantic for normalization and constraints
     try:
@@ -172,7 +186,12 @@ async def get_movie_ratings(movie_id: str) -> str:
 def register_movie_resources(
     mcp: FastMCP,
 ) -> tuple[
-    ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler, ResourceHandler
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
+    ResourceHandler,
 ]:
     """Register movie resources with the MCP server.
 
@@ -225,6 +244,15 @@ def register_movie_resources(
     async def movies_watched_resource() -> str:
         return await get_watched_movies()
 
+    @mcp.resource(
+        uri=MCP_RESOURCES["movies_anticipated"],
+        name="movies_anticipated",
+        description="Most anticipated movies from Trakt sorted by user list count",
+        mime_type="text/markdown",
+    )
+    async def movies_anticipated_resource() -> str:
+        return await get_anticipated_movies()
+
     # Note: movie_ratings moved to tools.py as @mcp.tool since it requires parameters
 
     # Return handlers for type checker visibility
@@ -234,4 +262,5 @@ def register_movie_resources(
         movies_favorited_resource,
         movies_played_resource,
         movies_watched_resource,
+        movies_anticipated_resource,
     )

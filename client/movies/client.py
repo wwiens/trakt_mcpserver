@@ -1,5 +1,6 @@
 """Unified movies client that combines all movie functionality."""
 
+from .anticipated import AnticipatedMoviesClient
 from .details import MovieDetailsClient
 from .popular import PopularMoviesClient
 from .related import RelatedMoviesClient
@@ -11,6 +12,7 @@ from .videos import MovieVideosClient
 class MoviesClient(
     TrendingMoviesClient,
     PopularMoviesClient,
+    AnticipatedMoviesClient,
     MovieStatsClient,
     MovieDetailsClient,
     MovieVideosClient,
@@ -21,6 +23,7 @@ class MoviesClient(
     Combines functionality from:
     - TrendingMoviesClient: get_trending_movies()
     - PopularMoviesClient: get_popular_movies()
+    - AnticipatedMoviesClient: get_anticipated_movies()
     - MovieStatsClient: get_favorited_movies(), get_played_movies(), get_watched_movies()
     - MovieDetailsClient: get_movie(), get_movie_ratings()
     - MovieVideosClient: get_videos()

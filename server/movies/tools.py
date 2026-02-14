@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Annotated, Literal
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
 
+from client.movies.anticipated import AnticipatedMoviesClient
 from client.movies.client import MoviesClient
 from client.movies.details import MovieDetailsClient
 from client.movies.popular import PopularMoviesClient
@@ -200,6 +201,30 @@ async def fetch_watched_movies(
     client = MovieStatsClient()
     movies = await client.get_watched_movies(limit=limit, period=period, page=page)
     return MovieFormatters.format_watched_movies(movies)
+
+
+@handle_api_errors_func
+async def fetch_anticipated_movies(
+    limit: int = DEFAULT_LIMIT, page: int | None = None
+) -> str:
+    """Fetch anticipated movies from Trakt.
+
+    Args:
+        limit: Maximum movies to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number. If None, auto-paginates up to 'limit' total movies.
+            If specified, returns that page with pagination metadata.
+
+    Returns:
+        Information about most anticipated movies.
+    """
+    # Validate parameters with Pydantic for normalization and constraints
+    params = LimitOnly(limit=limit, page=page)
+    limit, page = params.limit, params.page
+
+    client = AnticipatedMoviesClient()
+    movies = await client.get_anticipated_movies(limit=limit, page=page)
+    return MovieFormatters.format_anticipated_movies(movies)
 
 
 @handle_api_errors_func
@@ -469,6 +494,17 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_watched_movies(limit, period, page)
 
     @mcp.tool(
+        name=TOOL_NAMES["fetch_anticipated_movies"],
+        description="Fetch most anticipated movies from Trakt, sorted by list count. Use page parameter for paginated results, or omit for all results.",
+    )
+    @handle_api_errors_func
+    async def fetch_anticipated_movies_tool(
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+    ) -> str:
+        return await fetch_anticipated_movies(limit, page)
+
+    @mcp.tool(
         name=TOOL_NAMES["fetch_movie_ratings"],
         description="Fetch ratings and voting statistics for a specific movie",
     )
@@ -529,6 +565,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     return (
         fetch_trending_movies_tool,
         fetch_popular_movies_tool,
+        fetch_anticipated_movies_tool,
         fetch_favorited_movies_tool,
         fetch_played_movies_tool,
         fetch_watched_movies_tool,

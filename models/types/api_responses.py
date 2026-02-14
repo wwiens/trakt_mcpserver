@@ -217,6 +217,20 @@ class TrendingWrapper(TypedDict):
     movie: NotRequired[MovieResponse]
 
 
+class AnticipatedShowWrapper(TypedDict):
+    """Wrapper for anticipated shows data."""
+
+    list_count: int
+    show: ShowResponse
+
+
+class AnticipatedMovieWrapper(TypedDict):
+    """Wrapper for anticipated movies data."""
+
+    list_count: int
+    movie: MovieResponse
+
+
 class SearchResult(TypedDict):
     """Search result wrapper."""
 

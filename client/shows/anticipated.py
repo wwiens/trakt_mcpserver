@@ -1,83 +1,61 @@
-"""Comment details functionality."""
+"""Anticipated shows functionality."""
 
 from typing import overload
-from urllib.parse import quote
 
 from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
 from config.endpoints import TRAKT_ENDPOINTS
-from models.types import CommentResponse
+from models.types.api_responses import AnticipatedShowWrapper
 from models.types.pagination import PaginatedResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
 
 
-class CommentDetailsClient(BaseClient):
-    """Client for comment details operations."""
-
-    @handle_api_errors
-    async def get_comment(self, comment_id: str) -> CommentResponse:
-        """Get a specific comment.
-
-        Args:
-            comment_id: The Trakt comment ID
-
-        Returns:
-            Comment details data
-        """
-        endpoint = TRAKT_ENDPOINTS["comment"].replace(":id", quote(comment_id, safe=""))
-        return await self._make_typed_request(endpoint, response_type=CommentResponse)
+class AnticipatedShowsClient(BaseClient):
+    """Client for anticipated shows operations."""
 
     @overload
-    async def get_comment_replies(
+    async def get_anticipated_shows(
         self,
-        comment_id: str,
         limit: int = DEFAULT_LIMIT,
         page: None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
-    ) -> list[CommentResponse]: ...
+    ) -> list[AnticipatedShowWrapper]: ...
 
     @overload
-    async def get_comment_replies(
+    async def get_anticipated_shows(
         self,
-        comment_id: str,
         limit: int = DEFAULT_LIMIT,
         page: int = ...,
         max_pages: int = DEFAULT_MAX_PAGES,
-    ) -> PaginatedResponse[CommentResponse]: ...
+    ) -> PaginatedResponse[AnticipatedShowWrapper]: ...
 
     @handle_api_errors
-    async def get_comment_replies(
+    async def get_anticipated_shows(
         self,
-        comment_id: str,
         limit: int = DEFAULT_LIMIT,
         page: int | None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
-    ) -> list[CommentResponse] | PaginatedResponse[CommentResponse]:
-        """Get replies for a comment.
+    ) -> list[AnticipatedShowWrapper] | PaginatedResponse[AnticipatedShowWrapper]:
+        """Get anticipated shows from Trakt.
 
         Args:
-            comment_id: The Trakt comment ID
             limit: Controls result size based on pagination mode:
-                - Auto-pagination (page=None): Maximum TOTAL replies to return
-                - Single page (page=N): Replies per page in the response
+                - Auto-pagination (page=None): Maximum TOTAL items to return
+                - Single page (page=N): Items per page in the response
                 Use limit=0 with page=None to fetch all available results.
             page: Page number for single-page mode, or None for auto-pagination.
             max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
         Returns:
-            If page is None: List of up to 'limit' comment replies
+            If page is None: List of up to 'limit' anticipated shows
             If page specified: Paginated response with metadata for that page
         """
-        endpoint = TRAKT_ENDPOINTS["comment_replies"].replace(
-            ":id", quote(comment_id, safe="")
-        )
-
         if page is None:
             eff = effective_limit(limit)
             return await self.auto_paginate(
-                endpoint,
-                response_type=CommentResponse,
+                TRAKT_ENDPOINTS["shows_anticipated"],
+                response_type=AnticipatedShowWrapper,
                 params={"limit": eff.api_limit},
                 max_pages=max_pages,
                 max_items=eff.max_items,
@@ -88,7 +66,7 @@ class CommentDetailsClient(BaseClient):
                 raise ValueError(f"page must be >= 1, got {page}")
             eff = effective_limit(limit)
             return await self._make_paginated_request(
-                endpoint,
-                response_type=CommentResponse,
+                TRAKT_ENDPOINTS["shows_anticipated"],
+                response_type=AnticipatedShowWrapper,
                 params={"page": page, "limit": eff.api_limit},
             )

@@ -6,6 +6,8 @@ from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from models.auth import TraktAuthToken, TraktDeviceCode
 
 from .api_responses import (
+    AnticipatedMovieWrapper,
+    AnticipatedShowWrapper,
     CheckinResponse,
     CommentResponse,
     MovieResponse,
@@ -88,6 +90,25 @@ class ShowsClientProtocol(Protocol):
         """
         ...
 
+    async def get_anticipated_shows(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
+    ) -> list[AnticipatedShowWrapper] | PaginatedResponse[AnticipatedShowWrapper]:
+        """Get anticipated shows.
+
+        Args:
+            limit: Items per page
+            page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+
+        Returns:
+            If page is None: List of all anticipated shows across all pages (up to max_pages)
+            If page specified: Paginated response with metadata for that page
+        """
+        ...
+
     async def get_show_summary(
         self, show_id: str, extended: bool = True
     ) -> ShowResponse:
@@ -148,6 +169,25 @@ class MoviesClientProtocol(Protocol):
 
         Returns:
             If page is None: List of all popular movies across all pages (up to max_pages)
+            If page specified: Paginated response with metadata for that page
+        """
+        ...
+
+    async def get_anticipated_movies(
+        self,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        max_pages: int = DEFAULT_MAX_PAGES,
+    ) -> list[AnticipatedMovieWrapper] | PaginatedResponse[AnticipatedMovieWrapper]:
+        """Get anticipated movies.
+
+        Args:
+            limit: Items per page
+            page: Page number (optional). If None, returns all results via auto-pagination.
+            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+
+        Returns:
+            If page is None: List of all anticipated movies across all pages (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...

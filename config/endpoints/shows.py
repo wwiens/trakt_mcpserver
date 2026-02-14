@@ -9,6 +9,7 @@ SHOWS_ENDPOINTS: Final[dict[str, str]] = {
     "shows_favorited": "/shows/favorited",
     "shows_played": "/shows/played",
     "shows_watched": "/shows/watched",
+    "shows_anticipated": "/shows/anticipated",
     # Rating endpoints
     "show_ratings": "/shows/:id/ratings",
     # Video endpoints

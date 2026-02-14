@@ -8,6 +8,44 @@ from client.shows import ShowsClient
 
 
 @pytest.mark.asyncio
+async def test_shows_client_get_anticipated_shows():
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
+        {
+            "list_count": 5383,
+            "show": {"title": "Breaking Bad", "year": 2008, "ids": {"trakt": "1"}},
+        }
+    ]
+    mock_response.raise_for_status = MagicMock()
+
+    # Create mock instance with async methods - use spec before patching
+    mock_instance = MagicMock(spec=httpx.AsyncClient)
+    mock_instance.get = AsyncMock(return_value=mock_response)
+    mock_instance.post = AsyncMock()
+    mock_instance.aclose = AsyncMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_client.return_value = mock_instance
+
+        client = ShowsClient()
+        result = await client.get_anticipated_shows(limit=1)
+
+        assert len(result) == 1
+        assert result[0]["list_count"] == 5383
+        assert result[0].get("show", {}).get("title") == "Breaking Bad"
+
+        # Verify lifecycle assertions
+        mock_response.raise_for_status.assert_called_once()
+        mock_instance.aclose.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_shows_client_get_trending_shows():
     mock_response = MagicMock()
     mock_response.json.return_value = [

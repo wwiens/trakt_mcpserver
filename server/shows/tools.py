@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Annotated, Literal
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
 
+from client.shows.anticipated import AnticipatedShowsClient
 from client.shows.client import ShowsClient
 from client.shows.details import ShowDetailsClient
 from client.shows.popular import PopularShowsClient
@@ -200,6 +201,30 @@ async def fetch_watched_shows(
     client = ShowStatsClient()
     shows = await client.get_watched_shows(limit=limit, period=period, page=page)
     return ShowFormatters.format_watched_shows(shows)
+
+
+@handle_api_errors_func
+async def fetch_anticipated_shows(
+    limit: int = DEFAULT_LIMIT, page: int | None = None
+) -> str:
+    """Fetch anticipated shows from Trakt.
+
+    Args:
+        limit: Maximum shows to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number. If None, auto-paginates up to 'limit' total shows.
+            If specified, returns that page with pagination metadata.
+
+    Returns:
+        Information about most anticipated shows.
+    """
+    # Validate parameters with Pydantic for normalization and constraints
+    params = LimitOnly(limit=limit, page=page)
+    limit, page = params.limit, params.page
+
+    client = AnticipatedShowsClient()
+    shows = await client.get_anticipated_shows(limit=limit, page=page)
+    return ShowFormatters.format_anticipated_shows(shows)
 
 
 @handle_api_errors_func
@@ -465,6 +490,17 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_watched_shows(limit, period, page)
 
     @mcp.tool(
+        name=TOOL_NAMES["fetch_anticipated_shows"],
+        description="Fetch most anticipated TV shows from Trakt, sorted by list count. Use page parameter for paginated results, or omit for all results.",
+    )
+    @handle_api_errors_func
+    async def fetch_anticipated_shows_tool(
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+    ) -> str:
+        return await fetch_anticipated_shows(limit, page)
+
+    @mcp.tool(
         name=TOOL_NAMES["fetch_show_ratings"],
         description="Fetch ratings and voting statistics for a specific TV show",
     )
@@ -525,6 +561,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     return (
         fetch_trending_shows_tool,
         fetch_popular_shows_tool,
+        fetch_anticipated_shows_tool,
         fetch_favorited_shows_tool,
         fetch_played_shows_tool,
         fetch_watched_shows_tool,

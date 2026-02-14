@@ -50,10 +50,11 @@ class SearchClient(BaseClient):
                 max_items=eff.max_items,
             )
 
+        eff = effective_limit(limit)
         return await self._make_paginated_request(
             endpoint,
             response_type=SearchResult,
-            params={"query": query, "page": page, "limit": limit},
+            params={"query": query, "page": page, "limit": eff.api_limit},
         )
 
     @overload

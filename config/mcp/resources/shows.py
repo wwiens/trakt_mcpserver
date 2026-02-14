@@ -9,4 +9,5 @@ SHOW_RESOURCES: Final[dict[str, str]] = {
     "shows_favorited": "trakt://shows/favorited",
     "shows_played": "trakt://shows/played",
     "shows_watched": "trakt://shows/watched",
+    "shows_anticipated": "trakt://shows/anticipated",
 }
