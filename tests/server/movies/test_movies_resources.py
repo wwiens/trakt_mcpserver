@@ -11,6 +11,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.movies.resources import (
     get_anticipated_movies,
+    get_boxoffice_movies,
     get_movie_ratings,
     get_popular_movies,
     get_trending_movies,
@@ -204,3 +205,32 @@ async def test_get_movie_ratings_string_error_handling():
         # Verify the client methods were called
         mock_client.get_movie.assert_called_once_with("1")
         mock_client.get_movie_ratings.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_boxoffice_movies():
+    sample_movies = [
+        {
+            "revenue": 154_200_000,
+            "movie": {
+                "title": "Inside Out 2",
+                "year": 2024,
+                "overview": "Riley enters puberty and experiences new emotions.",
+            },
+        }
+    ]
+
+    with patch("server.movies.resources.MoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_result(sample_movies)
+        mock_client.get_boxoffice_movies.return_value = future
+
+        result = await get_boxoffice_movies()
+
+        assert "# Box Office Movies (U.S. Weekend)" in result
+        assert "Inside Out 2 (2024)" in result
+        assert "$154,200,000 revenue" in result
+
+        mock_client.get_boxoffice_movies.assert_called_once()

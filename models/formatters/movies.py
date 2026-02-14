@@ -275,7 +275,7 @@ class MovieFormatters:
         if not data:
             return result + "No box office data available.\n"
 
-        for item in data:
+        for i, item in enumerate(data, 1):
             movie = item.get("movie", {})
             revenue = item.get("revenue", 0)
 
@@ -283,7 +283,7 @@ class MovieFormatters:
             year = movie.get("year", "")
             year_str = f" ({year})" if year else ""
 
-            result += f"- **{title}{year_str}** - ${revenue:,} revenue\n"
+            result += f"- **#{i} {title}{year_str}** - ${revenue:,} revenue\n"
 
             if overview := movie.get("overview"):
                 if len(overview) > MAX_OVERVIEW_LENGTH:
