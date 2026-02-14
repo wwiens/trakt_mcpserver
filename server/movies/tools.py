@@ -445,7 +445,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_trending_movies"],
         description="Fetch trending movies from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
-    @handle_api_errors_func
     async def fetch_trending_movies_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
         page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
@@ -456,7 +455,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_popular_movies"],
         description="Fetch popular movies from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
-    @handle_api_errors_func
     async def fetch_popular_movies_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
         page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
@@ -467,7 +465,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_favorited_movies"],
         description="Fetch most favorited movies from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
-    @handle_api_errors_func
     async def fetch_favorited_movies_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
         period: Annotated[
@@ -482,7 +479,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_played_movies"],
         description="Fetch most played movies from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
-    @handle_api_errors_func
     async def fetch_played_movies_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
         period: Annotated[
@@ -497,7 +493,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_watched_movies"],
         description="Fetch most watched movies from Trakt. Use page parameter for paginated results, or omit for all results.",
     )
-    @handle_api_errors_func
     async def fetch_watched_movies_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
         period: Annotated[
@@ -512,7 +507,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_anticipated_movies"],
         description="Fetch most anticipated movies from Trakt, sorted by list count. Use page parameter for paginated results, or omit for all results.",
     )
-    @handle_api_errors_func
     async def fetch_anticipated_movies_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
         page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
@@ -523,7 +517,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_boxoffice_movies"],
         description="Fetch the top 10 grossing movies in the U.S. box office last weekend. Updated every Monday morning.",
     )
-    @handle_api_errors_func
     async def fetch_boxoffice_movies_tool() -> str:
         return await fetch_boxoffice_movies()
 
@@ -531,7 +524,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_movie_ratings"],
         description="Fetch ratings and voting statistics for a specific movie",
     )
-    @handle_api_errors_func
     async def fetch_movie_ratings_tool(
         movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
     ) -> str:
@@ -543,7 +535,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_movie_summary"],
         description="Get movie summary from Trakt. Default behavior (extended=true): Returns comprehensive data including production status, ratings, genres, runtime, certification, and metadata. Basic mode (extended=false): Returns only title, year, and Trakt ID.",
     )
-    @handle_api_errors_func
     async def fetch_movie_summary_tool(
         movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
         extended: Annotated[bool, Field(description=EXTENDED_DESCRIPTION)] = True,
@@ -559,7 +550,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
             "Set embed_markdown=False to return simple links instead of YouTube iframes."
         ),
     )
-    @handle_api_errors_func
     async def fetch_movie_videos_tool(
         movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
         embed_markdown: Annotated[
@@ -576,7 +566,6 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_related_movies"],
         description="Fetch movies related to a specific movie. Returns similar movies based on genres, themes, and viewer patterns. Use page parameter for paginated results, or omit for all results.",
     )
-    @handle_api_errors_func
     async def fetch_related_movies_tool(
         movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,

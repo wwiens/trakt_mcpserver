@@ -74,7 +74,7 @@ Add to your Claude Desktop MCP configuration file:
 ### 🌎 Public Trakt Data
 - Access trending and popular shows and movies
 - Discover the most anticipated, favorited, played, and watched content
-- See the top grossing U.S. box office movies from last weekend
+- See the top-grossing U.S. box office movies from last weekend
 - Get real-time data from Trakt's global community
 - Formatted responses with titles, years, and popularity metrics
 - **View detailed ratings** for shows and movies including average scores and distribution
@@ -488,7 +488,7 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 - "What are the most anticipated shows right now?"
 - "Show me the most anticipated upcoming movies"
 - "What movies are at the box office this weekend?"
-- "Show me the top grossing movies right now"
+- "Show me the top-grossing movies right now"
 - "Can you recommend some popular movies this week?"
 - "What are the most watched shows of the month?"
 - "Search for shows like 'Breaking Bad'"
