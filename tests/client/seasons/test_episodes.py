@@ -68,7 +68,7 @@ async def test_get_season_episodes():
 
         mock_instance.get.assert_called_once()
         call_args = mock_instance.get.call_args
-        assert "/seasons/1" in call_args[0][0]
+        assert call_args[0][0].endswith("/shows/game-of-thrones/seasons/1")
         assert call_args[1]["params"] == {"extended": "full"}
 
         mock_response.raise_for_status.assert_called_once()

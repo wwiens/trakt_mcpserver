@@ -52,7 +52,6 @@ async def test_get_seasons():
 
     mock_instance = MagicMock(spec=httpx.AsyncClient)
     mock_instance.get = AsyncMock(return_value=mock_response)
-    mock_instance.post = AsyncMock()
     mock_instance.aclose = AsyncMock()
 
     with (
@@ -79,6 +78,7 @@ async def test_get_seasons():
         # Verify extended=full was passed
         mock_instance.get.assert_called_once()
         call_args = mock_instance.get.call_args
+        assert call_args[0][0].endswith("/shows/game-of-thrones/seasons")
         assert call_args[1]["params"] == {"extended": "full"}
 
         # Verify lifecycle assertions

@@ -60,7 +60,45 @@ async def test_get_season_lists():
 
         mock_instance.get.assert_called_once()
         call_args = mock_instance.get.call_args
-        assert "/seasons/1/lists" in call_args[0][0]
+        assert call_args[0][0].endswith(
+            "/shows/game-of-thrones/seasons/1/lists/all/popular"
+        )
+
+        mock_response.raise_for_status.assert_called_once()
+        mock_instance.aclose.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_get_season_lists_custom_type_and_sort():
+    mock_response = MagicMock()
+    mock_response.json.return_value = []
+    mock_response.raise_for_status = MagicMock()
+
+    mock_instance = MagicMock(spec=httpx.AsyncClient)
+    mock_instance.get = AsyncMock(return_value=mock_response)
+    mock_instance.aclose = AsyncMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_client.return_value = mock_instance
+
+        client = SeasonsClient()
+        result = await client.get_season_lists(
+            "game-of-thrones", 1, list_type="personal", sort="likes"
+        )
+
+        assert result == []
+
+        mock_instance.get.assert_called_once()
+        call_args = mock_instance.get.call_args
+        assert call_args[0][0].endswith(
+            "/shows/game-of-thrones/seasons/1/lists/personal/likes"
+        )
 
         mock_response.raise_for_status.assert_called_once()
         mock_instance.aclose.assert_awaited_once()

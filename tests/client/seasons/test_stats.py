@@ -43,6 +43,8 @@ async def test_get_season_stats():
         assert result["collectors"] == 30000
         assert result["collected_episodes"] == 300000
         assert result["comments"] == 150
+        assert result["lists"] == 500
+        assert result["votes"] == 1234
 
         mock_instance.get.assert_called_once()
         call_args = mock_instance.get.call_args

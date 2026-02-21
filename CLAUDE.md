@@ -18,7 +18,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 ### Current Structure
 
-```
+```text
 server/           # MCP server modules by domain
 ├── auth/         # Authentication tools/resources
 ├── shows/        # Show-specific tools/resources

@@ -569,7 +569,6 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_show_seasons"],
         description="Fetch all seasons for a TV show from Trakt, including episode counts, aired episodes, and ratings per season.",
     )
-    @handle_api_errors_func
     async def fetch_show_seasons_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
     ) -> str:

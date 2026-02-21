@@ -46,10 +46,12 @@ class SeasonFormatters:
         result += "### Details\n"
         result += f"- Season Number: {number}\n"
 
-        if episode_count := season.get("episode_count"):
+        episode_count = season.get("episode_count")
+        if episode_count is not None:
             result += f"- Total Episodes: {episode_count}\n"
 
-        if aired_episodes := season.get("aired_episodes"):
+        aired_episodes = season.get("aired_episodes")
+        if aired_episodes is not None:
             result += f"- Aired Episodes: {aired_episodes}\n"
 
         if first_aired := season.get("first_aired"):

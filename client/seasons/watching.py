@@ -1,12 +1,10 @@
 """Season watching functionality."""
 
-from urllib.parse import quote
-
-from config.endpoints import TRAKT_ENDPOINTS
 from models.types import UserResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
+from .utils import build_season_endpoint, validate_show_id
 
 
 class SeasonWatchingClient(BaseClient):
@@ -25,14 +23,6 @@ class SeasonWatchingClient(BaseClient):
         Returns:
             List of users currently watching
         """
-        show_id = show_id.strip()
-        if not show_id:
-            raise ValueError("show_id cannot be empty")
-
-        encoded_id = quote(show_id, safe="")
-        endpoint = (
-            TRAKT_ENDPOINTS["season_watching"]
-            .replace(":id", encoded_id)
-            .replace(":season", str(season))
-        )
+        show_id = validate_show_id(show_id)
+        endpoint = build_season_endpoint("season_watching", show_id, season)
         return await self._make_typed_list_request(endpoint, response_type=UserResponse)

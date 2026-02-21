@@ -246,7 +246,7 @@ HISTORY_REMOVE_ITEMS_DESCRIPTION: Final[str] = (
     "or both 'title' and 'year'"
 )
 
-# Season-specific descriptions
+# Shared parameter descriptions
 LANGUAGE_DESCRIPTION: Final[str] = "2-character language code (e.g., 'en', 'es', 'de')"
 LIST_TYPE_DESCRIPTION: Final[str] = (
     "List type filter: 'all', 'personal', 'official', 'watchlists'"

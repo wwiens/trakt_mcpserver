@@ -1,12 +1,10 @@
 """Season stats functionality."""
 
-from urllib.parse import quote
-
-from config.endpoints import TRAKT_ENDPOINTS
 from models.types import SeasonStatsResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
+from .utils import build_season_endpoint, validate_show_id
 
 
 class SeasonStatsClient(BaseClient):
@@ -23,16 +21,8 @@ class SeasonStatsClient(BaseClient):
         Returns:
             Season statistics data
         """
-        show_id = show_id.strip()
-        if not show_id:
-            raise ValueError("show_id cannot be empty")
-
-        encoded_id = quote(show_id, safe="")
-        endpoint = (
-            TRAKT_ENDPOINTS["season_stats"]
-            .replace(":id", encoded_id)
-            .replace(":season", str(season))
-        )
+        show_id = validate_show_id(show_id)
+        endpoint = build_season_endpoint("season_stats", show_id, season)
         return await self._make_typed_request(
             endpoint, response_type=SeasonStatsResponse
         )

@@ -2,6 +2,7 @@
 
 from urllib.parse import quote
 
+from config.endpoints import TRAKT_ENDPOINTS
 from models.types import SeasonResponse
 from utils.api.errors import handle_api_errors
 
@@ -23,7 +24,13 @@ class ShowSeasonsClient(BaseClient):
         Returns:
             List of season data with episode counts and metadata
         """
-        endpoint = f"/shows/{quote(show_id, safe='')}/seasons"
+        show_id = show_id.strip()
+        if not show_id:
+            msg = "show_id cannot be empty"
+            raise ValueError(msg)
+
+        encoded_id = quote(show_id, safe="")
+        endpoint = TRAKT_ENDPOINTS["show_seasons"].replace(":id", encoded_id)
         params = {"extended": "full"}
         return await self._make_typed_list_request(
             endpoint, response_type=SeasonResponse, params=params

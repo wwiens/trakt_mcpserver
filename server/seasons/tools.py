@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Final, Literal
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
@@ -29,7 +29,7 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.seasons import SeasonFormatters
 from models.formatters.videos import VideoFormatters
 from server.base import BaseToolErrorMixin
-from utils.api.errors import MCPError, handle_api_errors_func
+from utils.api.errors import handle_api_errors_func
 
 if TYPE_CHECKING:
     from models.types import SeasonResponse, ShowResponse, TraktRating
@@ -38,6 +38,17 @@ logger = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
+
+# Valid values for list filtering
+VALID_LIST_TYPES: Final[set[str]] = {"all", "personal", "official", "watchlists"}
+VALID_LIST_SORTS: Final[set[str]] = {
+    "popular",
+    "likes",
+    "comments",
+    "items",
+    "added",
+    "updated",
+}
 
 
 class SeasonIdParam(BaseModel):
@@ -58,6 +69,32 @@ class SeasonIdParam(BaseModel):
     @classmethod
     def _strip_show_id(cls, v: object) -> object:
         return v.strip() if isinstance(v, str) else v
+
+
+async def _get_show_title(show_id: str) -> str:
+    """Fetch the show title for use in formatted responses.
+
+    Args:
+        show_id: Trakt ID, slug, or IMDB ID
+
+    Returns:
+        Show title string
+
+    Raises:
+        MCPError: If the show cannot be fetched
+    """
+    show_client = ShowDetailsClient()
+    show_data: ShowResponse = await show_client.get_show(show_id)
+
+    if isinstance(show_data, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="show",
+            resource_id=show_id,
+            error_message=show_data,
+            operation="fetch_show_details",
+        )
+
+    return show_data.get("title", "Unknown Show")
 
 
 @handle_api_errors_func
@@ -127,39 +164,23 @@ async def fetch_season_ratings(show_id: str, season: int) -> str:
     """
     params = SeasonIdParam(show_id=show_id, season=season)
 
-    try:
-        show_client = ShowDetailsClient()
-        show_data: ShowResponse = await show_client.get_show(params.show_id)
+    show_title = await _get_show_title(params.show_id)
 
-        if isinstance(show_data, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show",
-                resource_id=params.show_id,
-                error_message=show_data,
-                operation="fetch_show_details",
-            )
+    ratings_client = SeasonRatingsClient()
+    ratings: TraktRating = await ratings_client.get_season_ratings(
+        params.show_id, params.season
+    )
 
-        show_title = show_data.get("title", "Unknown Show")
-
-        ratings_client = SeasonRatingsClient()
-        ratings: TraktRating = await ratings_client.get_season_ratings(
-            params.show_id, params.season
+    if isinstance(ratings, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="season_ratings",
+            resource_id=f"{params.show_id}/S{params.season:02d}",
+            error_message=ratings,
+            operation="fetch_season_ratings",
+            show_title=show_title,
         )
 
-        if isinstance(ratings, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="season_ratings",
-                resource_id=f"{params.show_id}/S{params.season:02d}",
-                error_message=ratings,
-                operation="fetch_season_ratings",
-                show_title=show_title,
-            )
-
-        return SeasonFormatters.format_season_ratings(
-            ratings, show_title, params.season
-        )
-    except MCPError:
-        raise
+    return SeasonFormatters.format_season_ratings(ratings, show_title, params.season)
 
 
 @handle_api_errors_func
@@ -175,35 +196,21 @@ async def fetch_season_stats(show_id: str, season: int) -> str:
     """
     params = SeasonIdParam(show_id=show_id, season=season)
 
-    try:
-        show_client = ShowDetailsClient()
-        show_data: ShowResponse = await show_client.get_show(params.show_id)
+    show_title = await _get_show_title(params.show_id)
 
-        if isinstance(show_data, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show",
-                resource_id=params.show_id,
-                error_message=show_data,
-                operation="fetch_show_details",
-            )
+    stats_client = SeasonStatsClient()
+    stats = await stats_client.get_season_stats(params.show_id, params.season)
 
-        show_title = show_data.get("title", "Unknown Show")
+    if isinstance(stats, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="season_stats",
+            resource_id=f"{params.show_id}/S{params.season:02d}",
+            error_message=stats,
+            operation="fetch_season_stats",
+            show_title=show_title,
+        )
 
-        stats_client = SeasonStatsClient()
-        stats = await stats_client.get_season_stats(params.show_id, params.season)
-
-        if isinstance(stats, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="season_stats",
-                resource_id=f"{params.show_id}/S{params.season:02d}",
-                error_message=stats,
-                operation="fetch_season_stats",
-                show_title=show_title,
-            )
-
-        return SeasonFormatters.format_season_stats(stats, show_title, params.season)
-    except MCPError:
-        raise
+    return SeasonFormatters.format_season_stats(stats, show_title, params.season)
 
 
 @handle_api_errors_func
@@ -219,35 +226,21 @@ async def fetch_season_people(show_id: str, season: int) -> str:
     """
     params = SeasonIdParam(show_id=show_id, season=season)
 
-    try:
-        show_client = ShowDetailsClient()
-        show_data: ShowResponse = await show_client.get_show(params.show_id)
+    show_title = await _get_show_title(params.show_id)
 
-        if isinstance(show_data, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show",
-                resource_id=params.show_id,
-                error_message=show_data,
-                operation="fetch_show_details",
-            )
+    people_client = SeasonPeopleClient()
+    people = await people_client.get_season_people(params.show_id, params.season)
 
-        show_title = show_data.get("title", "Unknown Show")
+    if isinstance(people, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="season_people",
+            resource_id=f"{params.show_id}/S{params.season:02d}",
+            error_message=people,
+            operation="fetch_season_people",
+            show_title=show_title,
+        )
 
-        people_client = SeasonPeopleClient()
-        people = await people_client.get_season_people(params.show_id, params.season)
-
-        if isinstance(people, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="season_people",
-                resource_id=f"{params.show_id}/S{params.season:02d}",
-                error_message=people,
-                operation="fetch_season_people",
-                show_title=show_title,
-            )
-
-        return SeasonFormatters.format_season_people(people, show_title, params.season)
-    except MCPError:
-        raise
+    return SeasonFormatters.format_season_people(people, show_title, params.season)
 
 
 @handle_api_errors_func
@@ -266,34 +259,36 @@ async def fetch_season_videos(
     """
     params = SeasonIdParam(show_id=show_id, season=season)
 
-    try:
-        videos_client = SeasonVideosClient()
-        videos = await videos_client.get_season_videos(params.show_id, params.season)
+    videos_client = SeasonVideosClient()
+    videos = await videos_client.get_season_videos(params.show_id, params.season)
 
-        if isinstance(videos, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="season_videos",
-                resource_id=f"{params.show_id}/S{params.season:02d}",
-                error_message=videos,
-                operation="fetch_season_videos",
-            )
-
-        show_client = ShowDetailsClient()
-        try:
-            show = await show_client.get_show(params.show_id)
-            if isinstance(show, str):
-                title = f"Show ID: {params.show_id}"
-            else:
-                title = show.get("title", f"Show ID: {params.show_id}")
-        except Exception:
-            title = f"Show ID: {params.show_id}"
-
-        season_title = f"{title} - Season {params.season}"
-        return VideoFormatters.format_videos_list(
-            videos, season_title, embed_markdown, validate_input=False
+    if isinstance(videos, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="season_videos",
+            resource_id=f"{params.show_id}/S{params.season:02d}",
+            error_message=videos,
+            operation="fetch_season_videos",
         )
-    except MCPError:
-        raise
+
+    show_client = ShowDetailsClient()
+    try:
+        show = await show_client.get_show(params.show_id)
+        if isinstance(show, str):
+            title = f"Show ID: {params.show_id}"
+        else:
+            title = show.get("title", f"Show ID: {params.show_id}")
+    except Exception:
+        logger.debug(
+            "Non-fatal exception during show title lookup; falling back to ID title.",
+            exc_info=True,
+            extra={"resource_id": params.show_id, "operation": "fetch_season_videos"},
+        )
+        title = f"Show ID: {params.show_id}"
+
+    season_title = f"{title} - Season {params.season}"
+    return VideoFormatters.format_videos_list(
+        videos, season_title, embed_markdown, validate_input=False
+    )
 
 
 @handle_api_errors_func
@@ -309,35 +304,21 @@ async def fetch_season_watching(show_id: str, season: int) -> str:
     """
     params = SeasonIdParam(show_id=show_id, season=season)
 
-    try:
-        show_client = ShowDetailsClient()
-        show_data: ShowResponse = await show_client.get_show(params.show_id)
+    show_title = await _get_show_title(params.show_id)
 
-        if isinstance(show_data, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show",
-                resource_id=params.show_id,
-                error_message=show_data,
-                operation="fetch_show_details",
-            )
+    watching_client = SeasonWatchingClient()
+    users = await watching_client.get_season_watching(params.show_id, params.season)
 
-        show_title = show_data.get("title", "Unknown Show")
+    if isinstance(users, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="season_watching",
+            resource_id=f"{params.show_id}/S{params.season:02d}",
+            error_message=users,
+            operation="fetch_season_watching",
+            show_title=show_title,
+        )
 
-        watching_client = SeasonWatchingClient()
-        users = await watching_client.get_season_watching(params.show_id, params.season)
-
-        if isinstance(users, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="season_watching",
-                resource_id=f"{params.show_id}/S{params.season:02d}",
-                error_message=users,
-                operation="fetch_season_watching",
-                show_title=show_title,
-            )
-
-        return SeasonFormatters.format_season_watching(users, show_title, params.season)
-    except MCPError:
-        raise
+    return SeasonFormatters.format_season_watching(users, show_title, params.season)
 
 
 @handle_api_errors_func
@@ -364,39 +345,25 @@ async def fetch_season_translations(
             provided_value=language,
         )
 
-    try:
-        show_client = ShowDetailsClient()
-        show_data: ShowResponse = await show_client.get_show(params.show_id)
+    show_title = await _get_show_title(params.show_id)
 
-        if isinstance(show_data, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show",
-                resource_id=params.show_id,
-                error_message=show_data,
-                operation="fetch_show_details",
-            )
+    translations_client = SeasonTranslationsClient()
+    translations = await translations_client.get_season_translations(
+        params.show_id, params.season, language
+    )
 
-        show_title = show_data.get("title", "Unknown Show")
-
-        translations_client = SeasonTranslationsClient()
-        translations = await translations_client.get_season_translations(
-            params.show_id, params.season, language
+    if isinstance(translations, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="season_translations",
+            resource_id=f"{params.show_id}/S{params.season:02d}",
+            error_message=translations,
+            operation="fetch_season_translations",
+            show_title=show_title,
         )
 
-        if isinstance(translations, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="season_translations",
-                resource_id=f"{params.show_id}/S{params.season:02d}",
-                error_message=translations,
-                operation="fetch_season_translations",
-                show_title=show_title,
-            )
-
-        return SeasonFormatters.format_season_translations(
-            translations, show_title, params.season
-        )
-    except MCPError:
-        raise
+    return SeasonFormatters.format_season_translations(
+        translations, show_title, params.season
+    )
 
 
 @handle_api_errors_func
@@ -419,37 +386,36 @@ async def fetch_season_lists(
     """
     params = SeasonIdParam(show_id=show_id, season=season)
 
-    try:
-        show_client = ShowDetailsClient()
-        show_data: ShowResponse = await show_client.get_show(params.show_id)
-
-        if isinstance(show_data, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="show",
-                resource_id=params.show_id,
-                error_message=show_data,
-                operation="fetch_show_details",
-            )
-
-        show_title = show_data.get("title", "Unknown Show")
-
-        lists_client = SeasonListsClient()
-        lists = await lists_client.get_season_lists(
-            params.show_id, params.season, list_type, sort
+    if list_type not in VALID_LIST_TYPES:
+        raise BaseToolErrorMixin.handle_validation_error(
+            f"list_type must be one of: {', '.join(sorted(VALID_LIST_TYPES))}",
+            parameter="list_type",
+            provided_value=list_type,
+        )
+    if sort not in VALID_LIST_SORTS:
+        raise BaseToolErrorMixin.handle_validation_error(
+            f"sort must be one of: {', '.join(sorted(VALID_LIST_SORTS))}",
+            parameter="sort",
+            provided_value=sort,
         )
 
-        if isinstance(lists, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
-                resource_type="season_lists",
-                resource_id=f"{params.show_id}/S{params.season:02d}",
-                error_message=lists,
-                operation="fetch_season_lists",
-                show_title=show_title,
-            )
+    show_title = await _get_show_title(params.show_id)
 
-        return SeasonFormatters.format_season_lists(lists, show_title, params.season)
-    except MCPError:
-        raise
+    lists_client = SeasonListsClient()
+    lists = await lists_client.get_season_lists(
+        params.show_id, params.season, list_type, sort
+    )
+
+    if isinstance(lists, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="season_lists",
+            resource_id=f"{params.show_id}/S{params.season:02d}",
+            error_message=lists,
+            operation="fetch_season_lists",
+            show_title=show_title,
+        )
+
+    return SeasonFormatters.format_season_lists(lists, show_title, params.season)
 
 
 def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
@@ -463,7 +429,6 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_season_info"],
         description="Fetch detailed information about a specific TV show season, including episode count, ratings, and air dates.",
     )
-    @handle_api_errors_func
     async def fetch_season_info_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
@@ -475,7 +440,6 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_season_episodes"],
         description="Fetch all episodes for a specific TV show season with titles, ratings, and runtime.",
     )
-    @handle_api_errors_func
     async def fetch_season_episodes_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
@@ -487,7 +451,6 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_season_ratings"],
         description="Fetch ratings and voting statistics for a specific TV show season.",
     )
-    @handle_api_errors_func
     async def fetch_season_ratings_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
@@ -499,7 +462,6 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_season_stats"],
         description="Fetch engagement statistics for a specific TV show season including watchers, plays, collectors, and comments.",
     )
-    @handle_api_errors_func
     async def fetch_season_stats_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
@@ -511,7 +473,6 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_season_people"],
         description="Fetch cast and crew for a specific TV show season, including character names and episode counts.",
     )
-    @handle_api_errors_func
     async def fetch_season_people_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
@@ -523,7 +484,6 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_season_videos"],
         description="Fetch videos (trailers, recaps, etc.) for a specific TV show season. Set embed_markdown=False for simple links.",
     )
-    @handle_api_errors_func
     async def fetch_season_videos_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
@@ -539,7 +499,6 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_season_watching"],
         description="Fetch users currently watching a specific TV show season right now.",
     )
-    @handle_api_errors_func
     async def fetch_season_watching_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
@@ -551,7 +510,6 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_season_translations"],
         description="Fetch translations for a specific TV show season in different languages.",
     )
-    @handle_api_errors_func
     async def fetch_season_translations_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
@@ -564,7 +522,6 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_season_lists"],
         description="Fetch lists that contain a specific TV show season.",
     )
-    @handle_api_errors_func
     async def fetch_season_lists_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
