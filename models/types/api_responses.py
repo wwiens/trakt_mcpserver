@@ -306,6 +306,13 @@ class WatchedMovieWrapper(TypedDict):
     movie: MovieResponse
 
 
+class BoxOfficeMovieWrapper(TypedDict):
+    """Wrapper for box office movie data."""
+
+    revenue: int
+    movie: MovieResponse
+
+
 # User history types
 class UserWatchedShow(TypedDict):
     """User's watched show data."""

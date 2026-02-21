@@ -14,4 +14,5 @@ MOVIE_TOOLS: Final[dict[str, str]] = {
     "fetch_movie_summary": "fetch_movie_summary",
     "fetch_movie_videos": "fetch_movie_videos",
     "fetch_related_movies": "fetch_related_movies",
+    "fetch_boxoffice_movies": "fetch_boxoffice_movies",
 }

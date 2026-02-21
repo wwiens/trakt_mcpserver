@@ -3,6 +3,7 @@
 from models.formatters.utils import MAX_OVERVIEW_LENGTH, format_pagination_header
 from models.types import (
     AnticipatedMovieWrapper,
+    BoxOfficeMovieWrapper,
     FavoritedMovieWrapper,
     MovieResponse,
     PlayedMovieWrapper,
@@ -249,6 +250,40 @@ class MovieFormatters:
             year_str = f" ({year})" if year else ""
 
             result += f"- **{title}{year_str}** - On {list_count} lists\n"
+
+            if overview := movie.get("overview"):
+                if len(overview) > MAX_OVERVIEW_LENGTH:
+                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
+                result += f"  {overview}\n"
+
+            result += "\n"
+
+        return result
+
+    @staticmethod
+    def format_boxoffice_movies(data: list[BoxOfficeMovieWrapper]) -> str:
+        """Format box office movies data for MCP resource.
+
+        Args:
+            data: List of box office movies with revenue
+
+        Returns:
+            Formatted markdown text with box office movies
+        """
+        result = "# Box Office Movies (U.S. Weekend)\n\n"
+
+        if not data:
+            return result + "No box office data available.\n"
+
+        for i, item in enumerate(data, 1):
+            movie = item.get("movie", {})
+            revenue = item.get("revenue", 0)
+
+            title = movie.get("title", "Unknown")
+            year = movie.get("year", "")
+            year_str = f" ({year})" if year else ""
+
+            result += f"- **#{i} {title}{year_str}** - ${revenue:,} revenue\n"
 
             if overview := movie.get("overview"):
                 if len(overview) > MAX_OVERVIEW_LENGTH:
