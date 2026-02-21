@@ -4,7 +4,6 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Annotated, Final, Literal
 
-import httpx
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
 
@@ -77,27 +76,30 @@ class SeasonIdParam(BaseModel):
 async def _get_show_title(show_id: str) -> str:
     """Fetch the show title for use in formatted responses.
 
+    Falls back to ``Show ID: <show_id>`` when the lookup fails for any reason
+    so callers always receive a usable title string.
+
     Args:
         show_id: Trakt ID, slug, or IMDB ID
 
     Returns:
-        Show title string
-
-    Raises:
-        MCPError: If the show cannot be fetched
+        Show title string, or fallback ``Show ID: <show_id>`` on failure
     """
-    show_client = ShowDetailsClient()
-    show_data: ShowResponse = await show_client.get_show(show_id)
+    try:
+        show_client = ShowDetailsClient()
+        show_data: ShowResponse | str = await show_client.get_show(show_id)
 
-    if isinstance(show_data, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
-            resource_type="show",
-            resource_id=show_id,
-            error_message=show_data,
-            operation="fetch_show_details",
+        if isinstance(show_data, str):
+            return f"Show ID: {show_id}"
+
+        return show_data.get("title", f"Show ID: {show_id}")
+    except Exception:
+        logger.debug(
+            "Non-fatal exception during show title lookup; falling back to ID title.",
+            exc_info=True,
+            extra={"resource_id": show_id, "operation": "fetch_show_title"},
         )
-
-    return show_data.get("title", "Unknown Show")
+        return f"Show ID: {show_id}"
 
 
 @handle_api_errors_func
@@ -273,20 +275,7 @@ async def fetch_season_videos(
             operation="fetch_season_videos",
         )
 
-    show_client = ShowDetailsClient()
-    try:
-        show = await show_client.get_show(params.show_id)
-        if isinstance(show, str):
-            title = f"Show ID: {params.show_id}"
-        else:
-            title = show.get("title", f"Show ID: {params.show_id}")
-    except (httpx.HTTPError, httpx.TimeoutException):
-        logger.debug(
-            "Non-fatal exception during show title lookup; falling back to ID title.",
-            exc_info=True,
-            extra={"resource_id": params.show_id, "operation": "fetch_season_videos"},
-        )
-        title = f"Show ID: {params.show_id}"
+    title = await _get_show_title(params.show_id)
 
     season_title = f"{title} - Season {params.season}"
     return VideoFormatters.format_videos_list(
