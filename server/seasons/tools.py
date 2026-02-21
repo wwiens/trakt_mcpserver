@@ -433,8 +433,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
     ) -> str:
-        params = SeasonIdParam(show_id=show_id, season=season)
-        return await fetch_season_info(params.show_id, params.season)
+        return await fetch_season_info(show_id, season)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_episodes"],
@@ -444,8 +443,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
     ) -> str:
-        params = SeasonIdParam(show_id=show_id, season=season)
-        return await fetch_season_episodes(params.show_id, params.season)
+        return await fetch_season_episodes(show_id, season)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_ratings"],
@@ -455,8 +453,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
     ) -> str:
-        params = SeasonIdParam(show_id=show_id, season=season)
-        return await fetch_season_ratings(params.show_id, params.season)
+        return await fetch_season_ratings(show_id, season)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_stats"],
@@ -466,8 +463,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
     ) -> str:
-        params = SeasonIdParam(show_id=show_id, season=season)
-        return await fetch_season_stats(params.show_id, params.season)
+        return await fetch_season_stats(show_id, season)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_people"],
@@ -477,8 +473,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
     ) -> str:
-        params = SeasonIdParam(show_id=show_id, season=season)
-        return await fetch_season_people(params.show_id, params.season)
+        return await fetch_season_people(show_id, season)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_videos"],
@@ -492,8 +487,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
             Field(description=EMBED_MARKDOWN_DESCRIPTION),
         ] = True,
     ) -> str:
-        params = SeasonIdParam(show_id=show_id, season=season)
-        return await fetch_season_videos(params.show_id, params.season, embed_markdown)
+        return await fetch_season_videos(show_id, season, embed_markdown)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_watching"],
@@ -503,8 +497,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
     ) -> str:
-        params = SeasonIdParam(show_id=show_id, season=season)
-        return await fetch_season_watching(params.show_id, params.season)
+        return await fetch_season_watching(show_id, season)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_translations"],
@@ -515,8 +508,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         season: Annotated[int, Field(ge=0, description=SEASON_DESCRIPTION)],
         language: Annotated[str, Field(description=LANGUAGE_DESCRIPTION)] = "all",
     ) -> str:
-        params = SeasonIdParam(show_id=show_id, season=season)
-        return await fetch_season_translations(params.show_id, params.season, language)
+        return await fetch_season_translations(show_id, season, language)
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_lists"],
@@ -534,8 +526,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
             Field(description=LIST_SORT_DESCRIPTION),
         ] = "popular",
     ) -> str:
-        params = SeasonIdParam(show_id=show_id, season=season)
-        return await fetch_season_lists(params.show_id, params.season, list_type, sort)
+        return await fetch_season_lists(show_id, season, list_type, sort)
 
     return (
         fetch_season_info_tool,
