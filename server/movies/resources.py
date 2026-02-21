@@ -112,6 +112,20 @@ async def get_watched_movies() -> str:
 
 
 @handle_api_errors_func
+async def get_boxoffice_movies() -> str:
+    """Returns the top 10 grossing movies in the U.S. box office last weekend.
+
+    Updated every Monday morning.
+
+    Returns:
+        Formatted markdown text with box office movies and revenue
+    """
+    client: MoviesClient = MoviesClient()
+    movies = await client.get_boxoffice_movies()
+    return MovieFormatters.format_boxoffice_movies(movies)
+
+
+@handle_api_errors_func
 async def get_anticipated_movies() -> str:
     """Returns the most anticipated movies from Trakt, sorted by list count.
 
@@ -192,6 +206,7 @@ def register_movie_resources(
     ResourceHandler,
     ResourceHandler,
     ResourceHandler,
+    ResourceHandler,
 ]:
     """Register movie resources with the MCP server.
 
@@ -253,6 +268,15 @@ def register_movie_resources(
     async def movies_anticipated_resource() -> str:
         return await get_anticipated_movies()
 
+    @mcp.resource(
+        uri=MCP_RESOURCES["movies_boxoffice"],
+        name="movies_boxoffice",
+        description="Top 10 grossing movies in the U.S. box office last weekend",
+        mime_type="text/markdown",
+    )
+    async def movies_boxoffice_resource() -> str:
+        return await get_boxoffice_movies()
+
     # Note: movie_ratings moved to tools.py as @mcp.tool since it requires parameters
 
     # Return handlers for type checker visibility
@@ -263,4 +287,5 @@ def register_movie_resources(
         movies_played_resource,
         movies_watched_resource,
         movies_anticipated_resource,
+        movies_boxoffice_resource,
     )

@@ -11,6 +11,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 from config.api import DEFAULT_MAX_PAGES
 from server.comments.tools import fetch_movie_comments
 from server.movies.tools import (
+    fetch_boxoffice_movies,
     fetch_movie_ratings,
     fetch_movie_summary,
     fetch_movie_videos,
@@ -522,3 +523,45 @@ async def test_fetch_related_movies_error():
 
         with pytest.raises(InternalError):
             await fetch_related_movies(movie_id="the-dark-knight", limit=10)
+
+
+@pytest.mark.asyncio
+async def test_fetch_boxoffice_movies():
+    sample_movies = [
+        {
+            "revenue": 154_200_000,
+            "movie": {
+                "title": "Inside Out 2",
+                "year": 2024,
+                "overview": "Riley enters puberty and experiences new emotions.",
+            },
+        }
+    ]
+
+    with patch("server.movies.tools.BoxOfficeMoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_result(sample_movies)
+        mock_client.get_boxoffice_movies.return_value = future
+
+        result = await fetch_boxoffice_movies()
+
+        assert "# Box Office Movies (U.S. Weekend)" in result
+        assert "Inside Out 2 (2024)" in result
+        assert "$154,200,000 revenue" in result
+
+        mock_client.get_boxoffice_movies.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_fetch_boxoffice_movies_error():
+    with patch("server.movies.tools.BoxOfficeMoviesClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+
+        future: asyncio.Future[Any] = asyncio.Future()
+        future.set_exception(Exception("API error"))
+        mock_client.get_boxoffice_movies.return_value = future
+
+        with pytest.raises(InternalError):
+            await fetch_boxoffice_movies()

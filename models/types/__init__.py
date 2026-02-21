@@ -3,6 +3,7 @@
 from .api_responses import (
     AnticipatedMovieWrapper,
     AnticipatedShowWrapper,
+    BoxOfficeMovieWrapper,
     CastMember,
     CheckinResponse,
     CommentResponse,
@@ -72,6 +73,7 @@ __all__ = [
     "AnticipatedShowWrapper",
     # Protocol Types
     "AuthClientProtocol",
+    "BoxOfficeMovieWrapper",
     "CastMember",
     "CheckinClientProtocol",
     "CheckinResponse",

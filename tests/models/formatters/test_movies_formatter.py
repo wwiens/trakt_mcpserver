@@ -10,6 +10,7 @@ from models.types.pagination import PaginatedResponse, PaginationMetadata
 if TYPE_CHECKING:
     from models.types.api_responses import (
         AnticipatedMovieWrapper,
+        BoxOfficeMovieWrapper,
         MovieResponse,
         TrendingWrapper,
     )
@@ -45,6 +46,24 @@ def make_trending_item(
     """Factory helper for creating TrendingWrapper test data."""
     return {
         "watchers": watchers,
+        "movie": make_movie_response(
+            title=title, year=year, trakt=trakt, slug=slug, **movie_overrides
+        ),
+    }
+
+
+def make_boxoffice_item(
+    *,
+    title: str,
+    year: int,
+    trakt: int,
+    slug: str,
+    revenue: int,
+    **movie_overrides: Any,
+) -> BoxOfficeMovieWrapper:
+    """Factory helper for creating BoxOfficeMovieWrapper test data."""
+    return {
+        "revenue": revenue,
         "movie": make_movie_response(
             title=title, year=year, trakt=trakt, slug=slug, **movie_overrides
         ),
@@ -103,6 +122,7 @@ class TestMovieFormatters:
             "format_watched_movies",
             "format_movie_summary",
             "format_movie_extended",
+            "format_boxoffice_movies",
         ]
 
         for method_name in expected_methods:
@@ -358,4 +378,60 @@ class TestMovieFormatters:
         # Should be truncated with ellipsis
         assert "..." in result
         # Should not contain the full 300 character string
+        assert long_overview not in result
+
+    def test_format_boxoffice_movies_exists(self) -> None:
+        """Test that format_boxoffice_movies method exists."""
+        assert hasattr(MovieFormatters, "format_boxoffice_movies")
+        assert callable(MovieFormatters.format_boxoffice_movies)
+
+    def test_format_boxoffice_movies_with_empty_list(self) -> None:
+        """Test formatting empty box office movies list."""
+        result = MovieFormatters.format_boxoffice_movies([])
+        assert isinstance(result, str)
+        assert "# Box Office Movies (U.S. Weekend)" in result
+        assert "No box office data available." in result
+
+    def test_format_boxoffice_movies_with_data(self) -> None:
+        """Test formatting box office movies with sample data."""
+        sample_movies: list[BoxOfficeMovieWrapper] = [
+            make_boxoffice_item(
+                title="Inside Out 2",
+                year=2024,
+                trakt=1,
+                slug="inside-out-2",
+                revenue=154_200_000,
+            ),
+            make_boxoffice_item(
+                title="Bad Boys: Ride or Die",
+                year=2024,
+                trakt=2,
+                slug="bad-boys-ride-or-die",
+                revenue=33_300_000,
+            ),
+        ]
+        result = MovieFormatters.format_boxoffice_movies(sample_movies)
+        assert isinstance(result, str)
+        assert "# Box Office Movies (U.S. Weekend)" in result
+        assert "#1 Inside Out 2 (2024)" in result
+        assert "$154,200,000 revenue" in result
+        assert "#2 Bad Boys: Ride or Die (2024)" in result
+        assert "$33,300,000 revenue" in result
+
+    def test_format_boxoffice_movies_truncates_overview(self) -> None:
+        """Test that long overviews are truncated."""
+        long_overview = "A" * 300
+        sample_movies: list[BoxOfficeMovieWrapper] = [
+            make_boxoffice_item(
+                title="Test Movie",
+                year=2024,
+                trakt=1,
+                slug="test-movie",
+                revenue=10_000_000,
+                overview=long_overview,
+            ),
+        ]
+        result = MovieFormatters.format_boxoffice_movies(sample_movies)
+        assert isinstance(result, str)
+        assert "..." in result
         assert long_overview not in result
