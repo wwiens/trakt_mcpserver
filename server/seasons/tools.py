@@ -4,6 +4,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Annotated, Final, Literal
 
+import httpx
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
 
@@ -36,19 +37,21 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("trakt_mcp")
 
-# Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
 
-# Valid values for list filtering
-VALID_LIST_TYPES: Final[set[str]] = {"all", "personal", "official", "watchlists"}
-VALID_LIST_SORTS: Final[set[str]] = {
-    "popular",
-    "likes",
-    "comments",
-    "items",
-    "added",
-    "updated",
-}
+VALID_LIST_TYPES: Final[frozenset[str]] = frozenset(
+    {"all", "personal", "official", "watchlists"}
+)
+VALID_LIST_SORTS: Final[frozenset[str]] = frozenset(
+    {
+        "popular",
+        "likes",
+        "comments",
+        "items",
+        "added",
+        "updated",
+    }
+)
 
 
 class SeasonIdParam(BaseModel):
@@ -277,7 +280,7 @@ async def fetch_season_videos(
             title = f"Show ID: {params.show_id}"
         else:
             title = show.get("title", f"Show ID: {params.show_id}")
-    except Exception:
+    except (httpx.HTTPError, httpx.TimeoutException):
         logger.debug(
             "Non-fatal exception during show title lookup; falling back to ID title.",
             exc_info=True,

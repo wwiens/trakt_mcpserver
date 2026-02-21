@@ -46,7 +46,6 @@ async def test_get_season_episodes():
 
     mock_instance = MagicMock(spec=httpx.AsyncClient)
     mock_instance.get = AsyncMock(return_value=mock_response)
-    mock_instance.post = AsyncMock()
     mock_instance.aclose = AsyncMock()
 
     with (

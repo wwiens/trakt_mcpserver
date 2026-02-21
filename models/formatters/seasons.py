@@ -96,7 +96,7 @@ class SeasonFormatters:
             rating = episode.get("rating")
             rating_str = f"{rating:.1f}/10" if rating is not None else "—"
             runtime = episode.get("runtime")
-            runtime_str = f"{runtime}m" if runtime else "—"
+            runtime_str = f"{runtime}m" if runtime is not None else "—"
 
             result += f"| {number} | {title} | {rating_str} | {runtime_str} |\n"
 
