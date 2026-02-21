@@ -32,7 +32,18 @@ from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
 
 if TYPE_CHECKING:
-    from models.types import SeasonResponse, ShowResponse, TraktRating
+    from models.types import (
+        EpisodeResponse,
+        ListItemResponse,
+        PeopleResponse,
+        SeasonResponse,
+        SeasonStatsResponse,
+        ShowResponse,
+        TraktRating,
+        TranslationResponse,
+        UserResponse,
+        VideoResponse,
+    )
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -93,11 +104,15 @@ async def _get_show_title(show_id: str) -> str:
             return f"Show ID: {show_id}"
 
         return show_data.get("title", f"Show ID: {show_id}")
-    except Exception:
+    except Exception as exc:
         logger.debug(
             "Non-fatal exception during show title lookup; falling back to ID title.",
             exc_info=True,
-            extra={"resource_id": show_id, "operation": "fetch_show_title"},
+            extra={
+                "resource_id": show_id,
+                "operation": "fetch_show_title",
+                "error": str(exc),
+            },
         )
         return f"Show ID: {show_id}"
 
@@ -116,7 +131,9 @@ async def fetch_season_info(show_id: str, season: int) -> str:
     params = SeasonIdParam(show_id=show_id, season=season)
 
     client = SeasonInfoClient()
-    season_data: SeasonResponse = await client.get_season(params.show_id, params.season)
+    season_data: SeasonResponse | str = await client.get_season(
+        params.show_id, params.season
+    )
 
     if isinstance(season_data, str):
         raise BaseToolErrorMixin.handle_api_string_error(
@@ -143,7 +160,9 @@ async def fetch_season_episodes(show_id: str, season: int) -> str:
     params = SeasonIdParam(show_id=show_id, season=season)
 
     client = SeasonEpisodesClient()
-    episodes = await client.get_season_episodes(params.show_id, params.season)
+    episodes: list[EpisodeResponse] | str = await client.get_season_episodes(
+        params.show_id, params.season
+    )
 
     if isinstance(episodes, str):
         raise BaseToolErrorMixin.handle_api_string_error(
@@ -172,7 +191,7 @@ async def fetch_season_ratings(show_id: str, season: int) -> str:
     show_title = await _get_show_title(params.show_id)
 
     ratings_client = SeasonRatingsClient()
-    ratings: TraktRating = await ratings_client.get_season_ratings(
+    ratings: TraktRating | str = await ratings_client.get_season_ratings(
         params.show_id, params.season
     )
 
@@ -204,7 +223,9 @@ async def fetch_season_stats(show_id: str, season: int) -> str:
     show_title = await _get_show_title(params.show_id)
 
     stats_client = SeasonStatsClient()
-    stats = await stats_client.get_season_stats(params.show_id, params.season)
+    stats: SeasonStatsResponse | str = await stats_client.get_season_stats(
+        params.show_id, params.season
+    )
 
     if isinstance(stats, str):
         raise BaseToolErrorMixin.handle_api_string_error(
@@ -234,7 +255,9 @@ async def fetch_season_people(show_id: str, season: int) -> str:
     show_title = await _get_show_title(params.show_id)
 
     people_client = SeasonPeopleClient()
-    people = await people_client.get_season_people(params.show_id, params.season)
+    people: PeopleResponse | str = await people_client.get_season_people(
+        params.show_id, params.season
+    )
 
     if isinstance(people, str):
         raise BaseToolErrorMixin.handle_api_string_error(
@@ -265,7 +288,9 @@ async def fetch_season_videos(
     params = SeasonIdParam(show_id=show_id, season=season)
 
     videos_client = SeasonVideosClient()
-    videos = await videos_client.get_season_videos(params.show_id, params.season)
+    videos: list[VideoResponse] | str = await videos_client.get_season_videos(
+        params.show_id, params.season
+    )
 
     if isinstance(videos, str):
         raise BaseToolErrorMixin.handle_api_string_error(
@@ -299,7 +324,9 @@ async def fetch_season_watching(show_id: str, season: int) -> str:
     show_title = await _get_show_title(params.show_id)
 
     watching_client = SeasonWatchingClient()
-    users = await watching_client.get_season_watching(params.show_id, params.season)
+    users: list[UserResponse] | str = await watching_client.get_season_watching(
+        params.show_id, params.season
+    )
 
     if isinstance(users, str):
         raise BaseToolErrorMixin.handle_api_string_error(
@@ -340,7 +367,9 @@ async def fetch_season_translations(
     show_title = await _get_show_title(params.show_id)
 
     translations_client = SeasonTranslationsClient()
-    translations = await translations_client.get_season_translations(
+    translations: (
+        list[TranslationResponse] | str
+    ) = await translations_client.get_season_translations(
         params.show_id, params.season, language
     )
 
@@ -394,7 +423,7 @@ async def fetch_season_lists(
     show_title = await _get_show_title(params.show_id)
 
     lists_client = SeasonListsClient()
-    lists = await lists_client.get_season_lists(
+    lists: list[ListItemResponse] | str = await lists_client.get_season_lists(
         params.show_id, params.season, list_type, sort
     )
 
