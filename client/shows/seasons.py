@@ -8,7 +8,7 @@ from utils.api.errors import handle_api_errors
 from ..base import BaseClient
 
 
-class SeasonsClient(BaseClient):
+class ShowSeasonsClient(BaseClient):
     """Client for show seasons operations."""
 
     @handle_api_errors

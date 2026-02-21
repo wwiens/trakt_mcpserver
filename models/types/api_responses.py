@@ -97,6 +97,9 @@ class SeasonResponse(TypedDict):
     title: NotRequired[str]
     overview: NotRequired[str]
     first_aired: NotRequired[str]
+    updated_at: NotRequired[str]
+    network: NotRequired[str]
+    original_title: NotRequired[str]
     episodes: NotRequired[list[EpisodeResponse]]
 
 

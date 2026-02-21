@@ -102,6 +102,15 @@ async def fetch_season_episodes(show_id: str, season: int) -> str:
 
     client = SeasonEpisodesClient()
     episodes = await client.get_season_episodes(params.show_id, params.season)
+
+    if isinstance(episodes, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="season_episodes",
+            resource_id=f"{params.show_id}/S{params.season:02d}",
+            error_message=episodes,
+            operation="fetch_season_episodes",
+        )
+
     return SeasonFormatters.format_season_episodes(episodes, params.season)
 
 
@@ -183,6 +192,15 @@ async def fetch_season_stats(show_id: str, season: int) -> str:
         stats_client = SeasonStatsClient()
         stats = await stats_client.get_season_stats(params.show_id, params.season)
 
+        if isinstance(stats, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="season_stats",
+                resource_id=f"{params.show_id}/S{params.season:02d}",
+                error_message=stats,
+                operation="fetch_season_stats",
+                show_title=show_title,
+            )
+
         return SeasonFormatters.format_season_stats(stats, show_title, params.season)
     except MCPError:
         raise
@@ -218,6 +236,15 @@ async def fetch_season_people(show_id: str, season: int) -> str:
         people_client = SeasonPeopleClient()
         people = await people_client.get_season_people(params.show_id, params.season)
 
+        if isinstance(people, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="season_people",
+                resource_id=f"{params.show_id}/S{params.season:02d}",
+                error_message=people,
+                operation="fetch_season_people",
+                show_title=show_title,
+            )
+
         return SeasonFormatters.format_season_people(people, show_title, params.season)
     except MCPError:
         raise
@@ -242,6 +269,14 @@ async def fetch_season_videos(
     try:
         videos_client = SeasonVideosClient()
         videos = await videos_client.get_season_videos(params.show_id, params.season)
+
+        if isinstance(videos, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="season_videos",
+                resource_id=f"{params.show_id}/S{params.season:02d}",
+                error_message=videos,
+                operation="fetch_season_videos",
+            )
 
         show_client = ShowDetailsClient()
         try:
@@ -291,6 +326,15 @@ async def fetch_season_watching(show_id: str, season: int) -> str:
         watching_client = SeasonWatchingClient()
         users = await watching_client.get_season_watching(params.show_id, params.season)
 
+        if isinstance(users, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="season_watching",
+                resource_id=f"{params.show_id}/S{params.season:02d}",
+                error_message=users,
+                operation="fetch_season_watching",
+                show_title=show_title,
+            )
+
         return SeasonFormatters.format_season_watching(users, show_title, params.season)
     except MCPError:
         raise
@@ -312,6 +356,14 @@ async def fetch_season_translations(
     """
     params = SeasonIdParam(show_id=show_id, season=season)
 
+    language = language.strip().lower()
+    if language != "all" and (len(language) != 2 or not language.isalpha()):
+        raise BaseToolErrorMixin.handle_validation_error(
+            "Language must be 'all' or a 2-letter ISO 639-1 code",
+            parameter="language",
+            provided_value=language,
+        )
+
     try:
         show_client = ShowDetailsClient()
         show_data: ShowResponse = await show_client.get_show(params.show_id)
@@ -330,6 +382,15 @@ async def fetch_season_translations(
         translations = await translations_client.get_season_translations(
             params.show_id, params.season, language
         )
+
+        if isinstance(translations, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="season_translations",
+                resource_id=f"{params.show_id}/S{params.season:02d}",
+                error_message=translations,
+                operation="fetch_season_translations",
+                show_title=show_title,
+            )
 
         return SeasonFormatters.format_season_translations(
             translations, show_title, params.season
@@ -376,6 +437,15 @@ async def fetch_season_lists(
         lists = await lists_client.get_season_lists(
             params.show_id, params.season, list_type, sort
         )
+
+        if isinstance(lists, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="season_lists",
+                resource_id=f"{params.show_id}/S{params.season:02d}",
+                error_message=lists,
+                operation="fetch_season_lists",
+                show_title=show_title,
+            )
 
         return SeasonFormatters.format_season_lists(lists, show_title, params.season)
     except MCPError:

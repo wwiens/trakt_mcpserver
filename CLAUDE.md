@@ -14,12 +14,15 @@ This file provides guidance to Claude Code when working with this repository.
 
 **BEFORE ADDING FEATURES**: Examine existing code patterns, design style, and architectural conventions to ensure consistency.
 
+**Domain boundaries mirror `trakt.apib`**: Each top-level API resource (shows, movies, seasons, episodes, etc.) is its own domain — do NOT nest one domain's tools/clients inside another.
+
 ### Current Structure
 
 ```
 server/           # MCP server modules by domain
-├── auth/         # Authentication tools/resources  
+├── auth/         # Authentication tools/resources
 ├── shows/        # Show-specific tools/resources
+├── seasons/      # Season-specific tools
 ├── movies/       # Movie-specific tools/resources
 ├── user/         # User data tools/resources
 ├── comments/     # Comment tools
@@ -30,7 +33,8 @@ server/           # MCP server modules by domain
 client/           # HTTP clients by domain
 ├── auth/         # Authentication client
 ├── shows/        # Show API client
-├── movies/       # Movie API client  
+├── seasons/      # Season API client
+├── movies/       # Movie API client
 ├── comments/     # Comments API client
 ├── user/         # User API client
 ├── search/       # Search API client
@@ -141,9 +145,10 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - PEP 8 compliance
 - 88 character line limit
 - Descriptive names (no abbreviations)
+- Avoid class name collisions across domains — prefix with domain (e.g., `ShowSeasonsClient` not `SeasonsClient` when under `client/shows/`)
 - Docstrings for public functions/classes
 - No comments explaining what code does - only why when needed
-- Never hardcode config values - reference existing constants from `config/`
+- Never hardcode config values or magic numbers — use existing constants from `config/` and `models/formatters/utils.py` (e.g., `MAX_OVERVIEW_LENGTH`)
 
 ### Security
 - Never hardcode secrets (use environment variables)
@@ -168,7 +173,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 
 ### Error Handling
 - Use `@handle_api_errors` decorator from `utils.api.errors`
-- Return structured data or error strings
+- **Always check API results before formatting** — API clients may return error strings instead of typed data. Check `isinstance(result, str)` before passing to formatters; use `BaseToolErrorMixin.handle_api_string_error()` to raise structured errors.
 - Authentication checks at tool/resource level
 
 ### Data Flow

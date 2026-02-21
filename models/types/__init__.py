@@ -33,6 +33,7 @@ from .api_responses import (
     UserWatchedMovie,
     UserWatchedSeason,
     UserWatchedShow,
+    VideoResponse,
     WatchedMovieWrapper,
     WatchedShowWrapper,
 )
@@ -123,6 +124,7 @@ __all__ = [
     "UserWatchedMovie",
     "UserWatchedSeason",
     "UserWatchedShow",
+    "VideoResponse",
     "WatchedMovieWrapper",
     "WatchedShowWrapper",
 ]

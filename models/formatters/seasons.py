@@ -1,5 +1,6 @@
 """Season formatting methods for the Trakt MCP server."""
 
+from models.formatters.utils import MAX_OVERVIEW_LENGTH
 from models.types import (
     CastMember,
     CrewMember,
@@ -334,8 +335,8 @@ class SeasonFormatters:
             result += f" ({item_count} items, {likes} likes)\n"
 
             if description := list_item.get("description"):
-                if len(description) > 100:
-                    description = description[:97] + "..."
+                if len(description) > MAX_OVERVIEW_LENGTH:
+                    description = description[: MAX_OVERVIEW_LENGTH - 3] + "..."
                 result += f"  {description}\n"
 
         return result

@@ -4,7 +4,7 @@ from .anticipated import AnticipatedShowsClient
 from .details import ShowDetailsClient
 from .popular import PopularShowsClient
 from .related import RelatedShowsClient
-from .seasons import SeasonsClient
+from .seasons import ShowSeasonsClient
 from .stats import ShowStatsClient
 from .trending import TrendingShowsClient
 from .videos import ShowVideosClient
@@ -18,7 +18,7 @@ class ShowsClient(
     ShowDetailsClient,
     ShowVideosClient,
     RelatedShowsClient,
-    SeasonsClient,
+    ShowSeasonsClient,
 ):
     """Unified client for all show-related operations.
 
@@ -30,7 +30,7 @@ class ShowsClient(
     - ShowDetailsClient: get_show(), get_show_ratings()
     - ShowVideosClient: get_videos()
     - RelatedShowsClient: get_related_shows()
-    - SeasonsClient: get_seasons()
+    - ShowSeasonsClient: get_seasons()
     """
 
     pass
