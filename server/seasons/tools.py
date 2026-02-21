@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Annotated, Final, Literal
+from typing import TYPE_CHECKING, Annotated, Final, Literal, TypeAlias
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("trakt_mcp")
 
-ToolHandler = Callable[..., Awaitable[str]]
+ToolHandler: TypeAlias = Callable[..., Awaitable[str]]
 
 VALID_LIST_TYPES: Final[frozenset[str]] = frozenset(
     {"all", "personal", "official", "watchlists"}
@@ -61,6 +61,14 @@ VALID_LIST_SORTS: Final[frozenset[str]] = frozenset(
         "added",
         "updated",
     }
+)
+
+INVALID_LANGUAGE_MSG: Final[str] = "Language must be 'all' or a 2-letter ISO 639-1 code"
+INVALID_LIST_TYPE_MSG: Final[str] = (
+    f"list_type must be one of: {', '.join(sorted(VALID_LIST_TYPES))}"
+)
+INVALID_LIST_SORT_MSG: Final[str] = (
+    f"sort must be one of: {', '.join(sorted(VALID_LIST_SORTS))}"
 )
 
 
@@ -359,7 +367,7 @@ async def fetch_season_translations(
     language = language.strip().lower()
     if language != "all" and (len(language) != 2 or not language.isalpha()):
         raise BaseToolErrorMixin.handle_validation_error(
-            "Language must be 'all' or a 2-letter ISO 639-1 code",
+            INVALID_LANGUAGE_MSG,
             parameter="language",
             provided_value=language,
         )
@@ -409,13 +417,13 @@ async def fetch_season_lists(
 
     if list_type not in VALID_LIST_TYPES:
         raise BaseToolErrorMixin.handle_validation_error(
-            f"list_type must be one of: {', '.join(sorted(VALID_LIST_TYPES))}",
+            INVALID_LIST_TYPE_MSG,
             parameter="list_type",
             provided_value=list_type,
         )
     if sort not in VALID_LIST_SORTS:
         raise BaseToolErrorMixin.handle_validation_error(
-            f"sort must be one of: {', '.join(sorted(VALID_LIST_SORTS))}",
+            INVALID_LIST_SORT_MSG,
             parameter="sort",
             provided_value=sort,
         )
