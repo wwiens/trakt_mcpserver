@@ -78,6 +78,9 @@ Add to your Claude Desktop MCP configuration file:
 - Formatted responses with titles, years, and popularity metrics
 - **View detailed ratings** for shows and movies including average scores and distribution
 - **Browse show seasons** with episode counts, aired episodes, and ratings per season
+- **Dive into specific seasons** with detailed info, episode lists, ratings, cast & crew, videos, translations, and engagement stats
+- **See who's watching** a specific season right now
+- **Find lists** containing a specific season
 
 ### 👤 Personal Trakt Data
 - **View Your Watched Shows**: Get a complete list of shows you've personally watched
@@ -238,6 +241,49 @@ search_movies(query="The Godfather", limit=5)
 
 # Search for movies: single page with pagination metadata
 search_movies(query="The Godfather", limit=5, page=1)
+```
+
+</details>
+
+<details>
+<summary><strong>Season Tools</strong></summary>
+
+```python
+# Get detailed info about a specific season
+fetch_season_info(show_id="breaking-bad", season=1)
+
+# Get all episodes for a season with ratings and runtime
+fetch_season_episodes(show_id="breaking-bad", season=1)
+
+# Get ratings and voting distribution for a season
+fetch_season_ratings(show_id="breaking-bad", season=1)
+
+# Get engagement stats (watchers, plays, collectors)
+fetch_season_stats(show_id="breaking-bad", season=1)
+
+# Get cast and crew for a season
+fetch_season_people(show_id="breaking-bad", season=1)
+
+# Get videos/trailers for a season (with embedded markdown - default)
+fetch_season_videos(show_id="breaking-bad", season=1)
+
+# Get videos for a season (simple text links)
+fetch_season_videos(show_id="breaking-bad", season=1, embed_markdown=False)
+
+# See who's watching a season right now
+fetch_season_watching(show_id="breaking-bad", season=1)
+
+# Get translations for a season (all languages)
+fetch_season_translations(show_id="breaking-bad", season=1)
+
+# Get translations for a specific language
+fetch_season_translations(show_id="breaking-bad", season=1, language="es")
+
+# Get lists containing a season
+fetch_season_lists(show_id="breaking-bad", season=1)
+
+# Get lists with type and sort filters
+fetch_season_lists(show_id="breaking-bad", season=1, list_type="personal", sort="popular")
 ```
 
 </details>
@@ -510,6 +556,15 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 - "Show me shows similar to Breaking Bad"
 - "What movies are related to TRON: Legacy?"
 - "Find shows like Game of Thrones"
+- "Tell me about Season 1 of Breaking Bad"
+- "What episodes are in Season 2 of Game of Thrones?"
+- "How is Season 5 of Breaking Bad rated?"
+- "Who starred in Season 1 of Game of Thrones?"
+- "How popular is Season 1 of Breaking Bad?"
+- "Are there any trailers for Season 2 of Stranger Things?"
+- "Who's watching Season 1 of Breaking Bad right now?"
+- "Get Spanish translations for Season 1 of Breaking Bad"
+- "What lists contain Season 1 of Breaking Bad?"
 
 **Personal Data (Requires Authentication):**
 - "What was the last show I watched?"

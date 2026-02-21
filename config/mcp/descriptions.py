@@ -33,7 +33,10 @@ __all__: Final[list[str]] = [
     "HISTORY_TYPE_DESCRIPTION",
     "IGNORE_COLLECTED_DESCRIPTION",
     "IGNORE_WATCHLISTED_DESCRIPTION",
+    "LANGUAGE_DESCRIPTION",
     "LIMIT_DESCRIPTION",
+    "LIST_SORT_DESCRIPTION",
+    "LIST_TYPE_DESCRIPTION",
     "MAX_PAGES_DESCRIPTION",
     "MOVIE_ID_DESCRIPTION",
     "PAGE_DESCRIPTION",
@@ -241,4 +244,13 @@ HISTORY_REMOVE_ITEMS_DESCRIPTION: Final[str] = (
     "List of items to remove from history. Each item must include "
     "either an identifier (trakt_id, slug, imdb_id, tmdb_id, tvdb_id) "
     "or both 'title' and 'year'"
+)
+
+# Season-specific descriptions
+LANGUAGE_DESCRIPTION: Final[str] = "2-character language code (e.g., 'en', 'es', 'de')"
+LIST_TYPE_DESCRIPTION: Final[str] = (
+    "List type filter: 'all', 'personal', 'official', 'watchlists'"
+)
+LIST_SORT_DESCRIPTION: Final[str] = (
+    "List sort: 'popular', 'likes', 'comments', 'items', 'added', 'updated'"
 )

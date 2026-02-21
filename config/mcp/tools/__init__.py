@@ -7,6 +7,7 @@ from .movies import MOVIE_TOOLS
 from .progress import PROGRESS_TOOLS
 from .recommendations import RECOMMENDATIONS_TOOLS
 from .search import SEARCH_TOOLS
+from .seasons import SEASON_TOOLS
 from .shows import SHOW_TOOLS
 from .sync import SYNC_TOOLS
 from .user import USER_TOOLS
@@ -22,6 +23,7 @@ TOOL_NAMES = {
     **PROGRESS_TOOLS,
     **RECOMMENDATIONS_TOOLS,
     **SEARCH_TOOLS,
+    **SEASON_TOOLS,
     **SYNC_TOOLS,
 }
 
@@ -33,6 +35,7 @@ __all__ = [
     "PROGRESS_TOOLS",
     "RECOMMENDATIONS_TOOLS",
     "SEARCH_TOOLS",
+    "SEASON_TOOLS",
     "SHOW_TOOLS",
     "SYNC_TOOLS",
     "TOOL_NAMES",
