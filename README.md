@@ -77,6 +77,7 @@ Add to your Claude Desktop MCP configuration file:
 - Get real-time data from Trakt's global community
 - Formatted responses with titles, years, and popularity metrics
 - **View detailed ratings** for shows and movies including average scores and distribution
+- **Browse show seasons** with episode counts, aired episodes, and ratings per season
 
 ### 👤 Personal Trakt Data
 - **View Your Watched Shows**: Get a complete list of shows you've personally watched
@@ -228,6 +229,9 @@ fetch_related_shows(show_id="game-of-thrones", limit=10)
 
 # Get related shows with pagination metadata
 fetch_related_shows(show_id="game-of-thrones", limit=10, page=1)
+
+# Get all seasons for a show (includes episode counts, aired episodes, ratings)
+fetch_show_seasons(show_id="game-of-thrones")
 
 # Search for movies: auto-paginate all results (omit page parameter)
 search_movies(query="The Godfather", limit=5)

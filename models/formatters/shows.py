@@ -5,6 +5,7 @@ from models.types import (
     AnticipatedShowWrapper,
     FavoritedShowWrapper,
     PlayedShowWrapper,
+    SeasonResponse,
     ShowResponse,
     TraktRating,
     TrendingWrapper,
@@ -417,6 +418,45 @@ class ShowFormatters:
             result += f"- Comments: {comment_count}\n"
 
         result += f"\nTrakt ID: {trakt_id}\n"
+
+        return result
+
+    @staticmethod
+    def format_show_seasons(seasons: list[SeasonResponse]) -> str:
+        """Format show seasons data for MCP response.
+
+        Args:
+            seasons: List of season data from Trakt API
+
+        Returns:
+            Formatted markdown text with season details
+        """
+        if not seasons:
+            return "No seasons data available."
+
+        result = "# Seasons\n\n"
+        result += f"**{len(seasons)} season(s)**\n\n"
+
+        result += "| Season | Title | Episodes | Aired | Rating |\n"
+        result += "|--------|-------|----------|-------|--------|\n"
+
+        for season in seasons:
+            number = season.get("number", 0)
+            title = season.get("title", "")
+            if number == 0 and not title:
+                title = "Specials"
+            elif not title:
+                title = f"Season {number}"
+
+            episode_count = season.get("episode_count", "—")
+            aired_episodes = season.get("aired_episodes", "—")
+            rating = season.get("rating")
+            rating_str = f"{rating:.1f}/10" if rating is not None else "—"
+
+            result += (
+                f"| {number} | {title} | {episode_count} "
+                f"| {aired_episodes} | {rating_str} |\n"
+            )
 
         return result
 

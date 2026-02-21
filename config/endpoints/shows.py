@@ -16,4 +16,6 @@ SHOWS_ENDPOINTS: Final[dict[str, str]] = {
     "show_videos": "/shows/:id/videos",
     # Related endpoints
     "shows_related": "/shows/:id/related",
+    # Season endpoints
+    "show_seasons": "/shows/:id/seasons",
 }

@@ -415,6 +415,24 @@ async def fetch_related_shows(
     return ShowFormatters.format_related_shows(shows)
 
 
+@handle_api_errors_func
+async def fetch_show_seasons(show_id: str) -> str:
+    """Fetch all seasons for a show from Trakt.
+
+    Args:
+        show_id: Trakt ID, Trakt slug, or IMDB ID (e.g., '1', 'breaking-bad', 'tt0903747')
+
+    Returns:
+        Formatted markdown with season details including episode counts and ratings
+    """
+    params = ShowIdParam(show_id=show_id)
+    show_id = params.show_id
+
+    client = ShowsClient()
+    seasons = await client.get_seasons(show_id)
+    return ShowFormatters.format_show_seasons(seasons)
+
+
 def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """Register show tools with the MCP server.
 
@@ -557,6 +575,16 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     ) -> str:
         return await fetch_related_shows(show_id, limit, page)
 
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_show_seasons"],
+        description="Fetch all seasons for a TV show from Trakt, including episode counts, aired episodes, and ratings per season.",
+    )
+    @handle_api_errors_func
+    async def fetch_show_seasons_tool(
+        show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
+    ) -> str:
+        return await fetch_show_seasons(show_id)
+
     # Return handlers for type checker visibility
     return (
         fetch_trending_shows_tool,
@@ -569,4 +597,5 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         fetch_show_summary_tool,
         fetch_show_videos_tool,
         fetch_related_shows_tool,
+        fetch_show_seasons_tool,
     )
