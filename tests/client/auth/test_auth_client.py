@@ -457,10 +457,10 @@ async def test_refresh_access_token_success(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 @pytest.mark.asyncio
-async def test_refresh_access_token_failure_clears_token(
+async def test_refresh_access_token_auth_failure_clears_token(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test that failed refresh clears the stale token."""
+    """Test that permanent auth failure (401) clears the stale token."""
     current_time = int(time.time())
 
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
@@ -520,6 +520,96 @@ async def test_refresh_access_token_no_token(monkeypatch: pytest.MonkeyPatch) ->
         result = await client.refresh_access_token()
 
         assert result is False
+
+
+@pytest.mark.asyncio
+async def test_refresh_access_token_network_error_preserves_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that transient network errors do NOT clear the refresh token."""
+    current_time = int(time.time())
+
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    with (
+        patch("dotenv.load_dotenv"),
+        patch("httpx.AsyncClient") as mock_client,
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="old_access_token",
+            refresh_token="old_refresh_token",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+
+        result = await client.refresh_access_token()
+
+        assert result is False
+        # Token must be preserved for next retry
+        assert client.auth_token is not None
+        assert client.auth_token.refresh_token == "old_refresh_token"
+
+
+@pytest.mark.asyncio
+async def test_refresh_access_token_invalid_grant_clears_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that a 400 invalid_grant response clears the token."""
+    current_time = int(time.time())
+
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.json.return_value = {"error": "invalid_grant"}
+
+    with (
+        patch("dotenv.load_dotenv"),
+        patch("httpx.AsyncClient") as mock_client,
+        patch("os.remove"),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(
+            return_value=MagicMock(
+                raise_for_status=MagicMock(
+                    side_effect=httpx.HTTPStatusError(
+                        "Bad Request",
+                        request=MagicMock(),
+                        response=mock_response,
+                    )
+                ),
+                json=MagicMock(return_value={"error": "invalid_grant"}),
+            )
+        )
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="old_access_token",
+            refresh_token="old_refresh_token",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+
+        result = await client.refresh_access_token()
+
+        assert result is False
+        assert client.auth_token is None
 
 
 @pytest.mark.asyncio

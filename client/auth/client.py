@@ -9,12 +9,15 @@ import threading
 import time
 from typing import Final
 
-import httpx
-
 from config.auth import OAUTH_REDIRECT_URI
 from config.endpoints import TRAKT_ENDPOINTS
 from models.auth import DeviceTokenRequest, TraktAuthToken, TraktDeviceCode
-from utils.api.errors import MCPError, handle_api_errors
+from utils.api.errors import (
+    InvalidParamsError,
+    InvalidRequestError,
+    MCPError,
+    handle_api_errors,
+)
 
 from ..base import BaseClient
 
@@ -178,18 +181,24 @@ class AuthClient(BaseClient):
                     self._update_headers_with_token()
                 logger.info("Successfully refreshed access token")
                 return True
-            except (
-                httpx.HTTPStatusError,
-                httpx.RequestError,
-                MCPError,
-                OSError,
-                ValueError,
-            ):
+            except (InvalidRequestError, InvalidParamsError):
+                # Permanent auth failure (HTTP 4xx: 401 revoked, 400 invalid_grant).
+                # On 401, @handle_api_errors already auto-clears via
+                # _auto_clear_invalid_token; this is a safety net for other 4xx.
                 logger.warning(
-                    "Failed to refresh access token, clearing stale token",
+                    "Refresh token rejected by server, clearing stale token",
                     exc_info=True,
                 )
                 self.clear_auth_token()
+                return False
+            except (MCPError, OSError, ValueError):
+                # Transient / local errors: InternalError (network/timeout),
+                # OSError (file I/O), ValueError (validation).
+                # Keep the refresh token so the next attempt can succeed.
+                logger.warning(
+                    "Failed to refresh access token (transient error), keeping refresh token for next attempt",
+                    exc_info=True,
+                )
                 return False
 
     async def ensure_authenticated(self) -> bool:
