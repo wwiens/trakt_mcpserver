@@ -5,6 +5,37 @@ from typing import Any
 from utils.api.errors import InvalidParamsError, InvalidRequestError, MCPError
 
 
+def extract_auth_action(error: MCPError) -> str:
+    """Extract the action description from an authentication error.
+
+    Args:
+        error: The MCPError (typically AuthenticationRequiredError) to extract from
+
+    Returns:
+        The action string, or a default if not found
+    """
+    error_data: dict[str, Any] | None = error.data if isinstance(error.data, dict) else None  # type: ignore[assignment]
+    if error_data is not None:
+        return str(error_data.get("action", "perform this action"))
+    return "perform this action"
+
+
+def format_auth_required_message(action: str) -> str:
+    """Format a user-friendly authentication required message.
+
+    Args:
+        action: Description of what action requires authentication
+
+    Returns:
+        Markdown-formatted authentication required message
+    """
+    return (
+        "# Authentication Required\n\n"
+        f"You need to authenticate with Trakt to {action}.\n"
+        "Use the `start_device_auth` tool to begin authentication."
+    )
+
+
 class TraktAPIError(MCPError):
     """Base class for Trakt API-specific errors with rich context.
 

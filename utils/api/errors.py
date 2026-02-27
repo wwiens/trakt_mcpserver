@@ -292,8 +292,19 @@ def handle_api_errors_func(
                 "Unable to connect to Trakt API. Please check your internet connection.",
                 data=error_data,
             ) from e
-        except MCPError:
-            # Re-raise MCP errors as-is
+        except MCPError as e:
+            # Return friendly message for auth errors instead of raising
+            from .error_types import (
+                AuthenticationRequiredError,
+                extract_auth_action,
+                format_auth_required_message,
+            )
+
+            if isinstance(e, AuthenticationRequiredError):
+                return format_auth_required_message(
+                    extract_auth_action(e)
+                )
+            # Re-raise other MCP errors as-is
             raise
         except json.JSONDecodeError as e:
             # Treat JSON decode errors as internal errors

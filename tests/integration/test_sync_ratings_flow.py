@@ -303,29 +303,23 @@ async def test_authentication_flow_integration(
                 fetch_user_ratings,
                 remove_user_ratings,
             )
-            # All operations should raise authentication errors
 
-            with pytest.raises(
-                ValueError,
-                match="You must be authenticated to access your personal ratings",
-            ):
-                await fetch_user_ratings(rating_type="movies")
+            # All operations should return auth required messages
+            result = await fetch_user_ratings(rating_type="movies")
+            assert "Authentication Required" in result
+            assert "start_device_auth" in result
 
-            with pytest.raises(
-                ValueError, match="You must be authenticated to add personal ratings"
-            ):
-                await add_user_ratings(
-                    rating_type="movies",
-                    items=[UserRatingRequestItem(rating=10, imdb_id="tt1375666")],
-                )
+            result = await add_user_ratings(
+                rating_type="movies",
+                items=[UserRatingRequestItem(rating=10, imdb_id="tt1375666")],
+            )
+            assert "Authentication Required" in result
 
-            with pytest.raises(
-                ValueError, match="You must be authenticated to remove personal ratings"
-            ):
-                await remove_user_ratings(
-                    rating_type="movies",
-                    items=[UserRatingIdentifier(imdb_id="tt1375666")],
-                )
+            result = await remove_user_ratings(
+                rating_type="movies",
+                items=[UserRatingIdentifier(imdb_id="tt1375666")],
+            )
+            assert "Authentication Required" in result
 
 
 @pytest.mark.asyncio
@@ -850,12 +844,10 @@ async def test_fetch_user_ratings_pagination_authentication_flow_integration(
         with patch("server.sync.tools.SyncClient", return_value=sync_client):
             from server.sync.tools import fetch_user_ratings
 
-            # Paginated request should also require authentication
-            with pytest.raises(
-                ValueError,
-                match="You must be authenticated to access your personal ratings",
-            ):
-                await fetch_user_ratings(rating_type="movies", page=1)
+            # Paginated request should also return auth required message
+            result = await fetch_user_ratings(rating_type="movies", page=1)
+            assert "Authentication Required" in result
+            assert "start_device_auth" in result
 
 
 @pytest.mark.asyncio

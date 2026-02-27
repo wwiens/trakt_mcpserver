@@ -26,7 +26,10 @@ from models.types.pagination import (
     PaginationMetadata,
     PaginationParams,
 )
-from utils.api.error_types import TraktResourceNotFoundError
+from utils.api.error_types import (
+    AuthenticationRequiredError,
+    TraktResourceNotFoundError,
+)
 
 # Sample API response data for watchlist items
 SAMPLE_MOVIE_WATCHLIST_RESPONSE = [
@@ -285,11 +288,8 @@ class TestSyncWatchlistClient:
     async def test_get_sync_watchlist_unauthenticated(
         self, unauthenticated_client: SyncWatchlistClient
     ) -> None:
-        """Test that unauthenticated requests raise ValueError."""
-        with pytest.raises(
-            ValueError,
-            match="You must be authenticated to access your personal watchlist",
-        ):
+        """Test that unauthenticated requests raise AuthenticationRequiredError."""
+        with pytest.raises(AuthenticationRequiredError):
             await unauthenticated_client.get_sync_watchlist("movies")
 
     @pytest.mark.asyncio
@@ -390,14 +390,12 @@ class TestSyncWatchlistClient:
     async def test_add_sync_watchlist_unauthenticated(
         self, unauthenticated_client: SyncWatchlistClient
     ) -> None:
-        """Test that unauthenticated add requests raise ValueError."""
+        """Test that unauthenticated add requests raise AuthenticationRequiredError."""
         request = TraktSyncWatchlistRequest(
             movies=[TraktSyncWatchlistItem(ids=TraktIds(trakt=123))]
         )
 
-        with pytest.raises(
-            ValueError, match="You must be authenticated to add items to your watchlist"
-        ):
+        with pytest.raises(AuthenticationRequiredError):
             await unauthenticated_client.add_sync_watchlist(request)
 
     @pytest.mark.asyncio
@@ -447,15 +445,12 @@ class TestSyncWatchlistClient:
     async def test_remove_sync_watchlist_unauthenticated(
         self, unauthenticated_client: SyncWatchlistClient
     ) -> None:
-        """Test that unauthenticated remove requests raise ValueError."""
+        """Test that unauthenticated remove requests raise AuthenticationRequiredError."""
         request = TraktSyncWatchlistRequest(
             movies=[TraktSyncWatchlistItem(ids=TraktIds(trakt=123))]
         )
 
-        with pytest.raises(
-            ValueError,
-            match="You must be authenticated to remove items from your watchlist",
-        ):
+        with pytest.raises(AuthenticationRequiredError):
             await unauthenticated_client.remove_sync_watchlist(request)
 
     @pytest.mark.asyncio
