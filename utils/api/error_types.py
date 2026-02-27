@@ -5,19 +5,16 @@ from typing import Any
 from utils.api.errors import InvalidParamsError, InvalidRequestError, MCPError
 
 
-def extract_auth_action(error: MCPError) -> str:
+def extract_auth_action(error: "AuthenticationRequiredError") -> str:
     """Extract the action description from an authentication error.
 
     Args:
-        error: The MCPError (typically AuthenticationRequiredError) to extract from
+        error: The AuthenticationRequiredError to extract from
 
     Returns:
         The action string, or a default if not found
     """
-    error_data: dict[str, Any] | None = error.data if isinstance(error.data, dict) else None  # type: ignore[assignment]
-    if error_data is not None:
-        return str(error_data.get("action", "perform this action"))
-    return "perform this action"
+    return str(error.data.get("action", "perform this action"))  # type: ignore[union-attr]
 
 
 def format_auth_required_message(action: str) -> str:

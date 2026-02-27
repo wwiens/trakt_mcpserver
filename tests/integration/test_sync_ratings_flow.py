@@ -308,18 +308,21 @@ async def test_authentication_flow_integration(
             result = await fetch_user_ratings(rating_type="movies")
             assert "Authentication Required" in result
             assert "start_device_auth" in result
+            assert "access your personal ratings" in result
 
             result = await add_user_ratings(
                 rating_type="movies",
                 items=[UserRatingRequestItem(rating=10, imdb_id="tt1375666")],
             )
             assert "Authentication Required" in result
+            assert "add personal ratings" in result
 
             result = await remove_user_ratings(
                 rating_type="movies",
                 items=[UserRatingIdentifier(imdb_id="tt1375666")],
             )
             assert "Authentication Required" in result
+            assert "remove personal ratings" in result
 
 
 @pytest.mark.asyncio
@@ -848,6 +851,7 @@ async def test_fetch_user_ratings_pagination_authentication_flow_integration(
             result = await fetch_user_ratings(rating_type="movies", page=1)
             assert "Authentication Required" in result
             assert "start_device_auth" in result
+            assert "access your personal ratings" in result
 
 
 @pytest.mark.asyncio
