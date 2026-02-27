@@ -56,7 +56,7 @@ class SyncWatchlistClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="access your personal watchlist")
 
         # Build the endpoint URL based on parameters
@@ -101,7 +101,7 @@ class SyncWatchlistClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="add items to your watchlist")
 
         # Convert request to dict, excluding None values
@@ -129,7 +129,7 @@ class SyncWatchlistClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="remove items from your watchlist")
 
         # Convert request to dict, excluding None values

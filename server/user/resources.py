@@ -24,7 +24,7 @@ async def get_user_watched_shows() -> str:
     """
     client: UserClient = UserClient()
 
-    if not client.is_authenticated():
+    if not await client.ensure_authenticated():
         return "# Authentication Required\n\nYou need to authenticate with Trakt to view your watched shows.\nUse the `start_device_auth` tool to begin authentication."
 
     shows = await client.get_user_watched_shows()
@@ -41,7 +41,7 @@ async def get_user_watched_movies() -> str:
     """
     client: UserClient = UserClient()
 
-    if not client.is_authenticated():
+    if not await client.ensure_authenticated():
         return "# Authentication Required\n\nYou need to authenticate with Trakt to view your watched movies.\nUse the `start_device_auth` tool to begin authentication."
 
     movies = await client.get_user_watched_movies()

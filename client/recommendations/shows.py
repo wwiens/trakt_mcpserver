@@ -37,7 +37,7 @@ class ShowRecommendationsClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If the client is not authenticated.
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError("get show recommendations")
 
         endpoint = TRAKT_ENDPOINTS["recommendations_shows"]
@@ -67,7 +67,7 @@ class ShowRecommendationsClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If the client is not authenticated.
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError("hide show recommendation")
 
         endpoint = TRAKT_ENDPOINTS["hide_show_recommendation"].replace(
@@ -89,7 +89,7 @@ class ShowRecommendationsClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If the client is not authenticated.
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError("unhide show recommendation")
 
         endpoint = TRAKT_ENDPOINTS["unhide_recommendations"]

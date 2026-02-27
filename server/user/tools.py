@@ -81,7 +81,7 @@ async def _fetch_user_items(
         InvalidParamsError: If validation fails
     """
     limit = _validate_and_normalize_limit(limit, operation=operation)
-    if not client.is_authenticated():
+    if not await client.ensure_authenticated():
         raise AuthenticationRequiredError(
             action=on_auth_action,
             auth_url=AUTH_VERIFICATION_URL,

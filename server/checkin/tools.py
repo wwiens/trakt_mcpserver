@@ -56,8 +56,8 @@ async def checkin_to_show(
     """
     client = CheckinClient()
 
-    # Check authentication
-    if not client.is_authenticated():
+    # Check authentication (attempts token refresh if expired)
+    if not await client.ensure_authenticated():
         raise BaseToolErrorMixin.handle_authentication_required(
             action="check in to a show episode",
             show_id=show_id,

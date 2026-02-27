@@ -295,7 +295,7 @@ async def test_authentication_flow_integration(
         # Create unauthenticated sync client
         sync_client = SyncClient()
         # No auth_token set - should be unauthenticated
-        sync_client.is_authenticated = lambda: False
+        sync_client.ensure_authenticated = AsyncMock(return_value=False)
 
         with patch("server.sync.tools.SyncClient", return_value=sync_client):
             from server.sync.tools import (
@@ -842,7 +842,7 @@ async def test_fetch_user_ratings_pagination_authentication_flow_integration(
     ):
         # Create unauthenticated sync client
         sync_client = SyncClient()
-        sync_client.is_authenticated = lambda: False
+        sync_client.ensure_authenticated = AsyncMock(return_value=False)
 
         with patch("server.sync.tools.SyncClient", return_value=sync_client):
             from server.sync.tools import fetch_user_ratings

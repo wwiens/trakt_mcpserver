@@ -33,6 +33,9 @@ RUN mkdir -p /data && chown -R appuser:appuser /data
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app
 
+# Declare volume for auth token persistence across container restarts
+VOLUME /data
+
 # Switch to non-root user
 USER appuser
 

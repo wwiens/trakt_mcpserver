@@ -146,7 +146,7 @@ async def test_checkin_to_show_not_authenticated():
     ):
         client = CheckinClient()
         # Mock authentication to return False
-        client.is_authenticated = Mock(return_value=False)
+        client.ensure_authenticated = AsyncMock(return_value=False)
 
         with pytest.raises(ValueError) as exc_info:
             await client.checkin_to_show(

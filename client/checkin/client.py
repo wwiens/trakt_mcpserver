@@ -45,7 +45,7 @@ class CheckinClient(AuthClient):
         Raises:
             ValueError: If not authenticated or missing required parameters
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise ValueError("You must be authenticated to check in to a show")
 
         if not show_id and not show_title:

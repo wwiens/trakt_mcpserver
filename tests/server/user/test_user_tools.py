@@ -2,7 +2,7 @@ import asyncio
 import sys
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -30,7 +30,7 @@ async def test_fetch_user_watched_shows_authenticated():
 
     with patch("server.user.tools.UserClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         future: asyncio.Future[Any] = asyncio.Future()
         future.set_result(sample_shows)
@@ -42,7 +42,7 @@ async def test_fetch_user_watched_shows_authenticated():
         assert "Breaking Bad (2008)" in result
         assert "Plays: 5" in result
 
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.get_user_watched_shows.assert_called_once()
 
 
@@ -63,7 +63,7 @@ async def test_fetch_user_watched_movies_authenticated():
 
     with patch("server.user.tools.UserClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         future: asyncio.Future[Any] = asyncio.Future()
         future.set_result(sample_movies)
@@ -75,7 +75,7 @@ async def test_fetch_user_watched_movies_authenticated():
         assert "Inception (2010)" in result
         assert "Plays: 3" in result
 
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.get_user_watched_movies.assert_called_once()
 
 
@@ -105,7 +105,7 @@ async def test_fetch_user_watched_shows_limit_zero():
 
     with patch("server.user.tools.UserClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         future: asyncio.Future[Any] = asyncio.Future()
         future.set_result(sample_shows)
@@ -117,7 +117,7 @@ async def test_fetch_user_watched_shows_limit_zero():
         assert "Breaking Bad (2008)" in result
         assert "The Office (2005)" in result
 
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.get_user_watched_shows.assert_called_once()
 
 
@@ -147,7 +147,7 @@ async def test_fetch_user_watched_movies_limit_zero():
 
     with patch("server.user.tools.UserClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         future: asyncio.Future[Any] = asyncio.Future()
         future.set_result(sample_movies)
@@ -159,7 +159,7 @@ async def test_fetch_user_watched_movies_limit_zero():
         assert "Inception (2010)" in result
         assert "The Matrix (1999)" in result
 
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.get_user_watched_movies.assert_called_once()
 
 
@@ -168,7 +168,7 @@ async def test_fetch_user_watched_shows_not_authenticated():
     """Test fetching user watched shows when not authenticated."""
     with patch("server.user.tools.UserClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = False
+        mock_client.ensure_authenticated = AsyncMock(return_value=False)
 
         with pytest.raises(AuthenticationRequiredError) as exc_info:
             await fetch_user_watched_shows()
@@ -176,7 +176,7 @@ async def test_fetch_user_watched_shows_not_authenticated():
         # Verify error contains expected information
         assert exc_info.value.data is not None
         assert exc_info.value.data["error_type"] == "auth_required"
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -184,7 +184,7 @@ async def test_fetch_user_watched_movies_not_authenticated():
     """Test fetching user watched movies when not authenticated."""
     with patch("server.user.tools.UserClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = False
+        mock_client.ensure_authenticated = AsyncMock(return_value=False)
 
         with pytest.raises(AuthenticationRequiredError) as exc_info:
             await fetch_user_watched_movies()
@@ -192,4 +192,4 @@ async def test_fetch_user_watched_movies_not_authenticated():
         # Verify error contains expected information
         assert exc_info.value.data is not None
         assert exc_info.value.data["error_type"] == "auth_required"
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()

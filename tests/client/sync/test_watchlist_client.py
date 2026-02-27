@@ -1,7 +1,7 @@
 """Tests for the client.sync.watchlist_client module."""
 
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -131,8 +131,8 @@ class TestSyncWatchlistClient:
         client = SyncWatchlistClient()
         # Mock authentication status
         client.auth_token = create_mock_auth_token()
-        # Mock the is_authenticated method to return True
-        client.is_authenticated = lambda: True
+        # Mock the ensure_authenticated method to return True
+        client.ensure_authenticated = AsyncMock(return_value=True)
         return client
 
     @pytest.fixture
@@ -144,8 +144,8 @@ class TestSyncWatchlistClient:
             monkeypatch.setenv(key, value)
 
         client = SyncWatchlistClient()
-        # Explicitly mock is_authenticated to return False
-        client.is_authenticated = lambda: False
+        # Explicitly mock ensure_authenticated to return False
+        client.ensure_authenticated = AsyncMock(return_value=False)
         return client
 
     @pytest.mark.asyncio
@@ -697,8 +697,8 @@ class TestSyncClient:
 
         client = SyncClient()
         client.auth_token = create_mock_auth_token()
-        # Mock the is_authenticated method to return True
-        client.is_authenticated = lambda: True
+        # Mock the ensure_authenticated method to return True
+        client.ensure_authenticated = AsyncMock(return_value=True)
 
         with patch.object(client, "_make_paginated_request") as mock_request:
             # Mock empty paginated response

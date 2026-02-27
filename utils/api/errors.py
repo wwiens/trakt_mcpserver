@@ -301,9 +301,7 @@ def handle_api_errors_func(
             )
 
             if isinstance(e, AuthenticationRequiredError):
-                return format_auth_required_message(
-                    extract_auth_action(e)
-                )
+                return format_auth_required_message(extract_auth_action(e))
             # Re-raise other MCP errors as-is
             raise
         except json.JSONDecodeError as e:

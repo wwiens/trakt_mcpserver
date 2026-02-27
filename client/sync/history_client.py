@@ -47,7 +47,7 @@ class SyncHistoryClient(AuthClient):
             AuthenticationRequiredError: If not authenticated or item_id provided without history_type
             ValidationError: If start_at/end_at are not valid ISO 8601 dates
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="fetch watch history")
 
         # Validate query parameters with Pydantic model
@@ -100,7 +100,7 @@ class SyncHistoryClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="add items to history")
 
         # Convert request to dict, excluding None values
@@ -126,7 +126,7 @@ class SyncHistoryClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="remove items from history")
 
         # Convert request to dict, excluding None values

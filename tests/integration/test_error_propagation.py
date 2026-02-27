@@ -147,7 +147,7 @@ class TestErrorPropagationThroughStack:
 
             user_client_instance = mock_user_client.return_value
             user_client_instance._make_request.side_effect = error_401
-            user_client_instance.is_authenticated.return_value = False
+            user_client_instance.ensure_authenticated = AsyncMock(return_value=False)
 
             from server.user.tools import fetch_user_watched_shows
 
@@ -495,7 +495,7 @@ class TestErrorContextPreservation:
         with patch("server.checkin.tools.CheckinClient") as mock_checkin_client:
             # Mock authentication to be successful so we can test parameter validation
             mock_client_instance = mock_checkin_client.return_value
-            mock_client_instance.is_authenticated.return_value = True
+            mock_client_instance.ensure_authenticated = AsyncMock(return_value=True)
 
             with pytest.raises(InvalidParamsError) as exc_info:
                 await checkin_to_show(season=0, episode=-1, show_id="")

@@ -41,7 +41,7 @@ class SyncRatingsClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="access your personal ratings")
 
         # Build the endpoint URL
@@ -80,7 +80,7 @@ class SyncRatingsClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="add personal ratings")
 
         # Convert request to dict, excluding None values
@@ -106,7 +106,7 @@ class SyncRatingsClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="remove personal ratings")
 
         # Convert request to dict, excluding None values

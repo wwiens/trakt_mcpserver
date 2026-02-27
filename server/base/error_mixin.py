@@ -311,7 +311,18 @@ class BaseToolErrorMixin:
             async def wrapper(*args: Any, **kwargs: Any) -> T:
                 try:
                     return await func(*args, **kwargs)
-                except MCPError:
+                except MCPError as e:
+                    # Return friendly message for auth errors instead of raising
+                    from utils.api.error_types import (
+                        AuthenticationRequiredError,
+                        extract_auth_action,
+                        format_auth_required_message,
+                    )
+
+                    if isinstance(e, AuthenticationRequiredError):
+                        return format_auth_required_message(  # type: ignore[return-value]
+                            extract_auth_action(e)
+                        )
                     # Let other MCP errors propagate unchanged
                     raise
                 except Exception as e:

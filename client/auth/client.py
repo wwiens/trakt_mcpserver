@@ -132,6 +132,58 @@ class AuthClient(BaseClient):
         self._update_headers_with_token()
         return token
 
+    async def refresh_access_token(self) -> bool:
+        """Refresh the access token using the stored refresh token.
+
+        Exchanges the refresh_token for a new access_token via the Trakt
+        OAuth token endpoint. On success, saves the new token pair to disk.
+
+        Returns:
+            True if refresh succeeded, False if refresh failed
+        """
+        if not self.auth_token or not self.auth_token.refresh_token:
+            return False
+
+        data = {
+            "refresh_token": self.auth_token.refresh_token,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "redirect_uri": "urn:ietf:wg:oauth:2.0:oob",
+            "grant_type": "refresh_token",
+        }
+
+        try:
+            token = await self._post_typed_request(
+                TRAKT_ENDPOINTS["token"], data, response_type=TraktAuthToken
+            )
+            self.auth_token = token
+            self._save_auth_token(token)
+            self._update_headers_with_token()
+            logger.info("Successfully refreshed access token")
+            return True
+        except Exception:
+            logger.warning("Failed to refresh access token, clearing stale token")
+            self.clear_auth_token()
+            return False
+
+    async def ensure_authenticated(self) -> bool:
+        """Ensure the client is authenticated, refreshing the token if needed.
+
+        Checks authentication status and attempts a token refresh when the
+        access token has expired but a refresh token is available.
+
+        Returns:
+            True if authenticated (possibly after refresh), False otherwise
+        """
+        if self.is_authenticated():
+            return True
+
+        # Token exists but expired — try refreshing
+        if self.auth_token and self.auth_token.refresh_token:
+            return await self.refresh_access_token()
+
+        return False
+
     def clear_auth_token(self) -> bool:
         """Clear the stored authentication token.
 

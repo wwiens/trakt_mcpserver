@@ -21,7 +21,7 @@ class UserClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If the client is not authenticated.
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError("get user watched shows")
 
         return await self._make_typed_list_request(
@@ -38,7 +38,7 @@ class UserClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If the client is not authenticated.
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError("get user watched movies")
 
         return await self._make_typed_list_request(
