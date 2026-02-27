@@ -113,10 +113,6 @@ def register_checkin_tools(mcp: FastMCP) -> Any:
         name=TOOL_NAMES["checkin_to_show"],
         description="Check in to a TV show episode you're currently watching on Trakt",
     )
-    @BaseToolErrorMixin.with_error_handling(
-        operation="checkin_to_show_tool",
-        tool=TOOL_NAMES["checkin_to_show"],
-    )
     async def checkin_to_show_tool(
         season: Annotated[int, Field(description=SEASON_DESCRIPTION)],
         episode: Annotated[int, Field(description=EPISODE_DESCRIPTION)],

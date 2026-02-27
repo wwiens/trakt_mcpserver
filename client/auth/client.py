@@ -31,7 +31,10 @@ class AuthClient(BaseClient):
     def __init__(self):
         """Initialize the authentication client."""
         super().__init__()
-        self._clear_lock: threading.Lock = threading.Lock()
+        # Guards all mutations to self.auth_token / self.headers["Authorization"].
+        # Used by both clear_auth_token (sync) and refresh_access_token (async,
+        # but never held across an await) to prevent interleaved writes.
+        self._token_lock: threading.Lock = threading.Lock()
         self._refresh_lock: asyncio.Lock = asyncio.Lock()
         # Try to load auth token if exists
         self.auth_token: TraktAuthToken | None = self._load_auth_token()
@@ -169,9 +172,10 @@ class AuthClient(BaseClient):
                 token = await self._post_typed_request(
                     TRAKT_ENDPOINTS["token"], data, response_type=TraktAuthToken
                 )
-                self.auth_token = token
-                self._save_auth_token(token)
-                self._update_headers_with_token()
+                with self._token_lock:
+                    self.auth_token = token
+                    self._save_auth_token(token)
+                    self._update_headers_with_token()
                 logger.info("Successfully refreshed access token")
                 return True
             except (
@@ -215,7 +219,7 @@ class AuthClient(BaseClient):
         Returns:
             True if token was cleared, False if no token existed or already cleared
         """
-        with self._clear_lock:
+        with self._token_lock:
             # Early exit if already cleared by another concurrent call
             if self.auth_token is None:
                 return False

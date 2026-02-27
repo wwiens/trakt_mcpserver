@@ -180,7 +180,9 @@ def handle_api_errors(
                 data=error_data,
             ) from e
         except MCPError:
-            # Re-raise MCP errors as-is
+            # Re-raise MCP errors as-is — client methods should propagate auth
+            # errors to the server layer, where with_error_handling or
+            # handle_api_errors_func converts them to friendly messages.
             raise
         except json.JSONDecodeError as e:
             # Treat JSON decode errors as internal errors
@@ -293,7 +295,10 @@ def handle_api_errors_func(
                 data=error_data,
             ) from e
         except MCPError as e:
-            # Return friendly message for auth errors instead of raising
+            # Server-layer decorator: convert auth errors to friendly messages
+            # so MCP clients see helpful text instead of raw error payloads.
+            # (The class-method decorator handle_api_errors re-raises MCPErrors
+            # so the server layer can handle them with full request context.)
             from .error_types import (
                 AuthenticationRequiredError,
                 extract_auth_action,
