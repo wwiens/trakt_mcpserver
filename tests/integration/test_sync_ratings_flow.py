@@ -309,6 +309,7 @@ async def test_authentication_flow_integration(
             assert "Authentication Required" in result
             assert "start_device_auth" in result
             assert "access your personal ratings" in result
+            sync_client.ensure_authenticated.assert_awaited()
 
             result = await add_user_ratings(
                 rating_type="movies",
@@ -316,6 +317,7 @@ async def test_authentication_flow_integration(
             )
             assert "Authentication Required" in result
             assert "add personal ratings" in result
+            sync_client.ensure_authenticated.assert_awaited()
 
             result = await remove_user_ratings(
                 rating_type="movies",
@@ -323,6 +325,7 @@ async def test_authentication_flow_integration(
             )
             assert "Authentication Required" in result
             assert "remove personal ratings" in result
+            sync_client.ensure_authenticated.assert_awaited()
 
 
 @pytest.mark.asyncio
@@ -852,6 +855,7 @@ async def test_fetch_user_ratings_pagination_authentication_flow_integration(
             assert "Authentication Required" in result
             assert "start_device_auth" in result
             assert "access your personal ratings" in result
+            sync_client.ensure_authenticated.assert_awaited()
 
 
 @pytest.mark.asyncio

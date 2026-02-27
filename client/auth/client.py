@@ -138,9 +138,10 @@ class AuthClient(BaseClient):
         token = await self._post_typed_request(
             TRAKT_ENDPOINTS["device_token"], data, response_type=TraktAuthToken
         )
-        self.auth_token = token
-        self._save_auth_token(token)
-        self._update_headers_with_token()
+        with self._token_lock:
+            self._save_auth_token(token)
+            self.auth_token = token
+            self._update_headers_with_token()
         return token
 
     async def refresh_access_token(self) -> bool:
@@ -160,11 +161,14 @@ class AuthClient(BaseClient):
             if self.is_authenticated():
                 return True
 
-            if not self.auth_token or not self.auth_token.refresh_token:
+            with self._token_lock:
+                auth_snapshot = self.auth_token
+
+            if not auth_snapshot or not auth_snapshot.refresh_token:
                 return False
 
             data = {
-                "refresh_token": self.auth_token.refresh_token,
+                "refresh_token": auth_snapshot.refresh_token,
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
                 "redirect_uri": OAUTH_REDIRECT_URI,
@@ -176,8 +180,8 @@ class AuthClient(BaseClient):
                     TRAKT_ENDPOINTS["token"], data, response_type=TraktAuthToken
                 )
                 with self._token_lock:
-                    self.auth_token = token
                     self._save_auth_token(token)
+                    self.auth_token = token
                     self._update_headers_with_token()
                 logger.info("Successfully refreshed access token")
                 return True

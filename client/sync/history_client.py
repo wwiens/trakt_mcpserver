@@ -44,8 +44,9 @@ class SyncHistoryClient(AuthClient):
             Paginated response with watch history items and pagination metadata
 
         Raises:
-            AuthenticationRequiredError: If not authenticated or item_id provided without history_type
-            ValidationError: If start_at/end_at are not valid ISO 8601 dates
+            AuthenticationRequiredError: If not authenticated
+            ValidationError: If query params are invalid (e.g., item_id without
+                history_type, or start_at/end_at not valid ISO 8601 dates)
         """
         if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="fetch watch history")
