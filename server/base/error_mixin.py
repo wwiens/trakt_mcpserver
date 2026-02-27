@@ -5,7 +5,11 @@ from functools import wraps
 from typing import Any, TypeGuard, TypeVar
 
 from config.auth import AUTH_VERIFICATION_URL
-from utils.api.error_types import AuthenticationRequiredError
+from utils.api.error_types import (
+    AuthenticationRequiredError,
+    extract_auth_action,
+    format_auth_required_message,
+)
 from utils.api.errors import InternalError, InvalidParamsError, MCPError
 from utils.api.request_context import add_context_to_error_data
 from utils.api.structured_logging import get_structured_logger
@@ -313,12 +317,6 @@ class BaseToolErrorMixin:
                     return await func(*args, **kwargs)
                 except MCPError as e:
                     # Return friendly message for auth errors instead of raising
-                    from utils.api.error_types import (
-                        AuthenticationRequiredError,
-                        extract_auth_action,
-                        format_auth_required_message,
-                    )
-
                     if isinstance(e, AuthenticationRequiredError):
                         return format_auth_required_message(  # type: ignore[return-value]
                             extract_auth_action(e)

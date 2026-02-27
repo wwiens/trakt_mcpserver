@@ -14,7 +14,9 @@ def extract_auth_action(error: "AuthenticationRequiredError") -> str:
     Returns:
         The action string, or a default if not found
     """
-    return str(error.data.get("action", "perform this action"))  # type: ignore[union-attr]
+    if error.data is not None and isinstance(error.data, dict):
+        return str(error.data.get("action", "perform this action"))  # type: ignore[union-attr]
+    return "perform this action"
 
 
 def format_auth_required_message(action: str) -> str:

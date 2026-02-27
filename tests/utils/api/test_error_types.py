@@ -12,6 +12,8 @@ from utils.api.error_types import (
     TraktResourceNotFoundError,
     TraktServerError,
     TraktValidationError,
+    extract_auth_action,
+    format_auth_required_message,
 )
 from utils.api.errors import InvalidParamsError, InvalidRequestError, MCPError
 
@@ -413,3 +415,35 @@ class TestErrorHierarchy:
         assert TraktResourceNotFoundError("show", "test").code == -32600
         assert TraktRateLimitError().code == -32600
         assert TraktServerError(500).code == -32603
+
+
+class TestExtractAuthAction:
+    """Test extract_auth_action helper function."""
+
+    def test_extracts_action_from_valid_error(self) -> None:
+        """Test extracting action from a properly constructed error."""
+        error = AuthenticationRequiredError("access shows")
+        assert extract_auth_action(error) == "access shows"
+
+    def test_returns_default_when_data_is_none(self) -> None:
+        """Test fallback when error.data is None."""
+        error = AuthenticationRequiredError("test")
+        error.data = None  # type: ignore[assignment]
+        assert extract_auth_action(error) == "perform this action"
+
+    def test_returns_default_when_action_key_missing(self) -> None:
+        """Test fallback when data dict lacks 'action' key."""
+        error = AuthenticationRequiredError("test")
+        error.data = {"error_type": "auth_required"}
+        assert extract_auth_action(error) == "perform this action"
+
+
+class TestFormatAuthRequiredMessage:
+    """Test format_auth_required_message helper function."""
+
+    def test_formats_message_with_action(self) -> None:
+        """Test formatted message contains action and instructions."""
+        result = format_auth_required_message("access shows")
+        assert "Authentication Required" in result
+        assert "access shows" in result
+        assert "start_device_auth" in result

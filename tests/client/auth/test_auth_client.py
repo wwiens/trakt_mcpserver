@@ -623,6 +623,35 @@ async def test_ensure_authenticated_no_token(monkeypatch: pytest.MonkeyPatch) ->
         assert result is False
 
 
+@pytest.mark.asyncio
+async def test_ensure_authenticated_expired_no_refresh_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that ensure_authenticated returns False when token is expired but has no refresh token."""
+    current_time = int(time.time())
+
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    with patch("dotenv.load_dotenv"):
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="expired_token",
+            refresh_token="",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+
+        result = await client.ensure_authenticated()
+
+        assert result is False
+        # Token should be unchanged (no refresh attempted)
+        assert client.auth_token is not None
+        assert client.auth_token.access_token == "expired_token"
+
+
 def test_clear_auth_token_file_deleted_externally(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

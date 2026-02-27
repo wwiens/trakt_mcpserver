@@ -1,5 +1,6 @@
 """Authentication client for Trakt API."""
 
+import asyncio
 import contextlib
 import json
 import logging
@@ -8,9 +9,12 @@ import threading
 import time
 from typing import Final
 
+import httpx
+
+from config.auth import OAUTH_REDIRECT_URI
 from config.endpoints import TRAKT_ENDPOINTS
 from models.auth import DeviceTokenRequest, TraktAuthToken, TraktDeviceCode
-from utils.api.errors import handle_api_errors
+from utils.api.errors import MCPError, handle_api_errors
 
 from ..base import BaseClient
 
@@ -28,6 +32,7 @@ class AuthClient(BaseClient):
         """Initialize the authentication client."""
         super().__init__()
         self._clear_lock: threading.Lock = threading.Lock()
+        self._refresh_lock: asyncio.Lock = asyncio.Lock()
         # Try to load auth token if exists
         self.auth_token: TraktAuthToken | None = self._load_auth_token()
         if self.auth_token:
@@ -138,33 +143,50 @@ class AuthClient(BaseClient):
         Exchanges the refresh_token for a new access_token via the Trakt
         OAuth token endpoint. On success, saves the new token pair to disk.
 
+        Thread-safe: Uses an async lock to prevent concurrent refresh attempts
+        from racing and invalidating each other's tokens.
+
         Returns:
             True if refresh succeeded, False if refresh failed
         """
-        if not self.auth_token or not self.auth_token.refresh_token:
-            return False
+        async with self._refresh_lock:
+            # Re-check after acquiring lock — another coroutine may have refreshed
+            if self.is_authenticated():
+                return True
 
-        data = {
-            "refresh_token": self.auth_token.refresh_token,
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-            "redirect_uri": "urn:ietf:wg:oauth:2.0:oob",
-            "grant_type": "refresh_token",
-        }
+            if not self.auth_token or not self.auth_token.refresh_token:
+                return False
 
-        try:
-            token = await self._post_typed_request(
-                TRAKT_ENDPOINTS["token"], data, response_type=TraktAuthToken
-            )
-            self.auth_token = token
-            self._save_auth_token(token)
-            self._update_headers_with_token()
-            logger.info("Successfully refreshed access token")
-            return True
-        except Exception:
-            logger.warning("Failed to refresh access token, clearing stale token")
-            self.clear_auth_token()
-            return False
+            data = {
+                "refresh_token": self.auth_token.refresh_token,
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+                "redirect_uri": OAUTH_REDIRECT_URI,
+                "grant_type": "refresh_token",
+            }
+
+            try:
+                token = await self._post_typed_request(
+                    TRAKT_ENDPOINTS["token"], data, response_type=TraktAuthToken
+                )
+                self.auth_token = token
+                self._save_auth_token(token)
+                self._update_headers_with_token()
+                logger.info("Successfully refreshed access token")
+                return True
+            except (
+                httpx.HTTPStatusError,
+                httpx.RequestError,
+                MCPError,
+                OSError,
+                ValueError,
+            ):
+                logger.warning(
+                    "Failed to refresh access token, clearing stale token",
+                    exc_info=True,
+                )
+                self.clear_auth_token()
+                return False
 
     async def ensure_authenticated(self) -> bool:
         """Ensure the client is authenticated, refreshing the token if needed.
