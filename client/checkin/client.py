@@ -5,6 +5,7 @@ from typing import Any, cast
 from config.endpoints import TRAKT_ENDPOINTS
 from models.checkin import TraktCheckin
 from models.types import CheckinResponse
+from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -43,10 +44,11 @@ class CheckinClient(AuthClient):
             Check-in response data
 
         Raises:
-            ValueError: If not authenticated or missing required parameters
+            AuthenticationRequiredError: If not authenticated
+            ValueError: If missing required parameters
         """
-        if not self.is_authenticated():
-            raise ValueError("You must be authenticated to check in to a show")
+        if not await self.ensure_authenticated():
+            raise AuthenticationRequiredError(action="check in to a show")
 
         if not show_id and not show_title:
             raise ValueError("Either show_id or show_title must be provided")

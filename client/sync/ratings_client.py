@@ -9,6 +9,7 @@ from models.sync.ratings import (
     TraktSyncRatingsRequest,
 )
 from models.types.pagination import PaginatedResponse, PaginationParams
+from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -38,12 +39,10 @@ class SyncRatingsClient(AuthClient):
             Paginated response with user's ratings and pagination metadata
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
-            raise ValueError(
-                "You must be authenticated to access your personal ratings"
-            )
+        if not await self.ensure_authenticated():
+            raise AuthenticationRequiredError(action="access your personal ratings")
 
         # Build the endpoint URL
         if rating is not None:
@@ -79,10 +78,10 @@ class SyncRatingsClient(AuthClient):
             Summary of added ratings with counts and any not found items
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
-            raise ValueError("You must be authenticated to add personal ratings")
+        if not await self.ensure_authenticated():
+            raise AuthenticationRequiredError(action="add personal ratings")
 
         # Convert request to dict, excluding None values
         # Use mode='json' to serialize datetime fields to ISO 8601 strings
@@ -105,10 +104,10 @@ class SyncRatingsClient(AuthClient):
             Summary of removed ratings with counts and any not found items
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
-            raise ValueError("You must be authenticated to remove personal ratings")
+        if not await self.ensure_authenticated():
+            raise AuthenticationRequiredError(action="remove personal ratings")
 
         # Convert request to dict, excluding None values
         # Use mode='json' to serialize datetime fields to ISO 8601 strings

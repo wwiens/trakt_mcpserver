@@ -6,6 +6,7 @@ import pytest
 
 from client.checkin import CheckinClient
 from models.auth import TraktAuthToken
+from utils.api.error_types import AuthenticationRequiredError
 
 
 @pytest.mark.asyncio
@@ -146,14 +147,14 @@ async def test_checkin_to_show_not_authenticated():
     ):
         client = CheckinClient()
         # Mock authentication to return False
-        client.is_authenticated = Mock(return_value=False)
+        client.ensure_authenticated = AsyncMock(return_value=False)
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(AuthenticationRequiredError) as exc_info:
             await client.checkin_to_show(
                 show_id="1", episode_season=1, episode_number=1
             )
 
-        assert "You must be authenticated to check in to a show" in str(exc_info.value)
+        assert "check in to a show" in str(exc_info.value)
 
 
 @pytest.mark.asyncio

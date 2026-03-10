@@ -295,7 +295,7 @@ async def test_authentication_flow_integration(
         # Create unauthenticated sync client
         sync_client = SyncClient()
         # No auth_token set - should be unauthenticated
-        sync_client.is_authenticated = lambda: False
+        sync_client.ensure_authenticated = AsyncMock(return_value=False)
 
         with patch("server.sync.tools.SyncClient", return_value=sync_client):
             from server.sync.tools import (
@@ -303,29 +303,29 @@ async def test_authentication_flow_integration(
                 fetch_user_ratings,
                 remove_user_ratings,
             )
-            # All operations should raise authentication errors
 
-            with pytest.raises(
-                ValueError,
-                match="You must be authenticated to access your personal ratings",
-            ):
-                await fetch_user_ratings(rating_type="movies")
+            # All operations should return auth required messages
+            result = await fetch_user_ratings(rating_type="movies")
+            assert "Authentication Required" in result
+            assert "start_device_auth" in result
+            assert "access your personal ratings" in result
+            sync_client.ensure_authenticated.assert_awaited()
 
-            with pytest.raises(
-                ValueError, match="You must be authenticated to add personal ratings"
-            ):
-                await add_user_ratings(
-                    rating_type="movies",
-                    items=[UserRatingRequestItem(rating=10, imdb_id="tt1375666")],
-                )
+            result = await add_user_ratings(
+                rating_type="movies",
+                items=[UserRatingRequestItem(rating=10, imdb_id="tt1375666")],
+            )
+            assert "Authentication Required" in result
+            assert "add personal ratings" in result
+            sync_client.ensure_authenticated.assert_awaited()
 
-            with pytest.raises(
-                ValueError, match="You must be authenticated to remove personal ratings"
-            ):
-                await remove_user_ratings(
-                    rating_type="movies",
-                    items=[UserRatingIdentifier(imdb_id="tt1375666")],
-                )
+            result = await remove_user_ratings(
+                rating_type="movies",
+                items=[UserRatingIdentifier(imdb_id="tt1375666")],
+            )
+            assert "Authentication Required" in result
+            assert "remove personal ratings" in result
+            sync_client.ensure_authenticated.assert_awaited()
 
 
 @pytest.mark.asyncio
@@ -845,17 +845,17 @@ async def test_fetch_user_ratings_pagination_authentication_flow_integration(
     ):
         # Create unauthenticated sync client
         sync_client = SyncClient()
-        sync_client.is_authenticated = lambda: False
+        sync_client.ensure_authenticated = AsyncMock(return_value=False)
 
         with patch("server.sync.tools.SyncClient", return_value=sync_client):
             from server.sync.tools import fetch_user_ratings
 
-            # Paginated request should also require authentication
-            with pytest.raises(
-                ValueError,
-                match="You must be authenticated to access your personal ratings",
-            ):
-                await fetch_user_ratings(rating_type="movies", page=1)
+            # Paginated request should also return auth required message
+            result = await fetch_user_ratings(rating_type="movies", page=1)
+            assert "Authentication Required" in result
+            assert "start_device_auth" in result
+            assert "access your personal ratings" in result
+            sync_client.ensure_authenticated.assert_awaited()
 
 
 @pytest.mark.asyncio

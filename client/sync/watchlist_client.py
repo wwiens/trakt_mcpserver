@@ -9,6 +9,7 @@ from models.sync.watchlist import (
     TraktWatchlistItem,
 )
 from models.types.pagination import PaginatedResponse, PaginationParams
+from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -53,12 +54,10 @@ class SyncWatchlistClient(AuthClient):
             Paginated response with user's watchlist items and pagination metadata
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
-            raise ValueError(
-                "You must be authenticated to access your personal watchlist"
-            )
+        if not await self.ensure_authenticated():
+            raise AuthenticationRequiredError(action="access your personal watchlist")
 
         # Build the endpoint URL based on parameters
         if watchlist_type == "all" and sort_by == "rank" and sort_how == "asc":
@@ -100,10 +99,10 @@ class SyncWatchlistClient(AuthClient):
             Summary of added items with counts and any not found items
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
-            raise ValueError("You must be authenticated to add items to your watchlist")
+        if not await self.ensure_authenticated():
+            raise AuthenticationRequiredError(action="add items to your watchlist")
 
         # Convert request to dict, excluding None values
         # Use mode='json' to serialize datetime fields to ISO 8601 strings
@@ -128,12 +127,10 @@ class SyncWatchlistClient(AuthClient):
             Summary of removed items with counts and any not found items
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
-            raise ValueError(
-                "You must be authenticated to remove items from your watchlist"
-            )
+        if not await self.ensure_authenticated():
+            raise AuthenticationRequiredError(action="remove items from your watchlist")
 
         # Convert request to dict, excluding None values
         # Use mode='json' to serialize datetime fields to ISO 8601 strings

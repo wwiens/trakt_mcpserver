@@ -445,3 +445,18 @@ class TestDecoratorIntegration:
         assert exc_info.value.data is not None
         assert exc_info.value.data["http_status"] == 400
         assert exc_info.value.data["details"] == "Bad Request"
+
+    @pytest.mark.asyncio
+    async def test_auth_error_returns_friendly_message(self) -> None:
+        """Test that AuthenticationRequiredError is caught and returns a friendly message."""
+
+        @handle_api_errors_func
+        async def test_func() -> str:
+            raise AuthenticationRequiredError("access shows")
+
+        result = await test_func()
+
+        assert isinstance(result, str)
+        assert "Authentication Required" in result
+        assert "access shows" in result
+        assert "start_device_auth" in result

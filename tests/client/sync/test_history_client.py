@@ -22,6 +22,7 @@ from models.sync.history import (
 )
 from models.types.ids import TraktIds
 from models.types.pagination import PaginatedResponse, PaginationMetadata
+from utils.api.error_types import AuthenticationRequiredError
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -268,10 +269,10 @@ class TestSyncHistoryClient:
         self,
         authenticated_sync_client: SyncClient,
     ) -> None:
-        """Test that unauthenticated requests raise ValueError."""
+        """Test that unauthenticated requests raise AuthenticationRequiredError."""
         authenticated_sync_client.auth_token = None
 
-        with pytest.raises(ValueError, match="authenticated"):
+        with pytest.raises(AuthenticationRequiredError):
             await authenticated_sync_client.get_history()
 
     @pytest.mark.asyncio
