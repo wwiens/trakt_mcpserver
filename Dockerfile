@@ -38,6 +38,9 @@ ENV TRAKT_AUTH_TOKEN_PATH=/data/auth_token.json
 # Expose SSE port (will be overridden by runtime environment)
 EXPOSE 8080
 
+# Declare volume for auth token persistence across container restarts
+VOLUME /data
+
 # Switch to non-root user
 USER appuser
 

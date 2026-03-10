@@ -57,7 +57,7 @@ class ShowProgressClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="access show progress")
 
         validated = ShowProgressParams(

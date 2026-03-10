@@ -10,6 +10,7 @@ from models.sync.history import (
     WatchHistoryItem,
 )
 from models.types.pagination import PaginatedResponse, PaginationParams
+from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
 
 from ..auth import AuthClient
@@ -43,11 +44,12 @@ class SyncHistoryClient(AuthClient):
             Paginated response with watch history items and pagination metadata
 
         Raises:
-            ValueError: If not authenticated or item_id provided without history_type
-            ValidationError: If start_at/end_at are not valid ISO 8601 dates
+            AuthenticationRequiredError: If not authenticated
+            ValidationError: If query params are invalid (e.g., item_id without
+                history_type, or start_at/end_at not valid ISO 8601 dates)
         """
-        if not self.is_authenticated():
-            raise ValueError("You must be authenticated to fetch watch history")
+        if not await self.ensure_authenticated():
+            raise AuthenticationRequiredError(action="fetch watch history")
 
         # Validate query parameters with Pydantic model
         params = HistoryQueryParams(
@@ -97,10 +99,10 @@ class SyncHistoryClient(AuthClient):
             Summary of added items with counts and any not found items
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
-            raise ValueError("You must be authenticated to add items to history")
+        if not await self.ensure_authenticated():
+            raise AuthenticationRequiredError(action="add items to history")
 
         # Convert request to dict, excluding None values
         # Use mode='json' to serialize datetime fields to ISO 8601 strings
@@ -123,10 +125,10 @@ class SyncHistoryClient(AuthClient):
             Summary of removed items with counts and any not found items
 
         Raises:
-            ValueError: If not authenticated
+            AuthenticationRequiredError: If not authenticated
         """
-        if not self.is_authenticated():
-            raise ValueError("You must be authenticated to remove items from history")
+        if not await self.ensure_authenticated():
+            raise AuthenticationRequiredError(action="remove items from history")
 
         # Convert request to dict, excluding None values
         # Use mode='json' to serialize datetime fields to ISO 8601 strings

@@ -33,8 +33,8 @@ async def test_get_movie_recommendations_not_authenticated(
 ) -> None:
     """Test that get_movie_recommendations requires authentication."""
     client = RecommendationsClient()
-    # Mock is_authenticated to return False (in case auth_token.json exists)
-    client.is_authenticated = MagicMock(return_value=False)
+    # Mock ensure_authenticated to return False (in case auth_token.json exists)
+    client.ensure_authenticated = AsyncMock(return_value=False)
     with pytest.raises(AuthenticationRequiredError):
         await client.get_movie_recommendations()
 
@@ -45,8 +45,8 @@ async def test_get_show_recommendations_not_authenticated(
 ) -> None:
     """Test that get_show_recommendations requires authentication."""
     client = RecommendationsClient()
-    # Mock is_authenticated to return False (in case auth_token.json exists)
-    client.is_authenticated = MagicMock(return_value=False)
+    # Mock ensure_authenticated to return False (in case auth_token.json exists)
+    client.ensure_authenticated = AsyncMock(return_value=False)
     with pytest.raises(AuthenticationRequiredError):
         await client.get_show_recommendations()
 
@@ -57,8 +57,8 @@ async def test_hide_movie_recommendation_not_authenticated(
 ) -> None:
     """Test that hide_movie_recommendation requires authentication."""
     client = RecommendationsClient()
-    # Mock is_authenticated to return False (in case auth_token.json exists)
-    client.is_authenticated = MagicMock(return_value=False)
+    # Mock ensure_authenticated to return False (in case auth_token.json exists)
+    client.ensure_authenticated = AsyncMock(return_value=False)
     with pytest.raises(AuthenticationRequiredError):
         await client.hide_movie_recommendation("tron-legacy-2010")
 
@@ -69,8 +69,8 @@ async def test_hide_show_recommendation_not_authenticated(
 ) -> None:
     """Test that hide_show_recommendation requires authentication."""
     client = RecommendationsClient()
-    # Mock is_authenticated to return False (in case auth_token.json exists)
-    client.is_authenticated = MagicMock(return_value=False)
+    # Mock ensure_authenticated to return False (in case auth_token.json exists)
+    client.ensure_authenticated = AsyncMock(return_value=False)
     with pytest.raises(AuthenticationRequiredError):
         await client.hide_show_recommendation("breaking-bad")
 
@@ -81,8 +81,8 @@ async def test_unhide_movie_recommendation_not_authenticated(
 ) -> None:
     """Test that unhide_movie_recommendation requires authentication."""
     client = RecommendationsClient()
-    # Mock is_authenticated to return False (in case auth_token.json exists)
-    client.is_authenticated = MagicMock(return_value=False)
+    # Mock ensure_authenticated to return False (in case auth_token.json exists)
+    client.ensure_authenticated = AsyncMock(return_value=False)
     with pytest.raises(AuthenticationRequiredError):
         await client.unhide_movie_recommendation("tron-legacy-2010")
 
@@ -93,8 +93,8 @@ async def test_unhide_show_recommendation_not_authenticated(
 ) -> None:
     """Test that unhide_show_recommendation requires authentication."""
     client = RecommendationsClient()
-    # Mock is_authenticated to return False (in case auth_token.json exists)
-    client.is_authenticated = MagicMock(return_value=False)
+    # Mock ensure_authenticated to return False (in case auth_token.json exists)
+    client.ensure_authenticated = AsyncMock(return_value=False)
     with pytest.raises(AuthenticationRequiredError):
         await client.unhide_show_recommendation("breaking-bad")
 

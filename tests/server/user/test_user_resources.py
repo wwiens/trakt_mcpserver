@@ -2,7 +2,7 @@ import asyncio
 import sys
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -30,7 +30,7 @@ async def test_get_user_watched_shows_authenticated():
     with patch("server.user.resources.UserClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         # Create awaitable result
         future: asyncio.Future[Any] = asyncio.Future()
@@ -46,7 +46,7 @@ async def test_get_user_watched_shows_authenticated():
         assert "Plays: 5" in result
 
         # Verify the client methods were called
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.get_user_watched_shows.assert_called_once()
 
 
@@ -56,7 +56,7 @@ async def test_get_user_watched_shows_not_authenticated():
     with patch("server.user.resources.UserClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = False
+        mock_client.ensure_authenticated = AsyncMock(return_value=False)
 
         # Call the resource function
         result = await get_user_watched_shows()
@@ -66,7 +66,7 @@ async def test_get_user_watched_shows_not_authenticated():
         assert "You need to authenticate with Trakt" in result
 
         # Verify the client methods were called
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.get_user_watched_shows.assert_not_called()
 
 
@@ -88,7 +88,7 @@ async def test_get_user_watched_movies_authenticated():
     with patch("server.user.resources.UserClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         # Create awaitable result
         future: asyncio.Future[Any] = asyncio.Future()
@@ -104,7 +104,7 @@ async def test_get_user_watched_movies_authenticated():
         assert "Plays: 3" in result
 
         # Verify the client methods were called
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.get_user_watched_movies.assert_called_once()
 
 
@@ -114,7 +114,7 @@ async def test_get_user_watched_movies_not_authenticated():
     with patch("server.user.resources.UserClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = False
+        mock_client.ensure_authenticated = AsyncMock(return_value=False)
 
         # Call the resource function
         result = await get_user_watched_movies()
@@ -124,5 +124,5 @@ async def test_get_user_watched_movies_not_authenticated():
         assert "You need to authenticate with Trakt" in result
 
         # Verify the client methods were called
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.get_user_watched_movies.assert_not_called()

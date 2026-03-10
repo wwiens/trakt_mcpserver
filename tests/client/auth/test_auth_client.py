@@ -397,6 +397,351 @@ def test_clear_auth_token_already_none(monkeypatch: pytest.MonkeyPatch) -> None:
         mock_remove.assert_not_called()
 
 
+@pytest.mark.asyncio
+async def test_refresh_access_token_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that refresh_access_token exchanges refresh token for new access token."""
+    current_time = int(time.time())
+
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    new_token_data = {
+        "access_token": "new_access_token",
+        "refresh_token": "new_refresh_token",
+        "expires_in": 86400,
+        "created_at": current_time,
+        "scope": "public",
+        "token_type": "bearer",
+    }
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = new_token_data
+    mock_response.raise_for_status = MagicMock()
+
+    with (
+        patch("dotenv.load_dotenv"),
+        patch("httpx.AsyncClient") as mock_client,
+        patch("os.open") as mock_os_open,
+        patch("os.fdopen") as mock_fdopen,
+        patch("os.replace"),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=mock_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        mock_os_open.return_value = 3
+        mock_file_obj = MagicMock()
+        mock_fdopen.return_value = mock_file_obj
+        mock_fdopen.return_value.__enter__ = mock_file_obj
+        mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
+
+        client = AuthClient()
+        # Set an expired token with a refresh token
+        client.auth_token = TraktAuthToken(
+            access_token="old_access_token",
+            refresh_token="old_refresh_token",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+
+        result = await client.refresh_access_token()
+
+        assert result is True
+        assert client.auth_token is not None
+        assert client.auth_token.access_token == "new_access_token"
+        assert client.auth_token.refresh_token == "new_refresh_token"
+        assert client.headers["Authorization"] == "Bearer new_access_token"
+
+
+@pytest.mark.asyncio
+async def test_refresh_access_token_auth_failure_clears_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that permanent auth failure (401) clears the stale token."""
+    current_time = int(time.time())
+
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    mock_response = MagicMock()
+    mock_response.status_code = 401
+    mock_response.json.return_value = {"error": "invalid_grant"}
+
+    with (
+        patch("dotenv.load_dotenv"),
+        patch("httpx.AsyncClient") as mock_client,
+        patch("os.remove"),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(
+            return_value=MagicMock(
+                raise_for_status=MagicMock(
+                    side_effect=httpx.HTTPStatusError(
+                        "Unauthorized",
+                        request=MagicMock(),
+                        response=mock_response,
+                    )
+                ),
+                json=MagicMock(return_value={"error": "invalid_grant"}),
+            )
+        )
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="old_access_token",
+            refresh_token="old_refresh_token",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+
+        result = await client.refresh_access_token()
+
+        assert result is False
+        assert client.auth_token is None
+
+
+@pytest.mark.asyncio
+async def test_refresh_access_token_no_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that refresh returns False when no token exists."""
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    with patch("dotenv.load_dotenv"):
+        client = AuthClient()
+        client.auth_token = None
+
+        result = await client.refresh_access_token()
+
+        assert result is False
+
+
+@pytest.mark.asyncio
+async def test_refresh_access_token_network_error_preserves_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that transient network errors do NOT clear the refresh token."""
+    current_time = int(time.time())
+
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    with (
+        patch("dotenv.load_dotenv"),
+        patch("httpx.AsyncClient") as mock_client,
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="old_access_token",
+            refresh_token="old_refresh_token",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+
+        result = await client.refresh_access_token()
+
+        assert result is False
+        # Token must be preserved for next retry
+        assert client.auth_token is not None
+        assert client.auth_token.refresh_token == "old_refresh_token"
+
+
+@pytest.mark.asyncio
+async def test_refresh_access_token_invalid_grant_clears_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that a 400 invalid_grant response clears the token."""
+    current_time = int(time.time())
+
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.json.return_value = {"error": "invalid_grant"}
+
+    with (
+        patch("dotenv.load_dotenv"),
+        patch("httpx.AsyncClient") as mock_client,
+        patch("os.remove"),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(
+            return_value=MagicMock(
+                raise_for_status=MagicMock(
+                    side_effect=httpx.HTTPStatusError(
+                        "Bad Request",
+                        request=MagicMock(),
+                        response=mock_response,
+                    )
+                ),
+                json=MagicMock(return_value={"error": "invalid_grant"}),
+            )
+        )
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="old_access_token",
+            refresh_token="old_refresh_token",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+
+        result = await client.refresh_access_token()
+
+        assert result is False
+        assert client.auth_token is None
+
+
+@pytest.mark.asyncio
+async def test_ensure_authenticated_valid_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that ensure_authenticated returns True for valid token without refreshing."""
+    current_time = int(time.time())
+
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    with patch("dotenv.load_dotenv"):
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="valid_token",
+            refresh_token="refresh_token",
+            expires_in=7200,
+            created_at=current_time,
+            scope="public",
+            token_type="bearer",
+        )
+
+        result = await client.ensure_authenticated()
+
+        assert result is True
+        # Token should be unchanged (no refresh happened)
+        assert client.auth_token.access_token == "valid_token"
+
+
+@pytest.mark.asyncio
+async def test_ensure_authenticated_expired_token_refreshes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that ensure_authenticated refreshes expired token."""
+    current_time = int(time.time())
+
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    new_token_data = {
+        "access_token": "refreshed_token",
+        "refresh_token": "new_refresh",
+        "expires_in": 86400,
+        "created_at": current_time,
+        "scope": "public",
+        "token_type": "bearer",
+    }
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = new_token_data
+    mock_response.raise_for_status = MagicMock()
+
+    with (
+        patch("dotenv.load_dotenv"),
+        patch("httpx.AsyncClient") as mock_client,
+        patch("os.open") as mock_os_open,
+        patch("os.fdopen") as mock_fdopen,
+        patch("os.replace"),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=mock_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        mock_os_open.return_value = 3
+        mock_file_obj = MagicMock()
+        mock_fdopen.return_value = mock_file_obj
+        mock_fdopen.return_value.__enter__ = mock_file_obj
+        mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
+
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="expired_token",
+            refresh_token="old_refresh",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+
+        result = await client.ensure_authenticated()
+
+        assert result is True
+        assert client.auth_token is not None
+        assert client.auth_token.access_token == "refreshed_token"
+
+
+@pytest.mark.asyncio
+async def test_ensure_authenticated_no_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that ensure_authenticated returns False when no token exists."""
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    with patch("dotenv.load_dotenv"):
+        client = AuthClient()
+        client.auth_token = None
+
+        result = await client.ensure_authenticated()
+
+        assert result is False
+
+
+@pytest.mark.asyncio
+async def test_ensure_authenticated_expired_no_refresh_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that ensure_authenticated returns False when token is expired but has no refresh token."""
+    current_time = int(time.time())
+
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
+
+    with patch("dotenv.load_dotenv"):
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="expired_token",
+            refresh_token="",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+
+        result = await client.ensure_authenticated()
+
+        assert result is False
+        # Token should be unchanged (no refresh attempted)
+        assert client.auth_token is not None
+        assert client.auth_token.access_token == "expired_token"
+
+
 def test_clear_auth_token_file_deleted_externally(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

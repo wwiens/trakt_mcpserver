@@ -42,7 +42,7 @@ async def test_checkin_to_show_authenticated(
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         mock_client.checkin_to_show = AsyncMock(return_value=sample_checkin_response)
 
@@ -55,7 +55,7 @@ async def test_checkin_to_show_authenticated(
         assert "S01E01" in result
 
         # Verify the client methods were called
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_called_once_with(
             episode_season=1,
             episode_number=1,
@@ -77,7 +77,7 @@ async def test_checkin_to_show_not_authenticated() -> None:
     ):
         # Configure the mock
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = False
+        mock_client.ensure_authenticated = AsyncMock(return_value=False)
 
         # Call the tool function - should raise AuthenticationRequiredError
         with pytest.raises(AuthenticationRequiredError) as exc_info:
@@ -89,7 +89,7 @@ async def test_checkin_to_show_not_authenticated() -> None:
         assert exc_info.value.data.get("auth_url")
         assert exc_info.value.data["action"]
         # Verify the client methods were called
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_not_called()
 
 
@@ -99,7 +99,7 @@ async def test_checkin_to_show_missing_info() -> None:
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         # Configure the mock
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         # Call the tool function with missing show_id and show_title - should raise error
         with pytest.raises(InvalidParamsError) as exc_info:
@@ -110,7 +110,7 @@ async def test_checkin_to_show_missing_info() -> None:
         assert "Must provide one of" in str(exc_info.value)  # Fallback check
 
         # Verify the client methods were called
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_not_called()
 
 
@@ -122,7 +122,7 @@ async def test_checkin_to_show_with_title(
 
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         mock_client.checkin_to_show = AsyncMock(return_value=sample_checkin_response)
 
@@ -133,7 +133,7 @@ async def test_checkin_to_show_with_title(
         assert "# Successfully Checked In" in result
         assert "Breaking Bad" in result
 
-        mock_client.is_authenticated.assert_called_once()
+        mock_client.ensure_authenticated.assert_called_once()
         mock_client.checkin_to_show.assert_called_once_with(
             episode_season=1,
             episode_number=1,
@@ -163,7 +163,7 @@ async def test_checkin_to_show_with_all_parameters(
 
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         mock_client.checkin_to_show = AsyncMock(return_value=custom_response)
 
@@ -217,7 +217,7 @@ async def test_checkin_to_show_title_only(
 
     with patch("server.checkin.tools.CheckinClient") as mock_client_class:
         mock_client = mock_client_class.return_value
-        mock_client.is_authenticated.return_value = True
+        mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
         mock_client.checkin_to_show = AsyncMock(return_value=custom_response)
 

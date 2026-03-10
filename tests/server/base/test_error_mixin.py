@@ -11,6 +11,7 @@ from server.base.error_mixin import (
     sanitize_kwargs,
     sanitize_value,
 )
+from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import InternalError
 
 
@@ -228,3 +229,17 @@ class TestErrorHandlingDecorator:
         assert "'episode': 10" in kwargs_str
         assert "'include_metadata': True" in kwargs_str
         assert "'user_name': 'john_doe'" in kwargs_str
+
+    async def test_with_error_handling_returns_friendly_auth_message(self) -> None:
+        """Test that AuthenticationRequiredError returns a friendly message instead of raising."""
+
+        @BaseToolErrorMixin.with_error_handling("test_operation")
+        async def auth_failing_function() -> str:
+            raise AuthenticationRequiredError("access shows")
+
+        result = await auth_failing_function()
+
+        assert isinstance(result, str)
+        assert "Authentication Required" in result
+        assert "access shows" in result
+        assert "start_device_auth" in result

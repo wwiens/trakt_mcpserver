@@ -2,7 +2,7 @@
 
 import re
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -24,7 +24,10 @@ from models.types.pagination import (
     PaginationMetadata,
     PaginationParams,
 )
-from utils.api.error_types import TraktResourceNotFoundError
+from utils.api.error_types import (
+    AuthenticationRequiredError,
+    TraktResourceNotFoundError,
+)
 
 # Sample API response data based on USER_RATINGS_DOC.MD
 SAMPLE_MOVIE_RATINGS_RESPONSE = [
@@ -117,8 +120,8 @@ class TestSyncRatingsClient:
         client = SyncRatingsClient()
         # Mock authentication status
         client.auth_token = create_mock_auth_token()
-        # Mock the is_authenticated method to return True
-        client.is_authenticated = lambda: True
+        # Mock the ensure_authenticated method to return True
+        client.ensure_authenticated = AsyncMock(return_value=True)
         return client
 
     @pytest.fixture
@@ -130,8 +133,8 @@ class TestSyncRatingsClient:
             monkeypatch.setenv(key, value)
 
         client = SyncRatingsClient()
-        # Explicitly mock is_authenticated to return False
-        client.is_authenticated = lambda: False
+        # Explicitly mock ensure_authenticated to return False
+        client.ensure_authenticated = AsyncMock(return_value=False)
         return client
 
     @pytest.mark.asyncio
@@ -252,14 +255,12 @@ class TestSyncRatingsClient:
     async def test_add_sync_ratings_unauthenticated(
         self, unauthenticated_client: SyncRatingsClient
     ) -> None:
-        """Test that unauthenticated add requests raise ValueError."""
+        """Test that unauthenticated add requests raise AuthenticationRequiredError."""
         request = TraktSyncRatingsRequest(
             movies=[TraktSyncRatingItem(rating=8, ids=TraktIds(trakt=123))]
         )
 
-        with pytest.raises(
-            ValueError, match="You must be authenticated to add personal ratings"
-        ):
+        with pytest.raises(AuthenticationRequiredError):
             await unauthenticated_client.add_sync_ratings(request)
 
     @pytest.mark.asyncio
@@ -314,14 +315,12 @@ class TestSyncRatingsClient:
     async def test_remove_sync_ratings_unauthenticated(
         self, unauthenticated_client: SyncRatingsClient
     ) -> None:
-        """Test that unauthenticated remove requests raise ValueError."""
+        """Test that unauthenticated remove requests raise AuthenticationRequiredError."""
         request = TraktSyncRatingsRequest(
             movies=[TraktSyncRatingItem(ids=TraktIds(trakt=123))]
         )
 
-        with pytest.raises(
-            ValueError, match="You must be authenticated to remove personal ratings"
-        ):
+        with pytest.raises(AuthenticationRequiredError):
             await unauthenticated_client.remove_sync_ratings(request)
 
     @pytest.mark.asyncio
@@ -472,13 +471,10 @@ class TestSyncRatingsClient:
     async def test_get_sync_ratings_unauthenticated(
         self, unauthenticated_client: SyncRatingsClient
     ) -> None:
-        """Test that unauthenticated paginated requests raise ValueError."""
+        """Test that unauthenticated paginated requests raise AuthenticationRequiredError."""
         pagination_params = PaginationParams(page=1, limit=10)
 
-        with pytest.raises(
-            ValueError,
-            match="You must be authenticated to access your personal ratings",
-        ):
+        with pytest.raises(AuthenticationRequiredError):
             await unauthenticated_client.get_sync_ratings(
                 "movies", pagination=pagination_params
             )
@@ -610,8 +606,8 @@ class TestSyncClient:
 
         client = SyncClient()
         client.auth_token = create_mock_auth_token()
-        # Mock the is_authenticated method to return True
-        client.is_authenticated = lambda: True
+        # Mock the ensure_authenticated method to return True
+        client.ensure_authenticated = AsyncMock(return_value=True)
 
         with patch.object(client, "_make_paginated_request") as mock_request:
             # Mock empty paginated response

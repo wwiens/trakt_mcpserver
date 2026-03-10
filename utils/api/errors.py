@@ -180,7 +180,9 @@ def handle_api_errors(
                 data=error_data,
             ) from e
         except MCPError:
-            # Re-raise MCP errors as-is
+            # Re-raise MCP errors as-is — client methods should propagate auth
+            # errors to the server layer, where with_error_handling or
+            # handle_api_errors_func converts them to friendly messages.
             raise
         except json.JSONDecodeError as e:
             # Treat JSON decode errors as internal errors
@@ -292,8 +294,20 @@ def handle_api_errors_func(
                 "Unable to connect to Trakt API. Please check your internet connection.",
                 data=error_data,
             ) from e
-        except MCPError:
-            # Re-raise MCP errors as-is
+        except MCPError as e:
+            # Server-layer decorator: convert auth errors to friendly messages
+            # so MCP clients see helpful text instead of raw error payloads.
+            # (The class-method decorator handle_api_errors re-raises MCPErrors
+            # so the server layer can handle them with full request context.)
+            from .error_types import (
+                AuthenticationRequiredError,
+                extract_auth_action,
+                format_auth_required_message,
+            )
+
+            if isinstance(e, AuthenticationRequiredError):
+                return format_auth_required_message(extract_auth_action(e))
+            # Re-raise other MCP errors as-is
             raise
         except json.JSONDecodeError as e:
             # Treat JSON decode errors as internal errors

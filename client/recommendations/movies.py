@@ -37,7 +37,7 @@ class MovieRecommendationsClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If the client is not authenticated.
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError("get movie recommendations")
 
         endpoint = TRAKT_ENDPOINTS["recommendations_movies"]
@@ -67,7 +67,7 @@ class MovieRecommendationsClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If the client is not authenticated.
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError("hide movie recommendation")
 
         endpoint = TRAKT_ENDPOINTS["hide_movie_recommendation"].replace(
@@ -89,7 +89,7 @@ class MovieRecommendationsClient(AuthClient):
         Raises:
             AuthenticationRequiredError: If the client is not authenticated.
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError("unhide movie recommendation")
 
         endpoint = TRAKT_ENDPOINTS["unhide_recommendations"]

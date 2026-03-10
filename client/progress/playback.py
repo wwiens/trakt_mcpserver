@@ -52,7 +52,7 @@ class PlaybackClient(AuthClient):
             AuthenticationRequiredError: If not authenticated
             ValidationError: If playback_type is invalid
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="access playback progress")
 
         # Validate input
@@ -82,7 +82,7 @@ class PlaybackClient(AuthClient):
             AuthenticationRequiredError: If not authenticated
             ValidationError: If playback_id is not a positive integer
         """
-        if not self.is_authenticated():
+        if not await self.ensure_authenticated():
             raise AuthenticationRequiredError(action="remove playback items")
 
         # Validate input (ensures playback_id > 0)
