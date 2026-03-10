@@ -1,10 +1,12 @@
 import os
+import re
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
 from client.seasons import SeasonsClient
+from models.types.language import INVALID_LANGUAGE_MSG
 
 
 @pytest.mark.asyncio
@@ -98,3 +100,66 @@ async def test_get_season_translations_explicit_language():
 
         mock_response.raise_for_status.assert_called_once()
         mock_instance.aclose.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "invalid_language",
+    ["english", "xyz", "123", "", "e", "abc"],
+)
+async def test_get_season_translations_invalid_language(invalid_language: str):
+    mock_instance = MagicMock(spec=httpx.AsyncClient)
+    mock_instance.get = AsyncMock()
+    mock_instance.aclose = AsyncMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_client.return_value = mock_instance
+
+        client = SeasonsClient()
+        with pytest.raises(ValueError, match=re.escape(INVALID_LANGUAGE_MSG)):
+            await client.get_season_translations("game-of-thrones", 1, invalid_language)
+
+        mock_instance.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_season_translations_uppercase_language():
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
+        {
+            "title": "Temporada 1",
+            "overview": "La primera temporada.",
+            "language": "es",
+            "country": "es",
+        },
+    ]
+    mock_response.raise_for_status = MagicMock()
+
+    mock_instance = MagicMock(spec=httpx.AsyncClient)
+    mock_instance.get = AsyncMock(return_value=mock_response)
+    mock_instance.aclose = AsyncMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_client.return_value = mock_instance
+
+        client = SeasonsClient()
+        result = await client.get_season_translations("game-of-thrones", 1, "EN")
+
+        assert len(result) == 1
+
+        call_args = mock_instance.get.call_args
+        assert call_args[0][0].endswith(
+            "/shows/game-of-thrones/seasons/1/translations/en"
+        )

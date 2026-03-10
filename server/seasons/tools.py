@@ -28,6 +28,7 @@ from config.mcp.descriptions import (
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.seasons import SeasonFormatters
 from models.formatters.videos import VideoFormatters
+from models.types.language import validate_language
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
 
@@ -364,13 +365,14 @@ async def fetch_season_translations(
     """
     params = SeasonIdParam(show_id=show_id, season=season)
 
-    language = language.strip().lower()
-    if language != "all" and (len(language) != 2 or not language.isalpha()):
+    try:
+        language = validate_language(language)
+    except ValueError as err:
         raise BaseToolErrorMixin.handle_validation_error(
             INVALID_LANGUAGE_MSG,
             parameter="language",
             provided_value=language,
-        )
+        ) from err
 
     show_title = await _get_show_title(params.show_id)
 

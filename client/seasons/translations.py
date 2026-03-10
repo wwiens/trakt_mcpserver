@@ -1,6 +1,7 @@
 """Season translations functionality."""
 
 from models.types import TranslationResponse
+from models.types.language import validate_language
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
@@ -23,8 +24,12 @@ class SeasonTranslationsClient(BaseClient):
 
         Returns:
             List of translation data
+
+        Raises:
+            ValueError: If language is not 'all' or a 2-letter ISO 639-1 code
         """
         show_id = validate_show_id(show_id)
+        language = validate_language(language)
         endpoint = build_season_endpoint(
             "season_translations", show_id, season, language=language
         )

@@ -47,6 +47,7 @@ from .common import (
     TResponse,
 )
 from .ids import TraktIds
+from .language import INVALID_LANGUAGE_MSG, LANGUAGE_PATTERN, validate_language
 from .pagination import (
     PaginatedResponse,
     PaginationMetadata,
@@ -68,10 +69,10 @@ from .sort import (
 )
 
 __all__ = [
-    # Anticipated Types
+    "INVALID_LANGUAGE_MSG",
+    "LANGUAGE_PATTERN",
     "AnticipatedMovieWrapper",
     "AnticipatedShowWrapper",
-    # Protocol Types
     "AuthClientProtocol",
     "BoxOfficeMovieWrapper",
     "CastMember",
@@ -91,7 +92,6 @@ __all__ = [
     "MovieCommentSort",
     "MovieResponse",
     "MoviesClientProtocol",
-    # Pagination Types
     "PaginatedResponse",
     "PaginationMetadata",
     "PaginationParams",
@@ -107,14 +107,12 @@ __all__ = [
     "ShowCommentSort",
     "ShowResponse",
     "ShowsClientProtocol",
-    # Sort Types
     "StatsResponse",
     "T",
     "TRequest",
     "TResponse",
     "TokenResponse",
     "TraktHeaders",
-    # API Response Types
     "TraktIds",
     "TraktIdsDict",
     "TraktRating",
@@ -129,4 +127,5 @@ __all__ = [
     "VideoResponse",
     "WatchedMovieWrapper",
     "WatchedShowWrapper",
+    "validate_language",
 ]
