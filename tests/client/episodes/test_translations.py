@@ -49,7 +49,7 @@ async def test_get_episode_translations():
 
         mock_instance.get.assert_called_once()
         call_args = mock_instance.get.call_args
-        assert "/seasons/1/episodes/1/translations" in call_args[0][0]
+        assert "/seasons/1/episodes/1/translations/all" in call_args[0][0]
 
         mock_response.raise_for_status.assert_called_once()
         mock_instance.aclose.assert_awaited_once()

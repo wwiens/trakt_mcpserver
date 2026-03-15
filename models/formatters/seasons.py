@@ -194,8 +194,11 @@ class SeasonFormatters:
             name = person.get("name", "Unknown")
             characters = member.get("characters", [])
             char_str = ", ".join(characters) if characters else "Unknown Role"
-            episode_count = member.get("episode_count", 0)
-            result += f"- **{name}** as {char_str} ({episode_count} episodes)\n"
+            episode_count = member.get("episode_count")
+            count_str = (
+                f" ({episode_count} episodes)" if episode_count is not None else ""
+            )
+            result += f"- **{name}** as {char_str}{count_str}\n"
         result += "\n"
         return result
 
@@ -236,8 +239,13 @@ class SeasonFormatters:
                     name = person.get("name", "Unknown")
                     jobs = member.get("jobs", [])
                     jobs_str = ", ".join(jobs) if jobs else "Unknown"
-                    episode_count = member.get("episode_count", 0)
-                    result += f"- **{name}** - {jobs_str} ({episode_count} episodes)\n"
+                    episode_count = member.get("episode_count")
+                    count_str = (
+                        f" ({episode_count} episodes)"
+                        if episode_count is not None
+                        else ""
+                    )
+                    result += f"- **{name}** - {jobs_str}{count_str}\n"
                 result += "\n"
 
         return result

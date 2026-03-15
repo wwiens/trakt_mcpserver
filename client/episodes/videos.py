@@ -1,6 +1,6 @@
 """Episode videos functionality."""
 
-from models.types.api_responses import VideoResponse
+from models.types import VideoResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
