@@ -22,7 +22,7 @@ class EpisodeRatingsClient(BaseClient):
         """Get ratings for a specific episode.
 
         Args:
-            show_id: Trakt ID, slug, or IMDB ID
+            show_id: Trakt ID, Trakt slug, IMDB ID (tt prefix), TMDB ID, or TVDB ID
             season: Season number (0 for specials)
             episode: Episode number
 

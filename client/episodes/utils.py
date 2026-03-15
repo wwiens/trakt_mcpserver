@@ -9,7 +9,7 @@ def validate_show_id(show_id: str) -> str:
     """Strip and validate a show ID, returning the stripped value.
 
     Args:
-        show_id: Trakt ID, slug, or IMDB ID
+        show_id: Trakt ID, Trakt slug, IMDB ID (tt prefix), TMDB ID, or TVDB ID
 
     Returns:
         Stripped show_id

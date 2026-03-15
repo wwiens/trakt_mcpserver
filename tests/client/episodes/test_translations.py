@@ -91,3 +91,51 @@ async def test_get_episode_translations_with_language() -> None:
         mock_instance.get.assert_called_once()
         call_args = mock_instance.get.call_args
         assert "/seasons/1/episodes/1/translations/en" in call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_get_episode_translations_normalizes_language() -> None:
+    mock_response = MagicMock()
+    mock_response.json.return_value = [
+        {
+            "title": "Winter Is Coming",
+            "overview": "Ned Stark is the lord of Winterfell.",
+            "language": "en",
+            "country": "us",
+        },
+    ]
+    mock_response.raise_for_status = MagicMock()
+
+    mock_instance = MagicMock(spec=httpx.AsyncClient)
+    mock_instance.get = AsyncMock(return_value=mock_response)
+    mock_instance.post = AsyncMock()
+    mock_instance.aclose = AsyncMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_client.return_value = mock_instance
+
+        client = EpisodesClient()
+        result = await client.get_episode_translations("game-of-thrones", 1, 1, " EN ")
+
+        assert len(result) == 1
+        call_args = mock_instance.get.call_args
+        assert "/seasons/1/episodes/1/translations/en" in call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_get_episode_translations_rejects_invalid_language() -> None:
+    with (
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        client = EpisodesClient()
+        with pytest.raises(ValueError, match="2-letter ISO 639-1 code"):
+            await client.get_episode_translations("game-of-thrones", 1, 1, "eng")
