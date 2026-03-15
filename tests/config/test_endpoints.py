@@ -1,5 +1,7 @@
 """Integration tests for config endpoints direct imports."""
 
+from typing import ClassVar
+
 # Test imports from domain-specific config modules
 from config.endpoints import TRAKT_ENDPOINTS
 
@@ -170,6 +172,7 @@ class TestEndpointUrlFormats:
         from config.endpoints.auth import AUTH_ENDPOINTS
         from config.endpoints.checkin import CHECKIN_ENDPOINTS
         from config.endpoints.comments import COMMENTS_ENDPOINTS
+        from config.endpoints.episodes import EPISODES_ENDPOINTS
         from config.endpoints.movies import MOVIES_ENDPOINTS
         from config.endpoints.progress import PROGRESS_ENDPOINTS
         from config.endpoints.recommendations import RECOMMENDATIONS_ENDPOINTS
@@ -185,6 +188,7 @@ class TestEndpointUrlFormats:
             **MOVIES_ENDPOINTS,
             **PROGRESS_ENDPOINTS,
             **COMMENTS_ENDPOINTS,
+            **EPISODES_ENDPOINTS,
             **SEARCH_ENDPOINTS,
             **CHECKIN_ENDPOINTS,
             **USER_ENDPOINTS,
@@ -205,6 +209,36 @@ class TestEndpointUrlFormats:
         for key in TRAKT_ENDPOINTS:
             assert key in all_domain_endpoints, (
                 f"Unexpected endpoint {key} in TRAKT_ENDPOINTS"
+            )
+
+
+class TestEpisodeEndpoints:
+    """Test that all expected episode endpoints are registered."""
+
+    EXPECTED_EPISODE_KEYS: ClassVar[list[str]] = [
+        "episode_summary",
+        "episode_translations",
+        "episode_lists",
+        "episode_people",
+        "episode_ratings",
+        "episode_stats",
+        "episode_watching",
+        "episode_videos",
+    ]
+
+    def test_episode_endpoints_exist(self) -> None:
+        """Test each episode endpoint key exists in both domain and combined dicts."""
+        from config.endpoints.episodes import EPISODES_ENDPOINTS
+
+        for key in self.EXPECTED_EPISODE_KEYS:
+            assert key in EPISODES_ENDPOINTS, (
+                f"Episode endpoint {key} missing from EPISODES_ENDPOINTS"
+            )
+            assert key in TRAKT_ENDPOINTS, (
+                f"Episode endpoint {key} missing from TRAKT_ENDPOINTS"
+            )
+            assert EPISODES_ENDPOINTS[key] == TRAKT_ENDPOINTS[key], (
+                f"Episode endpoint {key} value mismatch between domain and combined"
             )
 
 
