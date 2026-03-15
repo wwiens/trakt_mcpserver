@@ -6,7 +6,12 @@ from models.types import ListItemResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
-from .utils import build_episode_endpoint, validate_show_id
+from .utils import (
+    build_episode_endpoint,
+    validate_episode,
+    validate_season,
+    validate_show_id,
+)
 
 
 class EpisodeListsClient(BaseClient):
@@ -36,6 +41,8 @@ class EpisodeListsClient(BaseClient):
             List of list data
         """
         show_id = validate_show_id(show_id)
+        season = validate_season(season)
+        episode = validate_episode(episode)
         endpoint = build_episode_endpoint(
             "episode_lists", show_id, season, episode, type=list_type, sort=sort
         )

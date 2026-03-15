@@ -4,7 +4,12 @@ from models.types import PeopleResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
-from .utils import build_episode_endpoint, validate_show_id
+from .utils import (
+    build_episode_endpoint,
+    validate_episode,
+    validate_season,
+    validate_show_id,
+)
 
 
 class EpisodePeopleClient(BaseClient):
@@ -25,5 +30,7 @@ class EpisodePeopleClient(BaseClient):
             People data with cast and crew lists
         """
         show_id = validate_show_id(show_id)
+        season = validate_season(season)
+        episode = validate_episode(episode)
         endpoint = build_episode_endpoint("episode_people", show_id, season, episode)
         return await self._make_typed_request(endpoint, response_type=PeopleResponse)

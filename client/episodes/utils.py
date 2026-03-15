@@ -24,6 +24,42 @@ def validate_show_id(show_id: str) -> str:
     return show_id
 
 
+def validate_season(season: int) -> int:
+    """Validate a season number.
+
+    Args:
+        season: Season number (0 for specials)
+
+    Returns:
+        Validated season number
+
+    Raises:
+        ValueError: If season is negative
+    """
+    if season < 0:
+        msg = "season must be >= 0 (use 0 for specials)"
+        raise ValueError(msg)
+    return season
+
+
+def validate_episode(episode: int) -> int:
+    """Validate an episode number.
+
+    Args:
+        episode: Episode number (must be >= 1)
+
+    Returns:
+        Validated episode number
+
+    Raises:
+        ValueError: If episode is less than 1
+    """
+    if episode < 1:
+        msg = "episode must be >= 1"
+        raise ValueError(msg)
+    return episode
+
+
 def build_episode_endpoint(
     endpoint_key: str,
     show_id: str,

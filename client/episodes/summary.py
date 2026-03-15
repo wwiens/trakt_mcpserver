@@ -4,7 +4,12 @@ from models.types import EpisodeResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
-from .utils import build_episode_endpoint, validate_show_id
+from .utils import (
+    build_episode_endpoint,
+    validate_episode,
+    validate_season,
+    validate_show_id,
+)
 
 
 class EpisodeSummaryClient(BaseClient):
@@ -25,6 +30,8 @@ class EpisodeSummaryClient(BaseClient):
             Episode details data
         """
         show_id = validate_show_id(show_id)
+        season = validate_season(season)
+        episode = validate_episode(episode)
         endpoint = build_episode_endpoint("episode_summary", show_id, season, episode)
         params = {"extended": "full"}
         return await self._make_typed_request(
