@@ -18,24 +18,24 @@ class EpisodeFormatters:
     """Helper class for formatting episode-related data for MCP responses."""
 
     @staticmethod
-    def format_episode_summary(episode: EpisodeResponse) -> str:
+    def format_episode_summary(episode: EpisodeResponse, show_title: str) -> str:
         """Format detailed single episode data.
 
         Args:
             episode: Episode data from Trakt API
+            show_title: The title of the show
 
         Returns:
             Formatted markdown text with episode details
         """
         if not episode:
-            return "No episode data available."
+            return f"# {show_title}\n\nNo episode data available."
 
         season = episode.get("season", 0)
         number = episode.get("number", 0)
         title = episode.get("title", "TBA")
 
-        result = f"# {title}\n\n"
-        result += f"**Season {season}, Episode {number}**\n\n"
+        result = f"# {show_title} - S{season:02d}E{number:02d}: {title}\n\n"
 
         if overview := episode.get("overview"):
             if len(overview) > MAX_OVERVIEW_LENGTH:

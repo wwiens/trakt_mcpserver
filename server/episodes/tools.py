@@ -1,5 +1,6 @@
 """Episode tools for the Trakt MCP server."""
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Annotated, Final, Literal, TypeAlias
@@ -33,17 +34,7 @@ from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
 
 if TYPE_CHECKING:
-    from models.types import (
-        EpisodeResponse,
-        ListItemResponse,
-        PeopleResponse,
-        ShowResponse,
-        StatsResponse,
-        TraktRating,
-        TranslationResponse,
-        UserResponse,
-        VideoResponse,
-    )
+    from models.types import ShowResponse
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -145,8 +136,9 @@ async def fetch_episode_summary(show_id: str, season: int, episode: int) -> str:
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
 
     client = EpisodeSummaryClient()
-    episode_data: EpisodeResponse | str = await client.get_episode(
-        params.show_id, params.season, params.episode
+    show_title, episode_data = await asyncio.gather(
+        _get_show_title(params.show_id),
+        client.get_episode(params.show_id, params.season, params.episode),
     )
 
     if isinstance(episode_data, str):
@@ -157,7 +149,7 @@ async def fetch_episode_summary(show_id: str, season: int, episode: int) -> str:
             operation="fetch_episode_summary",
         )
 
-    return EpisodeFormatters.format_episode_summary(episode_data)
+    return EpisodeFormatters.format_episode_summary(episode_data, show_title)
 
 
 @handle_api_errors_func
@@ -174,11 +166,12 @@ async def fetch_episode_ratings(show_id: str, season: int, episode: int) -> str:
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
 
-    show_title = await _get_show_title(params.show_id)
-
     ratings_client = EpisodeRatingsClient()
-    ratings: TraktRating | str = await ratings_client.get_episode_ratings(
-        params.show_id, params.season, params.episode
+    show_title, ratings = await asyncio.gather(
+        _get_show_title(params.show_id),
+        ratings_client.get_episode_ratings(
+            params.show_id, params.season, params.episode
+        ),
     )
 
     if isinstance(ratings, str):
@@ -209,11 +202,10 @@ async def fetch_episode_stats(show_id: str, season: int, episode: int) -> str:
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
 
-    show_title = await _get_show_title(params.show_id)
-
     stats_client = EpisodeStatsClient()
-    stats: StatsResponse | str = await stats_client.get_episode_stats(
-        params.show_id, params.season, params.episode
+    show_title, stats = await asyncio.gather(
+        _get_show_title(params.show_id),
+        stats_client.get_episode_stats(params.show_id, params.season, params.episode),
     )
 
     if isinstance(stats, str):
@@ -244,11 +236,12 @@ async def fetch_episode_people(show_id: str, season: int, episode: int) -> str:
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
 
-    show_title = await _get_show_title(params.show_id)
-
     people_client = EpisodePeopleClient()
-    people: PeopleResponse | str = await people_client.get_episode_people(
-        params.show_id, params.season, params.episode
+    show_title, people = await asyncio.gather(
+        _get_show_title(params.show_id),
+        people_client.get_episode_people(
+            params.show_id, params.season, params.episode
+        ),
     )
 
     if isinstance(people, str):
@@ -283,8 +276,11 @@ async def fetch_episode_videos(
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
 
     videos_client = EpisodeVideosClient()
-    videos: list[VideoResponse] | str = await videos_client.get_episode_videos(
-        params.show_id, params.season, params.episode
+    title, videos = await asyncio.gather(
+        _get_show_title(params.show_id),
+        videos_client.get_episode_videos(
+            params.show_id, params.season, params.episode
+        ),
     )
 
     if isinstance(videos, str):
@@ -294,8 +290,6 @@ async def fetch_episode_videos(
             error_message=videos,
             operation="fetch_episode_videos",
         )
-
-    title = await _get_show_title(params.show_id)
 
     episode_title = f"{title} - S{params.season:02d}E{params.episode:02d}"
     return VideoFormatters.format_videos_list(
@@ -317,11 +311,12 @@ async def fetch_episode_watching(show_id: str, season: int, episode: int) -> str
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
 
-    show_title = await _get_show_title(params.show_id)
-
     watching_client = EpisodeWatchingClient()
-    users: list[UserResponse] | str = await watching_client.get_episode_watching(
-        params.show_id, params.season, params.episode
+    show_title, users = await asyncio.gather(
+        _get_show_title(params.show_id),
+        watching_client.get_episode_watching(
+            params.show_id, params.season, params.episode
+        ),
     )
 
     if isinstance(users, str):
@@ -364,13 +359,12 @@ async def fetch_episode_translations(
             provided_value=language,
         ) from err
 
-    show_title = await _get_show_title(params.show_id)
-
     translations_client = EpisodeTranslationsClient()
-    translations: (
-        list[TranslationResponse] | str
-    ) = await translations_client.get_episode_translations(
-        params.show_id, params.season, params.episode, language
+    show_title, translations = await asyncio.gather(
+        _get_show_title(params.show_id),
+        translations_client.get_episode_translations(
+            params.show_id, params.season, params.episode, language
+        ),
     )
 
     if isinstance(translations, str):
@@ -422,11 +416,12 @@ async def fetch_episode_lists(
             provided_value=sort,
         )
 
-    show_title = await _get_show_title(params.show_id)
-
     lists_client = EpisodeListsClient()
-    lists: list[ListItemResponse] | str = await lists_client.get_episode_lists(
-        params.show_id, params.season, params.episode, list_type, sort
+    show_title, lists = await asyncio.gather(
+        _get_show_title(params.show_id),
+        lists_client.get_episode_lists(
+            params.show_id, params.season, params.episode, list_type, sort
+        ),
     )
 
     if isinstance(lists, str):

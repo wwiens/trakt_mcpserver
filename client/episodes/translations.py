@@ -1,7 +1,6 @@
 """Episode translations functionality."""
 
 from models.types import TranslationResponse
-from models.types.language import validate_language
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
@@ -30,7 +29,6 @@ class EpisodeTranslationsClient(BaseClient):
             ValueError: If language is not 'all' or a 2-letter ISO 639-1 code
         """
         show_id = validate_show_id(show_id)
-        language = validate_language(language)
         endpoint = build_episode_endpoint(
             "episode_translations", show_id, season, episode, language=language
         )
