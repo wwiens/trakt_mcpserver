@@ -14,6 +14,7 @@ from .progress import register_progress_tools
 from .prompts.basic import register_basic_prompts
 from .recommendations import register_recommendation_tools
 from .search import register_search_tools
+from .seasons import register_season_tools
 from .shows import register_show_resources, register_show_tools
 from .sync import register_sync_tools
 from .user import register_user_resources, register_user_tools
@@ -54,6 +55,7 @@ def create_server() -> FastMCP:
     _ = register_sync_tools(mcp)
     _ = register_progress_tools(mcp)
     _ = register_recommendation_tools(mcp)
+    _ = register_season_tools(mcp)
 
     # Register prompts and capture handlers for type checker
     _ = register_basic_prompts(mcp)

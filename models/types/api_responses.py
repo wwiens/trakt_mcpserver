@@ -97,6 +97,9 @@ class SeasonResponse(TypedDict):
     title: NotRequired[str]
     overview: NotRequired[str]
     first_aired: NotRequired[str]
+    updated_at: NotRequired[str]
+    network: NotRequired[str]
+    original_title: NotRequired[str]
     episodes: NotRequired[list[EpisodeResponse]]
 
 
@@ -330,3 +333,90 @@ class UserWatchedMovie(TypedDict):
     last_watched_at: str
     plays: int
     movie: MovieResponse
+
+
+# Translation types
+class TranslationResponse(TypedDict):
+    """Translation data from Trakt API."""
+
+    title: str
+    overview: str
+    language: str
+    country: str
+
+
+# People types
+class PersonResponse(TypedDict):
+    """Person data from Trakt API."""
+
+    name: str
+    ids: TraktIdsDict
+
+
+class CastMember(TypedDict):
+    """Cast member in a show/season."""
+
+    characters: list[str]
+    episode_count: int
+    person: PersonResponse
+
+
+class CrewMember(TypedDict):
+    """Crew member in a show/season."""
+
+    jobs: list[str]
+    episode_count: int
+    person: PersonResponse
+
+
+class PeopleResponse(TypedDict):
+    """People (cast and crew) response from Trakt API."""
+
+    cast: list[CastMember]
+    crew: NotRequired[dict[str, list[CrewMember]]]
+    guest_stars: NotRequired[list[CastMember]]
+
+
+# Season stats types
+class SeasonStatsResponse(TypedDict):
+    """Season statistics from Trakt API."""
+
+    watchers: int
+    plays: int
+    collectors: int
+    collected_episodes: int
+    comments: int
+    lists: int
+    votes: int
+
+
+# List types
+class ListUserResponse(TypedDict):
+    """User data within a list response."""
+
+    username: str
+    private: bool
+    name: NotRequired[str]
+    vip: NotRequired[bool]
+    ids: dict[str, str]
+
+
+class ListItemResponse(TypedDict):
+    """List item from Trakt API."""
+
+    name: str
+    description: str
+    privacy: str
+    share_link: NotRequired[str]
+    type: str
+    display_numbers: NotRequired[bool]
+    allow_comments: NotRequired[bool]
+    sort_by: NotRequired[str]
+    sort_how: NotRequired[str]
+    created_at: NotRequired[str]
+    updated_at: NotRequired[str]
+    item_count: int
+    comment_count: int
+    likes: int
+    ids: TraktIdsDict
+    user: ListUserResponse

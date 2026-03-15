@@ -174,6 +174,7 @@ class TestEndpointUrlFormats:
         from config.endpoints.progress import PROGRESS_ENDPOINTS
         from config.endpoints.recommendations import RECOMMENDATIONS_ENDPOINTS
         from config.endpoints.search import SEARCH_ENDPOINTS
+        from config.endpoints.seasons import SEASONS_ENDPOINTS
         from config.endpoints.shows import SHOWS_ENDPOINTS
         from config.endpoints.user import USER_ENDPOINTS
 
@@ -188,6 +189,7 @@ class TestEndpointUrlFormats:
             **CHECKIN_ENDPOINTS,
             **USER_ENDPOINTS,
             **RECOMMENDATIONS_ENDPOINTS,
+            **SEASONS_ENDPOINTS,
         }
 
         # TRAKT_ENDPOINTS should contain all domain endpoints
