@@ -239,9 +239,7 @@ async def fetch_episode_people(show_id: str, season: int, episode: int) -> str:
     people_client = EpisodePeopleClient()
     show_title, people = await asyncio.gather(
         _get_show_title(params.show_id),
-        people_client.get_episode_people(
-            params.show_id, params.season, params.episode
-        ),
+        people_client.get_episode_people(params.show_id, params.season, params.episode),
     )
 
     if isinstance(people, str):
@@ -278,9 +276,7 @@ async def fetch_episode_videos(
     videos_client = EpisodeVideosClient()
     title, videos = await asyncio.gather(
         _get_show_title(params.show_id),
-        videos_client.get_episode_videos(
-            params.show_id, params.season, params.episode
-        ),
+        videos_client.get_episode_videos(params.show_id, params.season, params.episode),
     )
 
     if isinstance(videos, str):

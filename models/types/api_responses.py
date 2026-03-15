@@ -357,7 +357,7 @@ class CastMember(TypedDict):
     """Cast member in a show/season."""
 
     characters: list[str]
-    episode_count: int
+    episode_count: NotRequired[int]
     person: PersonResponse
 
 
@@ -365,7 +365,7 @@ class CrewMember(TypedDict):
     """Crew member in a show/season."""
 
     jobs: list[str]
-    episode_count: int
+    episode_count: NotRequired[int]
     person: PersonResponse
 
 
