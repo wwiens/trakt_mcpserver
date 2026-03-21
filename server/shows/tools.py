@@ -456,7 +456,7 @@ async def _get_show_title(show_id: str) -> str:
             return f"Show ID: {show_id}"
 
         return show_data.get("title", f"Show ID: {show_id}")
-    except Exception as exc:
+    except MCPError as exc:
         logger.debug(
             "Non-fatal exception during show title lookup; falling back to ID title.",
             exc_info=True,

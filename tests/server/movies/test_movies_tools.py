@@ -569,7 +569,7 @@ async def test_fetch_boxoffice_movies_error():
 
 
 @pytest.mark.asyncio
-async def test_fetch_movie_people():
+async def test_fetch_movie_people() -> None:
     sample_people = {
         "cast": [
             {
@@ -602,13 +602,8 @@ async def test_fetch_movie_people():
         mock_people = mock_people_class.return_value
         mock_details = mock_details_class.return_value
 
-        people_future: asyncio.Future[Any] = asyncio.Future()
-        people_future.set_result(sample_people)
-        mock_people.get_movie_people.return_value = people_future
-
-        movie_future: asyncio.Future[Any] = asyncio.Future()
-        movie_future.set_result(sample_movie)
-        mock_details.get_movie.return_value = movie_future
+        mock_people.get_movie_people = AsyncMock(return_value=sample_people)
+        mock_details.get_movie = AsyncMock(return_value=sample_movie)
 
         result = await fetch_movie_people(movie_id="tron-legacy-2010")
 
@@ -617,5 +612,27 @@ async def test_fetch_movie_people():
         assert "Sam Flynn" in result
         assert "Joseph Kosinski" in result
         assert "Director" in result
+
+        mock_people.get_movie_people.assert_called_once_with("tron-legacy-2010")
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_people_error() -> None:
+    with (
+        patch("server.movies.tools.MoviePeopleClient") as mock_people_class,
+        patch("server.movies.tools.MovieDetailsClient") as mock_details_class,
+    ):
+        mock_people = mock_people_class.return_value
+        mock_details = mock_details_class.return_value
+
+        mock_people.get_movie_people = AsyncMock(
+            side_effect=Exception("API connection failed")
+        )
+        mock_details.get_movie = AsyncMock(
+            return_value={"title": "TRON: Legacy", "year": 2010}
+        )
+
+        with pytest.raises(InternalError):
+            await fetch_movie_people(movie_id="tron-legacy-2010")
 
         mock_people.get_movie_people.assert_called_once_with("tron-legacy-2010")

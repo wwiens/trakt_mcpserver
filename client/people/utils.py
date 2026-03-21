@@ -1,26 +1,41 @@
 """Shared utilities for people client modules."""
 
+import re
 from urllib.parse import quote
 
 from config.endpoints import TRAKT_ENDPOINTS
+
+_IMDB_PATTERN: re.Pattern[str] = re.compile(r"^tt\d+$")
 
 
 def validate_person_id(person_id: str) -> str:
     """Strip and validate a person ID, returning the stripped value.
 
+    Accepts all five Trakt identifier types:
+    - Trakt numeric ID (e.g. ``"12345"``)
+    - Trakt slug (e.g. ``"bryan-cranston"``)
+    - IMDB ID (format ``tt\\d+``, e.g. ``"tt0186151"``)
+    - TMDB numeric ID
+    - TVDB numeric ID
+
     Args:
-        person_id: Trakt ID, Trakt slug, or IMDB ID
+        person_id: Trakt ID, slug, IMDB ID, TMDB ID, or TVDB ID
 
     Returns:
         Stripped person_id
 
     Raises:
-        ValueError: If person_id is empty after stripping
+        ValueError: If person_id is empty or has an invalid IMDB format
     """
     person_id = person_id.strip()
     if not person_id:
         msg = "person_id cannot be empty"
         raise ValueError(msg)
+
+    if person_id.startswith("tt") and not _IMDB_PATTERN.match(person_id):
+        msg = f"Invalid IMDB ID format: '{person_id}'. Expected format: tt followed by digits (e.g. tt0186151)"
+        raise ValueError(msg)
+
     return person_id
 
 

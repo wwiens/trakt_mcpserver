@@ -545,14 +545,17 @@ class ShowFormatters:
         if not people:
             return f"# People for {show_title}\n\nNo people data available."
 
+        cast: list[CastMember] = people.get("cast", [])
+        guest_stars: list[CastMember] = people.get("guest_stars", [])
+        crew: dict[str, list[CrewMember]] = people.get("crew", {})
+
+        if not cast and not guest_stars and not crew:
+            return f"# People for {show_title}\n\nNo people data available."
+
         result = f"# People for {show_title}\n\n"
 
-        result += ShowFormatters._format_cast_section(people.get("cast", []), "Cast")
-        result += ShowFormatters._format_cast_section(
-            people.get("guest_stars", []), "Guest Stars"
-        )
-
-        crew: dict[str, list[CrewMember]] = people.get("crew", {})
+        result += ShowFormatters._format_cast_section(cast, "Cast")
+        result += ShowFormatters._format_cast_section(guest_stars, "Guest Stars")
         if crew:
             result += "## Crew\n\n"
             for department, members in sorted(crew.items()):

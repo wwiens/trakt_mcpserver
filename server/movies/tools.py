@@ -456,7 +456,7 @@ async def _get_movie_title(movie_id: str) -> str:
             return f"Movie ID: {movie_id}"
 
         return movie_data.get("title", f"Movie ID: {movie_id}")
-    except Exception as exc:
+    except MCPError as exc:
         logger.debug(
             "Non-fatal exception during movie title lookup; falling back to ID title.",
             exc_info=True,

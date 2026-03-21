@@ -6,7 +6,9 @@ from client.people import PeopleClient
 
 
 @pytest.mark.asyncio
-async def test_get_person_lists(trakt_env: None, patched_httpx_client: MagicMock):
+async def test_get_person_lists(
+    trakt_env: None, patched_httpx_client: MagicMock
+) -> None:
     mock_response = MagicMock()
     mock_response.json.return_value = [
         {
@@ -57,7 +59,7 @@ async def test_get_person_lists(trakt_env: None, patched_httpx_client: MagicMock
 @pytest.mark.asyncio
 async def test_get_person_lists_invalid_type(
     trakt_env: None, patched_httpx_client: MagicMock
-):
+) -> None:
     client = PeopleClient()
     with pytest.raises(ValueError, match="Invalid list_type"):
         await client.get_person_lists("bryan-cranston", list_type="invalid")
@@ -66,7 +68,7 @@ async def test_get_person_lists_invalid_type(
 @pytest.mark.asyncio
 async def test_get_person_lists_invalid_sort(
     trakt_env: None, patched_httpx_client: MagicMock
-):
+) -> None:
     client = PeopleClient()
     with pytest.raises(ValueError, match="Invalid sort"):
         await client.get_person_lists("bryan-cranston", sort="invalid")

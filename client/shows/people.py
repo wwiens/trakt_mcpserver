@@ -2,6 +2,7 @@
 
 from urllib.parse import quote
 
+from client.validation import validate_media_id
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import PeopleResponse
 from utils.api.errors import handle_api_errors
@@ -27,10 +28,7 @@ class ShowPeopleClient(BaseClient):
         Returns:
             People data with cast, crew, and optionally guest stars
         """
-        show_id = show_id.strip()
-        if not show_id:
-            msg = "show_id cannot be empty"
-            raise ValueError(msg)
+        show_id = validate_media_id(show_id, "show_id")
 
         endpoint = TRAKT_ENDPOINTS["show_people"].replace(
             ":id", quote(show_id, safe="")

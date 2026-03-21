@@ -158,7 +158,7 @@ async def test_fetch_person_movies():
 
 @pytest.mark.asyncio
 async def test_fetch_person_shows():
-    sample_credits = {
+    sample_credits: dict[str, object] = {
         "cast": [
             {
                 "characters": ["Walter White"],

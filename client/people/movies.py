@@ -15,7 +15,7 @@ class PersonMoviesClient(BaseClient):
         """Get all movie credits for a specific person.
 
         Args:
-            person_id: Trakt ID, Trakt slug, or IMDB ID
+            person_id: Trakt ID, slug, IMDB ID, TMDB ID, or TVDB ID
 
         Returns:
             Movie credits with cast and crew roles

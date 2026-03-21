@@ -21,7 +21,7 @@ from config.mcp.descriptions import (
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.people import PeopleFormatters
 from server.base import BaseToolErrorMixin
-from utils.api.errors import handle_api_errors_func
+from utils.api.errors import MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -64,7 +64,7 @@ async def _get_person_name(person_id: str) -> str:
             return f"Person ID: {person_id}"
 
         return person_data.get("name", f"Person ID: {person_id}")
-    except Exception as exc:
+    except (MCPError, ValueError, OSError) as exc:
         logger.debug(
             "Non-fatal exception during person name lookup; falling back to ID.",
             exc_info=True,
@@ -120,21 +120,21 @@ async def fetch_person_movies(person_id: str) -> str:
     params = PersonIdParam(person_id=person_id)
 
     movies_client = PersonMoviesClient()
-    person_name, credits = await asyncio.gather(
+    person_name, movie_credits = await asyncio.gather(
         _get_person_name(params.person_id),
         movies_client.get_person_movies(params.person_id),
     )
 
-    if isinstance(credits, str):
+    if isinstance(movie_credits, str):
         raise BaseToolErrorMixin.handle_api_string_error(
             resource_type="person_movies",
             resource_id=params.person_id,
-            error_message=credits,
+            error_message=movie_credits,
             operation="fetch_person_movies",
             person_name=person_name,
         )
 
-    return PeopleFormatters.format_person_movie_credits(credits, person_name)
+    return PeopleFormatters.format_person_movie_credits(movie_credits, person_name)
 
 
 @handle_api_errors_func
@@ -150,28 +150,30 @@ async def fetch_person_shows(person_id: str) -> str:
     params = PersonIdParam(person_id=person_id)
 
     shows_client = PersonShowsClient()
-    person_name, credits = await asyncio.gather(
+    person_name, show_credits = await asyncio.gather(
         _get_person_name(params.person_id),
         shows_client.get_person_shows(params.person_id),
     )
 
-    if isinstance(credits, str):
+    if isinstance(show_credits, str):
         raise BaseToolErrorMixin.handle_api_string_error(
             resource_type="person_shows",
             resource_id=params.person_id,
-            error_message=credits,
+            error_message=show_credits,
             operation="fetch_person_shows",
             person_name=person_name,
         )
 
-    return PeopleFormatters.format_person_show_credits(credits, person_name)
+    return PeopleFormatters.format_person_show_credits(show_credits, person_name)
 
 
 @handle_api_errors_func
 async def fetch_person_lists(
     person_id: str,
-    list_type: str = "all",
-    sort: str = "popular",
+    list_type: Literal["all", "personal", "official", "watchlists"] = "all",
+    sort: Literal[
+        "popular", "likes", "comments", "items", "added", "updated"
+    ] = "popular",
 ) -> str:
     """Fetch lists containing a specific person.
 

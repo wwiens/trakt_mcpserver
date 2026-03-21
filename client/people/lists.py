@@ -39,6 +39,13 @@ class PersonListsClient(BaseClient):
         """
         person_id = validate_person_id(person_id)
 
+        if limit < 1:
+            msg = "limit must be >= 1"
+            raise ValueError(msg)
+        if page is not None and page < 1:
+            msg = "page must be >= 1"
+            raise ValueError(msg)
+
         if list_type not in VALID_LIST_TYPES:
             msg = (
                 f"Invalid list_type '{list_type}'. "

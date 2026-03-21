@@ -1,7 +1,5 @@
-import asyncio
 import sys
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -689,7 +687,7 @@ async def test_fetch_related_shows_error():
 
 
 @pytest.mark.asyncio
-async def test_fetch_show_people():
+async def test_fetch_show_people() -> None:
     sample_people = {
         "cast": [
             {
@@ -724,13 +722,8 @@ async def test_fetch_show_people():
         mock_people = mock_people_class.return_value
         mock_details = mock_details_class.return_value
 
-        people_future: asyncio.Future[Any] = asyncio.Future()
-        people_future.set_result(sample_people)
-        mock_people.get_show_people.return_value = people_future
-
-        show_future: asyncio.Future[Any] = asyncio.Future()
-        show_future.set_result(sample_show)
-        mock_details.get_show.return_value = show_future
+        mock_people.get_show_people = AsyncMock(return_value=sample_people)
+        mock_details.get_show = AsyncMock(return_value=sample_show)
 
         result = await fetch_show_people(show_id="breaking-bad")
 
@@ -747,8 +740,8 @@ async def test_fetch_show_people():
 
 
 @pytest.mark.asyncio
-async def test_fetch_show_people_with_guest_stars():
-    sample_people = {
+async def test_fetch_show_people_with_guest_stars() -> None:
+    sample_people: dict[str, object] = {
         "cast": [
             {
                 "characters": ["Walter White"],
@@ -781,13 +774,8 @@ async def test_fetch_show_people_with_guest_stars():
         mock_people = mock_people_class.return_value
         mock_details = mock_details_class.return_value
 
-        people_future: asyncio.Future[Any] = asyncio.Future()
-        people_future.set_result(sample_people)
-        mock_people.get_show_people.return_value = people_future
-
-        show_future: asyncio.Future[Any] = asyncio.Future()
-        show_future.set_result(sample_show)
-        mock_details.get_show.return_value = show_future
+        mock_people.get_show_people = AsyncMock(return_value=sample_people)
+        mock_details.get_show = AsyncMock(return_value=sample_show)
 
         result = await fetch_show_people(
             show_id="breaking-bad", include_guest_stars=True

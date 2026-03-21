@@ -145,23 +145,27 @@ class PeopleFormatters:
 
     @staticmethod
     def format_person_movie_credits(
-        credits: PersonMovieCreditsResponse, person_name: str
+        movie_credits: PersonMovieCreditsResponse, person_name: str
     ) -> str:
         """Format person's movie credits.
 
         Args:
-            credits: Movie credits from Trakt API
+            movie_credits: Movie credits from Trakt API
             person_name: The person's name
 
         Returns:
             Formatted markdown text with movie credits
         """
-        if not credits:
+        if not movie_credits:
             return f"# Movie Credits for {person_name}\n\nNo movie credits available."
 
         result = f"# Movie Credits for {person_name}\n\n"
-        result += PeopleFormatters._format_movie_cast_section(credits.get("cast", []))
-        result += PeopleFormatters._format_movie_crew_section(credits.get("crew", {}))
+        result += PeopleFormatters._format_movie_cast_section(
+            movie_credits.get("cast", [])
+        )
+        result += PeopleFormatters._format_movie_crew_section(
+            movie_credits.get("crew", {})
+        )
         return result
 
     @staticmethod
@@ -234,23 +238,27 @@ class PeopleFormatters:
 
     @staticmethod
     def format_person_show_credits(
-        credits: PersonShowCreditsResponse, person_name: str
+        show_credits: PersonShowCreditsResponse, person_name: str
     ) -> str:
         """Format person's show credits.
 
         Args:
-            credits: Show credits from Trakt API
+            show_credits: Show credits from Trakt API
             person_name: The person's name
 
         Returns:
             Formatted markdown text with show credits
         """
-        if not credits:
+        if not show_credits:
             return f"# Show Credits for {person_name}\n\nNo show credits available."
 
         result = f"# Show Credits for {person_name}\n\n"
-        result += PeopleFormatters._format_show_cast_section(credits.get("cast", []))
-        result += PeopleFormatters._format_show_crew_section(credits.get("crew", {}))
+        result += PeopleFormatters._format_show_cast_section(
+            show_credits.get("cast", [])
+        )
+        result += PeopleFormatters._format_show_crew_section(
+            show_credits.get("crew", {})
+        )
         return result
 
     @staticmethod
