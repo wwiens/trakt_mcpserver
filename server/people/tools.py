@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypeAlias
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
@@ -26,7 +26,7 @@ from utils.api.errors import handle_api_errors_func
 logger = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
-ToolHandler = Callable[..., Awaitable[str]]
+ToolHandler: TypeAlias = Callable[..., Awaitable[str]]
 
 
 class PersonIdParam(BaseModel):
@@ -64,7 +64,7 @@ async def _get_person_name(person_id: str) -> str:
             return f"Person ID: {person_id}"
 
         return person_data.get("name", f"Person ID: {person_id}")
-    except Exception as exc:
+    except Exception as exc:  # Intentional broad fallback per docstring
         logger.debug(
             "Non-fatal exception during person name lookup; falling back to ID.",
             exc_info=True,
