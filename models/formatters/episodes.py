@@ -7,7 +7,7 @@ from models.types import (
     EpisodeResponse,
     ListItemResponse,
     PeopleResponse,
-    StatsResponse,
+    SeasonStatsResponse,
     TraktRating,
     TranslationResponse,
     UserResponse,
@@ -119,7 +119,7 @@ class EpisodeFormatters:
 
     @staticmethod
     def format_episode_stats(
-        stats: StatsResponse, show_title: str, season: int, episode: int
+        stats: SeasonStatsResponse, show_title: str, season: int, episode: int
     ) -> str:
         """Format episode statistics data.
 
@@ -145,6 +145,7 @@ class EpisodeFormatters:
         result += f"| Watchers | {stats.get('watchers', 0):,} |\n"
         result += f"| Plays | {stats.get('plays', 0):,} |\n"
         result += f"| Collectors | {stats.get('collectors', 0):,} |\n"
+        result += f"| Collected Episodes | {stats.get('collected_episodes', 0):,} |\n"
         result += f"| Comments | {stats.get('comments', 0):,} |\n"
         result += f"| Lists | {stats.get('lists', 0):,} |\n"
         result += f"| Votes | {stats.get('votes', 0):,} |\n"

@@ -14,6 +14,7 @@ async def test_get_episode_stats():
         "watchers": 50000,
         "plays": 75000,
         "collectors": 30000,
+        "collected_episodes": 87991,
         "comments": 150,
         "lists": 500,
         "votes": 12000,

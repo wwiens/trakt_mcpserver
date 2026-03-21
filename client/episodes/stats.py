@@ -1,6 +1,6 @@
 """Episode stats functionality."""
 
-from models.types import StatsResponse
+from models.types import SeasonStatsResponse
 from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
@@ -18,7 +18,7 @@ class EpisodeStatsClient(BaseClient):
     @handle_api_errors
     async def get_episode_stats(
         self, show_id: str, season: int, episode: int
-    ) -> StatsResponse:
+    ) -> SeasonStatsResponse:
         """Get statistics for a specific episode.
 
         Args:
@@ -33,4 +33,4 @@ class EpisodeStatsClient(BaseClient):
         season = validate_season(season)
         episode = validate_episode(episode)
         endpoint = build_episode_endpoint("episode_stats", show_id, season, episode)
-        return await self._make_typed_request(endpoint, response_type=StatsResponse)
+        return await self._make_typed_request(endpoint, response_type=SeasonStatsResponse)
