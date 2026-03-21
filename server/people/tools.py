@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Annotated, Literal, TypeAlias
+from typing import Annotated, Final, Literal, TypeAlias
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
@@ -23,7 +23,7 @@ from models.formatters.people import PeopleFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
 
-logger = logging.getLogger("trakt_mcp")
+logger: Final = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler: TypeAlias = Callable[..., Awaitable[str]]
