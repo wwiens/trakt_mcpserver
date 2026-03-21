@@ -28,6 +28,20 @@ logger: Final = logging.getLogger("trakt_mcp")
 # Type alias for tool handlers
 ToolHandler: TypeAlias = Callable[..., Awaitable[str]]
 
+VALID_LIST_TYPES: Final[frozenset[str]] = frozenset(
+    {"all", "personal", "official", "watchlists"}
+)
+VALID_LIST_SORTS: Final[frozenset[str]] = frozenset(
+    {"popular", "likes", "comments", "items", "added", "updated"}
+)
+
+INVALID_LIST_TYPE_MSG: Final[str] = (
+    f"list_type must be one of: {', '.join(sorted(VALID_LIST_TYPES))}"
+)
+INVALID_LIST_SORT_MSG: Final[str] = (
+    f"sort must be one of: {', '.join(sorted(VALID_LIST_SORTS))}"
+)
+
 
 class PersonIdParam(BaseModel):
     """Parameters for tools that require a person ID."""
@@ -170,22 +184,33 @@ async def fetch_person_shows(person_id: str) -> str:
 @handle_api_errors_func
 async def fetch_person_lists(
     person_id: str,
-    list_type: Literal["all", "personal", "official", "watchlists"] = "all",
-    sort: Literal[
-        "popular", "likes", "comments", "items", "added", "updated"
-    ] = "popular",
+    list_type: str = "all",
+    sort: str = "popular",
 ) -> str:
     """Fetch lists containing a specific person.
 
     Args:
         person_id: Trakt ID, slug, or IMDB ID
-        list_type: List type filter (all, personal, official, watchlists)
-        sort: Sort order (popular, likes, comments, items, added, updated)
+        list_type: Filter by type: 'all', 'personal', 'official', 'watchlists'
+        sort: Sort order: 'popular', 'likes', 'comments', 'items', 'added', 'updated'
 
     Returns:
         Formatted markdown with lists
     """
     params = PersonIdParam(person_id=person_id)
+
+    if list_type not in VALID_LIST_TYPES:
+        raise BaseToolErrorMixin.handle_validation_error(
+            INVALID_LIST_TYPE_MSG,
+            parameter="list_type",
+            provided_value=list_type,
+        )
+    if sort not in VALID_LIST_SORTS:
+        raise BaseToolErrorMixin.handle_validation_error(
+            INVALID_LIST_SORT_MSG,
+            parameter="sort",
+            provided_value=sort,
+        )
 
     lists_client = PersonListsClient()
     person_name, lists = await asyncio.gather(
