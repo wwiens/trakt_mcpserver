@@ -1,4 +1,4 @@
-"""Season formatting methods for the Trakt MCP server."""
+"""Episode formatting methods for the Trakt MCP server."""
 
 from models.formatters.utils import MAX_OVERVIEW_LENGTH
 from models.types import (
@@ -7,7 +7,6 @@ from models.types import (
     EpisodeResponse,
     ListItemResponse,
     PeopleResponse,
-    SeasonResponse,
     SeasonStatsResponse,
     TraktRating,
     TranslationResponse,
@@ -15,108 +14,86 @@ from models.types import (
 )
 
 
-class SeasonFormatters:
-    """Helper class for formatting season-related data for MCP responses."""
+class EpisodeFormatters:
+    """Helper class for formatting episode-related data for MCP responses."""
 
     @staticmethod
-    def format_season_info(season: SeasonResponse) -> str:
-        """Format detailed single season data.
+    def format_episode_summary(episode: EpisodeResponse, show_title: str) -> str:
+        """Format detailed single episode data.
 
         Args:
-            season: Season data from Trakt API
-
-        Returns:
-            Formatted markdown text with season details
-        """
-        if not season:
-            return "No season data available."
-
-        number = season.get("number", 0)
-        title = season.get("title", "")
-        if number == 0 and not title:
-            title = "Specials"
-        elif not title:
-            title = f"Season {number}"
-
-        result = f"# {title}\n\n"
-
-        if overview := season.get("overview"):
-            result += f"{overview}\n\n"
-
-        result += "### Details\n"
-        result += f"- Season Number: {number}\n"
-
-        episode_count = season.get("episode_count")
-        if episode_count is not None:
-            result += f"- Total Episodes: {episode_count}\n"
-
-        aired_episodes = season.get("aired_episodes")
-        if aired_episodes is not None:
-            result += f"- Aired Episodes: {aired_episodes}\n"
-
-        if first_aired := season.get("first_aired"):
-            result += f"- First Aired: {first_aired}\n"
-
-        rating = season.get("rating")
-        if rating is not None:
-            votes = season.get("votes", 0)
-            result += f"- Rating: {rating:.1f}/10 ({votes} votes)\n"
-
-        ids = season.get("ids", {})
-        if trakt_id := ids.get("trakt"):
-            result += f"\nTrakt ID: {trakt_id}\n"
-
-        return result
-
-    @staticmethod
-    def format_season_episodes(
-        episodes: list[EpisodeResponse], season_number: int
-    ) -> str:
-        """Format episode list for a season.
-
-        Args:
-            episodes: List of episode data from Trakt API
-            season_number: The season number for context
+            episode: Episode data from Trakt API
+            show_title: The title of the show
 
         Returns:
             Formatted markdown text with episode details
         """
-        if not episodes:
-            return f"# Season {season_number} Episodes\n\nNo episodes available."
+        if not episode:
+            return f"# {show_title}\n\nNo episode data available."
 
-        result = f"# Season {season_number} Episodes\n\n"
-        result += f"**{len(episodes)} episode(s)**\n\n"
+        season = episode.get("season", 0)
+        number = episode.get("number", 0)
+        title = episode.get("title", "TBA")
 
-        result += "| # | Title | Rating | Runtime |\n"
-        result += "|---|-------|--------|---------|\n"
+        result = f"# {show_title} - S{season:02d}E{number:02d}: {title}\n\n"
 
-        for episode in episodes:
-            number = episode.get("number", 0)
-            title = episode.get("title", "TBA")
-            rating = episode.get("rating")
-            rating_str = f"{rating:.1f}/10" if rating is not None else "—"
-            runtime = episode.get("runtime")
-            runtime_str = f"{runtime}m" if runtime is not None else "—"
+        if overview := episode.get("overview"):
+            if len(overview) > MAX_OVERVIEW_LENGTH:
+                overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
+            result += f"{overview}\n\n"
 
-            result += f"| {number} | {title} | {rating_str} | {runtime_str} |\n"
+        result += "### Details\n"
+
+        if first_aired := episode.get("first_aired"):
+            result += f"- First Aired: {first_aired}\n"
+
+        runtime = episode.get("runtime")
+        if runtime is not None:
+            result += f"- Runtime: {runtime} minutes\n"
+
+        rating = episode.get("rating")
+        if rating is not None:
+            votes = episode.get("votes", 0)
+            result += f"- Rating: {rating:.1f}/10 ({votes} votes)\n"
+
+        comment_count = episode.get("comment_count")
+        if comment_count is not None:
+            result += f"- Comments: {comment_count}\n"
+
+        if translations := episode.get("available_translations"):
+            result += f"- Available Translations: {', '.join(translations)}\n"
+
+        ids = episode.get("ids", {})
+        id_parts: list[str] = []
+        if trakt_id := ids.get("trakt"):
+            id_parts.append(f"Trakt: {trakt_id}")
+        if imdb_id := ids.get("imdb"):
+            id_parts.append(f"IMDB: {imdb_id}")
+        if tmdb_id := ids.get("tmdb"):
+            id_parts.append(f"TMDB: {tmdb_id}")
+        if tvdb_id := ids.get("tvdb"):
+            id_parts.append(f"TVDB: {tvdb_id}")
+        if id_parts:
+            result += f"\n**IDs:** {' | '.join(id_parts)}\n"
 
         return result
 
     @staticmethod
-    def format_season_ratings(
-        ratings: TraktRating, show_title: str, season: int
+    def format_episode_ratings(
+        ratings: TraktRating, show_title: str, season: int, episode: int
     ) -> str:
-        """Format season ratings data.
+        """Format episode ratings data.
 
         Args:
             ratings: The ratings data from Trakt API
             show_title: The title of the show
             season: Season number
+            episode: Episode number
 
         Returns:
             Formatted markdown text with ratings information
         """
-        result = f"# Ratings for {show_title} - Season {season}\n\n"
+        result = f"# Ratings for {show_title} - S{season:02d}E{episode:02d}\n\n"
 
         if not ratings:
             return result + "No ratings data available."
@@ -141,26 +118,27 @@ class SeasonFormatters:
         return result
 
     @staticmethod
-    def format_season_stats(
-        stats: SeasonStatsResponse, show_title: str, season: int
+    def format_episode_stats(
+        stats: SeasonStatsResponse, show_title: str, season: int, episode: int
     ) -> str:
-        """Format season statistics data.
+        """Format episode statistics data.
 
         Args:
-            stats: Season statistics from Trakt API
+            stats: Episode statistics from Trakt API
             show_title: The title of the show
             season: Season number
+            episode: Episode number
 
         Returns:
             Formatted markdown text with statistics
         """
         if not stats:
             return (
-                f"# Stats for {show_title} - Season {season}\n\n"
+                f"# Stats for {show_title} - S{season:02d}E{episode:02d}\n\n"
                 "No statistics available."
             )
 
-        result = f"# Stats for {show_title} - Season {season}\n\n"
+        result = f"# Stats for {show_title} - S{season:02d}E{episode:02d}\n\n"
 
         result += "| Metric | Value |\n"
         result += "|--------|-------|\n"
@@ -194,38 +172,35 @@ class SeasonFormatters:
             name = person.get("name", "Unknown")
             characters = member.get("characters", [])
             char_str = ", ".join(characters) if characters else "Unknown Role"
-            episode_count = member.get("episode_count")
-            count_str = (
-                f" ({episode_count} episodes)" if episode_count is not None else ""
-            )
-            result += f"- **{name}** as {char_str}{count_str}\n"
+            result += f"- **{name}** as {char_str}\n"
         result += "\n"
         return result
 
     @staticmethod
-    def format_season_people(
-        people: PeopleResponse, show_title: str, season: int
+    def format_episode_people(
+        people: PeopleResponse, show_title: str, season: int, episode: int
     ) -> str:
-        """Format season cast and crew data.
+        """Format episode cast and crew data.
 
         Args:
             people: People data from Trakt API
             show_title: The title of the show
             season: Season number
+            episode: Episode number
 
         Returns:
             Formatted markdown text with cast and crew
         """
         if not people:
             return (
-                f"# People for {show_title} - Season {season}\n\n"
+                f"# People for {show_title} - S{season:02d}E{episode:02d}\n\n"
                 "No people data available."
             )
 
-        result = f"# People for {show_title} - Season {season}\n\n"
+        result = f"# People for {show_title} - S{season:02d}E{episode:02d}\n\n"
 
-        result += SeasonFormatters._format_cast_section(people.get("cast", []), "Cast")
-        result += SeasonFormatters._format_cast_section(
+        result += EpisodeFormatters._format_cast_section(people.get("cast", []), "Cast")
+        result += EpisodeFormatters._format_cast_section(
             people.get("guest_stars", []), "Guest Stars"
         )
 
@@ -239,35 +214,30 @@ class SeasonFormatters:
                     name = person.get("name", "Unknown")
                     jobs = member.get("jobs", [])
                     jobs_str = ", ".join(jobs) if jobs else "Unknown"
-                    episode_count = member.get("episode_count")
-                    count_str = (
-                        f" ({episode_count} episodes)"
-                        if episode_count is not None
-                        else ""
-                    )
-                    result += f"- **{name}** - {jobs_str}{count_str}\n"
+                    result += f"- **{name}** - {jobs_str}\n"
                 result += "\n"
 
         return result
 
     @staticmethod
-    def format_season_watching(
-        users: list[UserResponse], show_title: str, season: int
+    def format_episode_watching(
+        users: list[UserResponse], show_title: str, season: int, episode: int
     ) -> str:
-        """Format users currently watching a season.
+        """Format users currently watching an episode.
 
         Args:
             users: List of user data from Trakt API
             show_title: The title of the show
             season: Season number
+            episode: Episode number
 
         Returns:
             Formatted markdown text with user list
         """
-        result = f"# Currently Watching {show_title} - Season {season}\n\n"
+        result = f"# Currently Watching {show_title} - S{season:02d}E{episode:02d}\n\n"
 
         if not users:
-            return result + "No one is currently watching this season."
+            return result + "No one is currently watching this episode."
 
         result += f"**{len(users)} user(s) watching**\n\n"
 
@@ -286,22 +256,24 @@ class SeasonFormatters:
         return result
 
     @staticmethod
-    def format_season_translations(
+    def format_episode_translations(
         translations: list[TranslationResponse],
         show_title: str,
         season: int,
+        episode: int,
     ) -> str:
-        """Format season translation data.
+        """Format episode translation data.
 
         Args:
             translations: List of translation data from Trakt API
             show_title: The title of the show
             season: Season number
+            episode: Episode number
 
         Returns:
             Formatted markdown text with translations
         """
-        result = f"# Translations for {show_title} - Season {season}\n\n"
+        result = f"# Translations for {show_title} - S{season:02d}E{episode:02d}\n\n"
 
         if not translations:
             return result + "No translations available."
@@ -320,23 +292,27 @@ class SeasonFormatters:
         return result
 
     @staticmethod
-    def format_season_lists(
-        lists: list[ListItemResponse], show_title: str, season: int
+    def format_episode_lists(
+        lists: list[ListItemResponse],
+        show_title: str,
+        season: int,
+        episode: int,
     ) -> str:
-        """Format lists containing a season.
+        """Format lists containing an episode.
 
         Args:
             lists: List of list data from Trakt API
             show_title: The title of the show
             season: Season number
+            episode: Episode number
 
         Returns:
             Formatted markdown text with lists
         """
-        result = f"# Lists Containing {show_title} - Season {season}\n\n"
+        result = f"# Lists Containing {show_title} - S{season:02d}E{episode:02d}\n\n"
 
         if not lists:
-            return result + "No lists found containing this season."
+            return result + "No lists found containing this episode."
 
         result += f"**{len(lists)} list(s)**\n\n"
 
