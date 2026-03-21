@@ -1,4 +1,5 @@
 import os
+from collections.abc import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -7,9 +8,33 @@ import pytest
 from client.episodes import EpisodesClient
 
 
-@pytest.mark.asyncio
-async def test_get_episode_translations() -> None:
+@pytest.fixture
+def mock_http_client() -> Generator[tuple[MagicMock, MagicMock], None, None]:
+    """Shared httpx mock setup for episode translation tests."""
     mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+
+    mock_instance = MagicMock(spec=httpx.AsyncClient)
+    mock_instance.get = AsyncMock(return_value=mock_response)
+    mock_instance.post = AsyncMock()
+    mock_instance.aclose = AsyncMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch.dict(
+            os.environ,
+            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+        ),
+    ):
+        mock_client.return_value = mock_instance
+        yield mock_instance, mock_response
+
+
+@pytest.mark.asyncio
+async def test_get_episode_translations(
+    mock_http_client: tuple[MagicMock, MagicMock],
+) -> None:
+    mock_instance, mock_response = mock_http_client
     mock_response.json.return_value = [
         {
             "title": "Winter Is Coming",
@@ -24,40 +49,27 @@ async def test_get_episode_translations() -> None:
             "country": "es",
         },
     ]
-    mock_response.raise_for_status = MagicMock()
 
-    mock_instance = MagicMock(spec=httpx.AsyncClient)
-    mock_instance.get = AsyncMock(return_value=mock_response)
-    mock_instance.post = AsyncMock()
-    mock_instance.aclose = AsyncMock()
+    client = EpisodesClient()
+    result = await client.get_episode_translations("game-of-thrones", 1, 1)
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
-    ):
-        mock_client.return_value = mock_instance
+    assert len(result) == 2
+    assert result[0]["language"] == "en"
+    assert result[1]["title"] == "Se acerca el invierno"
 
-        client = EpisodesClient()
-        result = await client.get_episode_translations("game-of-thrones", 1, 1)
+    mock_instance.get.assert_called_once()
+    call_args = mock_instance.get.call_args
+    assert "/seasons/1/episodes/1/translations/all" in call_args[0][0]
 
-        assert len(result) == 2
-        assert result[0]["language"] == "en"
-        assert result[1]["title"] == "Se acerca el invierno"
-
-        mock_instance.get.assert_called_once()
-        call_args = mock_instance.get.call_args
-        assert "/seasons/1/episodes/1/translations/all" in call_args[0][0]
-
-        mock_response.raise_for_status.assert_called_once()
-        mock_instance.aclose.assert_awaited_once()
+    mock_response.raise_for_status.assert_called_once()
+    mock_instance.aclose.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_get_episode_translations_with_language() -> None:
-    mock_response = MagicMock()
+async def test_get_episode_translations_with_language(
+    mock_http_client: tuple[MagicMock, MagicMock],
+) -> None:
+    mock_instance, mock_response = mock_http_client
     mock_response.json.return_value = [
         {
             "title": "Winter Is Coming",
@@ -66,36 +78,26 @@ async def test_get_episode_translations_with_language() -> None:
             "country": "us",
         },
     ]
-    mock_response.raise_for_status = MagicMock()
 
-    mock_instance = MagicMock(spec=httpx.AsyncClient)
-    mock_instance.get = AsyncMock(return_value=mock_response)
-    mock_instance.post = AsyncMock()
-    mock_instance.aclose = AsyncMock()
+    client = EpisodesClient()
+    result = await client.get_episode_translations("game-of-thrones", 1, 1, "en")
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
-    ):
-        mock_client.return_value = mock_instance
+    assert len(result) == 1
+    assert result[0]["language"] == "en"
 
-        client = EpisodesClient()
-        result = await client.get_episode_translations("game-of-thrones", 1, 1, "en")
+    mock_instance.get.assert_called_once()
+    call_args = mock_instance.get.call_args
+    assert "/seasons/1/episodes/1/translations/en" in call_args[0][0]
 
-        assert len(result) == 1
-        assert result[0]["language"] == "en"
-
-        mock_instance.get.assert_called_once()
-        call_args = mock_instance.get.call_args
-        assert "/seasons/1/episodes/1/translations/en" in call_args[0][0]
+    mock_response.raise_for_status.assert_called_once()
+    mock_instance.aclose.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_get_episode_translations_normalizes_language() -> None:
-    mock_response = MagicMock()
+async def test_get_episode_translations_normalizes_language(
+    mock_http_client: tuple[MagicMock, MagicMock],
+) -> None:
+    mock_instance, mock_response = mock_http_client
     mock_response.json.return_value = [
         {
             "title": "Winter Is Coming",
@@ -104,38 +106,19 @@ async def test_get_episode_translations_normalizes_language() -> None:
             "country": "us",
         },
     ]
-    mock_response.raise_for_status = MagicMock()
 
-    mock_instance = MagicMock(spec=httpx.AsyncClient)
-    mock_instance.get = AsyncMock(return_value=mock_response)
-    mock_instance.post = AsyncMock()
-    mock_instance.aclose = AsyncMock()
+    client = EpisodesClient()
+    result = await client.get_episode_translations("game-of-thrones", 1, 1, " EN ")
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
-    ):
-        mock_client.return_value = mock_instance
-
-        client = EpisodesClient()
-        result = await client.get_episode_translations("game-of-thrones", 1, 1, " EN ")
-
-        assert len(result) == 1
-        call_args = mock_instance.get.call_args
-        assert "/seasons/1/episodes/1/translations/en" in call_args[0][0]
+    assert len(result) == 1
+    call_args = mock_instance.get.call_args
+    assert "/seasons/1/episodes/1/translations/en" in call_args[0][0]
 
 
 @pytest.mark.asyncio
-async def test_get_episode_translations_rejects_invalid_language() -> None:
-    with (
-        patch.dict(
-            os.environ,
-            {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
-        ),
-    ):
-        client = EpisodesClient()
-        with pytest.raises(ValueError, match="2-letter ISO 639-1 code"):
-            await client.get_episode_translations("game-of-thrones", 1, 1, "eng")
+async def test_get_episode_translations_rejects_invalid_language(
+    mock_http_client: tuple[MagicMock, MagicMock],
+) -> None:
+    client = EpisodesClient()
+    with pytest.raises(ValueError, match="2-letter ISO 639-1 code"):
+        await client.get_episode_translations("game-of-thrones", 1, 1, "eng")
