@@ -1,11 +1,12 @@
 """Shared utilities for people client modules."""
 
 import re
+from typing import Final
 from urllib.parse import quote
 
 from config.endpoints import TRAKT_ENDPOINTS
 
-_IMDB_PATTERN: re.Pattern[str] = re.compile(r"^tt\d+$")
+_IMDB_PATTERN: Final[re.Pattern[str]] = re.compile(r"^tt\d+$")
 
 
 def validate_person_id(person_id: str) -> str:

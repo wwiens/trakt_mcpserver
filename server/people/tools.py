@@ -21,7 +21,7 @@ from config.mcp.descriptions import (
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.people import PeopleFormatters
 from server.base import BaseToolErrorMixin
-from utils.api.errors import MCPError, handle_api_errors_func
+from utils.api.errors import handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -64,7 +64,7 @@ async def _get_person_name(person_id: str) -> str:
             return f"Person ID: {person_id}"
 
         return person_data.get("name", f"Person ID: {person_id}")
-    except (MCPError, ValueError, OSError) as exc:
+    except Exception as exc:
         logger.debug(
             "Non-fatal exception during person name lookup; falling back to ID.",
             exc_info=True,
