@@ -33,4 +33,6 @@ class EpisodeStatsClient(BaseClient):
         season = validate_season(season)
         episode = validate_episode(episode)
         endpoint = build_episode_endpoint("episode_stats", show_id, season, episode)
-        return await self._make_typed_request(endpoint, response_type=SeasonStatsResponse)
+        return await self._make_typed_request(
+            endpoint, response_type=SeasonStatsResponse
+        )

@@ -174,6 +174,7 @@ class TestEndpointUrlFormats:
         from config.endpoints.comments import COMMENTS_ENDPOINTS
         from config.endpoints.episodes import EPISODES_ENDPOINTS
         from config.endpoints.movies import MOVIES_ENDPOINTS
+        from config.endpoints.people import PEOPLE_ENDPOINTS
         from config.endpoints.progress import PROGRESS_ENDPOINTS
         from config.endpoints.recommendations import RECOMMENDATIONS_ENDPOINTS
         from config.endpoints.search import SEARCH_ENDPOINTS
@@ -186,6 +187,7 @@ class TestEndpointUrlFormats:
             **AUTH_ENDPOINTS,
             **SHOWS_ENDPOINTS,
             **MOVIES_ENDPOINTS,
+            **PEOPLE_ENDPOINTS,
             **PROGRESS_ENDPOINTS,
             **COMMENTS_ENDPOINTS,
             **EPISODES_ENDPOINTS,

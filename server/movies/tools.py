@@ -1,5 +1,6 @@
 """Movie tools for the Trakt MCP server."""
 
+import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable
@@ -12,6 +13,7 @@ from client.movies.anticipated import AnticipatedMoviesClient
 from client.movies.boxoffice import BoxOfficeMoviesClient
 from client.movies.client import MoviesClient
 from client.movies.details import MovieDetailsClient
+from client.movies.people import MoviePeopleClient
 from client.movies.popular import PopularMoviesClient
 from client.movies.related import RelatedMoviesClient
 from client.movies.stats import MovieStatsClient
@@ -434,6 +436,69 @@ async def fetch_related_movies(
     return MovieFormatters.format_related_movies(movies)
 
 
+async def _get_movie_title(movie_id: str) -> str:
+    """Fetch the movie title for use in formatted responses.
+
+    Falls back to ``Movie ID: <movie_id>`` when the lookup fails
+    for any reason so callers always receive a usable title string.
+
+    Args:
+        movie_id: Trakt ID, slug, or IMDB ID
+
+    Returns:
+        Movie title string, or fallback on failure
+    """
+    try:
+        client = MovieDetailsClient()
+        movie_data = await client.get_movie(movie_id)
+
+        if isinstance(movie_data, str):
+            return f"Movie ID: {movie_id}"
+
+        return movie_data.get("title", f"Movie ID: {movie_id}")
+    except Exception as exc:
+        logger.debug(
+            "Non-fatal exception during movie title lookup; falling back to ID title.",
+            exc_info=True,
+            extra={
+                "resource_id": movie_id,
+                "operation": "fetch_movie_title",
+                "error": str(exc),
+            },
+        )
+        return f"Movie ID: {movie_id}"
+
+
+@handle_api_errors_func
+async def fetch_movie_people(movie_id: str) -> str:
+    """Fetch cast and crew for a specific movie.
+
+    Args:
+        movie_id: Trakt ID, slug, or IMDB ID
+
+    Returns:
+        Formatted markdown with cast and crew
+    """
+    params = MovieIdParam(movie_id=movie_id)
+
+    people_client = MoviePeopleClient()
+    movie_title, people = await asyncio.gather(
+        _get_movie_title(params.movie_id),
+        people_client.get_movie_people(params.movie_id),
+    )
+
+    if isinstance(people, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="movie_people",
+            resource_id=params.movie_id,
+            error_message=people,
+            operation="fetch_movie_people",
+            movie_title=movie_title,
+        )
+
+    return MovieFormatters.format_movie_people(people, movie_title)
+
+
 def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """Register movie tools with the MCP server.
 
@@ -573,6 +638,22 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     ) -> str:
         return await fetch_related_movies(movie_id, limit, page)
 
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_movie_people"],
+        description=(
+            "Get cast and crew for a movie from Trakt. "
+            "Returns cast with character names and crew "
+            "grouped by department."
+        ),
+    )
+    async def fetch_movie_people_tool(
+        movie_id: Annotated[
+            str,
+            Field(min_length=1, description=MOVIE_ID_DESCRIPTION),
+        ],
+    ) -> str:
+        return await fetch_movie_people(movie_id)
+
     # Return handlers for type checker visibility
     return (
         fetch_trending_movies_tool,
@@ -586,4 +667,5 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         fetch_movie_summary_tool,
         fetch_movie_videos_tool,
         fetch_related_movies_tool,
+        fetch_movie_people_tool,
     )

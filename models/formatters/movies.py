@@ -4,8 +4,11 @@ from models.formatters.utils import MAX_OVERVIEW_LENGTH, format_pagination_heade
 from models.types import (
     AnticipatedMovieWrapper,
     BoxOfficeMovieWrapper,
+    CastMember,
+    CrewMember,
     FavoritedMovieWrapper,
     MovieResponse,
+    PeopleResponse,
     PlayedMovieWrapper,
     TraktRating,
     TrendingWrapper,
@@ -470,5 +473,47 @@ class MovieFormatters:
                 result += f"  {overview}\n"
 
             result += "\n"
+
+        return result
+
+    @staticmethod
+    def format_movie_people(people: PeopleResponse, movie_title: str) -> str:
+        """Format movie cast and crew data.
+
+        Args:
+            people: People data from Trakt API
+            movie_title: The title of the movie
+
+        Returns:
+            Formatted markdown text with cast and crew
+        """
+        if not people:
+            return f"# People for {movie_title}\n\nNo people data available."
+
+        result = f"# People for {movie_title}\n\n"
+
+        cast: list[CastMember] = people.get("cast", [])
+        if cast:
+            result += "## Cast\n\n"
+            for member in cast:
+                person = member.get("person", {})
+                name = person.get("name", "Unknown")
+                characters = member.get("characters", [])
+                char_str = ", ".join(characters) if characters else "Unknown Role"
+                result += f"- **{name}** as {char_str}\n"
+            result += "\n"
+
+        crew: dict[str, list[CrewMember]] = people.get("crew", {})
+        if crew:
+            result += "## Crew\n\n"
+            for department, members in sorted(crew.items()):
+                result += f"### {department.title()}\n\n"
+                for member in members:
+                    person = member.get("person", {})
+                    name = person.get("name", "Unknown")
+                    jobs = member.get("jobs", [])
+                    jobs_str = ", ".join(jobs) if jobs else "Unknown"
+                    result += f"- **{name}** - {jobs_str}\n"
+                result += "\n"
 
         return result

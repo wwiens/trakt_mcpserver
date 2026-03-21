@@ -5,6 +5,7 @@ from .checkin import CHECKIN_TOOLS
 from .comments import COMMENT_TOOLS
 from .episodes import EPISODE_TOOLS
 from .movies import MOVIE_TOOLS
+from .people import PEOPLE_TOOLS
 from .progress import PROGRESS_TOOLS
 from .recommendations import RECOMMENDATIONS_TOOLS
 from .search import SEARCH_TOOLS
@@ -17,6 +18,7 @@ from .user import USER_TOOLS
 TOOL_NAMES = {
     **SHOW_TOOLS,
     **MOVIE_TOOLS,
+    **PEOPLE_TOOLS,
     **AUTH_TOOLS,
     **USER_TOOLS,
     **CHECKIN_TOOLS,
@@ -35,6 +37,7 @@ __all__ = [
     "COMMENT_TOOLS",
     "EPISODE_TOOLS",
     "MOVIE_TOOLS",
+    "PEOPLE_TOOLS",
     "PROGRESS_TOOLS",
     "RECOMMENDATIONS_TOOLS",
     "SEARCH_TOOLS",

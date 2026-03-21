@@ -12,6 +12,7 @@ from config.api import DEFAULT_MAX_PAGES
 from server.comments.tools import fetch_movie_comments
 from server.movies.tools import (
     fetch_boxoffice_movies,
+    fetch_movie_people,
     fetch_movie_ratings,
     fetch_movie_summary,
     fetch_movie_videos,
@@ -565,3 +566,56 @@ async def test_fetch_boxoffice_movies_error():
 
         with pytest.raises(InternalError):
             await fetch_boxoffice_movies()
+
+
+@pytest.mark.asyncio
+async def test_fetch_movie_people():
+    sample_people = {
+        "cast": [
+            {
+                "characters": ["Sam Flynn"],
+                "person": {
+                    "name": "Garrett Hedlund",
+                    "ids": {"trakt": 1, "slug": "garrett-hedlund"},
+                },
+            }
+        ],
+        "crew": {
+            "directing": [
+                {
+                    "jobs": ["Director"],
+                    "person": {
+                        "name": "Joseph Kosinski",
+                        "ids": {"trakt": 2, "slug": "joseph-kosinski"},
+                    },
+                }
+            ]
+        },
+    }
+
+    sample_movie = {"title": "TRON: Legacy", "year": 2010}
+
+    with (
+        patch("server.movies.tools.MoviePeopleClient") as mock_people_class,
+        patch("server.movies.tools.MovieDetailsClient") as mock_details_class,
+    ):
+        mock_people = mock_people_class.return_value
+        mock_details = mock_details_class.return_value
+
+        people_future: asyncio.Future[Any] = asyncio.Future()
+        people_future.set_result(sample_people)
+        mock_people.get_movie_people.return_value = people_future
+
+        movie_future: asyncio.Future[Any] = asyncio.Future()
+        movie_future.set_result(sample_movie)
+        mock_details.get_movie.return_value = movie_future
+
+        result = await fetch_movie_people(movie_id="tron-legacy-2010")
+
+        assert "# People for TRON: Legacy" in result
+        assert "Garrett Hedlund" in result
+        assert "Sam Flynn" in result
+        assert "Joseph Kosinski" in result
+        assert "Director" in result
+
+        mock_people.get_movie_people.assert_called_once_with("tron-legacy-2010")

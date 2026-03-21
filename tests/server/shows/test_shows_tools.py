@@ -1,5 +1,7 @@
+import asyncio
 import sys
 from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -17,6 +19,7 @@ from server.shows.tools import (
     fetch_played_shows,
     fetch_popular_shows,
     fetch_related_shows,
+    fetch_show_people,
     fetch_show_ratings,
     fetch_show_summary,
     fetch_show_videos,
@@ -683,3 +686,119 @@ async def test_fetch_related_shows_error():
 
         with pytest.raises(InternalError):
             await fetch_related_shows(show_id="breaking-bad", limit=10)
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_people():
+    sample_people = {
+        "cast": [
+            {
+                "characters": ["Walter White"],
+                "episode_count": 62,
+                "person": {
+                    "name": "Bryan Cranston",
+                    "ids": {"trakt": 142, "slug": "bryan-cranston"},
+                },
+            }
+        ],
+        "crew": {
+            "production": [
+                {
+                    "jobs": ["Executive Producer"],
+                    "episode_count": 62,
+                    "person": {
+                        "name": "Vince Gilligan",
+                        "ids": {"trakt": 1, "slug": "vince-gilligan"},
+                    },
+                }
+            ]
+        },
+    }
+
+    sample_show = {"title": "Breaking Bad", "year": 2008}
+
+    with (
+        patch("server.shows.tools.ShowPeopleClient") as mock_people_class,
+        patch("server.shows.tools.ShowDetailsClient") as mock_details_class,
+    ):
+        mock_people = mock_people_class.return_value
+        mock_details = mock_details_class.return_value
+
+        people_future: asyncio.Future[Any] = asyncio.Future()
+        people_future.set_result(sample_people)
+        mock_people.get_show_people.return_value = people_future
+
+        show_future: asyncio.Future[Any] = asyncio.Future()
+        show_future.set_result(sample_show)
+        mock_details.get_show.return_value = show_future
+
+        result = await fetch_show_people(show_id="breaking-bad")
+
+        assert "# People for Breaking Bad" in result
+        assert "Bryan Cranston" in result
+        assert "Walter White" in result
+        assert "62 episodes" in result
+        assert "Vince Gilligan" in result
+        assert "Executive Producer" in result
+
+        mock_people.get_show_people.assert_called_once_with(
+            "breaking-bad", include_guest_stars=False
+        )
+
+
+@pytest.mark.asyncio
+async def test_fetch_show_people_with_guest_stars():
+    sample_people = {
+        "cast": [
+            {
+                "characters": ["Walter White"],
+                "episode_count": 62,
+                "person": {
+                    "name": "Bryan Cranston",
+                    "ids": {"trakt": 142, "slug": "bryan-cranston"},
+                },
+            }
+        ],
+        "guest_stars": [
+            {
+                "characters": ["Hank Schrader"],
+                "episode_count": 10,
+                "person": {
+                    "name": "Dean Norris",
+                    "ids": {"trakt": 2, "slug": "dean-norris"},
+                },
+            }
+        ],
+        "crew": {},
+    }
+
+    sample_show = {"title": "Breaking Bad", "year": 2008}
+
+    with (
+        patch("server.shows.tools.ShowPeopleClient") as mock_people_class,
+        patch("server.shows.tools.ShowDetailsClient") as mock_details_class,
+    ):
+        mock_people = mock_people_class.return_value
+        mock_details = mock_details_class.return_value
+
+        people_future: asyncio.Future[Any] = asyncio.Future()
+        people_future.set_result(sample_people)
+        mock_people.get_show_people.return_value = people_future
+
+        show_future: asyncio.Future[Any] = asyncio.Future()
+        show_future.set_result(sample_show)
+        mock_details.get_show.return_value = show_future
+
+        result = await fetch_show_people(
+            show_id="breaking-bad", include_guest_stars=True
+        )
+
+        assert "# People for Breaking Bad" in result
+        assert "## Cast" in result
+        assert "## Guest Stars" in result
+        assert "Dean Norris" in result
+        assert "Hank Schrader" in result
+
+        mock_people.get_show_people.assert_called_once_with(
+            "breaking-bad", include_guest_stars=True
+        )

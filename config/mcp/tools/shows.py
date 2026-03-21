@@ -15,4 +15,5 @@ SHOW_TOOLS: Final[dict[str, str]] = {
     "fetch_show_videos": "fetch_show_videos",
     "fetch_related_shows": "fetch_related_shows",
     "fetch_show_seasons": "fetch_show_seasons",
+    "fetch_show_people": "fetch_show_people",
 }
