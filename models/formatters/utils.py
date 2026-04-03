@@ -49,12 +49,12 @@ def format_display_time(timestamp: str) -> str:
     return format_iso_timestamp(timestamp, fmt=DISPLAY_DATETIME_FORMAT)
 
 
-def format_title_year(title: str, year: Any) -> str:
+def format_title_year(title: str, year: str | int | None) -> str:
     """Format a title with optional year suffix.
 
     Args:
         title: Media title
-        year: Year value (may be int, str, or empty/falsy)
+        year: Year value (int, str, or None/empty)
 
     Returns:
         Formatted string like ``"Title (2024)"`` or just ``"Title"``
