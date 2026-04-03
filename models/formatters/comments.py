@@ -43,7 +43,8 @@ class CommentsFormatters:
             lines.append("")
 
         if not comments:
-            return "\n".join(lines) + "\nNo comments found."
+            lines.append("No comments found.")
+            return "\n".join(lines)
 
         for comment in comments:
             username = comment.get("user", {}).get("username", "Anonymous")

@@ -13,11 +13,10 @@ class UserFormatters:
         lines.append("")
 
         if not shows:
-            return (
-                "\n".join(lines)
-                + "You haven't watched any shows yet, "
-                + "or you need to authenticate first."
+            lines.append(
+                "You haven't watched any shows yet, or you need to authenticate first."
             )
+            return "\n".join(lines)
 
         for item in shows:
             show = item.get("show", {})
@@ -46,11 +45,10 @@ class UserFormatters:
         lines.append("")
 
         if not movies:
-            return (
-                "\n".join(lines)
-                + "You haven't watched any movies yet, "
-                + "or you need to authenticate first."
+            lines.append(
+                "You haven't watched any movies yet, or you need to authenticate first."
             )
+            return "\n".join(lines)
 
         for item in movies:
             movie = item.get("movie", {})
