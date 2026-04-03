@@ -36,16 +36,16 @@ class RecommendationFormatters:
         trakt_id = item.ids.trakt or ""
         imdb_id = item.ids.imdb or ""
 
-        result = f"### {item.title}{year_str}\n"
+        lines: list[str] = [f"### {item.title}{year_str}"]
         if trakt_id:
-            result += f"- **Trakt ID:** {trakt_id}\n"
+            lines.append(f"- **Trakt ID:** {trakt_id}")
         if imdb_id:
-            result += f"- **IMDB:** {imdb_id}\n"
+            lines.append(f"- **IMDB:** {imdb_id}")
         if item.favorited_by:
-            result += f"- **Favorited by:** {len(item.favorited_by)} user(s)\n"
-        result += "\n"
+            lines.append(f"- **Favorited by:** {len(item.favorited_by)} user(s)")
+        lines.append("")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_movie_recommendations(
@@ -59,16 +59,23 @@ class RecommendationFormatters:
         Returns:
             Formatted markdown text with movie recommendations
         """
-        result = "# Recommended Movies\n\n"
-        result += "_Personalized recommendations based on your viewing history_\n\n"
+        lines: list[str] = ["# Recommended Movies"]
+        lines.append("")
+        lines.append("_Personalized recommendations based on your viewing history_")
+        lines.append("")
 
         if not movies:
-            return f"{result}No recommendations available. Watch more content to improve recommendations!\n"
+            return (
+                "\n".join(lines)
+                + "No recommendations available. Watch more content to improve recommendations!\n"
+            )
 
-        for movie in movies:
-            result += RecommendationFormatters._format_recommendation_item(movie)
+        lines.extend(
+            RecommendationFormatters._format_recommendation_item(movie)
+            for movie in movies
+        )
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_show_recommendations(
@@ -82,16 +89,22 @@ class RecommendationFormatters:
         Returns:
             Formatted markdown text with show recommendations
         """
-        result = "# Recommended TV Shows\n\n"
-        result += "_Personalized recommendations based on your viewing history_\n\n"
+        lines: list[str] = ["# Recommended TV Shows"]
+        lines.append("")
+        lines.append("_Personalized recommendations based on your viewing history_")
+        lines.append("")
 
         if not shows:
-            return f"{result}No recommendations available. Watch more content to improve recommendations!\n"
+            return (
+                "\n".join(lines)
+                + "No recommendations available. Watch more content to improve recommendations!\n"
+            )
 
-        for show in shows:
-            result += RecommendationFormatters._format_recommendation_item(show)
+        lines.extend(
+            RecommendationFormatters._format_recommendation_item(show) for show in shows
+        )
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_hide_result(item_type: str, item_id: str) -> str:

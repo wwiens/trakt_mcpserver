@@ -142,8 +142,7 @@ async def fetch_favorited_shows(
     client = ShowStatsClient()
     shows = await client.get_favorited_shows(limit=limit, period=period, page=page)
 
-    # Trace structure in debug only (only for list responses to avoid pagination object)
-    if shows and isinstance(shows, list):
+    if logger.isEnabledFor(logging.DEBUG) and shows and isinstance(shows, list):
         logger.debug(
             "Favorited shows API response structure: %s",
             json.dumps(shows[0], indent=2),

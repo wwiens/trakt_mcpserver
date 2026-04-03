@@ -1,6 +1,10 @@
 """People formatting methods for the Trakt MCP server."""
 
-from models.formatters.utils import MAX_OVERVIEW_LENGTH
+from models.formatters.utils import (
+    MAX_OVERVIEW_LENGTH,
+    format_list_items,
+    format_title_year,
+)
 from models.types import (
     ListItemResponse,
     PersonMovieCastCredit,
@@ -30,38 +34,38 @@ class PeopleFormatters:
             return "# Person\n\nNo person data available."
 
         name = person.get("name", "Unknown")
-        result = f"# {name}\n\n"
+        lines: list[str] = [f"# {name}", ""]
 
         ids = person.get("ids", {})
         if ids:
-            result += "### Identifiers\n"
+            lines.append("### Identifiers")
             if trakt_id := ids.get("trakt"):
-                result += f"- Trakt: {trakt_id}\n"
+                lines.append(f"- Trakt: {trakt_id}")
             if slug := ids.get("slug"):
-                result += f"- Slug: {slug}\n"
+                lines.append(f"- Slug: {slug}")
             if imdb := ids.get("imdb"):
-                result += f"- IMDB: {imdb}\n"
+                lines.append(f"- IMDB: {imdb}")
             if tmdb := ids.get("tmdb"):
-                result += f"- TMDB: {tmdb}\n"
-            result += "\n"
+                lines.append(f"- TMDB: {tmdb}")
+            lines.append("")
 
         if gender := person.get("gender"):
-            result += f"- **Gender:** {gender.replace('_', ' ').title()}\n"
+            lines.append(f"- **Gender:** {gender.replace('_', ' ').title()}")
 
         if birthday := person.get("birthday"):
-            result += f"- **Birthday:** {birthday}\n"
+            lines.append(f"- **Birthday:** {birthday}")
 
         if death := person.get("death"):
-            result += f"- **Death:** {death}\n"
+            lines.append(f"- **Death:** {death}")
 
         if birthplace := person.get("birthplace"):
-            result += f"- **Birthplace:** {birthplace}\n"
+            lines.append(f"- **Birthplace:** {birthplace}")
 
         if known_for := person.get("known_for_department"):
-            result += f"- **Known For:** {known_for.title()}\n"
+            lines.append(f"- **Known For:** {known_for.title()}")
 
         if homepage := person.get("homepage"):
-            result += f"- **Homepage:** {homepage}\n"
+            lines.append(f"- **Homepage:** {homepage}")
 
         social_ids = person.get("social_ids", {})
         if social_ids:
@@ -75,17 +79,20 @@ class PeopleFormatters:
             if wikipedia := social_ids.get("wikipedia"):
                 socials.append(f"Wikipedia: {wikipedia}")
             if socials:
-                result += "\n### Social Media\n"
-                for social in socials:
-                    result += f"- {social}\n"
-                result += "\n"
+                lines.append("")
+                lines.append("### Social Media")
+                lines.extend(f"- {social}" for social in socials)
+                lines.append("")
 
         if biography := person.get("biography"):
             if len(biography) > MAX_OVERVIEW_LENGTH:
                 biography = biography[: MAX_OVERVIEW_LENGTH - 3] + "..."
-            result += f"\n### Biography\n\n{biography}\n"
+            lines.append("")
+            lines.append("### Biography")
+            lines.append("")
+            lines.append(biography)
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def _format_movie_cast_section(
@@ -102,17 +109,17 @@ class PeopleFormatters:
         if not members:
             return ""
 
-        result = "## Cast\n\n"
+        lines: list[str] = ["## Cast", ""]
         for member in members:
             movie = member.get("movie", {})
             title = movie.get("title", "Unknown")
             year = movie.get("year")
             characters = member.get("characters", [])
             char_str = ", ".join(characters) if characters else "Unknown Role"
-            year_str = f" ({year})" if year else ""
-            result += f"- **{title}**{year_str} as {char_str}\n"
-        result += "\n"
-        return result
+            title_str = format_title_year(title, year)
+            lines.append(f"- **{title_str}** as {char_str}")
+        lines.append("")
+        return "\n".join(lines)
 
     @staticmethod
     def _format_movie_crew_section(
@@ -129,19 +136,20 @@ class PeopleFormatters:
         if not crew:
             return ""
 
-        result = "## Crew\n\n"
+        lines: list[str] = ["## Crew", ""]
         for department, members in sorted(crew.items()):
-            result += f"### {department.title()}\n\n"
+            lines.append(f"### {department.title()}")
+            lines.append("")
             for member in members:
                 movie = member.get("movie", {})
                 title = movie.get("title", "Unknown")
                 year = movie.get("year")
                 jobs = member.get("jobs", [])
                 jobs_str = ", ".join(jobs) if jobs else "Unknown"
-                year_str = f" ({year})" if year else ""
-                result += f"- **{title}**{year_str} - {jobs_str}\n"
-            result += "\n"
-        return result
+                title_str = format_title_year(title, year)
+                lines.append(f"- **{title_str}** - {jobs_str}")
+            lines.append("")
+        return "\n".join(lines)
 
     @staticmethod
     def format_person_movie_credits(
@@ -159,14 +167,18 @@ class PeopleFormatters:
         if not movie_credits:
             return f"# Movie Credits for {person_name}\n\nNo movie credits available."
 
-        result = f"# Movie Credits for {person_name}\n\n"
-        result += PeopleFormatters._format_movie_cast_section(
+        lines: list[str] = [f"# Movie Credits for {person_name}", ""]
+        cast_section = PeopleFormatters._format_movie_cast_section(
             movie_credits.get("cast", [])
         )
-        result += PeopleFormatters._format_movie_crew_section(
+        crew_section = PeopleFormatters._format_movie_crew_section(
             movie_credits.get("crew", {})
         )
-        return result
+        if cast_section:
+            lines.append(cast_section)
+        if crew_section:
+            lines.append(crew_section)
+        return "\n".join(lines)
 
     @staticmethod
     def _format_show_cast_section(
@@ -183,14 +195,14 @@ class PeopleFormatters:
         if not members:
             return ""
 
-        result = "## Cast\n\n"
+        lines: list[str] = ["## Cast", ""]
         for member in members:
             show = member.get("show", {})
             title = show.get("title", "Unknown")
             year = show.get("year")
             characters = member.get("characters", [])
             char_str = ", ".join(characters) if characters else "Unknown Role"
-            year_str = f" ({year})" if year else ""
+            title_str = format_title_year(title, year)
 
             extras: list[str] = []
             if episode_count := member.get("episode_count"):
@@ -199,9 +211,9 @@ class PeopleFormatters:
                 extras.append("series regular")
             extras_str = f" ({', '.join(extras)})" if extras else ""
 
-            result += f"- **{title}**{year_str} as {char_str}{extras_str}\n"
-        result += "\n"
-        return result
+            lines.append(f"- **{title_str}** as {char_str}{extras_str}")
+        lines.append("")
+        return "\n".join(lines)
 
     @staticmethod
     def _format_show_crew_section(
@@ -218,23 +230,24 @@ class PeopleFormatters:
         if not crew:
             return ""
 
-        result = "## Crew\n\n"
+        lines: list[str] = ["## Crew", ""]
         for department, members in sorted(crew.items()):
-            result += f"### {department.title()}\n\n"
+            lines.append(f"### {department.title()}")
+            lines.append("")
             for member in members:
                 show = member.get("show", {})
                 title = show.get("title", "Unknown")
                 year = show.get("year")
                 jobs = member.get("jobs", [])
                 jobs_str = ", ".join(jobs) if jobs else "Unknown"
-                year_str = f" ({year})" if year else ""
+                title_str = format_title_year(title, year)
                 episode_count = member.get("episode_count")
                 count_str = (
                     f" ({episode_count} episodes)" if episode_count is not None else ""
                 )
-                result += f"- **{title}**{year_str} - {jobs_str}{count_str}\n"
-            result += "\n"
-        return result
+                lines.append(f"- **{title_str}** - {jobs_str}{count_str}")
+            lines.append("")
+        return "\n".join(lines)
 
     @staticmethod
     def format_person_show_credits(
@@ -252,14 +265,18 @@ class PeopleFormatters:
         if not show_credits:
             return f"# Show Credits for {person_name}\n\nNo show credits available."
 
-        result = f"# Show Credits for {person_name}\n\n"
-        result += PeopleFormatters._format_show_cast_section(
+        lines: list[str] = [f"# Show Credits for {person_name}", ""]
+        cast_section = PeopleFormatters._format_show_cast_section(
             show_credits.get("cast", [])
         )
-        result += PeopleFormatters._format_show_crew_section(
+        crew_section = PeopleFormatters._format_show_crew_section(
             show_credits.get("crew", {})
         )
-        return result
+        if cast_section:
+            lines.append(cast_section)
+        if crew_section:
+            lines.append(crew_section)
+        return "\n".join(lines)
 
     @staticmethod
     def format_person_lists(lists: list[ListItemResponse], person_name: str) -> str:
@@ -272,26 +289,8 @@ class PeopleFormatters:
         Returns:
             Formatted markdown text with lists
         """
-        result = f"# Lists Containing {person_name}\n\n"
-
-        if not lists:
-            return result + "No lists found containing this person."
-
-        result += f"**{len(lists)} list(s)**\n\n"
-
-        for list_item in lists:
-            name = list_item.get("name", "Unknown List")
-            item_count = list_item.get("item_count", 0)
-            likes = list_item.get("likes", 0)
-            user = list_item.get("user", {})
-            username = user.get("username", "Unknown")
-
-            result += f"- **{name}** by {username}"
-            result += f" ({item_count} items, {likes} likes)\n"
-
-            if description := list_item.get("description"):
-                if len(description) > MAX_OVERVIEW_LENGTH:
-                    description = description[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {description}\n"
-
-        return result
+        return format_list_items(
+            lists,
+            context=person_name,
+            item_type="person",
+        )

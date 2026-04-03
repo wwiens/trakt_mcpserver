@@ -1,6 +1,12 @@
 """Movie formatting methods for the Trakt MCP server."""
 
-from models.formatters.utils import MAX_OVERVIEW_LENGTH, format_pagination_header
+from models.formatters.utils import (
+    MAX_OVERVIEW_LENGTH,
+    format_media_list,
+    format_pagination_header,
+    format_rating_distribution,
+    format_title_year,
+)
 from models.types import (
     AnticipatedMovieWrapper,
     BoxOfficeMovieWrapper,
@@ -24,259 +30,86 @@ class MovieFormatters:
     def format_trending_movies(
         data: list[TrendingWrapper] | PaginatedResponse[TrendingWrapper],
     ) -> str:
-        """Format trending movies data for MCP resource.
-
-        Args:
-            data: Either a list of all trending movies or a paginated response
-
-        Returns:
-            Formatted markdown text with trending movies
-        """
-        result = "# Trending Movies on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            movies = data.data
-        else:
-            movies = data
-
-        for item in movies:
-            movie = item.get("movie", {})
-            watchers = item.get("watchers", 0)
-
-            title = movie.get("title", "Unknown")
-            year = movie.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += f"- **{title}{year_str}** - {watchers} watchers\n"
-
-            if overview := movie.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format trending movies data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Trending Movies on Trakt",
+            media_key="movie",
+            format_metric=lambda item: f"{item.get('watchers', 0)} watchers",
+        )
 
     @staticmethod
     def format_popular_movies(
         data: list[MovieResponse] | PaginatedResponse[MovieResponse],
     ) -> str:
-        """Format popular movies data for MCP resource.
-
-        Args:
-            data: Either a list of all popular movies or a paginated response
-
-        Returns:
-            Formatted markdown text with popular movies
-        """
-        result = "# Popular Movies on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            movies = data.data
-        else:
-            movies = data
-
-        for movie in movies:
-            title = movie.get("title", "Unknown")
-            year = movie.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += f"- **{title}{year_str}**\n"
-
-            if overview := movie.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format popular movies data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Popular Movies on Trakt",
+            media_key=None,
+        )
 
     @staticmethod
     def format_favorited_movies(
         data: list[FavoritedMovieWrapper] | PaginatedResponse[FavoritedMovieWrapper],
     ) -> str:
-        """Format favorited movies data for MCP resource.
-
-        Args:
-            data: Either a list of all favorited movies or a paginated response
-
-        Returns:
-            Formatted markdown text with favorited movies
-        """
-        result = "# Most Favorited Movies on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            movies = data.data
-        else:
-            movies = data
-
-        for item in movies:
-            movie = item.get("movie", {})
-            # The correct field is user_count in the API response
-            user_count = item.get("user_count", 0)
-
-            title = movie.get("title", "Unknown")
-            year = movie.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += f"- **{title}{year_str}** - Favorited by {user_count} users\n"
-
-            if overview := movie.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format favorited movies data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Most Favorited Movies on Trakt",
+            media_key="movie",
+            format_metric=lambda item: f"Favorited by {item.get('user_count', 0)} users",
+        )
 
     @staticmethod
     def format_played_movies(
         data: list[PlayedMovieWrapper] | PaginatedResponse[PlayedMovieWrapper],
     ) -> str:
-        """Format played movies data for MCP resource.
-
-        Args:
-            data: Either a list of all played movies or a paginated response
-
-        Returns:
-            Formatted markdown text with played movies
-        """
-        result = "# Most Played Movies on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            movies = data.data
-        else:
-            movies = data
-
-        for item in movies:
-            movie = item.get("movie", {})
-            watcher_count = item.get("watcher_count", 0)
-            play_count = item.get("play_count", 0)
-
-            title = movie.get("title", "Unknown")
-            year = movie.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += (
-                f"- **{title}{year_str}** - "
-                f"{watcher_count} watchers, {play_count} plays\n"
-            )
-
-            if overview := movie.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format played movies data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Most Played Movies on Trakt",
+            media_key="movie",
+            format_metric=lambda item: (
+                f"{item.get('watcher_count', 0)} watchers, "
+                f"{item.get('play_count', 0)} plays"
+            ),
+        )
 
     @staticmethod
     def format_watched_movies(
         data: list[WatchedMovieWrapper] | PaginatedResponse[WatchedMovieWrapper],
     ) -> str:
-        """Format watched movies data for MCP resource.
-
-        Args:
-            data: Either a list of all watched movies or a paginated response
-
-        Returns:
-            Formatted markdown text with watched movies
-        """
-        result = "# Most Watched Movies on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            movies = data.data
-        else:
-            movies = data
-
-        for item in movies:
-            movie = item.get("movie", {})
-            watcher_count = item.get("watcher_count", 0)
-
-            title = movie.get("title", "Unknown")
-            year = movie.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += f"- **{title}{year_str}** - Watched by {watcher_count} users\n"
-
-            if overview := movie.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format watched movies data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Most Watched Movies on Trakt",
+            media_key="movie",
+            format_metric=lambda item: f"Watched by {item.get('watcher_count', 0)} users",
+        )
 
     @staticmethod
     def format_anticipated_movies(
         data: list[AnticipatedMovieWrapper]
         | PaginatedResponse[AnticipatedMovieWrapper],
     ) -> str:
-        """Format anticipated movies data for MCP resource.
-
-        Args:
-            data: Either a list of all anticipated movies or a paginated response
-
-        Returns:
-            Formatted markdown text with anticipated movies
-        """
-        result = "# Most Anticipated Movies on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            movies = data.data
-        else:
-            movies = data
-
-        for item in movies:
-            movie = item.get("movie", {})
-            list_count = item.get("list_count", 0)
-
-            title = movie.get("title", "Unknown")
-            year = movie.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += f"- **{title}{year_str}** - On {list_count} lists\n"
-
-            if overview := movie.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format anticipated movies data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Most Anticipated Movies on Trakt",
+            media_key="movie",
+            format_metric=lambda item: f"On {item.get('list_count', 0)} lists",
+        )
 
     @staticmethod
     def format_boxoffice_movies(data: list[BoxOfficeMovieWrapper]) -> str:
-        """Format box office movies data for MCP resource.
-
-        Args:
-            data: List of box office movies with revenue
-
-        Returns:
-            Formatted markdown text with box office movies
-        """
-        result = "# Box Office Movies (U.S. Weekend)\n\n"
+        """Format box office movies data for MCP resource."""
+        lines: list[str] = ["# Box Office Movies (U.S. Weekend)\n"]
 
         if not data:
-            return result + "No box office data available.\n"
+            return (
+                "# Box Office Movies (U.S. Weekend)\n\nNo box office data available.\n"
+            )
 
         for i, item in enumerate(data, 1):
             movie = item.get("movie", {})
@@ -284,236 +117,181 @@ class MovieFormatters:
 
             title = movie.get("title", "Unknown")
             year = movie.get("year", "")
-            year_str = f" ({year})" if year else ""
+            title_str = format_title_year(title, year)
 
-            result += f"- **#{i} {title}{year_str}** - ${revenue:,} revenue\n"
+            lines.append(f"- **#{i} {title_str}** - ${revenue:,} revenue")
 
             if overview := movie.get("overview"):
                 if len(overview) > MAX_OVERVIEW_LENGTH:
                     overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
+                lines.append(f"  {overview}")
 
-            result += "\n"
+            lines.append("")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_movie_ratings(
         ratings: TraktRating, movie_title: str = "Unknown movie"
     ) -> str:
-        """Format movie ratings data for MCP resource.
-
-        Args:
-            ratings: The ratings data from Trakt API
-            movie_title: The title of the movie
-
-        Returns:
-            Formatted markdown text with ratings information
-        """
-        result = f"# Ratings for {movie_title}\n\n"
+        """Format movie ratings data for MCP resource."""
+        lines: list[str] = [f"# Ratings for {movie_title}\n"]
 
         if not ratings:
-            return result + "No ratings data available."
+            return f"# Ratings for {movie_title}\n\nNo ratings data available."
 
-        # Extract rating data
         average_rating = ratings.get("rating", 0)
         votes = ratings.get("votes", 0)
         distribution = ratings.get("distribution", {})
 
-        # Format average rating with 2 decimal places
-        result += f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes\n\n"
+        lines.append(
+            f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes\n"
+        )
 
-        # Add distribution if available
         if distribution:
-            result += "## Rating Distribution\n\n"
-            result += "| Rating | Votes | Percentage |\n"
-            result += "|--------|-------|------------|\n"
+            lines.append(format_rating_distribution(distribution, votes))
 
-            # Calculate percentages for each rating
-            for rating in range(10, 0, -1):  # 10 down to 1
-                rating_str = str(rating)
-                count = distribution.get(rating_str, 0)
-                percentage = (count / votes * 100) if votes > 0 else 0
-
-                result += f"| {rating}/10 | {count} | {percentage:.1f}% |\n"
-
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_movie_summary(movie: MovieResponse) -> str:
-        """Format basic movie summary data.
-
-        Args:
-            movie: Movie data from Trakt API
-
-        Returns:
-            Formatted markdown text with basic movie information (title, year, ID only)
-        """
+        """Format basic movie summary data."""
         if not movie:
             return "No movie data available."
 
         title = movie.get("title", "Unknown")
         year = movie.get("year", "")
-        year_str = f" ({year})" if year else ""
+        title_str = format_title_year(title, year)
         ids = movie.get("ids", {})
         trakt_id = ids.get("trakt", "Unknown")
 
-        result = f"## {title}{year_str}\n\n"
-        result += f"Trakt ID: {trakt_id}\n"
+        lines: list[str] = [f"## {title_str}\n"]
+        lines.append(f"Trakt ID: {trakt_id}")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_movie_extended(movie: MovieResponse) -> str:
-        """Format extended movie details data.
-
-        Args:
-            movie: Extended movie data from Trakt API
-
-        Returns:
-            Formatted markdown text with comprehensive movie information
-        """
+        """Format extended movie details data."""
         if not movie:
             return "No movie data available."
 
-        # Basic info
         title = movie.get("title", "Unknown")
         year = movie.get("year", "")
-        year_str = f" ({year})" if year else ""
+        title_str = format_title_year(title, year)
         status = movie.get("status", "unknown")
         tagline = movie.get("tagline", "")
         overview = movie.get("overview", "No overview available.")
         ids = movie.get("ids", {})
         trakt_id = ids.get("trakt", "Unknown")
 
-        # Format title with status
-        result = f"## {title}{year_str} - {status.title().replace('_', ' ')}\n"
+        lines: list[str] = [f"## {title_str} - {status.title().replace('_', ' ')}"]
 
-        # Add tagline if available
         if tagline:
-            result += f"*{tagline}*\n"
+            lines.append(f"*{tagline}*")
 
-        result += f"\n{overview}\n\n"
-
-        # Production Details
-        result += "### Production Details\n"
-        result += f"- Status: {status.replace('_', ' ')}\n"
+        lines.append(f"\n{overview}\n")
+        lines.append("### Production Details")
+        lines.append(f"- Status: {status.replace('_', ' ')}")
 
         if runtime := movie.get("runtime"):
-            result += f"- Runtime: {runtime} minutes\n"
+            lines.append(f"- Runtime: {runtime} minutes")
 
         if certification := movie.get("certification"):
-            result += f"- Certification: {certification}\n"
+            lines.append(f"- Certification: {certification}")
 
         if released := movie.get("released"):
-            result += f"- Released: {released}\n"
+            lines.append(f"- Released: {released}")
 
         if country := movie.get("country"):
-            result += f"- Country: {country.upper()}\n"
+            lines.append(f"- Country: {country.upper()}")
 
         if genres := movie.get("genres"):
             genres_str = ", ".join(genres)
-            result += f"- Genres: {genres_str}\n"
+            lines.append(f"- Genres: {genres_str}")
 
         if languages := movie.get("languages"):
             languages_str = ", ".join(languages)
-            result += f"- Languages: {languages_str}\n"
+            lines.append(f"- Languages: {languages_str}")
 
         if homepage := movie.get("homepage"):
-            result += f"- Homepage: {homepage}\n"
+            lines.append(f"- Homepage: {homepage}")
 
-        # Ratings & Engagement
-        result += "\n### Ratings & Engagement\n"
+        lines.append("\n### Ratings & Engagement")
 
         rating = movie.get("rating", 0)
         votes = movie.get("votes", 0)
-        result += f"- Rating: {rating:.1f}/10 ({votes} votes)\n"
+        lines.append(f"- Rating: {rating:.1f}/10 ({votes} votes)")
 
         if comment_count := movie.get("comment_count"):
-            result += f"- Comments: {comment_count}\n"
+            lines.append(f"- Comments: {comment_count}")
 
-        result += f"\nTrakt ID: {trakt_id}\n"
+        lines.append(f"\nTrakt ID: {trakt_id}")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_related_movies(
         data: list[MovieResponse] | PaginatedResponse[MovieResponse],
     ) -> str:
-        """Format related movies data for MCP resource.
+        """Format related movies data for MCP resource."""
+        lines: list[str] = ["# Related Movies\n"]
 
-        Args:
-            data: Either a list of all related movies or a paginated response
-
-        Returns:
-            Formatted markdown text with related movies
-        """
-        result = "# Related Movies\n\n"
-
-        # Handle pagination metadata if present
         if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
+            lines.append(format_pagination_header(data))
             movies = data.data
         else:
             movies = data
 
         if not movies:
-            return result + "No related movies found.\n"
+            return "# Related Movies\n\nNo related movies found.\n"
 
         for movie in movies:
             title = movie.get("title", "Unknown")
             year = movie.get("year", "")
-            year_str = f" ({year})" if year else ""
+            title_str = format_title_year(title, year)
 
-            result += f"- **{title}{year_str}**\n"
+            lines.append(f"- **{title_str}**")
 
             if overview := movie.get("overview"):
                 if len(overview) > MAX_OVERVIEW_LENGTH:
                     overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
+                lines.append(f"  {overview}")
 
-            result += "\n"
+            lines.append("")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_movie_people(people: PeopleResponse, movie_title: str) -> str:
-        """Format movie cast and crew data.
-
-        Args:
-            people: People data from Trakt API
-            movie_title: The title of the movie
-
-        Returns:
-            Formatted markdown text with cast and crew
-        """
+        """Format movie cast and crew data."""
         if not people:
             return f"# People for {movie_title}\n\nNo people data available."
 
-        result = f"# People for {movie_title}\n\n"
+        lines: list[str] = [f"# People for {movie_title}\n"]
 
         cast: list[CastMember] = people.get("cast", [])
         if cast:
-            result += "## Cast\n\n"
+            lines.append("## Cast\n")
             for member in cast:
                 person = member.get("person", {})
                 name = person.get("name", "Unknown")
                 characters = member.get("characters", [])
                 char_str = ", ".join(characters) if characters else "Unknown Role"
-                result += f"- **{name}** as {char_str}\n"
-            result += "\n"
+                lines.append(f"- **{name}** as {char_str}")
+            lines.append("")
 
         crew: dict[str, list[CrewMember]] = people.get("crew", {})
         if crew:
-            result += "## Crew\n\n"
+            lines.append("## Crew\n")
             for department, members in sorted(crew.items()):
-                result += f"### {department.title()}\n\n"
+                lines.append(f"### {department.title()}\n")
                 for member in members:
                     person = member.get("person", {})
                     name = person.get("name", "Unknown")
                     jobs = member.get("jobs", [])
                     jobs_str = ", ".join(jobs) if jobs else "Unknown"
-                    result += f"- **{name}** - {jobs_str}\n"
-                result += "\n"
+                    lines.append(f"- **{name}** - {jobs_str}")
+                lines.append("")
 
-        return result
+        return "\n".join(lines)

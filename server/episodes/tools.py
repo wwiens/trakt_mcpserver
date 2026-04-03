@@ -17,6 +17,12 @@ from client.episodes.translations import EpisodeTranslationsClient
 from client.episodes.videos import EpisodeVideosClient
 from client.episodes.watching import EpisodeWatchingClient
 from client.shows.details import ShowDetailsClient
+from config.api.lists import (
+    INVALID_LIST_SORT_MSG,
+    INVALID_LIST_TYPE_MSG,
+    VALID_LIST_SORTS,
+    VALID_LIST_TYPES,
+)
 from config.mcp.descriptions import (
     EMBED_MARKDOWN_DESCRIPTION,
     EPISODE_DESCRIPTION,
@@ -40,27 +46,7 @@ logger = logging.getLogger("trakt_mcp")
 
 ToolHandler: TypeAlias = Callable[..., Awaitable[str]]
 
-VALID_LIST_TYPES: Final[frozenset[str]] = frozenset(
-    {"all", "personal", "official", "watchlists"}
-)
-VALID_LIST_SORTS: Final[frozenset[str]] = frozenset(
-    {
-        "popular",
-        "likes",
-        "comments",
-        "items",
-        "added",
-        "updated",
-    }
-)
-
 INVALID_LANGUAGE_MSG: Final[str] = "Language must be 'all' or a 2-letter ISO 639-1 code"
-INVALID_LIST_TYPE_MSG: Final[str] = (
-    f"list_type must be one of: {', '.join(sorted(VALID_LIST_TYPES))}"
-)
-INVALID_LIST_SORT_MSG: Final[str] = (
-    f"sort must be one of: {', '.join(sorted(VALID_LIST_SORTS))}"
-)
 
 
 class EpisodeIdParam(BaseModel):

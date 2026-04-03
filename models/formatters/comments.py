@@ -24,25 +24,26 @@ class CommentsFormatters:
         Returns:
             Formatted markdown text with comments
         """
-        result = f"# Comments for {title}\n\n"
+        lines: list[str] = [f"# Comments for {title}", ""]
 
         # Handle pagination metadata if present
         if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
+            lines.append(format_pagination_header(data))
             comments = data.data
         else:
             comments = data
 
         if show_spoilers:
-            result += "**Note: Showing all spoilers**\n\n"
+            lines.append("**Note: Showing all spoilers**")
+            lines.append("")
         else:
-            result += (
-                "**Note: Spoilers are hidden. "
-                "Use `show_spoilers=True` to view them.**\n\n"
+            lines.append(
+                "**Note: Spoilers are hidden. Use `show_spoilers=True` to view them.**"
             )
+            lines.append("")
 
         if not comments:
-            return result + "No comments found."
+            return "\n".join(lines) + "\nNo comments found."
 
         for comment in comments:
             username = comment.get("user", {}).get("username", "Anonymous")
@@ -62,25 +63,29 @@ class CommentsFormatters:
             if spoiler:
                 comment_type += " [SPOILER]"
 
-            result += f"### {username}{comment_type} - {created_time}\n"
+            lines.append(f"### {username}{comment_type} - {created_time}")
 
             if (spoiler or "[spoiler]" in comment_text) and not show_spoilers:
-                result += "**⚠️ SPOILER WARNING ⚠️**\n\n"
-                result += (
-                    "*This comment contains spoilers. "
-                    "Use `show_spoilers=True` to view it.*\n\n"
+                lines.append("**⚠️ SPOILER WARNING ⚠️**")
+                lines.append("")
+                lines.append(
+                    "*This comment contains spoilers. Use `show_spoilers=True` to view it.*"
                 )
+                lines.append("")
             else:
                 if show_spoilers:
                     comment_text = comment_text.replace("[spoiler]", "")
                     comment_text = comment_text.replace("[/spoiler]", "")
 
-                result += f"{comment_text}\n\n"
+                lines.append(f"{comment_text}")
+                lines.append("")
 
-            result += f"*Likes: {likes} | Replies: {replies} | ID: {comment_id}*\n\n"
-            result += "---\n\n"
+            lines.append(f"*Likes: {likes} | Replies: {replies} | ID: {comment_id}*")
+            lines.append("")
+            lines.append("---")
+            lines.append("")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_comment(
@@ -119,39 +124,45 @@ class CommentsFormatters:
         if spoiler:
             comment_type += " [SPOILER]"
 
-        result = f"# Comment by {username}{comment_type}\n\n"
+        lines: list[str] = [f"# Comment by {username}{comment_type}", ""]
 
         if show_spoilers:
-            result += "**Note: Showing all spoilers**\n\n"
+            lines.append("**Note: Showing all spoilers**")
+            lines.append("")
         else:
-            result += (
-                "**Note: Spoilers are hidden. "
-                "Use `show_spoilers=True` to view them.**\n\n"
+            lines.append(
+                "**Note: Spoilers are hidden. Use `show_spoilers=True` to view them.**"
             )
+            lines.append("")
 
-        result += f"**Posted:** {created_time}\n\n"
+        lines.append(f"**Posted:** {created_time}")
+        lines.append("")
 
         if (spoiler or "[spoiler]" in comment_text) and not show_spoilers:
-            result += "**⚠️ SPOILER WARNING ⚠️**\n\n"
-            result += (
-                "*This comment contains spoilers. "
-                "Use `show_spoilers=True` to view it.*\n\n"
+            lines.append("**⚠️ SPOILER WARNING ⚠️**")
+            lines.append("")
+            lines.append(
+                "*This comment contains spoilers. Use `show_spoilers=True` to view it.*"
             )
+            lines.append("")
         else:
             if show_spoilers:
                 comment_text = comment_text.replace("[spoiler]", "")
                 comment_text = comment_text.replace("[/spoiler]", "")
 
-            result += f"{comment_text}\n\n"
+            lines.append(f"{comment_text}")
+            lines.append("")
 
-        result += f"*Likes: {likes} | Replies: {replies_count} | ID: {comment_id}*\n\n"
+        lines.append(f"*Likes: {likes} | Replies: {replies_count} | ID: {comment_id}*")
+        lines.append("")
 
         if with_replies and replies:
-            result += "## Replies\n\n"
+            lines.append("## Replies")
+            lines.append("")
 
             # Handle pagination metadata if present
             if isinstance(replies, PaginatedResponse):
-                result += format_pagination_header(replies)
+                lines.append(format_pagination_header(replies))
                 replies_list = replies.data
             else:
                 replies_list = replies
@@ -171,22 +182,26 @@ class CommentsFormatters:
                 if reply_spoiler:
                     reply_type += " [SPOILER]"
 
-                result += f"### {reply_username}{reply_type} - {reply_time}\n"
+                lines.append(f"### {reply_username}{reply_type} - {reply_time}")
 
                 if (reply_spoiler or "[spoiler]" in reply_text) and not show_spoilers:
-                    result += "**⚠️ SPOILER WARNING ⚠️**\n\n"
-                    result += (
-                        "*This reply contains spoilers. "
-                        "Use `show_spoilers=True` to view it.*\n\n"
+                    lines.append("**⚠️ SPOILER WARNING ⚠️**")
+                    lines.append("")
+                    lines.append(
+                        "*This reply contains spoilers. Use `show_spoilers=True` to view it.*"
                     )
+                    lines.append("")
                 else:
                     if show_spoilers:
                         reply_text = reply_text.replace("[spoiler]", "")
                         reply_text = reply_text.replace("[/spoiler]", "")
 
-                    result += f"{reply_text}\n\n"
+                    lines.append(f"{reply_text}")
+                    lines.append("")
 
-                result += f"*ID: {reply_id}*\n\n"
-                result += "---\n\n"
+                lines.append(f"*ID: {reply_id}*")
+                lines.append("")
+                lines.append("---")
+                lines.append("")
 
-        return result
+        return "\n".join(lines)

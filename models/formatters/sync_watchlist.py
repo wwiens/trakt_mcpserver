@@ -39,22 +39,23 @@ class SyncWatchlistFormatters:
 
         # Handle empty state
         if not items:
-            result = f"# Your {display_label.title()} Watchlist\n\n"
-            result += f"Your {display_label} watchlist is empty. "
-            result += (
-                "Use the `add_user_watchlist` tool to add items to your watchlist.\n\n"
+            lines: list[str] = [f"# Your {display_label.title()} Watchlist", ""]
+            lines.append(
+                f"Your {display_label} watchlist is empty. Use the `add_user_watchlist` tool to add items to your watchlist."
             )
-
-            # Show pagination info even for empty results
-            result += f"📄 **Pagination Info:** {paginated_items.page_info_summary()}\n"
-            return result
+            lines.append("")
+            lines.append(
+                f"📄 **Pagination Info:** {paginated_items.page_info_summary()}"
+            )
+            return "\n".join(lines)
 
         # Title with sort info
         sort_desc = f" (sorted by {sort_by}, {sort_how})"
-        result = f"# Your {display_label.title()} Watchlist{sort_desc}\n\n"
+        lines = [f"# Your {display_label.title()} Watchlist{sort_desc}", ""]
 
         # Show pagination summary at the top
-        result += f"📄 **{paginated_items.page_info_summary()}**\n\n"
+        lines.append(f"📄 **{paginated_items.page_info_summary()}**")
+        lines.append("")
 
         # Show page navigation hints
         navigation_hints: list[str] = []
@@ -64,7 +65,8 @@ class SyncWatchlistFormatters:
             navigation_hints.append(f"Next: page {pagination.next_page()}")
 
         if navigation_hints:
-            result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+            lines.append(f"📍 **Navigation:** {' | '.join(navigation_hints)}")
+            lines.append("")
 
         # Handle pluralization
         count = len(items)
@@ -73,7 +75,8 @@ class SyncWatchlistFormatters:
         else:
             # Existing singular/plural derivation
             noun = watchlist_type[:-1] if count == 1 else watchlist_type
-        result += f"Found {count} {noun} on this page:\n\n"
+        lines.append(f"Found {count} {noun} on this page:")
+        lines.append("")
 
         # Group by type if "all" is selected
         if watchlist_type == "all":
@@ -88,14 +91,17 @@ class SyncWatchlistFormatters:
                 type_items = items_by_type[item_type]
                 count = len(type_items)
                 noun = item_type + "s" if count > 1 else item_type
-                result += f"## {item_type.title()}s ({count} {noun})\n\n"
-                result += SyncWatchlistFormatters._format_watchlist_items(type_items)
-                result += "\n"
+                lines.append(f"## {item_type.title()}s ({count} {noun})")
+                lines.append("")
+                lines.append(
+                    SyncWatchlistFormatters._format_watchlist_items(type_items)
+                )
+                lines.append("")
         else:
             # Display all items without grouping
-            result += SyncWatchlistFormatters._format_watchlist_items(items)
+            lines.append(SyncWatchlistFormatters._format_watchlist_items(items))
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def _format_watchlist_items(items: list[TraktWatchlistItem]) -> str:
@@ -107,7 +113,7 @@ class SyncWatchlistFormatters:
         Returns:
             Formatted markdown text for the items
         """
-        result = ""
+        lines: list[str] = []
         for item in items:
             title = "Unknown"
             year = ""
@@ -138,15 +144,15 @@ class SyncWatchlistFormatters:
             )
 
             # Build the line
-            result += f"- **{title}{year}** (rank #{item.rank}, added {listed_date})"
+            line = f"- **{title}{year}** (rank #{item.rank}, added {listed_date})"
 
             # Add notes if present (VIP feature)
             if item.notes:
-                result += f"\n  - 📝 **Note:** {item.notes}"
+                line += f"\n  - 📝 **Note:** {item.notes}"
 
-            result += "\n"
+            lines.append(line)
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_user_watchlist_summary(
@@ -162,7 +168,10 @@ class SyncWatchlistFormatters:
         Returns:
             Formatted markdown text with operation results and summary
         """
-        result = f"# Watchlist {operation.title()} - {watchlist_type.title()}\n\n"
+        lines: list[str] = [
+            f"# Watchlist {operation.title()} - {watchlist_type.title()}",
+            "",
+        ]
 
         # Get the counts for the specific operation
         counts = None
@@ -174,10 +183,10 @@ class SyncWatchlistFormatters:
         if counts:
             total = getattr(counts, watchlist_type, 0)
             if total > 0:
-                result += (
-                    f"✅ Successfully {operation} **{total}** "
-                    f"{watchlist_type} item(s) to/from your watchlist.\n\n"
+                lines.append(
+                    f"✅ Successfully {operation} **{total}** {watchlist_type} item(s) to/from your watchlist."
                 )
+                lines.append("")
 
                 # Show breakdown by type if multiple types were processed
                 type_breakdown: list[str] = []
@@ -191,31 +200,35 @@ class SyncWatchlistFormatters:
                     type_breakdown.append(f"Episodes: {counts.episodes}")
 
                 if len(type_breakdown) > 1:
-                    result += "### Breakdown by Type\n"
-                    for breakdown in type_breakdown:
-                        result += f"- {breakdown}\n"
-                    result += "\n"
+                    lines.append("### Breakdown by Type")
+                    lines.extend(f"- {breakdown}" for breakdown in type_breakdown)
+                    lines.append("")
             else:
-                result += f"No {watchlist_type} items were {operation}.\n\n"
+                lines.append(f"No {watchlist_type} items were {operation}.")
+                lines.append("")
         else:
-            result += f"No {watchlist_type} items were {operation}.\n\n"
+            lines.append(f"No {watchlist_type} items were {operation}.")
+            lines.append("")
 
         # Show existing items (for add operations)
         if operation == "added" and summary.existing:
             existing_count = getattr(summary.existing, watchlist_type, 0)
             if existing_count > 0:
-                result += f"## Items Already in Watchlist ({existing_count})\n\n"
-                result += (
-                    f"**{existing_count}** {watchlist_type} item(s) were already "
-                    f"in your watchlist and were not added again.\n\n"
+                lines.append(f"## Items Already in Watchlist ({existing_count})")
+                lines.append("")
+                lines.append(
+                    f"**{existing_count}** {watchlist_type} item(s) were already in your watchlist and were not added again."
                 )
+                lines.append("")
 
         # Show items that were not found
         if summary.not_found:
             not_found_items = getattr(summary.not_found, watchlist_type, [])
             if not_found_items:
-                result += f"## Items Not Found ({len(not_found_items)})\n\n"
-                result += "The following items could not be found on Trakt:\n\n"
+                lines.append(f"## Items Not Found ({len(not_found_items)})")
+                lines.append("")
+                lines.append("The following items could not be found on Trakt:")
+                lines.append("")
 
                 for item in not_found_items:
                     # Extract identifying information from the item
@@ -241,8 +254,9 @@ class SyncWatchlistFormatters:
                     else:
                         display_name = "Unknown item"
 
-                    result += f"- {display_name}\n"
+                    lines.append(f"- {display_name}")
 
-                result += "\nPlease check the titles, years, and IDs for accuracy.\n"
+                lines.append("")
+                lines.append("Please check the titles, years, and IDs for accuracy.")
 
-        return result
+        return "\n".join(lines)

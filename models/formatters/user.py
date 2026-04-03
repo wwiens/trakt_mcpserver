@@ -9,11 +9,12 @@ class UserFormatters:
     @staticmethod
     def format_user_watched_shows(shows: list[UserWatchedShow]) -> str:
         """Format user watched shows data for MCP resource."""
-        result = "# Your Watched Shows on Trakt\n\n"
+        lines: list[str] = ["# Your Watched Shows on Trakt"]
+        lines.append("")
 
         if not shows:
             return (
-                result
+                "\n".join(lines)
                 + "You haven't watched any shows yet, "
                 + "or you need to authenticate first."
             )
@@ -27,25 +28,26 @@ class UserFormatters:
             year = show.get("year", "")
             year_str = f" ({year})" if year else ""
 
-            result += (
-                f"- **{title}{year_str}** - Watched: {last_watched}, Plays: {plays}\n"
+            lines.append(
+                f"- **{title}{year_str}** - Watched: {last_watched}, Plays: {plays}"
             )
 
             if overview := show.get("overview"):
-                result += f"  {overview}\n"
+                lines.append(f"  {overview}")
 
-            result += "\n"
+            lines.append("")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_user_watched_movies(movies: list[UserWatchedMovie]) -> str:
         """Format user watched movies data for MCP resource."""
-        result = "# Your Watched Movies on Trakt\n\n"
+        lines: list[str] = ["# Your Watched Movies on Trakt"]
+        lines.append("")
 
         if not movies:
             return (
-                result
+                "\n".join(lines)
                 + "You haven't watched any movies yet, "
                 + "or you need to authenticate first."
             )
@@ -59,13 +61,13 @@ class UserFormatters:
             year = movie.get("year", "")
             year_str = f" ({year})" if year else ""
 
-            result += (
-                f"- **{title}{year_str}** - Watched: {last_watched}, Plays: {plays}\n"
+            lines.append(
+                f"- **{title}{year_str}** - Watched: {last_watched}, Plays: {plays}"
             )
 
             if overview := movie.get("overview"):
-                result += f"  {overview}\n"
+                lines.append(f"  {overview}")
 
-            result += "\n"
+            lines.append("")
 
-        return result
+        return "\n".join(lines)

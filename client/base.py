@@ -40,6 +40,9 @@ def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
     return hasattr(cls, "model_validate") and hasattr(cls, "__annotations__")
 
 
+load_dotenv()
+
+
 class BaseClient:
     """Base client with common HTTP functionality for Trakt API."""
 
@@ -48,7 +51,6 @@ class BaseClient:
 
     def __init__(self):
         """Initialize the base client with credentials from environment variables."""
-        load_dotenv()
         client_id = os.getenv("TRAKT_CLIENT_ID")
         client_secret = os.getenv("TRAKT_CLIENT_SECRET")
 

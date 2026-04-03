@@ -50,12 +50,14 @@ class SyncHistoryFormatters:
             else:
                 title_str = item_id
 
-            result = f"# Watch History: {title_str}\n\n"
-            result += (
-                f"**Watched {watch_count} time{'s' if watch_count != 1 else ''}**\n\n"
+            lines: list[str] = [f"# Watch History: {title_str}", ""]
+            lines.append(
+                f"**Watched {watch_count} time{'s' if watch_count != 1 else ''}**"
             )
+            lines.append("")
 
-            result += "## Watch Events\n\n"
+            lines.append("## Watch Events")
+            lines.append("")
             for item in items:
                 watched_str = format_iso_timestamp(item.watched_at)
 
@@ -64,23 +66,31 @@ class SyncHistoryFormatters:
                     episode_label = f"S{episode.season:02d}E{episode.number:02d}"
                     if episode.title:
                         episode_label += f": {episode.title}"
-                    result += f"- **{episode_label}** - {watched_str} ({item.action})\n"
+                    lines.append(
+                        f"- **{episode_label}** - {watched_str} ({item.action})"
+                    )
                 else:
-                    result += f"- {watched_str} ({item.action})\n"
+                    lines.append(f"- {watched_str} ({item.action})")
 
-            return result
+            return "\n".join(lines)
 
         if not items:
             type_label = query_type if query_type else "items"
-            result = f"# Watch History\n\nNo {type_label} in watch history.\n\n"
-            result += f"📄 **Pagination Info:** {paginated_items.page_info_summary()}\n"
-            return result
+            lines = ["# Watch History", ""]
+            lines.append(f"No {type_label} in watch history.")
+            lines.append("")
+            lines.append(
+                f"📄 **Pagination Info:** {paginated_items.page_info_summary()}"
+            )
+            return "\n".join(lines)
 
-        result = (
-            f"# Watch History ({len(items)} item{'s' if len(items) != 1 else ''})\n\n"
-        )
+        lines = [
+            f"# Watch History ({len(items)} item{'s' if len(items) != 1 else ''})",
+            "",
+        ]
 
-        result += f"📄 **{paginated_items.page_info_summary()}**\n\n"
+        lines.append(f"📄 **{paginated_items.page_info_summary()}**")
+        lines.append("")
 
         navigation_hints: list[str] = []
         if pagination.has_previous_page:
@@ -89,13 +99,15 @@ class SyncHistoryFormatters:
             navigation_hints.append(f"Next: page {pagination.next_page()}")
 
         if navigation_hints:
-            result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+            lines.append(f"📍 **Navigation:** {' | '.join(navigation_hints)}")
+            lines.append("")
 
         movies = [i for i in items if i.type == "movie"]
         episodes = [i for i in items if i.type == "episode"]
 
         if movies:
-            result += "## Movies\n\n"
+            lines.append("## Movies")
+            lines.append("")
             for item in movies:
                 if item.movie:
                     title = item.movie.title
@@ -103,12 +115,13 @@ class SyncHistoryFormatters:
                     title_str = f"{title} ({year})" if year else title
                     watched_str = format_iso_timestamp(item.watched_at)
 
-                    result += f"- **{title_str}** - {watched_str}\n"
+                    lines.append(f"- **{title_str}** - {watched_str}")
 
-            result += "\n"
+            lines.append("")
 
         if episodes:
-            result += "## Episodes\n\n"
+            lines.append("## Episodes")
+            lines.append("")
             for item in episodes:
                 if item.episode and item.show:
                     show_title = item.show.title
@@ -121,9 +134,9 @@ class SyncHistoryFormatters:
 
                     watched_str = format_iso_timestamp(item.watched_at)
 
-                    result += f"- **{episode_label}** - {watched_str}\n"
+                    lines.append(f"- **{episode_label}** - {watched_str}")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_history_summary(
@@ -139,7 +152,10 @@ class SyncHistoryFormatters:
         Returns:
             Formatted markdown text with operation results
         """
-        result = f"# History {operation.title()} - {content_type.title()}\n\n"
+        lines: list[str] = [
+            f"# History {operation.title()} - {content_type.title()}",
+            "",
+        ]
 
         # Get the counts for the specific operation
         counts = None
@@ -152,10 +168,10 @@ class SyncHistoryFormatters:
             total = getattr(counts, content_type, 0)
             if total > 0:
                 preposition = "to" if operation == "added" else "from"
-                result += (
-                    f"Successfully {operation} **{total}** "
-                    f"{content_type} {preposition} watch history.\n\n"
+                lines.append(
+                    f"Successfully {operation} **{total}** {content_type} {preposition} watch history."
                 )
+                lines.append("")
 
                 # Show breakdown by type if multiple types were processed
                 type_breakdown: list[str] = []
@@ -169,21 +185,24 @@ class SyncHistoryFormatters:
                     type_breakdown.append(f"Episodes: {counts.episodes}")
 
                 if len(type_breakdown) > 1:
-                    result += "### Breakdown by Type\n"
-                    for breakdown in type_breakdown:
-                        result += f"- {breakdown}\n"
-                    result += "\n"
+                    lines.append("### Breakdown by Type")
+                    lines.extend(f"- {breakdown}" for breakdown in type_breakdown)
+                    lines.append("")
             else:
-                result += f"No {content_type} were {operation}.\n\n"
+                lines.append(f"No {content_type} were {operation}.")
+                lines.append("")
         else:
-            result += f"No {content_type} were {operation}.\n\n"
+            lines.append(f"No {content_type} were {operation}.")
+            lines.append("")
 
         # Show items that were not found
         if summary.not_found:
             not_found_items = getattr(summary.not_found, content_type, [])
             if not_found_items:
-                result += f"## Items Not Found ({len(not_found_items)})\n\n"
-                result += "The following items could not be found on Trakt:\n\n"
+                lines.append(f"## Items Not Found ({len(not_found_items)})")
+                lines.append("")
+                lines.append("The following items could not be found on Trakt:")
+                lines.append("")
 
                 for item in not_found_items:
                     item_title = item.title
@@ -207,8 +226,9 @@ class SyncHistoryFormatters:
                     else:
                         display_name = "Unknown item"
 
-                    result += f"- {display_name}\n"
+                    lines.append(f"- {display_name}")
 
-                result += "\nPlease check the titles, years, and IDs for accuracy.\n"
+                lines.append("")
+                lines.append("Please check the titles, years, and IDs for accuracy.")
 
-        return result
+        return "\n".join(lines)

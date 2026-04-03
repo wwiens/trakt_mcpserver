@@ -26,46 +26,53 @@ class ProgressFormatters:
         completed = data.completed
         percentage = (completed / aired * 100) if aired > 0 else 0
 
-        result = f"# Show Progress: {show_id}\n\n"
-        result += "## Overall Progress\n\n"
-        result += f"- **Watched:** {completed}/{aired} episodes ({percentage:.1f}%)\n"
+        lines: list[str] = [f"# Show Progress: {show_id}"]
+        lines.append("")
+        lines.append("## Overall Progress")
+        lines.append("")
+        lines.append(f"- **Watched:** {completed}/{aired} episodes ({percentage:.1f}%)")
 
         last_watched = data.last_watched_at
         if last_watched:
-            result += f"- **Last Watched:** {format_iso_timestamp(last_watched)}\n"
+            lines.append(f"- **Last Watched:** {format_iso_timestamp(last_watched)}")
 
         reset_at = data.reset_at
         if reset_at:
-            result += f"- **Progress Reset At:** {format_iso_timestamp(reset_at)}\n"
+            lines.append(f"- **Progress Reset At:** {format_iso_timestamp(reset_at)}")
 
-        result += "\n"
+        lines.append("")
 
         next_episode = data.next_episode
         if next_episode:
-            result += "## Up Next\n\n"
+            lines.append("## Up Next")
+            lines.append("")
             season = next_episode.season
             number = next_episode.number
             title = next_episode.title or ""
             episode_label = f"S{season:02d}E{number:02d}"
             if title:
                 episode_label += f": {title}"
-            result += f"- **{episode_label}**\n\n"
+            lines.append(f"- **{episode_label}**")
+            lines.append("")
 
         last_episode = data.last_episode
         if last_episode:
-            result += "## Last Watched\n\n"
+            lines.append("## Last Watched")
+            lines.append("")
             season = last_episode.season
             number = last_episode.number
             title = last_episode.title or ""
             episode_label = f"S{season:02d}E{number:02d}"
             if title:
                 episode_label += f": {title}"
-            result += f"- **{episode_label}**\n\n"
+            lines.append(f"- **{episode_label}**")
+            lines.append("")
 
         # Show season progress
         seasons = data.seasons
         if seasons:
-            result += "## Season Progress\n\n"
+            lines.append("## Season Progress")
+            lines.append("")
             for season in seasons:
                 season_number = season.number
                 season_aired_count = season.aired
@@ -92,8 +99,10 @@ class ProgressFormatters:
                             f"({season_percentage:.0f}%)"
                         )
 
-                    result += f"### {season_label}\n\n"
-                    result += f"**Progress:** {status}\n\n"
+                    lines.append(f"### {season_label}")
+                    lines.append("")
+                    lines.append(f"**Progress:** {status}")
+                    lines.append("")
 
                     episodes = season.episodes
                     if episodes:
@@ -107,21 +116,19 @@ class ProgressFormatters:
 
                             if episode_completed and last_watched:
                                 watched_str = format_iso_timestamp(last_watched)
-                                result += (
-                                    f"- [{status_icon}] **{episode_label}** - "
-                                    f"Watched: {watched_str}\n"
+                                lines.append(
+                                    f"- [{status_icon}] **{episode_label}** - Watched: {watched_str}"
                                 )
                             elif episode_completed:
-                                result += (
-                                    f"- [{status_icon}] **{episode_label}** - Watched\n"
+                                lines.append(
+                                    f"- [{status_icon}] **{episode_label}** - Watched"
                                 )
                             else:
-                                result += (
-                                    f"- [{status_icon}] **{episode_label}** - "
-                                    f"Not watched\n"
+                                lines.append(
+                                    f"- [{status_icon}] **{episode_label}** - Not watched"
                                 )
 
-                    result += "\n"
+                    lines.append("")
                 else:
                     if (
                         season_completed == season_aired_count
@@ -134,16 +141,17 @@ class ProgressFormatters:
                             f"({season_percentage:.0f}%)"
                         )
 
-                    result += f"- **{season_label}:** {status}\n"
+                    lines.append(f"- **{season_label}:** {status}")
 
         # Show hidden seasons if present
         hidden_seasons = data.hidden_seasons
         if hidden_seasons:
-            result += "\n## Hidden Seasons\n\n"
-            for hidden in hidden_seasons:
-                result += f"- Season {hidden.number}\n"
+            lines.append("")
+            lines.append("## Hidden Seasons")
+            lines.append("")
+            lines.extend(f"- Season {hidden.number}" for hidden in hidden_seasons)
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_playback_progress(items: list[PlaybackProgressResponse]) -> str:
@@ -162,14 +170,18 @@ class ProgressFormatters:
                 "Items appear here when you pause a movie or episode during playback."
             )
 
-        result = f"# Playback Progress ({len(items)} item{'s' if len(items) != 1 else ''})\n\n"
+        lines: list[str] = [
+            f"# Playback Progress ({len(items)} item{'s' if len(items) != 1 else ''})"
+        ]
+        lines.append("")
 
         # Group by type
         movies = [i for i in items if i.type == "movie"]
         episodes = [i for i in items if i.type == "episode"]
 
         if movies:
-            result += "## Movies\n\n"
+            lines.append("## Movies")
+            lines.append("")
             for item in movies:
                 movie = item.movie
                 title = movie.title if movie else "Unknown"
@@ -181,13 +193,15 @@ class ProgressFormatters:
                 title_str = f"{title} ({year})" if year else title
                 paused_str = format_iso_timestamp(paused_at)
 
-                result += f"- **{title_str}**\n"
-                result += f"  - Progress: {progress:.1f}%\n"
-                result += f"  - Paused: {paused_str}\n"
-                result += f"  - ID: {playback_id} (use with `remove_playback_item`)\n\n"
+                lines.append(f"- **{title_str}**")
+                lines.append(f"  - Progress: {progress:.1f}%")
+                lines.append(f"  - Paused: {paused_str}")
+                lines.append(f"  - ID: {playback_id} (use with `remove_playback_item`)")
+                lines.append("")
 
         if episodes:
-            result += "## Episodes\n\n"
+            lines.append("## Episodes")
+            lines.append("")
             for item in episodes:
                 episode = item.episode
                 show = item.show
@@ -205,9 +219,10 @@ class ProgressFormatters:
 
                 paused_str = format_iso_timestamp(paused_at)
 
-                result += f"- **{ep_str}**\n"
-                result += f"  - Progress: {progress:.1f}%\n"
-                result += f"  - Paused: {paused_str}\n"
-                result += f"  - ID: {playback_id} (use with `remove_playback_item`)\n\n"
+                lines.append(f"- **{ep_str}**")
+                lines.append(f"  - Progress: {progress:.1f}%")
+                lines.append(f"  - Paused: {paused_str}")
+                lines.append(f"  - ID: {playback_id} (use with `remove_playback_item`)")
+                lines.append("")
 
-        return result
+        return "\n".join(lines)
