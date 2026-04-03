@@ -7,6 +7,7 @@ from .checkin import CHECKIN_ENDPOINTS
 from .comments import COMMENTS_ENDPOINTS
 from .episodes import EPISODES_ENDPOINTS
 from .movies import MOVIES_ENDPOINTS
+from .people import PEOPLE_ENDPOINTS
 from .progress import PROGRESS_ENDPOINTS
 from .recommendations import RECOMMENDATIONS_ENDPOINTS
 from .search import SEARCH_ENDPOINTS
@@ -19,6 +20,7 @@ TRAKT_ENDPOINTS: Final[dict[str, str]] = {
     **AUTH_ENDPOINTS,
     **SHOWS_ENDPOINTS,
     **MOVIES_ENDPOINTS,
+    **PEOPLE_ENDPOINTS,
     **PROGRESS_ENDPOINTS,
     **RECOMMENDATIONS_ENDPOINTS,
     **SEARCH_ENDPOINTS,
@@ -35,6 +37,7 @@ __all__ = [
     "COMMENTS_ENDPOINTS",
     "EPISODES_ENDPOINTS",
     "MOVIES_ENDPOINTS",
+    "PEOPLE_ENDPOINTS",
     "PROGRESS_ENDPOINTS",
     "RECOMMENDATIONS_ENDPOINTS",
     "SEARCH_ENDPOINTS",

@@ -3,6 +3,7 @@
 from .anticipated import AnticipatedMoviesClient
 from .boxoffice import BoxOfficeMoviesClient
 from .details import MovieDetailsClient
+from .people import MoviePeopleClient
 from .popular import PopularMoviesClient
 from .related import RelatedMoviesClient
 from .stats import MovieStatsClient
@@ -19,6 +20,7 @@ class MoviesClient(
     MovieDetailsClient,
     MovieVideosClient,
     RelatedMoviesClient,
+    MoviePeopleClient,
 ):
     """Unified client for all movie-related operations.
 
@@ -31,6 +33,7 @@ class MoviesClient(
     - MovieDetailsClient: get_movie(), get_movie_ratings()
     - MovieVideosClient: get_videos()
     - RelatedMoviesClient: get_related_movies()
+    - MoviePeopleClient: get_movie_people()
     """
 
     pass

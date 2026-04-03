@@ -1,5 +1,6 @@
 """Show tools for the Trakt MCP server."""
 
+import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable
@@ -11,6 +12,7 @@ from pydantic import BaseModel, Field, field_validator
 from client.shows.anticipated import AnticipatedShowsClient
 from client.shows.client import ShowsClient
 from client.shows.details import ShowDetailsClient
+from client.shows.people import ShowPeopleClient
 from client.shows.popular import PopularShowsClient
 from client.shows.related import RelatedShowsClient
 from client.shows.stats import ShowStatsClient
@@ -19,6 +21,7 @@ from config.api import DEFAULT_LIMIT
 from config.mcp.descriptions import (
     EMBED_MARKDOWN_DESCRIPTION,
     EXTENDED_DESCRIPTION,
+    GUEST_STARS_DESCRIPTION,
     LIMIT_DESCRIPTION,
     PAGE_DESCRIPTION,
     PERIOD_DESCRIPTION,
@@ -433,6 +436,73 @@ async def fetch_show_seasons(show_id: str) -> str:
     return ShowFormatters.format_show_seasons(seasons)
 
 
+async def _get_show_title(show_id: str) -> str:
+    """Fetch the show title for use in formatted responses.
+
+    Falls back to ``Show ID: <show_id>`` when the lookup fails
+    for any reason so callers always receive a usable title string.
+
+    Args:
+        show_id: Trakt ID, slug, or IMDB ID
+
+    Returns:
+        Show title string, or fallback on failure
+    """
+    try:
+        client = ShowDetailsClient()
+        show_data = await client.get_show(show_id)
+
+        if isinstance(show_data, str):
+            return f"Show ID: {show_id}"
+
+        return show_data.get("title", f"Show ID: {show_id}")
+    except MCPError as exc:
+        logger.debug(
+            "Non-fatal exception during show title lookup; falling back to ID title.",
+            exc_info=True,
+            extra={
+                "resource_id": show_id,
+                "operation": "fetch_show_title",
+                "error": str(exc),
+            },
+        )
+        return f"Show ID: {show_id}"
+
+
+@handle_api_errors_func
+async def fetch_show_people(show_id: str, include_guest_stars: bool = False) -> str:
+    """Fetch cast and crew for a specific show.
+
+    Args:
+        show_id: Trakt ID, slug, or IMDB ID
+        include_guest_stars: Include guest stars in response
+
+    Returns:
+        Formatted markdown with cast and crew
+    """
+    params = ShowIdParam(show_id=show_id)
+
+    people_client = ShowPeopleClient()
+    show_title, people = await asyncio.gather(
+        _get_show_title(params.show_id),
+        people_client.get_show_people(
+            params.show_id,
+            include_guest_stars=include_guest_stars,
+        ),
+    )
+
+    if isinstance(people, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="show_people",
+            resource_id=params.show_id,
+            error_message=people,
+            operation="fetch_show_people",
+            show_title=show_title,
+        )
+
+    return ShowFormatters.format_show_people(people, show_title)
+
+
 def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """Register show tools with the MCP server.
 
@@ -574,6 +644,26 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     ) -> str:
         return await fetch_show_seasons(show_id)
 
+    @mcp.tool(
+        name=TOOL_NAMES["fetch_show_people"],
+        description=(
+            "Get cast and crew for a TV show from Trakt. "
+            "Set include_guest_stars=true to also return guest stars "
+            "(warning: returns a lot of data)."
+        ),
+    )
+    async def fetch_show_people_tool(
+        show_id: Annotated[
+            str,
+            Field(min_length=1, description=SHOW_ID_DESCRIPTION),
+        ],
+        include_guest_stars: Annotated[
+            bool,
+            Field(description=GUEST_STARS_DESCRIPTION),
+        ] = False,
+    ) -> str:
+        return await fetch_show_people(show_id, include_guest_stars)
+
     # Return handlers for type checker visibility
     return (
         fetch_trending_shows_tool,
@@ -587,4 +677,5 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         fetch_show_videos_tool,
         fetch_related_shows_tool,
         fetch_show_seasons_tool,
+        fetch_show_people_tool,
     )

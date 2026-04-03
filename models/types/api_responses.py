@@ -346,11 +346,29 @@ class TranslationResponse(TypedDict):
 
 
 # People types
+class PersonSocialIdsDict(TypedDict):
+    """Social media IDs for a person."""
+
+    twitter: NotRequired[str | None]
+    facebook: NotRequired[str | None]
+    instagram: NotRequired[str | None]
+    wikipedia: NotRequired[str | None]
+
+
 class PersonResponse(TypedDict):
     """Person data from Trakt API."""
 
     name: str
     ids: TraktIdsDict
+    social_ids: NotRequired[PersonSocialIdsDict]
+    biography: NotRequired[str | None]
+    birthday: NotRequired[str | None]
+    death: NotRequired[str | None]
+    birthplace: NotRequired[str | None]
+    homepage: NotRequired[str | None]
+    gender: NotRequired[str | None]
+    known_for_department: NotRequired[str | None]
+    updated_at: NotRequired[str]
 
 
 class CastMember(TypedDict):
@@ -375,6 +393,52 @@ class PeopleResponse(TypedDict):
     cast: list[CastMember]
     crew: NotRequired[dict[str, list[CrewMember]]]
     guest_stars: NotRequired[list[CastMember]]
+
+
+# Person credit types (for /people/{id}/movies and /people/{id}/shows)
+class PersonMovieCastCredit(TypedDict):
+    """Cast credit for a person in a movie."""
+
+    characters: list[str]
+    movie: MovieResponse
+
+
+class PersonMovieCrewCredit(TypedDict):
+    """Crew credit for a person in a movie."""
+
+    jobs: list[str]
+    movie: MovieResponse
+
+
+class PersonMovieCreditsResponse(TypedDict):
+    """Person's movie credits response from Trakt API."""
+
+    cast: list[PersonMovieCastCredit]
+    crew: NotRequired[dict[str, list[PersonMovieCrewCredit]]]
+
+
+class PersonShowCastCredit(TypedDict):
+    """Cast credit for a person in a show."""
+
+    characters: list[str]
+    episode_count: NotRequired[int]
+    series_regular: NotRequired[bool]
+    show: ShowResponse
+
+
+class PersonShowCrewCredit(TypedDict):
+    """Crew credit for a person in a show."""
+
+    jobs: list[str]
+    episode_count: NotRequired[int]
+    show: ShowResponse
+
+
+class PersonShowCreditsResponse(TypedDict):
+    """Person's show credits response from Trakt API."""
+
+    cast: list[PersonShowCastCredit]
+    crew: NotRequired[dict[str, list[PersonShowCrewCredit]]]
 
 
 # Season stats types

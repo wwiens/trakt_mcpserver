@@ -24,6 +24,7 @@ __all__: Final[list[str]] = [
     "EMBED_MARKDOWN_DESCRIPTION",
     "EPISODE_DESCRIPTION",
     "EXTENDED_DESCRIPTION",
+    "GUEST_STARS_DESCRIPTION",
     "HISTORY_END_AT_DESCRIPTION",
     "HISTORY_ITEMS_DESCRIPTION",
     "HISTORY_ITEM_ID_DESCRIPTION",
@@ -41,6 +42,7 @@ __all__: Final[list[str]] = [
     "MOVIE_ID_DESCRIPTION",
     "PAGE_DESCRIPTION",
     "PERIOD_DESCRIPTION",
+    "PERSON_ID_DESCRIPTION",
     "PLAYBACK_ID_DESCRIPTION",
     "PLAYBACK_TYPE_DESCRIPTION",
     "RATING_FILTER_DESCRIPTION",
@@ -75,6 +77,9 @@ SHOW_ID_DESCRIPTION: Final[str] = (
 MOVIE_ID_DESCRIPTION: Final[str] = (
     "Trakt ID, Trakt slug, or IMDB ID "
     "(e.g., '120', 'the-dark-knight-2008', 'tt0468569')"
+)
+PERSON_ID_DESCRIPTION: Final[str] = (
+    "Trakt ID, Trakt slug, or IMDB ID (e.g., '142', 'bryan-cranston', 'nm0186505')"
 )
 COMMENT_ID_DESCRIPTION: Final[str] = (
     "Trakt comment ID (numeric string, e.g., '417', '12345')"
@@ -147,6 +152,11 @@ EXTENDED_DESCRIPTION: Final[str] = (
 )
 
 # Embed markdown descriptions
+GUEST_STARS_DESCRIPTION: Final[str] = (
+    "Include guest stars who appeared in at least 1 episode "
+    "(warning: returns a lot of data)"
+)
+
 EMBED_MARKDOWN_DESCRIPTION: Final[str] = (
     "Use embedded YouTube iframe markdown (True) or simple links (False)"
 )

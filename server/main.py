@@ -11,6 +11,7 @@ from .checkin import register_checkin_tools
 from .comments import register_comment_tools
 from .episodes import register_episode_tools
 from .movies import register_movie_resources, register_movie_tools
+from .people import register_people_tools
 from .progress import register_progress_tools
 from .prompts.basic import register_basic_prompts
 from .recommendations import register_recommendation_tools
@@ -58,6 +59,7 @@ def create_server() -> FastMCP:
     _ = register_recommendation_tools(mcp)
     _ = register_season_tools(mcp)
     _ = register_episode_tools(mcp)
+    _ = register_people_tools(mcp)
 
     # Register prompts and capture handlers for type checker
     _ = register_basic_prompts(mcp)

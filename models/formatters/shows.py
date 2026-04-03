@@ -3,7 +3,10 @@
 from models.formatters.utils import MAX_OVERVIEW_LENGTH, format_pagination_header
 from models.types import (
     AnticipatedShowWrapper,
+    CastMember,
+    CrewMember,
     FavoritedShowWrapper,
+    PeopleResponse,
     PlayedShowWrapper,
     SeasonResponse,
     ShowResponse,
@@ -497,5 +500,78 @@ class ShowFormatters:
                 result += f"  {overview}\n"
 
             result += "\n"
+
+        return result
+
+    @staticmethod
+    def _format_cast_section(members: list[CastMember], heading: str) -> str:
+        """Format a cast or guest stars section.
+
+        Args:
+            members: List of cast member data
+            heading: Section heading (e.g., "Cast", "Guest Stars")
+
+        Returns:
+            Formatted markdown section, empty string if no members
+        """
+        if not members:
+            return ""
+
+        result = f"## {heading}\n\n"
+        for member in members:
+            person = member.get("person", {})
+            name = person.get("name", "Unknown")
+            characters = member.get("characters", [])
+            char_str = ", ".join(characters) if characters else "Unknown Role"
+            episode_count = member.get("episode_count")
+            count_str = (
+                f" ({episode_count} episodes)" if episode_count is not None else ""
+            )
+            result += f"- **{name}** as {char_str}{count_str}\n"
+        result += "\n"
+        return result
+
+    @staticmethod
+    def format_show_people(people: PeopleResponse, show_title: str) -> str:
+        """Format show cast and crew data.
+
+        Args:
+            people: People data from Trakt API
+            show_title: The title of the show
+
+        Returns:
+            Formatted markdown text with cast and crew
+        """
+        if not people:
+            return f"# People for {show_title}\n\nNo people data available."
+
+        cast: list[CastMember] = people.get("cast", [])
+        guest_stars: list[CastMember] = people.get("guest_stars", [])
+        crew: dict[str, list[CrewMember]] = people.get("crew", {})
+
+        if not cast and not guest_stars and not crew:
+            return f"# People for {show_title}\n\nNo people data available."
+
+        result = f"# People for {show_title}\n\n"
+
+        result += ShowFormatters._format_cast_section(cast, "Cast")
+        result += ShowFormatters._format_cast_section(guest_stars, "Guest Stars")
+        if crew:
+            result += "## Crew\n\n"
+            for department, members in sorted(crew.items()):
+                result += f"### {department.title()}\n\n"
+                for member in members:
+                    person = member.get("person", {})
+                    name = person.get("name", "Unknown")
+                    jobs = member.get("jobs", [])
+                    jobs_str = ", ".join(jobs) if jobs else "Unknown"
+                    episode_count = member.get("episode_count")
+                    count_str = (
+                        f" ({episode_count} episodes)"
+                        if episode_count is not None
+                        else ""
+                    )
+                    result += f"- **{name}** - {jobs_str}{count_str}\n"
+                result += "\n"
 
         return result
