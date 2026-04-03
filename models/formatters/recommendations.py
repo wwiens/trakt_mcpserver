@@ -65,10 +65,10 @@ class RecommendationFormatters:
         lines.append("")
 
         if not movies:
-            return (
-                "\n".join(lines)
-                + "No recommendations available. Watch more content to improve recommendations!\n"
+            lines.append(
+                "No recommendations available. Watch more content to improve recommendations!"
             )
+            return "\n".join(lines)
 
         lines.extend(
             RecommendationFormatters._format_recommendation_item(movie)
@@ -95,10 +95,10 @@ class RecommendationFormatters:
         lines.append("")
 
         if not shows:
-            return (
-                "\n".join(lines)
-                + "No recommendations available. Watch more content to improve recommendations!\n"
+            lines.append(
+                "No recommendations available. Watch more content to improve recommendations!"
             )
+            return "\n".join(lines)
 
         lines.extend(
             RecommendationFormatters._format_recommendation_item(show) for show in shows

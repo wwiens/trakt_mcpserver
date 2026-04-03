@@ -106,7 +106,8 @@ def format_list_items(
     lines.append("")
 
     if not lists:
-        return "\n".join(lines) + f"No lists found containing this {item_type}."
+        lines.append(f"No lists found containing this {item_type}.")
+        return "\n".join(lines)
 
     lines.append(f"**{len(lists)} list(s)**")
     lines.append("")
