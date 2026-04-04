@@ -8,11 +8,14 @@ class RecommendationsClient(MovieRecommendationsClient, ShowRecommendationsClien
     """Unified client for all recommendation operations.
 
     Combines functionality from:
-    - MovieRecommendationsClient: get_movie_recommendations(), hide_movie_recommendation()
-    - ShowRecommendationsClient: get_show_recommendations(), hide_show_recommendation()
+    - MovieRecommendationsClient: get_movie_recommendations(),
+      hide_movie_recommendation()
+    - ShowRecommendationsClient: get_show_recommendations(),
+      hide_show_recommendation()
 
-    Note: Inherits OAuth authentication handling from AuthClient through parent clients.
-    All recommendation operations require user authentication to access personalized data.
+    Note: Inherits OAuth authentication handling from AuthClient through parent
+    clients. All recommendation operations require user authentication to access
+    personalized data.
     """
 
     pass

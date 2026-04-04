@@ -33,7 +33,8 @@ class MovieDetailsClient(BaseClient):
             movie_id: The Trakt movie ID
 
         Returns:
-            Extended movie details data including status, enhanced overview, and metadata
+            Extended movie details data including status, enhanced overview,
+            and metadata
         """
         endpoint = f"/movies/{quote(movie_id, safe='')}"
         params = {"extended": "full"}

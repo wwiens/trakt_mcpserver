@@ -23,7 +23,10 @@ async def test_search_shows():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
                 "ids": {"trakt": "1"},
             }
         }
@@ -61,7 +64,10 @@ async def test_search_shows_with_limit():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
                 "ids": {"trakt": "1"},
             }
         }
@@ -134,7 +140,10 @@ async def test_search_movies():
             "movie": {
                 "title": "Inception",
                 "year": 2010,
-                "overview": "A thief who steals corporate secrets through dream-sharing technology.",
+                "overview": (
+                    "A thief who steals corporate secrets"
+                    " through dream-sharing technology."
+                ),
                 "ids": {"trakt": "1"},
             }
         }
@@ -167,7 +176,10 @@ async def test_search_movies_with_limit():
             "movie": {
                 "title": "Inception",
                 "year": 2010,
-                "overview": "A thief who steals corporate secrets through dream-sharing technology.",
+                "overview": (
+                    "A thief who steals corporate secrets"
+                    " through dream-sharing technology."
+                ),
                 "ids": {"trakt": "1"},
             }
         }
@@ -241,7 +253,10 @@ async def test_search_shows_multiple_results():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
                 "ids": {"trakt": "1"},
             }
         },
@@ -249,7 +264,10 @@ async def test_search_shows_multiple_results():
             "show": {
                 "title": "Better Call Saul",
                 "year": 2015,
-                "overview": "The trials and tribulations of criminal lawyer Jimmy McGill.",
+                "overview": (
+                    "The trials and tribulations of criminal"
+                    " lawyer Jimmy McGill."
+                ),
                 "ids": {"trakt": "2"},
             }
         },
@@ -279,7 +297,10 @@ async def test_search_movies_multiple_results():
             "movie": {
                 "title": "Inception",
                 "year": 2010,
-                "overview": "A thief who steals corporate secrets through dream-sharing technology.",
+                "overview": (
+                    "A thief who steals corporate secrets"
+                    " through dream-sharing technology."
+                ),
                 "ids": {"trakt": "1"},
             }
         },

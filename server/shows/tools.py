@@ -128,7 +128,8 @@ async def fetch_favorited_shows(
     Args:
         limit: Maximum shows to return (default: 10, 0=fetch all). When page is
             None, this caps total results. When page is specified, this is per page.
-        period: Time period for favorite calculation (daily, weekly, monthly, yearly, all)
+        period: Time period for favorite calculation
+            (daily, weekly, monthly, yearly, all)
         page: Page number. If None, auto-paginates up to 'limit' total shows.
             If specified, returns that page with pagination metadata.
 
@@ -235,7 +236,8 @@ async def fetch_show_ratings(show_id: str) -> str:
     """Fetch ratings for a show from Trakt.
 
     Args:
-        show_id: Trakt ID, Trakt slug, or IMDB ID (e.g., '1', 'breaking-bad', 'tt0903747')
+        show_id: Trakt ID, Trakt slug, or IMDB ID
+            (e.g., '1', 'breaking-bad', 'tt0903747')
 
     Returns:
         Information about show ratings including average and distribution
@@ -285,14 +287,16 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
     """Fetch show summary from Trakt.
 
     Args:
-        show_id: Trakt ID, Trakt slug, or IMDB ID (e.g., '1', 'breaking-bad', 'tt0903747')
-        extended: If True, return comprehensive data with air times, production status and metadata.
-                 If False, return basic show information (title, year, IDs).
+        show_id: Trakt ID, Trakt slug, or IMDB ID
+            (e.g., '1', 'breaking-bad', 'tt0903747')
+        extended: If True, return comprehensive data with air times, production
+                 status and metadata. If False, return basic show information
+                 (title, year, IDs).
 
     Returns:
-        Show information formatted as markdown. Extended mode includes air times, production status,
-        ratings, metadata, and detailed information. Basic mode includes title, year,
-        and Trakt ID only.
+        Show information formatted as markdown. Extended mode includes air
+        times, production status, ratings, metadata, and detailed information.
+        Basic mode includes title, year, and Trakt ID only.
 
     Raises:
         InvalidParamsError: If show_id is invalid
@@ -371,7 +375,8 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
         except Exception:
             # Best-effort title lookup — don't fail the operation
             logger.debug(
-                "Non-fatal exception during show title lookup; falling back to ID title.",
+                "Non-fatal exception during show title"
+                + " lookup; falling back to ID title.",
                 exc_info=True,
                 extra={"resource_id": show_id, "operation": "fetch_show_for_videos"},
             )
@@ -423,7 +428,8 @@ async def fetch_show_seasons(show_id: str) -> str:
     """Fetch all seasons for a show from Trakt.
 
     Args:
-        show_id: Trakt ID, Trakt slug, or IMDB ID (e.g., '1', 'breaking-bad', 'tt0903747')
+        show_id: Trakt ID, Trakt slug, or IMDB ID
+            (e.g., '1', 'breaking-bad', 'tt0903747')
 
     Returns:
         Formatted markdown with season details including episode counts and ratings
@@ -512,7 +518,10 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_trending_shows"],
-        description="Fetch trending TV shows from Trakt. Use page parameter for paginated results, or omit for all results.",
+        description=(
+            "Fetch trending TV shows from Trakt. "
+            "Use page parameter for paginated results, or omit for all results."
+        ),
     )
     async def fetch_trending_shows_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
@@ -522,7 +531,10 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_popular_shows"],
-        description="Fetch popular TV shows from Trakt. Use page parameter for paginated results, or omit for all results.",
+        description=(
+            "Fetch popular TV shows from Trakt. "
+            "Use page parameter for paginated results, or omit for all results."
+        ),
     )
     async def fetch_popular_shows_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
@@ -532,7 +544,10 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_favorited_shows"],
-        description="Fetch most favorited TV shows from Trakt. Use page parameter for paginated results, or omit for all results.",
+        description=(
+            "Fetch most favorited TV shows from Trakt. "
+            "Use page parameter for paginated results, or omit for all results."
+        ),
     )
     async def fetch_favorited_shows_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
@@ -546,7 +561,10 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_played_shows"],
-        description="Fetch most played TV shows from Trakt. Use page parameter for paginated results, or omit for all results.",
+        description=(
+            "Fetch most played TV shows from Trakt. "
+            "Use page parameter for paginated results, or omit for all results."
+        ),
     )
     async def fetch_played_shows_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
@@ -560,7 +578,10 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_watched_shows"],
-        description="Fetch most watched TV shows from Trakt. Use page parameter for paginated results, or omit for all results.",
+        description=(
+            "Fetch most watched TV shows from Trakt. "
+            "Use page parameter for paginated results, or omit for all results."
+        ),
     )
     async def fetch_watched_shows_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
@@ -574,7 +595,10 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_anticipated_shows"],
-        description="Fetch most anticipated TV shows from Trakt, sorted by list count. Use page parameter for paginated results, or omit for all results.",
+        description=(
+            "Fetch most anticipated TV shows from Trakt, sorted by list count. "
+            "Use page parameter for paginated results, or omit for all results."
+        ),
     )
     async def fetch_anticipated_shows_tool(
         limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
@@ -595,7 +619,13 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_summary"],
-        description="Get TV show summary from Trakt. Default behavior (extended=true): Returns comprehensive data including air times, production status, ratings, genres, runtime, network, and metadata. Basic mode (extended=false): Returns only title, year, and Trakt ID.",
+        description=(
+            "Get TV show summary from Trakt. "
+            "Default behavior (extended=true): Returns comprehensive data including "
+            "air times, production status, ratings, genres, runtime, network, and "
+            "metadata. Basic mode (extended=false): Returns only title, year, and "
+            "Trakt ID."
+        ),
     )
     async def fetch_show_summary_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -609,7 +639,8 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         name=TOOL_NAMES["fetch_show_videos"],
         description=(
             "Get videos (trailers, teasers, etc.) for a show from Trakt. "
-            "Set embed_markdown=False to return simple links instead of YouTube iframes."
+            "Set embed_markdown=False to return simple links instead of "
+            "YouTube iframes."
         ),
     )
     async def fetch_show_videos_tool(
@@ -626,7 +657,11 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_related_shows"],
-        description="Fetch TV shows related to a specific show. Returns similar shows based on genres, themes, and viewer patterns. Use page parameter for paginated results, or omit for all results.",
+        description=(
+            "Fetch TV shows related to a specific show. Returns similar shows "
+            "based on genres, themes, and viewer patterns. "
+            "Use page parameter for paginated results, or omit for all results."
+        ),
     )
     async def fetch_related_shows_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -637,7 +672,10 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_show_seasons"],
-        description="Fetch all seasons for a TV show from Trakt, including episode counts, aired episodes, and ratings per season.",
+        description=(
+            "Fetch all seasons for a TV show from Trakt, including episode counts, "
+            "aired episodes, and ratings per season."
+        ),
     )
     async def fetch_show_seasons_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],

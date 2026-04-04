@@ -162,7 +162,8 @@ class ProgressFormatters:
                 "Items appear here when you pause a movie or episode during playback."
             )
 
-        result = f"# Playback Progress ({len(items)} item{'s' if len(items) != 1 else ''})\n\n"
+        plural = "s" if len(items) != 1 else ""
+        result = f"# Playback Progress ({len(items)} item{plural})\n\n"
 
         # Group by type
         movies = [i for i in items if i.type == "movie"]

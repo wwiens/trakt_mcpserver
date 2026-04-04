@@ -213,7 +213,7 @@ class TestHandleApiErrorsDecorator:
     async def test_http_status_error_is_mapped_to_server_error(
         self, mock_async_func: AsyncMock
     ) -> None:
-        """Decorator delegates HTTPStatusError to the handler and raises TraktServerError."""
+        """Decorator delegates HTTPStatusError to handler, raises TraktServerError."""
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_response.text = "Internal Server Error"
@@ -448,7 +448,7 @@ class TestDecoratorIntegration:
 
     @pytest.mark.asyncio
     async def test_auth_error_returns_friendly_message(self) -> None:
-        """Test that AuthenticationRequiredError is caught and returns a friendly message."""
+        """Test AuthenticationRequiredError is caught and returns a friendly message."""
 
         @handle_api_errors_func
         async def test_func() -> str:

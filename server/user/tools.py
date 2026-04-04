@@ -153,9 +153,11 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
     @mcp.tool(
         name=TOOL_NAMES["fetch_user_watched_shows"],
         description=(
-            "Fetch list of TV shows the user has watched, sorted by most recently watched. "
+            "Fetch list of TV shows the user has watched, "
+            "sorted by most recently watched. "
             "Returns show titles with last watched date and play counts. "
-            "Use for: 'what have I been watching?', 'my recent shows', 'list my watched shows'. "
+            "Use for: 'what have I been watching?', 'my recent shows', "
+            "'list my watched shows'. "
             "For checking a specific show (e.g., 'have I seen Breaking Bad?'), "
             "use fetch_history with history_type='shows' and item_id instead. "
             "Requires OAuth authentication."
@@ -177,9 +179,11 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
     @mcp.tool(
         name=TOOL_NAMES["fetch_user_watched_movies"],
         description=(
-            "Fetch list of movies the user has watched, sorted by most recently watched. "
+            "Fetch list of movies the user has watched, "
+            "sorted by most recently watched. "
             "Returns movie titles with last watched date and play counts. "
-            "Use for: 'what movies have I watched?', 'my recent movies', 'list my watched movies'. "
+            "Use for: 'what movies have I watched?', 'my recent movies', "
+            "'list my watched movies'. "
             "For checking a specific movie (e.g., 'have I seen Inception?'), "
             "use fetch_history with history_type='movies' and item_id instead. "
             "Requires OAuth authentication."

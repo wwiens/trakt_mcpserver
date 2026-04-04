@@ -458,7 +458,10 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_info"],
-        description="Fetch detailed information about a specific TV show season, including episode count, ratings, and air dates.",
+        description=(
+            "Fetch detailed information about a specific TV show season, "
+            "including episode count, ratings, and air dates."
+        ),
     )
     async def fetch_season_info_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -468,7 +471,10 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_episodes"],
-        description="Fetch all episodes for a specific TV show season with titles, ratings, and runtime.",
+        description=(
+            "Fetch all episodes for a specific TV show season "
+            "with titles, ratings, and runtime."
+        ),
     )
     async def fetch_season_episodes_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -478,7 +484,9 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_ratings"],
-        description="Fetch ratings and voting statistics for a specific TV show season.",
+        description=(
+            "Fetch ratings and voting statistics for a specific TV show season."
+        ),
     )
     async def fetch_season_ratings_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -488,7 +496,10 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_stats"],
-        description="Fetch engagement statistics for a specific TV show season including watchers, plays, collectors, and comments.",
+        description=(
+            "Fetch engagement statistics for a specific TV show season "
+            "including watchers, plays, collectors, and comments."
+        ),
     )
     async def fetch_season_stats_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -498,7 +509,10 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_people"],
-        description="Fetch cast and crew for a specific TV show season, including character names and episode counts.",
+        description=(
+            "Fetch cast and crew for a specific TV show season, "
+            "including character names and episode counts."
+        ),
     )
     async def fetch_season_people_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -508,7 +522,10 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_videos"],
-        description="Fetch videos (trailers, recaps, etc.) for a specific TV show season. Set embed_markdown=False for simple links.",
+        description=(
+            "Fetch videos (trailers, recaps, etc.) for a specific TV show season. "
+            "Set embed_markdown=False for simple links."
+        ),
     )
     async def fetch_season_videos_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -522,7 +539,9 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_watching"],
-        description="Fetch users currently watching a specific TV show season right now.",
+        description=(
+            "Fetch users currently watching a specific TV show season right now."
+        ),
     )
     async def fetch_season_watching_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -532,7 +551,9 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
 
     @mcp.tool(
         name=TOOL_NAMES["fetch_season_translations"],
-        description="Fetch translations for a specific TV show season in different languages.",
+        description=(
+            "Fetch translations for a specific TV show season in different languages."
+        ),
     )
     async def fetch_season_translations_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],

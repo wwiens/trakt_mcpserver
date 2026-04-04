@@ -780,14 +780,14 @@ async def test_fetch_user_ratings_backward_compatibility_integration(
 
             # Test without page parameter (non-paginated request)
             result = await fetch_user_ratings(rating_type="movies")
-            # Verify response format (pagination info is always present in response structure)
+            # Verify response format (pagination info is always present in response)
             assert "# Your Movies Ratings" in result
             assert "Found 3 rated movies on this page" in result
             assert "TRON: Legacy (2010)" in result
-            # Response will contain pagination metadata (with default values when no headers present)
+            # Response will contain pagination metadata (defaults with no headers)
             assert "📄" in result
 
-            # Verify NO pagination parameters were sent (following "Pagination Optional" pattern)
+            # Verify NO pagination parameters were sent (Pagination Optional pattern)
             call_args = mock_http_client.get.call_args
             call_kwargs = call_args[1]
             assert not call_kwargs.get("params")
@@ -837,7 +837,7 @@ async def test_fetch_user_ratings_pagination_error_handling_integration(
 async def test_fetch_user_ratings_pagination_authentication_flow_integration(
     authenticated_sync_client: SyncClient,
 ) -> None:
-    """Test that paginated requests require authentication just like regular requests."""
+    """Test that paginated requests require authentication like regular requests."""
 
     with patch.dict(
         os.environ,

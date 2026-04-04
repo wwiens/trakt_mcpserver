@@ -45,8 +45,10 @@ class SyncWatchlistClient(AuthClient):
         """Get user's watchlist from sync API with pagination.
 
         Args:
-            watchlist_type: Type of watchlist items to get (all, movies, shows, seasons, episodes)
-            sort_by: Field to sort by (rank, added, title, released, runtime, popularity, etc.)
+            watchlist_type: Type of watchlist items to get
+                (all, movies, shows, seasons, episodes)
+            sort_by: Field to sort by (rank, added, title, released, runtime,
+                popularity, etc.)
             sort_how: Sort direction (asc or desc)
             pagination: Optional pagination parameters (page, limit)
 
@@ -121,7 +123,8 @@ class SyncWatchlistClient(AuthClient):
         """Remove items from the authenticated user's watchlist.
 
         Args:
-            request: Watchlist items to remove (should not include notes, just item identification)
+            request: Watchlist items to remove (should not include notes,
+                just item identification)
 
         Returns:
             Summary of removed items with counts and any not found items

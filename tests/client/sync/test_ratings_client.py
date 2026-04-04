@@ -315,7 +315,7 @@ class TestSyncRatingsClient:
     async def test_remove_sync_ratings_unauthenticated(
         self, unauthenticated_client: SyncRatingsClient
     ) -> None:
-        """Test that unauthenticated remove requests raise AuthenticationRequiredError."""
+        """Test unauthenticated remove requests raise AuthenticationRequiredError."""
         request = TraktSyncRatingsRequest(
             movies=[TraktSyncRatingItem(ids=TraktIds(trakt=123))]
         )
@@ -471,7 +471,7 @@ class TestSyncRatingsClient:
     async def test_get_sync_ratings_unauthenticated(
         self, unauthenticated_client: SyncRatingsClient
     ) -> None:
-        """Test that unauthenticated paginated requests raise AuthenticationRequiredError."""
+        """Test unauthenticated paginated requests raise AuthenticationRequiredError."""
         pagination_params = PaginationParams(page=1, limit=10)
 
         with pytest.raises(AuthenticationRequiredError):

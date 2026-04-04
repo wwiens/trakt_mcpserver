@@ -200,7 +200,8 @@ class AuthClient(BaseClient):
                 # OSError (file I/O), ValueError (validation).
                 # Keep the refresh token so the next attempt can succeed.
                 logger.warning(
-                    "Failed to refresh access token (transient error), keeping refresh token for next attempt",
+                    "Failed to refresh access token (transient"
+                    + " error), keeping refresh token for next attempt",
                     exc_info=True,
                 )
                 return False
@@ -237,7 +238,8 @@ class AuthClient(BaseClient):
             if self.auth_token is None:
                 return False
 
-            # Always clear in-memory state first (handles case where file was deleted externally)
+            # Always clear in-memory state first
+            # (handles case where file was deleted externally)
             self.auth_token = None
             if "Authorization" in self.headers:
                 del self.headers["Authorization"]

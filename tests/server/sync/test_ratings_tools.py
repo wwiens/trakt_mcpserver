@@ -124,7 +124,7 @@ async def test_fetch_user_ratings_with_rating_filter() -> None:
         assert "# Your Shows Ratings (filtered to rating 10)" in result
         assert "Found 1 rated show on this page" in result
 
-        # Verify client was called with rating filter (no pagination when no page specified)
+        # Verify client called with rating filter (no pagination when no page specified)
         mock_client.get_sync_ratings.assert_called_once_with(
             "shows", 10, pagination=None
         )

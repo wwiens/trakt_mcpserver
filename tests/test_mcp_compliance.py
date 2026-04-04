@@ -306,8 +306,8 @@ class TestMCPCompliance:
         # Should fail with proper error response
         assert result.returncode != 0, "Invalid method should return error"
 
-        # Error should be properly formatted (MCP inspector handles JSON-RPC error format)
-        # The fact that we get a structured error response indicates compliance
+        # Error should be properly formatted (MCP inspector handles JSON-RPC format)
+        # Getting a structured error response indicates compliance
 
 
 class TestMCPFunctionalCompliance:
@@ -397,7 +397,8 @@ class TestMCPSpecificationDetails:
 
     def test_mcp_message_format(self) -> None:
         """Test that messages follow MCP format specification."""
-        # MCP inspector validates message format - successful communication indicates compliance
+        # MCP inspector validates message format - successful communication indicates
+        # compliance
         cmd = [
             "npx",
             "@modelcontextprotocol/inspector",

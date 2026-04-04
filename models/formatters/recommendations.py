@@ -63,7 +63,10 @@ class RecommendationFormatters:
         result += "_Personalized recommendations based on your viewing history_\n\n"
 
         if not movies:
-            return f"{result}No recommendations available. Watch more content to improve recommendations!\n"
+            return (
+                f"{result}No recommendations available."
+                " Watch more content to improve recommendations!\n"
+            )
 
         for movie in movies:
             result += RecommendationFormatters._format_recommendation_item(movie)
@@ -86,7 +89,10 @@ class RecommendationFormatters:
         result += "_Personalized recommendations based on your viewing history_\n\n"
 
         if not shows:
-            return f"{result}No recommendations available. Watch more content to improve recommendations!\n"
+            return (
+                f"{result}No recommendations available."
+                " Watch more content to improve recommendations!\n"
+            )
 
         for show in shows:
             result += RecommendationFormatters._format_recommendation_item(show)

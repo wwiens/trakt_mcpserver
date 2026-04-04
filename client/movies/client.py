@@ -29,7 +29,8 @@ class MoviesClient(
     - PopularMoviesClient: get_popular_movies()
     - AnticipatedMoviesClient: get_anticipated_movies()
     - BoxOfficeMoviesClient: get_boxoffice_movies()
-    - MovieStatsClient: get_favorited_movies(), get_played_movies(), get_watched_movies()
+    - MovieStatsClient: get_favorited_movies(), get_played_movies(),
+      get_watched_movies()
     - MovieDetailsClient: get_movie(), get_movie_ratings()
     - MovieVideosClient: get_videos()
     - RelatedMoviesClient: get_related_movies()

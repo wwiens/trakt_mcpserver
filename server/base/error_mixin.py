@@ -367,7 +367,8 @@ class BaseToolErrorMixin:
         """Validate that at least one set of alternative parameters is provided.
 
         Args:
-            param_sets: List of parameter sets, where each set is a tuple of parameter names
+            param_sets: List of parameter sets, where each set is a tuple of
+                parameter names
             **params: Parameter name -> value pairs to validate
 
         Raises:

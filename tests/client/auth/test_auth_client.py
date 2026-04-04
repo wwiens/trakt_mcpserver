@@ -624,7 +624,8 @@ async def test_refresh_access_token_invalid_grant_clears_token(
 async def test_ensure_authenticated_valid_token(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test that ensure_authenticated returns True for valid token without refreshing."""
+    """Test that ensure_authenticated returns True for valid token without refreshing.
+    """
     current_time = int(time.time())
 
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
@@ -725,7 +726,9 @@ async def test_ensure_authenticated_no_token(monkeypatch: pytest.MonkeyPatch) ->
 async def test_ensure_authenticated_expired_no_refresh_token(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test that ensure_authenticated returns False when token is expired but has no refresh token."""
+    """Test that ensure_authenticated returns False when token is expired but has no
+    refresh token.
+    """
     current_time = int(time.time())
 
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")

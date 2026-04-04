@@ -62,11 +62,14 @@ class ShowsClientProtocol(Protocol):
 
         Args:
             limit: Items per page
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            page: Page number (optional). If None, returns all results
+                via auto-pagination.
+            max_pages: Maximum number of pages to fetch when
+                auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all trending shows across all pages (up to max_pages)
+            If page is None: List of all trending shows across all pages
+                (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
@@ -81,11 +84,14 @@ class ShowsClientProtocol(Protocol):
 
         Args:
             limit: Items per page
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            page: Page number (optional). If None, returns all results
+                via auto-pagination.
+            max_pages: Maximum number of pages to fetch when
+                auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all popular shows across all pages (up to max_pages)
+            If page is None: List of all popular shows across all pages
+                (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
@@ -100,11 +106,14 @@ class ShowsClientProtocol(Protocol):
 
         Args:
             limit: Items per page
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            page: Page number (optional). If None, returns all results
+                via auto-pagination.
+            max_pages: Maximum number of pages to fetch when
+                auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all anticipated shows across all pages (up to max_pages)
+            If page is None: List of all anticipated shows across all pages
+                (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
@@ -145,11 +154,14 @@ class MoviesClientProtocol(Protocol):
 
         Args:
             limit: Items per page
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            page: Page number (optional). If None, returns all results
+                via auto-pagination.
+            max_pages: Maximum number of pages to fetch when
+                auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all trending movies across all pages (up to max_pages)
+            If page is None: List of all trending movies across all pages
+                (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
@@ -164,11 +176,14 @@ class MoviesClientProtocol(Protocol):
 
         Args:
             limit: Items per page
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            page: Page number (optional). If None, returns all results
+                via auto-pagination.
+            max_pages: Maximum number of pages to fetch when
+                auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all popular movies across all pages (up to max_pages)
+            If page is None: List of all popular movies across all pages
+                (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
@@ -183,11 +198,14 @@ class MoviesClientProtocol(Protocol):
 
         Args:
             limit: Items per page
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            page: Page number (optional). If None, returns all results
+                via auto-pagination.
+            max_pages: Maximum number of pages to fetch when
+                auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all anticipated movies across all pages (up to max_pages)
+            If page is None: List of all anticipated movies across all pages
+                (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
@@ -304,11 +322,14 @@ class SearchClientProtocol(Protocol):
         Args:
             query: Search query string
             limit: Items per page
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            page: Page number (optional). If None, returns all results
+                via auto-pagination.
+            max_pages: Maximum number of pages to fetch when
+                auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all search results across all pages (up to max_pages)
+            If page is None: List of all search results across all pages
+                (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
@@ -325,11 +346,14 @@ class SearchClientProtocol(Protocol):
         Args:
             query: Search query string
             limit: Items per page
-            page: Page number (optional). If None, returns all results via auto-pagination.
-            max_pages: Maximum number of pages to fetch when auto-paginating (default: 100)
+            page: Page number (optional). If None, returns all results
+                via auto-pagination.
+            max_pages: Maximum number of pages to fetch when
+                auto-paginating (default: 100)
 
         Returns:
-            If page is None: List of all search results across all pages (up to max_pages)
+            If page is None: List of all search results across all pages
+                (up to max_pages)
             If page specified: Paginated response with metadata for that page
         """
         ...
