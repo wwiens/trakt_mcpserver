@@ -8,6 +8,9 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from dotenv import load_dotenv
+
+load_dotenv()
 
 if TYPE_CHECKING:
     from client.sync.client import SyncClient

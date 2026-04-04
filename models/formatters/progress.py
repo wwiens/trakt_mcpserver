@@ -87,18 +87,15 @@ class ProgressFormatters:
                     "Specials" if season_number == 0 else f"Season {season_number}"
                 )
 
-                if verbose:
-                    if (
-                        season_completed == season_aired_count
-                        and season_aired_count > 0
-                    ):
-                        status = "Complete (100%)"
-                    else:
-                        status = (
-                            f"{season_completed}/{season_aired_count} "
-                            f"({season_percentage:.0f}%)"
-                        )
+                if season_completed == season_aired_count and season_aired_count > 0:
+                    status = "Complete (100%)"
+                else:
+                    status = (
+                        f"{season_completed}/{season_aired_count} "
+                        f"({season_percentage:.0f}%)"
+                    )
 
+                if verbose:
                     lines.append(f"### {season_label}")
                     lines.append("")
                     lines.append(f"**Progress:** {status}")
@@ -130,17 +127,6 @@ class ProgressFormatters:
 
                     lines.append("")
                 else:
-                    if (
-                        season_completed == season_aired_count
-                        and season_aired_count > 0
-                    ):
-                        status = "Complete (100%)"
-                    else:
-                        status = (
-                            f"{season_completed}/{season_aired_count} "
-                            f"({season_percentage:.0f}%)"
-                        )
-
                     lines.append(f"- **{season_label}:** {status}")
 
         # Show hidden seasons if present

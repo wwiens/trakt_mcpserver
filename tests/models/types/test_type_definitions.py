@@ -13,7 +13,7 @@ from models.types import (
 )
 
 
-def test_comment_response_structure():
+def test_comment_response_structure() -> None:
     """Test CommentResponse has required fields."""
     hints = get_type_hints(CommentResponse)
     assert "id" in hints
@@ -29,7 +29,7 @@ def test_comment_response_structure():
     assert hints["created_at"] is str
 
 
-def test_search_result_structure():
+def test_search_result_structure() -> None:
     """Test SearchResult has required fields."""
     hints = get_type_hints(SearchResult)
     assert "type" in hints
@@ -38,7 +38,7 @@ def test_search_result_structure():
     assert hints["score"] is float
 
 
-def test_trakt_rating_structure():
+def test_trakt_rating_structure() -> None:
     """Test TraktRating has required fields."""
     hints = get_type_hints(TraktRating)
     assert "rating" in hints
@@ -91,12 +91,28 @@ def test_complex_type_structures():
     assert trending["show"]["ids"]["trakt"] == 1390
 
 
-def test_type_compatibility():
+def test_type_compatibility() -> None:
     """Test type compatibility and assignment."""
-    shows: list[ShowResponse] = []
-    movies: list[MovieResponse] = []
-    trending_items: list[TrendingWrapper] = []
+    show: ShowResponse = {
+        "title": "Breaking Bad",
+        "year": 2008,
+        "ids": {"trakt": 1390, "slug": "breaking-bad"},
+    }
+    movie: MovieResponse = {
+        "title": "Inception",
+        "year": 2010,
+        "ids": {"trakt": 16662, "slug": "inception-2010"},
+    }
+    trending: TrendingWrapper = {"watchers": 100, "show": show}
 
-    assert isinstance(shows, list)
-    assert isinstance(movies, list)
-    assert isinstance(trending_items, list)
+    shows: list[ShowResponse] = [show]
+    movies: list[MovieResponse] = [movie]
+    trending_items: list[TrendingWrapper] = [trending]
+
+    assert shows[0]["title"] == "Breaking Bad"
+    assert shows[0]["ids"]["trakt"] == 1390
+    assert movies[0]["title"] == "Inception"
+    assert movies[0]["ids"]["slug"] == "inception-2010"
+    assert trending_items[0]["watchers"] == 100
+    assert "show" in trending_items[0]
+    assert trending_items[0].get("show", {}).get("year") == 2008

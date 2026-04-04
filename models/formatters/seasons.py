@@ -41,10 +41,12 @@ class SeasonFormatters:
         elif not title:
             title = f"Season {number}"
 
-        lines: list[str] = [f"# {title}\n"]
+        lines: list[str] = [f"# {title}"]
+        lines.append("")
 
         if overview := season.get("overview"):
-            lines.append(f"{overview}\n")
+            lines.append(overview)
+            lines.append("")
 
         lines.append("### Details")
         lines.append(f"- Season Number: {number}")
@@ -67,7 +69,8 @@ class SeasonFormatters:
 
         ids = season.get("ids", {})
         if trakt_id := ids.get("trakt"):
-            lines.append(f"\nTrakt ID: {trakt_id}")
+            lines.append("")
+            lines.append(f"Trakt ID: {trakt_id}")
 
         return "\n".join(lines)
 

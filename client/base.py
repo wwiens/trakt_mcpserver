@@ -6,7 +6,6 @@ import os
 from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, TypeVar, overload
 
 import httpx
-from dotenv import load_dotenv
 
 from config.api import DEFAULT_MAX_PAGES
 from models.types.pagination import PaginatedResponse, PaginationMetadata
@@ -38,9 +37,6 @@ def _is_list_response(result: Any) -> TypeGuard[list[dict[str, Any]]]:
 def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
     """Type guard for Pydantic models."""
     return hasattr(cls, "model_validate") and hasattr(cls, "__annotations__")
-
-
-load_dotenv()
 
 
 class BaseClient:

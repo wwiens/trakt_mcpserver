@@ -44,7 +44,6 @@ if TYPE_CHECKING:
         EpisodeResponse,
         SeasonResponse,
         ShowResponse,
-        VideoResponse,
     )
 
 logger = logging.getLogger("trakt_mcp")
@@ -275,8 +274,9 @@ async def fetch_season_videos(
     params = SeasonIdParam(show_id=show_id, season=season)
 
     videos_client = SeasonVideosClient()
-    videos: list[VideoResponse] | str = await videos_client.get_season_videos(
-        params.show_id, params.season
+    videos, title = await asyncio.gather(
+        videos_client.get_season_videos(params.show_id, params.season),
+        _get_show_title(params.show_id),
     )
 
     if isinstance(videos, str):
@@ -286,8 +286,6 @@ async def fetch_season_videos(
             error_message=videos,
             operation="fetch_season_videos",
         )
-
-    title = await _get_show_title(params.show_id)
 
     season_title = f"{title} - Season {params.season}"
     return VideoFormatters.format_videos_list(

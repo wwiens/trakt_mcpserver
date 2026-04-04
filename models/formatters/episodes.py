@@ -196,22 +196,28 @@ class EpisodeFormatters:
                 "No people data available."
             )
 
+        cast = people.get("cast", [])
+        guest_stars = people.get("guest_stars", [])
+        crew: dict[str, list[CrewMember]] = people.get("crew", {})
+
+        if not cast and not guest_stars and not crew:
+            return (
+                f"# People for {show_title} - S{season:02d}E{episode:02d}\n\n"
+                "No people data available."
+            )
+
         lines: list[str] = [
             f"# People for {show_title} - S{season:02d}E{episode:02d}\n"
         ]
 
-        cast_section = EpisodeFormatters._format_cast_section(
-            people.get("cast", []), "Cast"
-        )
+        cast_section = EpisodeFormatters._format_cast_section(cast, "Cast")
         if cast_section:
             lines.append(cast_section)
         guest_section = EpisodeFormatters._format_cast_section(
-            people.get("guest_stars", []), "Guest Stars"
+            guest_stars, "Guest Stars"
         )
         if guest_section:
             lines.append(guest_section)
-
-        crew: dict[str, list[CrewMember]] = people.get("crew", {})
         if crew:
             lines.append("## Crew\n")
             for department, members in sorted(crew.items()):

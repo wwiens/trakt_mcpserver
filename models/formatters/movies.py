@@ -268,9 +268,14 @@ class MovieFormatters:
         if not people:
             return f"# People for {movie_title}\n\nNo people data available."
 
+        cast: list[CastMember] = people.get("cast", [])
+        crew: dict[str, list[CrewMember]] = people.get("crew", {})
+
+        if not cast and not crew:
+            return f"# People for {movie_title}\n\nNo people data available."
+
         lines: list[str] = [f"# People for {movie_title}\n"]
 
-        cast: list[CastMember] = people.get("cast", [])
         if cast:
             lines.append("## Cast\n")
             for member in cast:
@@ -281,7 +286,6 @@ class MovieFormatters:
                 lines.append(f"- **{name}** as {char_str}")
             lines.append("")
 
-        crew: dict[str, list[CrewMember]] = people.get("crew", {})
         if crew:
             lines.append("## Crew\n")
             for department, members in sorted(crew.items()):

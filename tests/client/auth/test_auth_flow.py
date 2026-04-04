@@ -126,7 +126,6 @@ async def test_device_token_pending_authorization():
     # Patch the AsyncClient to return our mock error response
     with (
         patch("httpx.AsyncClient") as mock_client,
-        patch("client.base.load_dotenv"),  # Mock dotenv loading
         patch("os.path.exists", return_value=False),  # No existing auth token
         patch.dict(
             os.environ,
@@ -170,7 +169,6 @@ async def test_device_token_expired():
     # Patch the AsyncClient to return our mock error response
     with (
         patch("httpx.AsyncClient") as mock_client,
-        patch("client.base.load_dotenv"),  # Mock dotenv loading
         patch("os.path.exists", return_value=False),  # No existing auth token
         patch.dict(
             os.environ,

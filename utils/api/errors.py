@@ -15,6 +15,8 @@ from typing import (
 
 import httpx
 
+from .request_context import RequestContext
+
 # Set up structured logging
 from .structured_logging import get_structured_logger
 
@@ -116,7 +118,7 @@ class InvalidRequestError(MCPError):
 
 def _build_error_data(
     error_type: str,
-    context: Any,
+    context: RequestContext | None,
     correlation_id: str | None,
     *,
     details: str | None = None,
@@ -145,11 +147,11 @@ def _build_error_data(
 
 
 async def _execute_with_error_handling(
-    coro: Awaitable[Any],
+    coro: Awaitable[R],
     *,
     on_401: Callable[[], None] | None = None,
     convert_auth_errors: bool = False,
-) -> Any:
+) -> R | str:
     """Execute an awaitable with shared error handling logic.
 
     Args:
@@ -184,7 +186,10 @@ async def _execute_with_error_handling(
             error.data = add_context_to_error_data(error.data or {})
 
         if on_401 is not None and e.response.status_code == 401:
-            on_401()
+            try:
+                on_401()
+            except Exception:
+                logger.warning("on_401 callback failed", exc_info=True)
 
         raise error from e
     except httpx.RequestError as e:

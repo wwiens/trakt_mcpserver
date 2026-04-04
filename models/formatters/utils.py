@@ -3,10 +3,12 @@
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Final, TypeVar
 
+from models.types.api_responses import ListItemResponse
 from models.types.pagination import PaginatedResponse
 from utils.formatting import DISPLAY_DATETIME_FORMAT, format_iso_timestamp
 
 T = TypeVar("T")
+M = TypeVar("M", bound=Mapping[str, Any])
 
 MAX_OVERVIEW_LENGTH: Final[int] = 200
 
@@ -88,7 +90,7 @@ def format_rating_distribution(distribution: dict[str, int], votes: int) -> str:
 
 
 def format_list_items(
-    lists: Sequence[Mapping[str, Any]],
+    lists: Sequence[ListItemResponse],
     context: str,
     item_type: str,
 ) -> str:
@@ -130,10 +132,10 @@ def format_list_items(
 
 
 def format_media_list(
-    data: list[Any] | PaginatedResponse[Any],
+    data: list[M] | PaginatedResponse[M],
     heading: str,
     media_key: str | None,
-    format_metric: Callable[[dict[str, Any]], str] | None = None,
+    format_metric: Callable[[M], str] | None = None,
 ) -> str:
     """Format a paginated or plain list of media items with optional metrics.
 
@@ -157,9 +159,13 @@ def format_media_list(
     if isinstance(data, PaginatedResponse):
         lines.append(format_pagination_header(data).rstrip("\n"))
         lines.append("")
-        items: list[Any] = data.data
+        items: list[M] = data.data
     else:
         items = data
+
+    if not items:
+        lines.append("No results found.")
+        return "\n".join(lines)
 
     for item in items:
         if media_key is not None:
