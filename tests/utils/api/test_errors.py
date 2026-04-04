@@ -465,17 +465,6 @@ class TestDecoratorIntegration:
 class TestHandleApiErrors401RefreshAndRetry:
     """Test 401 refresh-and-retry behavior in handle_api_errors."""
 
-    @staticmethod
-    def _make_401_error() -> httpx.HTTPStatusError:
-        mock_response = MagicMock()
-        mock_response.status_code = 401
-        mock_response.text = "Unauthorized"
-        return httpx.HTTPStatusError(
-            message="401 Unauthorized",
-            request=MagicMock(),
-            response=mock_response,
-        )
-
     class MockRefreshableService:
         """Mock service with refresh capability."""
 
