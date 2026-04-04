@@ -79,7 +79,7 @@ async def test_complete_device_auth_flow():
 
         assert client.is_authenticated() is True
 
-        # Verify file was written via os.open (secure permissions) and atomically replaced
+        # Verify secure file write and atomic replace
         assert mock_os_open.called
         assert mock_replace.called
 

@@ -624,8 +624,7 @@ async def test_refresh_access_token_invalid_grant_clears_token(
 async def test_ensure_authenticated_valid_token(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test that ensure_authenticated returns True for valid token without refreshing.
-    """
+    """Test ensure_authenticated returns True for valid token."""
     current_time = int(time.time())
 
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")

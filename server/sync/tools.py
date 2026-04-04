@@ -784,8 +784,7 @@ def register_sync_tools(
     @mcp.tool(
         name=SYNC_TOOLS["add_user_ratings"],
         description=(
-            "Add new ratings for the authenticated user. "
-            "Requires OAuth authentication."
+            "Add new ratings for the authenticated user. Requires OAuth authentication."
         ),
     )
     async def add_user_ratings_tool(
@@ -806,8 +805,7 @@ def register_sync_tools(
     @mcp.tool(
         name=SYNC_TOOLS["remove_user_ratings"],
         description=(
-            "Remove ratings for the authenticated user. "
-            "Requires OAuth authentication."
+            "Remove ratings for the authenticated user. Requires OAuth authentication."
         ),
     )
     async def remove_user_ratings_tool(

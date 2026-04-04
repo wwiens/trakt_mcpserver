@@ -568,6 +568,7 @@ class TestHandleApiErrors401RefreshAndRetry:
     @pytest.mark.asyncio
     async def test_401_refresh_raises_exception_clears_and_raises(self) -> None:
         """Test: refresh raises exception, clears token and raises original error."""
+
         class BrokenRefreshService(self.MockRefreshableService):
             async def refresh_access_token(self) -> bool:
                 self.refresh_called = True
@@ -588,7 +589,9 @@ class TestHandleApiErrors401RefreshAndRetry:
         service = self.MockRefreshableService()
 
         @handle_api_errors
-        async def method_404(self_obj: TestHandleApiErrors401RefreshAndRetry.MockRefreshableService) -> str:
+        async def method_404(
+            self_obj: TestHandleApiErrors401RefreshAndRetry.MockRefreshableService,
+        ) -> str:
             mock_response = MagicMock()
             mock_response.status_code = 404
             mock_response.text = "Not Found"

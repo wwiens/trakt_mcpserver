@@ -62,8 +62,7 @@ async def test_get_popular_movies():
             "title": "Inception",
             "year": 2010,
             "overview": (
-                "A thief who steals corporate secrets"
-                " through dream-sharing technology."
+                "A thief who steals corporate secrets through dream-sharing technology."
             ),
         }
     ]

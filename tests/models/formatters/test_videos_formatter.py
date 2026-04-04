@@ -452,10 +452,7 @@ class TestVideoFormatters:
         assert "### Official Trailer" in result
 
         # Check iframe embed
-        assert (
-            _IFRAME_INSTRUCTION
-            in result
-        )
+        assert _IFRAME_INSTRUCTION in result
         assert "<iframe" in result
         assert "https://www.youtube.com/embed/ZbsiKjVAV28" in result
         assert 'width="560"' in result
@@ -493,10 +490,7 @@ class TestVideoFormatters:
         )
 
         # Should not contain iframe or instructional text
-        assert (
-            _IFRAME_INSTRUCTION
-            not in result
-        )
+        assert _IFRAME_INSTRUCTION not in result
         assert "<iframe" not in result
 
         # Should contain simple link
@@ -580,10 +574,7 @@ class TestVideoFormatters:
         )
 
         # Should not contain iframe for non-YouTube
-        assert (
-            _IFRAME_INSTRUCTION
-            not in result
-        )
+        assert _IFRAME_INSTRUCTION not in result
         assert "<iframe" not in result
 
         # Should contain simple link even with embed_markdown=True
@@ -714,10 +705,7 @@ class TestVideoFormatters:
         )
 
         # Should fallback to simple link, not iframe
-        assert (
-            _IFRAME_INSTRUCTION
-            not in result
-        )
+        assert _IFRAME_INSTRUCTION not in result
         assert "<iframe" not in result
         assert "[▶️ Watch on YouTube]" in result
         assert "https://youtube.com/watch?v=INVALID" in result
