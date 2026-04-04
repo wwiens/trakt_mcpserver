@@ -568,13 +568,12 @@ class TestHandleApiErrors401RefreshAndRetry:
     @pytest.mark.asyncio
     async def test_401_refresh_raises_exception_clears_and_raises(self) -> None:
         """Test: refresh raises exception, clears token and raises original error."""
-        service = self.MockRefreshableService()
+        class BrokenRefreshService(self.MockRefreshableService):
+            async def refresh_access_token(self) -> bool:
+                self.refresh_called = True
+                raise RuntimeError("Refresh endpoint down")
 
-        async def broken_refresh() -> bool:
-            service.refresh_called = True
-            raise RuntimeError("Refresh endpoint down")
-
-        service.refresh_access_token = broken_refresh  # type: ignore[assignment]
+        service = BrokenRefreshService()
 
         with pytest.raises(AuthenticationRequiredError):
             await service.method_fails_then_succeeds()
@@ -589,7 +588,7 @@ class TestHandleApiErrors401RefreshAndRetry:
         service = self.MockRefreshableService()
 
         @handle_api_errors
-        async def method_404(self_obj: Any) -> str:
+        async def method_404(self_obj: TestHandleApiErrors401RefreshAndRetry.MockRefreshableService) -> str:
             mock_response = MagicMock()
             mock_response.status_code = 404
             mock_response.text = "Not Found"
