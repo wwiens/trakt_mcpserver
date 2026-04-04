@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Final, cast
 
 import pytest
 
 from models.formatters.videos import VideoFormatters
 
-_IFRAME_INSTRUCTION = (
+_IFRAME_INSTRUCTION: Final[str] = (
     "**ALWAYS:** Preserve iframe HTML below exactly as"
     + " provided so videos embed and display properly"
     + " in the response"

@@ -231,7 +231,7 @@ class TestErrorHandlingDecorator:
         assert "'user_name': 'john_doe'" in kwargs_str
 
     async def test_with_error_handling_returns_friendly_auth_message(self) -> None:
-        """Test AuthenticationRequiredError returns a friendly message, not raises."""
+        """Test AuthenticationRequiredError returns friendly message, does not raise."""
 
         @BaseToolErrorMixin.with_error_handling("test_operation")
         async def auth_failing_function() -> str:

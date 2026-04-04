@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -24,7 +24,7 @@ from utils.api.error_types import (
 )
 from utils.api.errors import InternalError
 
-_IFRAME_INSTRUCTION = (
+_IFRAME_INSTRUCTION: Final[str] = (
     "**ALWAYS:** Preserve iframe HTML below exactly as"
     + " provided so videos embed and display properly"
     + " in the response"
