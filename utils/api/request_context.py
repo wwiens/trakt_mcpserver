@@ -148,16 +148,22 @@ def get_correlation_id() -> str | None:
     return context.correlation_id if context else None
 
 
-def add_context_to_error_data(error_data: dict[str, Any]) -> dict[str, Any]:
-    """Add current request context to error data.
+def add_context_to_error_data(
+    error_data: dict[str, Any],
+    context: RequestContext | None = None,
+) -> dict[str, Any]:
+    """Add request context to error data.
 
     Args:
         error_data: Existing error data dictionary
+        context: Explicit request context to use. Falls back to the
+            current contextvar when None.
 
     Returns:
         Error data with context information added (always a copy)
     """
-    context = get_current_context()
+    if context is None:
+        context = get_current_context()
     # Always create a copy to avoid modifying the original
     enhanced_data = error_data.copy()
 

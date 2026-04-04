@@ -142,7 +142,7 @@ def _build_error_data(
     if details is not None:
         error_data["details"] = details
     if context:
-        error_data = add_context_to_error_data(error_data)
+        error_data = add_context_to_error_data(error_data, context)
     elif correlation_id is not None:
         error_data["correlation_id"] = correlation_id
     return error_data
@@ -187,7 +187,7 @@ async def _execute_with_error_handling(
             correlation_id=correlation_id,
         )
         if context:
-            error.data = add_context_to_error_data(error.data or {})
+            error.data = add_context_to_error_data(error.data or {}, context)
 
         if on_401 is not None and e.response.status_code == 401:
             try:
@@ -237,8 +237,8 @@ async def _execute_with_error_handling(
 
 
 def handle_api_errors(
-    method: Callable[Concatenate[Any, ...], Awaitable[Any]],
-) -> Callable[Concatenate[Any, ...], Awaitable[Any]]:
+    method: Callable[Concatenate[Self, P], Awaitable[R]],
+) -> Callable[Concatenate[Self, P], Awaitable[R | str]]:
     """Handle API errors for class methods with perfect type inference.
 
     This decorator is specifically designed for methods (functions with
@@ -253,18 +253,18 @@ def handle_api_errors(
     """
 
     @functools.wraps(method)
-    async def wrapper(self: Any, /, *args: Any, **kwargs: Any) -> Any:
+    async def wrapper(self: Self, /, *args: P.args, **kwargs: P.kwargs) -> R | str:
         return await _execute_with_error_handling(
             method(self, *args, **kwargs),
             on_401=lambda: _auto_clear_invalid_token(self),
         )
 
-    return wrapper
+    return wrapper  # type: ignore[return-value]
 
 
 def handle_api_errors_func(
-    func: Callable[..., Awaitable[Any]],
-) -> Callable[..., Awaitable[Any]]:
+    func: Callable[P, Awaitable[R]],
+) -> Callable[P, Awaitable[R | str]]:
     """Handle API errors for standalone functions with perfect type inference.
 
     This decorator is specifically designed for standalone functions
@@ -282,13 +282,13 @@ def handle_api_errors_func(
     """
 
     @functools.wraps(func)
-    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | str:
         return await _execute_with_error_handling(
             func(*args, **kwargs),
             convert_auth_errors=True,
         )
 
-    return wrapper
+    return wrapper  # type: ignore[return-value]
 
 
 __all__ = [
