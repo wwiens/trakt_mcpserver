@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from typing import Final
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -29,6 +30,12 @@ from utils.api.error_types import (
 )
 from utils.api.errors import InternalError
 
+_IFRAME_INSTRUCTION: Final[str] = (
+    "**ALWAYS:** Preserve iframe HTML below exactly as"
+    + " provided so videos embed and display properly"
+    + " in the response"
+)
+
 
 @pytest.mark.asyncio
 async def test_fetch_trending_shows():
@@ -38,7 +45,10 @@ async def test_fetch_trending_shows():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             },
         }
     ]
@@ -62,7 +72,9 @@ async def test_fetch_popular_shows():
         {
             "title": "Breaking Bad",
             "year": 2008,
-            "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+            "overview": (
+                "A high school chemistry teacher diagnosed with inoperable lung cancer."
+            ),
         }
     ]
 
@@ -87,7 +99,10 @@ async def test_fetch_favorited_shows():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             }
         }
     ]
@@ -113,7 +128,10 @@ async def test_fetch_played_shows():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             }
         }
     ]
@@ -139,7 +157,10 @@ async def test_fetch_watched_shows():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             }
         }
     ]
@@ -495,10 +516,7 @@ async def test_fetch_show_videos_with_embeds():
 
         # Verify result content
         assert "# Videos for Test Show" in result
-        assert (
-            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
-            in result
-        )
+        assert _IFRAME_INSTRUCTION in result
         assert "<iframe" in result
         assert "https://www.youtube.com/embed/ZbsiKjVAV28" in result
 
@@ -526,10 +544,7 @@ async def test_fetch_show_videos_without_embeds():
         result = await fetch_show_videos("test-show", embed_markdown=False)
 
         # Should not contain iframe or instructional text
-        assert (
-            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
-            not in result
-        )
+        assert _IFRAME_INSTRUCTION not in result
         assert "<iframe" not in result
         assert "[▶️ Watch on YouTube]" in result
 

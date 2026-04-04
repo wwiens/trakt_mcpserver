@@ -40,9 +40,12 @@ class SyncWatchlistFormatters:
         # Handle empty state
         if not items:
             lines: list[str] = [f"# Your {display_label.title()} Watchlist", ""]
-            lines.append(
-                f"Your {display_label} watchlist is empty. Use the `add_user_watchlist` tool to add items to your watchlist."
+            empty_msg = (
+                f"Your {display_label} watchlist is empty."
+                " Use the `add_user_watchlist` tool"
+                " to add items to your watchlist."
             )
+            lines.append(empty_msg)
             lines.append("")
             lines.append(
                 f"📄 **Pagination Info:** {paginated_items.page_info_summary()}"
@@ -183,9 +186,12 @@ class SyncWatchlistFormatters:
         if counts:
             total = getattr(counts, watchlist_type, 0)
             if total > 0:
-                lines.append(
-                    f"✅ Successfully {operation} **{total}** {watchlist_type} item(s) to/from your watchlist."
+                summary_msg = (
+                    f"✅ Successfully {operation} **{total}**"
+                    f" {watchlist_type} item(s)"
+                    " to/from your watchlist."
                 )
+                lines.append(summary_msg)
                 lines.append("")
 
                 # Show breakdown by type if multiple types were processed
@@ -216,9 +222,12 @@ class SyncWatchlistFormatters:
             if existing_count > 0:
                 lines.append(f"## Items Already in Watchlist ({existing_count})")
                 lines.append("")
-                lines.append(
-                    f"**{existing_count}** {watchlist_type} item(s) were already in your watchlist and were not added again."
+                existing_msg = (
+                    f"**{existing_count}** {watchlist_type}"
+                    " item(s) were already in your"
+                    " watchlist and were not added again."
                 )
+                lines.append(existing_msg)
                 lines.append("")
 
         # Show items that were not found

@@ -168,9 +168,12 @@ class SyncHistoryFormatters:
             total = getattr(counts, content_type, 0)
             if total > 0:
                 preposition = "to" if operation == "added" else "from"
-                lines.append(
-                    f"Successfully {operation} **{total}** {content_type} {preposition} watch history."
+                summary_msg = (
+                    f"Successfully {operation} **{total}**"
+                    f" {content_type} {preposition}"
+                    " watch history."
                 )
+                lines.append(summary_msg)
                 lines.append("")
 
                 # Show breakdown by type if multiple types were processed

@@ -106,7 +106,12 @@ async def test_get_movie_extended():
             "tmdb": 20526,
         },
         "tagline": "The Game Has Changed.",
-        "overview": "Sam Flynn, the tech-savvy and daring son of Kevin Flynn, investigates his father's disappearance and is pulled into The Grid. With the help of a mysterious program named Quorra, Sam quests to stop evil dictator Clu from crossing into the real world.",
+        "overview": (
+            "Sam Flynn, the tech-savvy and daring son of Kevin Flynn, investigates"
+            " his father's disappearance and is pulled into The Grid. With the help"
+            " of a mysterious program named Quorra, Sam quests to stop evil dictator"
+            " Clu from crossing into the real world."
+        ),
         "released": "2010-12-16",
         "runtime": 125,
         "country": "us",

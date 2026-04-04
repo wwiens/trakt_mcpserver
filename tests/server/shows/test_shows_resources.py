@@ -29,7 +29,10 @@ async def test_get_trending_shows():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             },
         }
     ]
@@ -61,7 +64,9 @@ async def test_get_popular_shows():
         {
             "title": "Breaking Bad",
             "year": 2008,
-            "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+            "overview": (
+                "A high school chemistry teacher diagnosed with inoperable lung cancer."
+            ),
         }
     ]
 
@@ -92,7 +97,10 @@ async def test_get_favorited_shows():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             }
         }
     ]
@@ -124,7 +132,10 @@ async def test_get_played_shows():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             }
         }
     ]
@@ -156,7 +167,10 @@ async def test_get_watched_shows():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             }
         }
     ]
@@ -189,7 +203,10 @@ async def test_get_anticipated_shows():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             },
         }
     ]

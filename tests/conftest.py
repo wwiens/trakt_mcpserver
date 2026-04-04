@@ -122,7 +122,10 @@ def sample_show_data():
             "imdb": "tt0903747",
             "tmdb": "1396",
         },
-        "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine.",
+        "overview": (
+            "A high school chemistry teacher diagnosed with inoperable lung cancer"
+            " turns to manufacturing and selling methamphetamine."
+        ),
     }
 
 
@@ -138,7 +141,11 @@ def sample_movie_data():
             "imdb": "tt1375666",
             "tmdb": "27205",
         },
-        "overview": "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+        "overview": (
+            "A thief who steals corporate secrets through the use of dream-sharing"
+            " technology is given the inverse task of planting an idea into the"
+            " mind of a C.E.O."
+        ),
     }
 
 
@@ -152,7 +159,10 @@ def sample_trending_shows():
                 "title": "Breaking Bad",
                 "year": 2008,
                 "ids": {"trakt": "1"},
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             },
         },
         {
@@ -161,7 +171,10 @@ def sample_trending_shows():
                 "title": "Stranger Things",
                 "year": 2016,
                 "ids": {"trakt": "2"},
-                "overview": "When a young boy disappears, his mother, a police chief, and his friends must confront terrifying forces.",
+                "overview": (
+                    "When a young boy disappears, his mother, a police chief,"
+                    " and his friends must confront terrifying forces."
+                ),
             },
         },
     ]
@@ -177,7 +190,10 @@ def sample_trending_movies():
                 "title": "Inception",
                 "year": 2010,
                 "ids": {"trakt": "1"},
-                "overview": "A thief who steals corporate secrets through the use of dream-sharing technology.",
+                "overview": (
+                    "A thief who steals corporate secrets through the use"
+                    " of dream-sharing technology."
+                ),
             },
         },
         {
@@ -186,7 +202,10 @@ def sample_trending_movies():
                 "title": "The Dark Knight",
                 "year": 2008,
                 "ids": {"trakt": "2"},
-                "overview": "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham.",
+                "overview": (
+                    "When the menace known as the Joker wreaks havoc and chaos"
+                    " on the people of Gotham."
+                ),
             },
         },
     ]

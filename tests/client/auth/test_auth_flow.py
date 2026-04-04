@@ -1,6 +1,6 @@
 import os
 import time
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -43,13 +43,19 @@ async def test_complete_device_auth_flow():
 
     with (
         patch("httpx.AsyncClient") as mock_client,
-        patch("builtins.open", mock_open()) as mock_file,
-        patch("json.dumps", return_value="{}"),
+        patch("os.open", return_value=3) as mock_os_open,
+        patch("os.fdopen") as mock_fdopen,
+        patch("os.fsync"),
+        patch("os.replace"),
         patch.dict(
             os.environ,
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
+        mock_file_obj = MagicMock()
+        mock_file_obj.fileno.return_value = 3
+        mock_fdopen.return_value = mock_file_obj
+
         # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.post = AsyncMock(side_effect=mock_responses)
@@ -71,7 +77,7 @@ async def test_complete_device_auth_flow():
 
         assert client.is_authenticated() is True
 
-        assert mock_file.called
+        assert mock_os_open.called
 
 
 # Test removed as refresh_token method doesn't exist in AuthClient
@@ -141,7 +147,7 @@ async def test_device_token_pending_authorization():
 
         client = AuthClient()
 
-        # Try to get a token, should raise AuthorizationPendingError because authorization is pending
+        # Try to get a token, should raise AuthorizationPendingError (auth pending)
         with pytest.raises(AuthorizationPendingError) as exc_info:
             await client.get_device_token("device_code_123")
 
@@ -184,7 +190,7 @@ async def test_device_token_expired():
 
         client = AuthClient()
 
-        # Try to get a token, should raise InvalidParamsError because the code has expired
+        # Try to get a token, should raise InvalidParamsError because code has expired
         with pytest.raises(InvalidParamsError) as exc_info:
             await client.get_device_token("device_code_123")
 

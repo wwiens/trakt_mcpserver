@@ -31,7 +31,10 @@ def _is_dict_response(result: Any) -> TypeGuard[dict[str, Any]]:
 
 def _is_list_response(result: Any) -> TypeGuard[list[dict[str, Any]]]:
     """Type guard for list responses."""
-    return isinstance(result, list) and all(isinstance(item, dict) for item in result)  # type: ignore[reportUnknownVariableType] # Runtime type guard validation
+    return isinstance(result, list) and all(
+        isinstance(item, dict)
+        for item in result  # type: ignore[reportUnknownVariableType]
+    )
 
 
 def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
@@ -187,9 +190,11 @@ class BaseClient:
         result = await self._make_request("GET", endpoint, params=params)
         if _is_list_response(result):
             return result
-        raise ValueError(
-            f"Expected list response from {endpoint}, got {type(result).__name__}: {result}"
+        msg = (
+            f"Expected list response from {endpoint}, "
+            + f"got {type(result).__name__}: {result}"
         )
+        raise ValueError(msg)
 
     async def _make_dict_request(
         self, endpoint: str, params: dict[str, Any] | None = None
@@ -198,9 +203,11 @@ class BaseClient:
         result = await self._make_request("GET", endpoint, params=params)
         if _is_dict_response(result):
             return result
-        raise ValueError(
-            f"Expected dict response from {endpoint}, got {type(result).__name__}: {result}"
+        msg = (
+            f"Expected dict response from {endpoint}, "
+            + f"got {type(result).__name__}: {result}"
         )
+        raise ValueError(msg)
 
     async def _post_request(
         self,
@@ -212,9 +219,11 @@ class BaseClient:
         result = await self._make_request("POST", endpoint, data=data, headers=headers)
         if _is_dict_response(result):
             return result
-        raise ValueError(
-            f"Expected dict response from POST {endpoint}, got {type(result).__name__}: {result}"
+        msg = (
+            f"Expected dict response from POST {endpoint}, "
+            + f"got {type(result).__name__}: {result}"
         )
+        raise ValueError(msg)
 
     @handle_api_errors
     async def _delete_request(self, endpoint: str) -> None:
@@ -276,18 +285,23 @@ class BaseClient:
         if response_type is None:
             if _is_dict_response(result):
                 return result
-            raise ValueError(
-                f"Expected dict response from {endpoint}, got {type(result).__name__}: {result}"
+            msg = (
+                f"Expected dict response from {endpoint}, "
+                + f"got {type(result).__name__}: {result}"
             )
+            raise ValueError(msg)
 
         if _is_pydantic_model(response_type):
             return response_type.model_validate(result)
 
         if not _is_dict_response(result):
-            raise ValueError(
-                f"Expected dict-like response for {response_type.__name__} from {endpoint}, "
-                + f"got {type(result).__name__}: {result}"
+            msg = (
+                "Expected dict-like response for"
+                + f" {response_type.__name__}"
+                + f" from {endpoint},"
+                + f" got {type(result).__name__}: {result}"
             )
+            raise ValueError(msg)
 
         return result  # type: ignore[return-value] # TypedDict runtime limitation
 
@@ -361,10 +375,11 @@ class BaseClient:
             try:
                 pagination = self._extract_pagination_headers(response)
             except ValueError as e:
-                # Convert to an exception type that will be handled by @handle_api_errors
+                # Convert to an exception type handled by @handle_api_errors
                 raise RuntimeError(f"Failed to parse pagination headers: {e}") from e
 
-            # Fix total_items when no pagination headers present (non-paginated requests)
+            # Fix total_items when no pagination headers present
+            # (non-paginated requests)
             if pagination.total_items == 0 and len(typed_data) > 0:
                 pagination = PaginationMetadata(
                     current_page=pagination.current_page,

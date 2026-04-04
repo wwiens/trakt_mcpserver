@@ -45,7 +45,8 @@ class EpisodeListsClient(BaseClient):
             season: Season number (0 for specials)
             episode: Episode number
             list_type: Filter by type: 'all', 'personal', 'official', 'watchlists'
-            sort: Sort order: 'popular', 'likes', 'comments', 'items', 'added', 'updated'
+            sort: Sort order: 'popular', 'likes', 'comments', 'items', 'added',
+                'updated'
 
         Returns:
             List of list data
@@ -54,7 +55,10 @@ class EpisodeListsClient(BaseClient):
             ValueError: If list_type or sort is not a valid value
         """
         if list_type not in VALID_LIST_TYPES:
-            msg = f"list_type must be one of {sorted(VALID_LIST_TYPES)}, got: '{list_type}'"
+            msg = (
+                f"list_type must be one of {sorted(VALID_LIST_TYPES)},"
+                f" got: '{list_type}'"
+            )
             raise ValueError(msg)
         if sort not in VALID_SORT_VALUES:
             msg = f"sort must be one of {sorted(VALID_SORT_VALUES)}, got: '{sort}'"

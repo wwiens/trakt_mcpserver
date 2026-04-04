@@ -65,9 +65,12 @@ class RecommendationFormatters:
         lines.append("")
 
         if not movies:
-            lines.append(
-                "No recommendations available. Watch more content to improve recommendations!"
+            empty_msg = (
+                "No recommendations available."
+                " Watch more content to improve"
+                " recommendations!"
             )
+            lines.append(empty_msg)
             return "\n".join(lines)
 
         lines.extend(
@@ -95,9 +98,12 @@ class RecommendationFormatters:
         lines.append("")
 
         if not shows:
-            lines.append(
-                "No recommendations available. Watch more content to improve recommendations!"
+            empty_msg = (
+                "No recommendations available."
+                " Watch more content to improve"
+                " recommendations!"
             )
+            lines.append(empty_msg)
             return "\n".join(lines)
 
         lines.extend(

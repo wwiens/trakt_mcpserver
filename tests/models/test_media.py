@@ -57,7 +57,9 @@ class TestTraktShow:
                 imdb="tt0903747",
                 tmdb=1396,
             ),
-            overview="A high school chemistry teacher diagnosed with inoperable lung cancer.",
+            overview=(
+                "A high school chemistry teacher diagnosed with inoperable lung cancer."
+            ),
         )
 
         assert show.title == "Breaking Bad"
@@ -157,7 +159,9 @@ class TestTraktMovie:
                 imdb="tt1375666",
                 tmdb=27205,
             ),
-            overview="A thief who steals corporate secrets through dream-sharing technology.",
+            overview=(
+                "A thief who steals corporate secrets through dream-sharing technology."
+            ),
         )
 
         assert movie.title == "Inception"
@@ -526,7 +530,10 @@ class TestMediaModelIntegration:
                 imdb="tt0944947",
                 tmdb=1399,
             ),
-            overview="Seven noble families fight for control of the mythical land of Westeros.",
+            overview=(
+                "Seven noble families fight for control of the mythical"
+                " land of Westeros."
+            ),
         )
 
         # Test direct show creation
@@ -552,7 +559,10 @@ class TestMediaModelIntegration:
                 imdb="tt0468569",
                 tmdb=155,
             ),
-            overview="When the menace known as the Joker wreaks havoc and chaos on the people of Gotham.",
+            overview=(
+                "When the menace known as the Joker wreaks havoc and chaos"
+                " on the people of Gotham."
+            ),
         )
 
         # Test direct movie creation

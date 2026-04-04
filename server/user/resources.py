@@ -25,7 +25,11 @@ async def get_user_watched_shows() -> str:
     client: UserClient = UserClient()
 
     if not await client.ensure_authenticated():
-        return "# Authentication Required\n\nYou need to authenticate with Trakt to view your watched shows.\nUse the `start_device_auth` tool to begin authentication."
+        return (
+            "# Authentication Required\n\n"
+            "You need to authenticate with Trakt to view your watched shows.\n"
+            "Use the `start_device_auth` tool to begin authentication."
+        )
 
     shows = await client.get_user_watched_shows()
     return UserFormatters.format_user_watched_shows(shows)
@@ -42,7 +46,11 @@ async def get_user_watched_movies() -> str:
     client: UserClient = UserClient()
 
     if not await client.ensure_authenticated():
-        return "# Authentication Required\n\nYou need to authenticate with Trakt to view your watched movies.\nUse the `start_device_auth` tool to begin authentication."
+        return (
+            "# Authentication Required\n\n"
+            "You need to authenticate with Trakt to view your watched movies.\n"
+            "Use the `start_device_auth` tool to begin authentication."
+        )
 
     movies = await client.get_user_watched_movies()
     return UserFormatters.format_user_watched_movies(movies)
@@ -58,7 +66,10 @@ def register_user_resources(mcp: FastMCP) -> tuple[ResourceHandler, ResourceHand
     @mcp.resource(
         uri=MCP_RESOURCES["user_watched_shows"],
         name="user_watched_shows",
-        description="TV shows watched by the authenticated user from Trakt (requires authentication)",
+        description=(
+            "TV shows watched by the authenticated user from Trakt "
+            "(requires authentication)"
+        ),
         mime_type="text/markdown",
     )
     async def user_watched_shows_resource() -> str:
@@ -67,7 +78,10 @@ def register_user_resources(mcp: FastMCP) -> tuple[ResourceHandler, ResourceHand
     @mcp.resource(
         uri=MCP_RESOURCES["user_watched_movies"],
         name="user_watched_movies",
-        description="Movies watched by the authenticated user from Trakt (requires authentication)",
+        description=(
+            "Movies watched by the authenticated user from Trakt "
+            "(requires authentication)"
+        ),
         mime_type="text/markdown",
     )
     async def user_watched_movies_resource() -> str:

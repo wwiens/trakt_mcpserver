@@ -58,7 +58,9 @@ class MovieFormatters:
             data,
             heading="Most Favorited Movies on Trakt",
             media_key="movie",
-            format_metric=lambda item: f"Favorited by {item.get('user_count', 0)} users",
+            format_metric=lambda item: (
+                f"Favorited by {item.get('user_count', 0)} users"
+            ),
         )
 
     @staticmethod
@@ -85,7 +87,9 @@ class MovieFormatters:
             data,
             heading="Most Watched Movies on Trakt",
             media_key="movie",
-            format_metric=lambda item: f"Watched by {item.get('watcher_count', 0)} users",
+            format_metric=lambda item: (
+                f"Watched by {item.get('watcher_count', 0)} users"
+            ),
         )
 
     @staticmethod

@@ -31,13 +31,20 @@ class SyncRatingsFormatters:
         if not ratings:
             lines: list[str] = [f"# Your {rating_type.title()} Ratings", ""]
             if rating_filter:
-                lines.append(
-                    f"You haven't rated any {rating_type} with rating {rating_filter} yet. Use the `add_user_ratings` tool to add ratings for your {rating_type}."
+                empty_msg = (
+                    f"You haven't rated any {rating_type}"
+                    f" with rating {rating_filter} yet."
+                    f" Use the `add_user_ratings` tool"
+                    f" to add ratings for your {rating_type}."
                 )
+                lines.append(empty_msg)
             else:
-                lines.append(
-                    f"You haven't rated any {rating_type} yet. Use the `add_user_ratings` tool to add ratings for your {rating_type}."
+                empty_msg = (
+                    f"You haven't rated any {rating_type}"
+                    " yet. Use the `add_user_ratings` tool"
+                    f" to add ratings for your {rating_type}."
                 )
+                lines.append(empty_msg)
             lines.append("")
 
             # Show pagination info even for empty results

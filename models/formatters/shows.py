@@ -58,7 +58,9 @@ class ShowFormatters:
             data,
             heading="Most Favorited Shows on Trakt",
             media_key="show",
-            format_metric=lambda item: f"Favorited by {item.get('user_count', 0)} users",
+            format_metric=lambda item: (
+                f"Favorited by {item.get('user_count', 0)} users"
+            ),
         )
 
     @staticmethod
@@ -85,7 +87,9 @@ class ShowFormatters:
             data,
             heading="Most Watched Shows on Trakt",
             media_key="show",
-            format_metric=lambda item: f"Watched by {item.get('watcher_count', 0)} users",
+            format_metric=lambda item: (
+                f"Watched by {item.get('watcher_count', 0)} users"
+            ),
         )
 
     @staticmethod
@@ -243,9 +247,11 @@ class ShowFormatters:
             rating = season.get("rating")
             rating_str = f"{rating:.1f}/10" if rating is not None else "—"
 
-            lines.append(
-                f"| {number} | {title} | {episode_count} | {aired_episodes} | {rating_str} |"
+            row = (
+                f"| {number} | {title} | {episode_count}"
+                f" | {aired_episodes} | {rating_str} |"
             )
+            lines.append(row)
 
         return "\n".join(lines)
 

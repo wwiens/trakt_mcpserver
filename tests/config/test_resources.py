@@ -51,7 +51,7 @@ class TestMcpResources:
             assert isinstance(MCP_RESOURCES[resource], str)
 
     def test_comment_resources_not_exist(self) -> None:
-        """Test comment-related resources are NOT present (they are tools, not resources)."""
+        """Test comment-related resources are NOT present (tools, not resources)."""
         comment_resources = [
             "comments_movie",
             "comments_show",
@@ -136,23 +136,27 @@ class TestResourceUriFormats:
         ]
         for tool in comment_tools:
             assert tool not in MCP_RESOURCES, (
-                f"Comment tool {tool} should not be in MCP_RESOURCES (it's a tool, not a resource)"
+                f"Comment tool {tool} should not be in MCP_RESOURCES"
+                " (it's a tool, not a resource)"
             )
 
     def test_resources_only_contain_static_data(self) -> None:
-        """Test MCP resources only contain static data endpoints (not parameterized tools)."""
+        """Test MCP resources only contain static data endpoints (not parameterized)."""
         # Resources should be static data that doesn't require parameters
         # All current resources are static lists (trending, popular, etc.)
         for resource_key, resource_uri in MCP_RESOURCES.items():
             # Resources should not contain parameter placeholders
             assert ":id" not in resource_uri, (
-                f"Resource {resource_key} contains parameter placeholder, should be a tool instead"
+                f"Resource {resource_key} contains parameter placeholder,"
+                " should be a tool instead"
             )
             assert ":season" not in resource_uri, (
-                f"Resource {resource_key} contains parameter placeholder, should be a tool instead"
+                f"Resource {resource_key} contains parameter placeholder,"
+                " should be a tool instead"
             )
             assert ":episode" not in resource_uri, (
-                f"Resource {resource_key} contains parameter placeholder, should be a tool instead"
+                f"Resource {resource_key} contains parameter placeholder,"
+                " should be a tool instead"
             )
 
     def test_uri_consistency_with_categories(self) -> None:

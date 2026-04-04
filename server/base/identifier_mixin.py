@@ -118,9 +118,11 @@ class IdentifierValidatorMixin(BaseModel):
     def _validate_imdb_id_format(cls, v: str | None) -> str | None:
         """Ensure imdb_id follows tt + digits format if provided."""
         if v is not None and not re.match(r"^tt\d+$", v):
-            raise ValueError(
-                f"imdb_id must be in format 'tt' followed by digits (e.g., 'tt0468569'), got: '{v}'"
+            msg = (
+                "imdb_id must be in format 'tt' followed"
+                + f" by digits (e.g., 'tt0468569'), got: '{v}'"
             )
+            raise ValueError(msg)
         return v
 
     @model_validator(mode="after")
@@ -133,10 +135,13 @@ class IdentifierValidatorMixin(BaseModel):
 
         if not has_id and not has_title_year:
             prefix = self._identifier_error_prefix
-            raise ValueError(
-                f"{prefix} must include either an identifier (trakt_id, slug, imdb_id, tmdb_id, or tvdb_id) "
-                + "or both title and year for proper identification"
+            msg = (
+                f"{prefix} must include either an identifier"
+                + " (trakt_id, slug, imdb_id, tmdb_id, or"
+                + " tvdb_id) or both title and year for"
+                + " proper identification"
             )
+            raise ValueError(msg)
         return self
 
     def build_ids_dict(self) -> dict[str, str | int]:

@@ -26,7 +26,9 @@ class TestTraktUserShow:
             "title": "Breaking Bad",
             "year": 2008,
             "ids": {"trakt": "1", "slug": "breaking-bad"},
-            "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+            "overview": (
+                "A high school chemistry teacher diagnosed with inoperable lung cancer."
+            ),
         }
 
         user_show_data: UserShowTestData = {
@@ -445,8 +447,8 @@ class TestTraktUserShow:
             "ids": {"trakt": "1"},
         }
 
-        # Test negative plays (currently allowed - model uses plain int, not constrained)
-        # Note: If domain requires non-negative counts, consider using conint(ge=0)
+        # Test negative plays (currently allowed - model uses plain int, unconstrained)
+        # Note: If domain requires non-negative counts, consider conint(ge=0)
         user_show = TraktUserShow(
             show=show_data,  # type: ignore[arg-type] # Testing: Type validation
             last_watched_at="2023-01-15T20:30:00Z",

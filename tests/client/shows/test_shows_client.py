@@ -146,7 +146,12 @@ async def test_get_show_extended():
             "tmdb": 1399,
         },
         "tagline": "Winter Is Coming",
-        "overview": "Game of Thrones is an American fantasy drama television series created for HBO by David Benioff and D. B. Weiss. It is an adaptation of A Song of Ice and Fire, George R. R. Martin's series of fantasy novels, the first of which is titled A Game of Thrones.",
+        "overview": (
+            "Game of Thrones is an American fantasy drama television series created"
+            " for HBO by David Benioff and D. B. Weiss. It is an adaptation of"
+            " A Song of Ice and Fire, George R. R. Martin's series of fantasy novels,"
+            " the first of which is titled A Game of Thrones."
+        ),
         "first_aired": "2011-04-18T01:00:00.000Z",
         "airs": {"day": "Sunday", "time": "21:00", "timezone": "America/New_York"},
         "runtime": 60,

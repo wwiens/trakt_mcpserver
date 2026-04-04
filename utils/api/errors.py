@@ -241,8 +241,9 @@ def handle_api_errors(
 ) -> Callable[Concatenate[Any, ...], Awaitable[Any]]:
     """Handle API errors for class methods with perfect type inference.
 
-    This decorator is specifically designed for methods (functions with self/cls parameter).
-    For standalone functions, use @handle_api_errors_func instead.
+    This decorator is specifically designed for methods (functions with
+    self/cls parameter). For standalone functions, use @handle_api_errors_func
+    instead.
 
     Args:
         method: The async method to wrap
@@ -266,8 +267,8 @@ def handle_api_errors_func(
 ) -> Callable[..., Awaitable[Any]]:
     """Handle API errors for standalone functions with perfect type inference.
 
-    This decorator is specifically designed for standalone functions (no self/cls parameter).
-    For class methods, use @handle_api_errors instead.
+    This decorator is specifically designed for standalone functions
+    (no self/cls parameter). For class methods, use @handle_api_errors instead.
 
     Note: Unlike @handle_api_errors, this decorator does NOT auto-clear authentication
     tokens on 401 responses because standalone functions don't have access to a client

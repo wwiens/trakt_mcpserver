@@ -113,17 +113,21 @@ class ProgressFormatters:
 
                             if episode_completed and last_watched:
                                 watched_str = format_iso_timestamp(last_watched)
-                                lines.append(
-                                    f"- [{status_icon}] **{episode_label}** - Watched: {watched_str}"
+                                ep_line = (
+                                    f"- [{status_icon}] **{episode_label}**"
+                                    f" - Watched: {watched_str}"
                                 )
+                                lines.append(ep_line)
                             elif episode_completed:
                                 lines.append(
                                     f"- [{status_icon}] **{episode_label}** - Watched"
                                 )
                             else:
-                                lines.append(
-                                    f"- [{status_icon}] **{episode_label}** - Not watched"
+                                ep_line = (
+                                    f"- [{status_icon}] **{episode_label}**"
+                                    " - Not watched"
                                 )
+                                lines.append(ep_line)
 
                     lines.append("")
                 else:

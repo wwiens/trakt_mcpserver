@@ -32,13 +32,15 @@ async def checkin_to_show(
 ) -> str:
     """Check in to a show episode that the user is currently watching.
 
-    This will mark the episode as watched on Trakt and can optionally share to connected social media.
-    First use the search_shows tool to find the correct show_id before checking in, or provide the show title.
+    This will mark the episode as watched on Trakt and can optionally share to
+    connected social media. First use the search_shows tool to find the correct
+    show_id before checking in, or provide the show title.
 
     Args:
         season: Season number
         episode: Episode number
-        show_id: Trakt ID for the show (use search_shows to find this, optional if show_title is provided)
+        show_id: Trakt ID for the show (use search_shows to find this,
+            optional if show_title is provided)
         show_title: Title of the show (optional if show_id is provided)
         show_year: Year the show was released (optional, can help with ambiguous titles)
         message: Optional message to include with the checkin
@@ -119,43 +121,63 @@ def register_checkin_tools(mcp: FastMCP) -> Any:
         show_id: Annotated[
             str | None,
             Field(
-                description=f"{SHOW_ID_DESCRIPTION}. Provide either show_id OR show_title."
+                description=(
+                    f"{SHOW_ID_DESCRIPTION}. Provide either show_id OR show_title."
+                )
             ),
         ] = None,
         show_title: Annotated[
             str | None,
             Field(
-                description="Title of the show (e.g., 'Breaking Bad'). Provide either show_title OR show_id."
+                description=(
+                    "Title of the show (e.g., 'Breaking Bad'). "
+                    "Provide either show_title OR show_id."
+                )
             ),
         ] = None,
         show_year: Annotated[
             int | None,
             Field(
-                description="Year the show first aired (e.g., 2008). Helps disambiguate shows with the same title."
+                description=(
+                    "Year the show first aired (e.g., 2008). "
+                    "Helps disambiguate shows with the same title."
+                )
             ),
         ] = None,
         message: Annotated[
             str,
             Field(
-                description="Optional message to share on connected social networks. If not provided, uses the user's default watching message."
+                description=(
+                    "Optional message to share on connected social networks. "
+                    "If not provided, uses the user's default watching message."
+                )
             ),
         ] = "",
         share_twitter: Annotated[
             bool,
             Field(
-                description="Share this check-in on Twitter. Overrides user's default sharing setting."
+                description=(
+                    "Share this check-in on Twitter. "
+                    "Overrides user's default sharing setting."
+                )
             ),
         ] = False,
         share_mastodon: Annotated[
             bool,
             Field(
-                description="Share this check-in on Mastodon. Overrides user's default sharing setting."
+                description=(
+                    "Share this check-in on Mastodon. "
+                    "Overrides user's default sharing setting."
+                )
             ),
         ] = False,
         share_tumblr: Annotated[
             bool,
             Field(
-                description="Share this check-in on Tumblr. Overrides user's default sharing setting."
+                description=(
+                    "Share this check-in on Tumblr. "
+                    "Overrides user's default sharing setting."
+                )
             ),
         ] = False,
     ) -> str:

@@ -69,9 +69,11 @@ class CommentsFormatters:
             if (spoiler or "[spoiler]" in comment_text) and not show_spoilers:
                 lines.append("**⚠️ SPOILER WARNING ⚠️**")
                 lines.append("")
-                lines.append(
-                    "*This comment contains spoilers. Use `show_spoilers=True` to view it.*"
+                spoiler_msg = (
+                    "*This comment contains spoilers."
+                    " Use `show_spoilers=True` to view it.*"
                 )
+                lines.append(spoiler_msg)
                 lines.append("")
             else:
                 if show_spoilers:
@@ -188,9 +190,12 @@ class CommentsFormatters:
                 if (reply_spoiler or "[spoiler]" in reply_text) and not show_spoilers:
                     lines.append("**⚠️ SPOILER WARNING ⚠️**")
                     lines.append("")
-                    lines.append(
-                        "*This reply contains spoilers. Use `show_spoilers=True` to view it.*"
+                    spoiler_msg = (
+                        "*This reply contains spoilers."
+                        " Use `show_spoilers=True`"
+                        " to view it.*"
                     )
+                    lines.append(spoiler_msg)
                     lines.append("")
                 else:
                     if show_spoilers:
