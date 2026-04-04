@@ -460,3 +460,188 @@ class TestDecoratorIntegration:
         assert "Authentication Required" in result
         assert "access shows" in result
         assert "start_device_auth" in result
+
+
+class TestHandleApiErrors401RefreshAndRetry:
+    """Test 401 refresh-and-retry behavior in handle_api_errors."""
+
+    @staticmethod
+    def _make_401_error() -> httpx.HTTPStatusError:
+        mock_response = MagicMock()
+        mock_response.status_code = 401
+        mock_response.text = "Unauthorized"
+        return httpx.HTTPStatusError(
+            message="401 Unauthorized",
+            request=MagicMock(),
+            response=mock_response,
+        )
+
+    class MockRefreshableService:
+        """Mock service with refresh capability."""
+
+        def __init__(self) -> None:
+            self.call_count = 0
+            self.refresh_called = False
+            self.clear_auth_token_called = False
+            self.auth_token = MagicMock(refresh_token="valid_refresh_token")
+            self.refresh_result: bool = True
+
+        def clear_auth_token(self) -> bool:
+            self.clear_auth_token_called = True
+            return True
+
+        async def refresh_access_token(self) -> bool:
+            self.refresh_called = True
+            return self.refresh_result
+
+        @handle_api_errors
+        async def method_fails_then_succeeds(self) -> str:
+            """Raises 401 on first call, succeeds on second."""
+            self.call_count += 1
+            if self.call_count == 1:
+                mock_response = MagicMock()
+                mock_response.status_code = 401
+                mock_response.text = "Unauthorized"
+                raise httpx.HTTPStatusError(
+                    message="401 Unauthorized",
+                    request=MagicMock(),
+                    response=mock_response,
+                )
+            return "success"
+
+        @handle_api_errors
+        async def method_always_401(self) -> str:
+            """Always raises 401."""
+            self.call_count += 1
+            mock_response = MagicMock()
+            mock_response.status_code = 401
+            mock_response.text = "Unauthorized"
+            raise httpx.HTTPStatusError(
+                message="401 Unauthorized",
+                request=MagicMock(),
+                response=mock_response,
+            )
+
+    @pytest.mark.asyncio
+    async def test_401_refresh_succeeds_and_retry_works(self) -> None:
+        """Test: 401 triggers refresh, refresh succeeds, retry succeeds."""
+        service = self.MockRefreshableService()
+        service.refresh_result = True
+
+        result = await service.method_fails_then_succeeds()
+
+        assert result == "success"
+        assert service.call_count == 2
+        assert service.refresh_called is True
+        assert service.clear_auth_token_called is False
+
+    @pytest.mark.asyncio
+    async def test_401_refresh_fails_clears_token_and_raises(self) -> None:
+        """Test: 401 triggers refresh, refresh fails, clears token and raises."""
+        service = self.MockRefreshableService()
+        service.refresh_result = False
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.method_fails_then_succeeds()
+
+        assert service.call_count == 1
+        assert service.refresh_called is True
+        assert service.clear_auth_token_called is True
+
+    @pytest.mark.asyncio
+    async def test_401_no_refresh_token_clears_and_raises(self) -> None:
+        """Test: 401 with no refresh token available clears and raises."""
+        service = self.MockRefreshableService()
+        service.auth_token = MagicMock(refresh_token="")
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.method_fails_then_succeeds()
+
+        assert service.call_count == 1
+        assert service.refresh_called is False
+        assert service.clear_auth_token_called is True
+
+    @pytest.mark.asyncio
+    async def test_401_retry_also_401_no_infinite_loop(self) -> None:
+        """Test: refresh succeeds but retry also gets 401 — no infinite loop."""
+        service = self.MockRefreshableService()
+        service.refresh_result = True
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.method_always_401()
+
+        # Called twice: first attempt + one retry
+        assert service.call_count == 2
+        assert service.refresh_called is True
+        # Token cleared after retry failure
+        assert service.clear_auth_token_called is True
+
+    @pytest.mark.asyncio
+    async def test_401_refresh_raises_exception_clears_and_raises(self) -> None:
+        """Test: refresh raises exception, clears token and raises original error."""
+        service = self.MockRefreshableService()
+
+        async def broken_refresh() -> bool:
+            service.refresh_called = True
+            raise RuntimeError("Refresh endpoint down")
+
+        service.refresh_access_token = broken_refresh  # type: ignore[assignment]
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.method_fails_then_succeeds()
+
+        assert service.call_count == 1
+        assert service.refresh_called is True
+        assert service.clear_auth_token_called is True
+
+    @pytest.mark.asyncio
+    async def test_non_401_errors_do_not_trigger_refresh(self) -> None:
+        """Test: non-401 errors skip refresh entirely."""
+        service = self.MockRefreshableService()
+
+        @handle_api_errors
+        async def method_404(self_obj: Any) -> str:
+            mock_response = MagicMock()
+            mock_response.status_code = 404
+            mock_response.text = "Not Found"
+            raise httpx.HTTPStatusError(
+                message="404 Not Found",
+                request=MagicMock(),
+                response=mock_response,
+            )
+
+        with pytest.raises(TraktResourceNotFoundError):
+            await method_404(service)
+
+        assert service.refresh_called is False
+        assert service.clear_auth_token_called is False
+
+    @pytest.mark.asyncio
+    async def test_401_on_non_refreshable_client_clears_and_raises(self) -> None:
+        """Test: 401 on client without refresh support just clears and raises."""
+
+        class ClearOnlyService:
+            def __init__(self) -> None:
+                self.clear_auth_token_called = False
+
+            def clear_auth_token(self) -> bool:
+                self.clear_auth_token_called = True
+                return True
+
+            @handle_api_errors
+            async def method_401(self) -> str:
+                mock_response = MagicMock()
+                mock_response.status_code = 401
+                mock_response.text = "Unauthorized"
+                raise httpx.HTTPStatusError(
+                    message="401 Unauthorized",
+                    request=MagicMock(),
+                    response=mock_response,
+                )
+
+        service = ClearOnlyService()
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.method_401()
+
+        assert service.clear_auth_token_called is True

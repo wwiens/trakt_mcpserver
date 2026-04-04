@@ -1,6 +1,6 @@
 import os
 import time
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -43,8 +43,9 @@ async def test_complete_device_auth_flow():
 
     with (
         patch("httpx.AsyncClient") as mock_client,
-        patch("builtins.open", mock_open()) as mock_file,
-        patch("json.dumps", return_value="{}"),
+        patch("os.open") as mock_os_open,
+        patch("os.fdopen") as mock_fdopen,
+        patch("os.replace") as mock_replace,
         patch.dict(
             os.environ,
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
@@ -56,6 +57,13 @@ async def test_complete_device_auth_flow():
         mock_instance.get = AsyncMock()
         mock_instance.aclose = AsyncMock()
         mock_client.return_value = mock_instance
+
+        # Set up the os.open and os.fdopen mocks
+        mock_os_open.return_value = 3
+        mock_file_obj = MagicMock()
+        mock_fdopen.return_value = mock_file_obj
+        mock_fdopen.return_value.__enter__ = mock_file_obj
+        mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
 
         client = AuthClient()
 
@@ -71,7 +79,9 @@ async def test_complete_device_auth_flow():
 
         assert client.is_authenticated() is True
 
-        assert mock_file.called
+        # Verify file was written via os.open (secure permissions) and atomically replaced
+        assert mock_os_open.called
+        assert mock_replace.called
 
 
 # Test removed as refresh_token method doesn't exist in AuthClient

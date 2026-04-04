@@ -66,8 +66,10 @@ async def test_auth_client_load_auth_token_success(monkeypatch: pytest.MonkeyPat
 async def test_auth_client_load_auth_token_file_not_exists(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    from client.auth.client import AUTH_TOKEN_FILE
+
     def path_exists_side_effect(path: str) -> bool:
-        return path != "auth_token.json"
+        return path != AUTH_TOKEN_FILE
 
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
     monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
@@ -207,11 +209,13 @@ async def test_auth_client_get_device_token_success(monkeypatch: pytest.MonkeyPa
         assert result.refresh_token == "refresh_token_123"
 
         # Verify that os.open was called with secure permissions on temp file
+        from client.auth.client import AUTH_TOKEN_FILE
+
         mock_os_open.assert_called_once_with(
-            "auth_token.json.tmp", os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600
+            f"{AUTH_TOKEN_FILE}.tmp", os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600
         )
         # Verify atomic replace was called
-        mock_replace.assert_called_once_with("auth_token.json.tmp", "auth_token.json")
+        mock_replace.assert_called_once_with(f"{AUTH_TOKEN_FILE}.tmp", AUTH_TOKEN_FILE)
         # Verify that file write was called
         assert mock_fdopen.return_value.write.called
         # Optionally assert that JSON was written at least once
@@ -244,13 +248,16 @@ def test_clear_auth_token(monkeypatch: pytest.MonkeyPatch):
         assert result is True
         assert client.auth_token is None
         assert "Authorization" not in client.headers
-        mock_remove.assert_called_once_with("auth_token.json")
+        from client.auth.client import AUTH_TOKEN_FILE
+
+        mock_remove.assert_called_once_with(AUTH_TOKEN_FILE)
 
 
 def test_clear_auth_token_no_file(monkeypatch: pytest.MonkeyPatch):
+    from client.auth.client import AUTH_TOKEN_FILE
+
     def path_exists_side_effect(path: str) -> bool:
-        # Only return False for auth_token.json
-        return path != "auth_token.json"
+        return path != AUTH_TOKEN_FILE
 
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
     monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
@@ -374,12 +381,13 @@ def test_clear_auth_token_concurrent_calls(monkeypatch: pytest.MonkeyPatch) -> N
 
 def test_clear_auth_token_already_none(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that clear_auth_token returns False when token is already None."""
+    from client.auth.client import AUTH_TOKEN_FILE
+
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
     monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
 
     def path_exists_side_effect(path: str) -> bool:
-        # Return False for auth_token.json to skip loading
-        return path != "auth_token.json"
+        return path != AUTH_TOKEN_FILE
 
     with (
         patch("dotenv.load_dotenv"),
