@@ -223,8 +223,7 @@ class BaseToolErrorMixin:
             message=f"Authentication required to {action}",
         )
         # Enrich with request context and any additional context
-        base_data: dict[str, Any] = error.data if isinstance(error.data, dict) else {}  # type: ignore[assignment] # Error data can be dict[str, Any]
-        error.data = add_context_to_error_data({**base_data, **context})
+        error.data = add_context_to_error_data({**(error.data or {}), **context})
         return error
 
     @staticmethod

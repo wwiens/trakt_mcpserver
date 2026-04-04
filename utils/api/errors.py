@@ -74,22 +74,24 @@ def _auto_clear_invalid_token(client: ClearableAuthClient | object) -> None:
 class MCPError(Exception):
     """Base MCP-compliant error following JSON-RPC 2.0 specification."""
 
-    def __init__(self, code: int, message: str, data: Any | None = None) -> None:
+    def __init__(
+        self, code: int, message: str, data: dict[str, Any] | None = None
+    ) -> None:
         """Initialize MCP error.
 
         Args:
             code: Standard JSON-RPC error code
             message: Human-readable error message
-            data: Optional additional error data
+            data: Optional additional error data dictionary
         """
         self.code = code
         self.message = message
-        self.data = data
+        self.data: dict[str, Any] | None = data
         super().__init__(message)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert error to dictionary format for JSON-RPC response."""
-        error_dict = {"code": self.code, "message": self.message}
+        error_dict: dict[str, Any] = {"code": self.code, "message": self.message}
         if self.data is not None:
             error_dict["data"] = self.data
         return error_dict
@@ -98,21 +100,21 @@ class MCPError(Exception):
 class InvalidParamsError(MCPError):
     """Invalid parameters error (-32602)."""
 
-    def __init__(self, message: str, data: Any | None = None) -> None:
+    def __init__(self, message: str, data: dict[str, Any] | None = None) -> None:
         super().__init__(INVALID_PARAMS, message, data)
 
 
 class InternalError(MCPError):
     """Internal server error (-32603)."""
 
-    def __init__(self, message: str, data: Any | None = None) -> None:
+    def __init__(self, message: str, data: dict[str, Any] | None = None) -> None:
         super().__init__(INTERNAL_ERROR, message, data)
 
 
 class InvalidRequestError(MCPError):
     """Invalid request error (-32600)."""
 
-    def __init__(self, message: str, data: Any | None = None) -> None:
+    def __init__(self, message: str, data: dict[str, Any] | None = None) -> None:
         super().__init__(INVALID_REQUEST, message, data)
 
 
@@ -161,7 +163,9 @@ async def _execute_with_error_handling(
             friendly messages instead of re-raising
 
     Returns:
-        Result from the awaitable
+        The awaited result of type R on success. When convert_auth_errors is True
+        and an AuthenticationRequiredError is caught, returns a formatted str
+        message (via format_auth_required_message) instead of re-raising.
 
     Raises:
         MCPError: On API or internal errors
