@@ -3,7 +3,8 @@
 This module provides access to domain-focused configuration components:
 
 - config.api: API-related constants (DEFAULT_LIMIT)
-- config.auth: Authentication constants (AUTH_EXPIRATION, AUTH_POLL_INTERVAL, AUTH_VERIFICATION_URL)
+- config.auth: Authentication constants (AUTH_EXPIRATION, AUTH_POLL_INTERVAL,
+  AUTH_VERIFICATION_URL)
 - config.endpoints: Trakt API endpoints (TRAKT_ENDPOINTS)
 - config.mcp: MCP server configuration (MCP_RESOURCES, TOOL_NAMES)
 

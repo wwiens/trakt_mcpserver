@@ -10,7 +10,8 @@ class SyncClient(SyncRatingsClient, SyncWatchlistClient, SyncHistoryClient):
 
     Combines functionality from:
     - SyncRatingsClient: get_sync_ratings(), add_sync_ratings(), remove_sync_ratings()
-    - SyncWatchlistClient: get_sync_watchlist(), add_sync_watchlist(), remove_sync_watchlist()
+    - SyncWatchlistClient: get_sync_watchlist(), add_sync_watchlist(),
+      remove_sync_watchlist()
     - SyncHistoryClient: get_history(), add_to_history(), remove_from_history()
 
     Note: Inherits OAuth authentication handling from AuthClient through parent clients.

@@ -445,7 +445,7 @@ class TestSyncWatchlistClient:
     async def test_remove_sync_watchlist_unauthenticated(
         self, unauthenticated_client: SyncWatchlistClient
     ) -> None:
-        """Test that unauthenticated remove requests raise AuthenticationRequiredError."""
+        """Test unauthenticated remove requests raise AuthenticationRequiredError."""
         request = TraktSyncWatchlistRequest(
             movies=[TraktSyncWatchlistItem(ids=TraktIds(trakt=123))]
         )

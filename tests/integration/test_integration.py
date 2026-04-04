@@ -116,7 +116,10 @@ async def test_search_and_checkin_integration() -> None:
                 "title": "Breaking Bad",
                 "year": 2008,
                 "ids": {"trakt": 1, "slug": "breaking-bad"},
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             },
         }
     ]
@@ -212,7 +215,10 @@ async def test_trending_shows_integration() -> None:
                 "title": "Breaking Bad",
                 "year": 2008,
                 "ids": {"trakt": 1, "slug": "breaking-bad"},
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             },
         },
         {
@@ -221,7 +227,10 @@ async def test_trending_shows_integration() -> None:
                 "title": "Stranger Things",
                 "year": 2016,
                 "ids": {"trakt": 2, "slug": "stranger-things"},
-                "overview": "When a young boy disappears, his mother and friends must confront terrifying forces.",
+                "overview": (
+                    "When a young boy disappears, his mother and friends"
+                    " must confront terrifying forces."
+                ),
             },
         },
     ]

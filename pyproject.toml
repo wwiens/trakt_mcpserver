@@ -29,7 +29,6 @@ select = [
     "PERF", # Performance
 ]
 ignore = [
-    "E501", # line too long (handled by formatter)
     "UP040", # Type alias uses TypeAlias annotation (Python 3.12+ feature)
 ]
 

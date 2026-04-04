@@ -101,7 +101,7 @@ async def test_checkin_to_show_missing_info() -> None:
         mock_client = mock_client_class.return_value
         mock_client.ensure_authenticated = AsyncMock(return_value=True)
 
-        # Call the tool function with missing show_id and show_title - should raise error
+        # Call the tool function with missing show_id and show_title - expect error
         with pytest.raises(InvalidParamsError) as exc_info:
             await checkin_to_show(season=1, episode=1)
 

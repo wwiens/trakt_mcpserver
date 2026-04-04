@@ -98,7 +98,8 @@ class SyncRatingsClient(AuthClient):
         """Remove ratings for the authenticated user.
 
         Args:
-            request: Rating items to remove (should not include rating values, just item identification)
+            request: Rating items to remove (should not include rating values,
+                just item identification)
 
         Returns:
             Summary of removed ratings with counts and any not found items

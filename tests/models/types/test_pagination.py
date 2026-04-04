@@ -319,7 +319,7 @@ class TestPaginatedResponse:
 
     def test_page_info_calculation_edge_cases(self) -> None:
         """Test edge cases in page info calculations."""
-        # Test case where data length is less than items_per_page due to filtering/deletion
+        # Test case where data length < items_per_page due to filtering/deletion
         metadata = PaginationMetadata(
             current_page=2, items_per_page=10, total_pages=2, total_items=15
         )

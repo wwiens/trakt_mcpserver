@@ -43,7 +43,9 @@ async def get_trending_shows() -> str:
 
 @handle_api_errors_func
 async def get_popular_shows() -> str:
-    """Returns the most popular shows from Trakt. Popularity is calculated using the rating percentage and the number of ratings.
+    """Returns the most popular shows from Trakt.
+
+    Popularity is calculated using the rating percentage and the number of ratings.
 
     Returns:
         Formatted markdown text with popular shows
@@ -55,7 +57,9 @@ async def get_popular_shows() -> str:
 
 @handle_api_errors_func
 async def get_favorited_shows() -> str:
-    """Returns the most favorited shows from Trakt in the specified time period, defaulting to weekly. All stats are relative to the specific time period.
+    """Returns the most favorited shows from Trakt in the specified time period.
+
+    Defaults to weekly. All stats are relative to the specific time period.
 
     Returns:
         Formatted markdown text with most favorited shows
@@ -233,7 +237,10 @@ def register_show_resources(
     @mcp.resource(
         uri=MCP_RESOURCES["shows_watched"],
         name="shows_watched",
-        description="Most watched TV shows by unique users from Trakt in the current weekly period",
+        description=(
+            "Most watched TV shows by unique users from Trakt "
+            "in the current weekly period"
+        ),
         mime_type="text/markdown",
     )
     async def shows_watched_resource() -> str:

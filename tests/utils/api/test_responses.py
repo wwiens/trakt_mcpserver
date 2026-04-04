@@ -103,8 +103,8 @@ class TestFormatErrorResponse:
         test_messages = [
             "Normal error",
             "",
-            "Success message",  # Even if message says success, error flag should be True
-            "Error: False",  # Even if message contains "False", error flag should be True
+            "Success message",  # Even if message says success, error flag is True
+            "Error: False",  # Even if message contains "False", error flag is True
         ]
 
         for message in test_messages:
@@ -196,13 +196,17 @@ class TestHelpersIntegration:
             pytest.fail("Error response should be JSON serializable")
 
     def test_format_error_response_consistent_with_error_handling(self) -> None:
-        """Test that error response format is consistent with error handling patterns."""
+        """Test that error response format is consistent with error handling patterns.
+        """
         # This test ensures the helper integrates well with the decorator error handling
         common_error_messages = [
             "Error: Unauthorized. Please check your Trakt API credentials.",
             "Error: The requested resource was not found.",
             "Error: Rate limit exceeded. Please try again later.",
-            "Error: Unable to connect to Trakt API. Please check your internet connection.",
+            (
+                "Error: Unable to connect to Trakt API."
+                " Please check your internet connection."
+            ),
             "Error: An unexpected error occurred: ValueError",
         ]
 

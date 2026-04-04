@@ -167,7 +167,7 @@ class TestEndpointUrlFormats:
             )
 
     def test_combined_endpoints_match_domain_modules(self) -> None:
-        """Test that combined TRAKT_ENDPOINTS matches domain-specific endpoint modules."""
+        """Test combined TRAKT_ENDPOINTS matches domain-specific endpoint modules."""
         # Import from domain-specific modules
         from config.endpoints.auth import AUTH_ENDPOINTS
         from config.endpoints.checkin import CHECKIN_ENDPOINTS

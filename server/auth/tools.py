@@ -86,7 +86,10 @@ async def start_device_auth() -> str:
 
     return f"""{instructions}
 
-I won't automatically check your authentication status until you tell me you've completed the authorization. Once you've finished the authorization process on the Trakt website, simply tell me "I've completed the authorization" and I'll verify it for you."""
+I won't automatically check your authentication status until you tell me you've
+completed the authorization. Once you've finished the authorization process on
+the Trakt website, simply tell me "I've completed the authorization" and I'll
+verify it for you."""
 
 
 async def check_auth_status() -> str:
@@ -101,7 +104,8 @@ async def check_auth_status() -> str:
     if client.is_authenticated():
         return """# Authentication Successful!
 
-You are now authenticated with Trakt. You can access your personal data using tools like `fetch_user_watched_shows` and `fetch_user_watched_movies`.
+You are now authenticated with Trakt. You can access your personal data using
+tools like `fetch_user_watched_shows` and `fetch_user_watched_movies`.
 
 If you want to log out at any point, you can use the `clear_auth` tool."""
 
@@ -110,13 +114,19 @@ If you want to log out at any point, you can use the `clear_auth` tool."""
 
     async with auth_flow_lock:
         if not active_auth_flow or "device_code" not in active_auth_flow:
-            return "No active authentication flow. Use the `start_device_auth` tool to begin authentication."
+            return (
+                "No active authentication flow. "
+                "Use the `start_device_auth` tool to begin authentication."
+            )
 
         # Check if flow is expired
         current_time = int(time.time())
         if current_time > active_auth_flow["expires_at"]:
             active_auth_flow = {}
-            return "Authentication flow expired. Please start a new one with the `start_device_auth` tool."
+            return (
+                "Authentication flow expired. "
+                "Please start a new one with the `start_device_auth` tool."
+            )
 
         # Check if it's too early to poll again
         if current_time - active_auth_flow["last_poll"] < active_auth_flow["interval"]:
@@ -142,13 +152,16 @@ I don't see that you've completed the authorization yet. Please make sure to:
 2. Enter your code
 3. Approve the authorization request
 
-If you've already done this and are still seeing this message, please wait a few seconds and try again by telling me "Please check my authorization status"."""
+If you've already done this and are still seeing this message, please wait a
+few seconds and try again by telling me "Please check my authorization status"."""
     except InternalError as e:
         # Handle server errors gracefully to avoid breaking the polling loop
         logger.warning(f"Internal error during auth token retrieval: {e}")
         return """# Authorization Check Failed
 
-Unable to check authorization status due to a server error. This sometimes happens during the authorization process. Please wait a moment and try again by telling me "Please check my authorization status".
+Unable to check authorization status due to a server error. This sometimes
+happens during the authorization process. Please wait a moment and try again
+by telling me "Please check my authorization status".
 
 If this error persists, you may need to restart the authentication process."""
     else:
@@ -157,7 +170,9 @@ If this error persists, you may need to restart the authentication process."""
             active_auth_flow = {}
         return """# Authentication Successful!
 
-You have successfully authorized the Trakt MCP application. You can now access your personal Trakt data using tools like `fetch_user_watched_shows` and `fetch_user_watched_movies`.
+You have successfully authorized the Trakt MCP application. You can now access
+your personal Trakt data using tools like `fetch_user_watched_shows` and
+`fetch_user_watched_movies`.
 
 If you want to log out at any point, you can use the `clear_auth` tool."""
 
@@ -177,7 +192,10 @@ async def clear_auth() -> str:
 
     # Try to clear the token
     if client.clear_auth_token():
-        return "You have been successfully logged out of Trakt. Your authentication token has been cleared."
+        return (
+            "You have been successfully logged out of Trakt. "
+            "Your authentication token has been cleared."
+        )
     else:
         return "You were not authenticated with Trakt."
 

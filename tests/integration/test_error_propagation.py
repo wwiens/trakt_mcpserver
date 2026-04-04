@@ -42,7 +42,8 @@ class MockHttpErrorFactory(Protocol):
 
 
 class TestErrorPropagationThroughStack:
-    """Test error propagation through the complete Client → Tool → MCP → Response stack."""
+    """Test error propagation through the complete Client → Tool → MCP → Response stack.
+    """
 
     @pytest.fixture(autouse=True)
     def setup_context(self):
@@ -105,7 +106,8 @@ class TestErrorPropagationThroughStack:
             from server.search.tools import search_shows
 
             # The tool should raise a structured MCP error, not return a string
-            # For 400 validation errors, we expect InvalidParamsError, TraktValidationError, or InternalError
+            # For 400 errors, expect InvalidParamsError, TraktValidationError, or
+            # InternalError
             with pytest.raises(
                 (InvalidParamsError, TraktValidationError, InternalError)
             ) as exc_info:

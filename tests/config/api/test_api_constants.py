@@ -35,7 +35,7 @@ class TestEffectiveLimit:
     """Test effective_limit function."""
 
     def test_positive_limit_returns_same_values(self) -> None:
-        """Test that positive limit returns the same value for both api_limit and max_items."""
+        """Test positive limit returns the same value for api_limit and max_items."""
         result = effective_limit(10)
         assert isinstance(result, EffectiveLimit)
         assert result.api_limit == 10

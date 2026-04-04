@@ -20,7 +20,10 @@ async def test_get_user_watched_shows_authenticated():
             "show": {
                 "title": "Breaking Bad",
                 "year": 2008,
-                "overview": "A high school chemistry teacher diagnosed with inoperable lung cancer.",
+                "overview": (
+                    "A high school chemistry teacher diagnosed"
+                    " with inoperable lung cancer."
+                ),
             },
             "last_watched_at": "2023-01-15T20:30:00Z",
             "plays": 5,
@@ -78,7 +81,10 @@ async def test_get_user_watched_movies_authenticated():
             "movie": {
                 "title": "Inception",
                 "year": 2010,
-                "overview": "A thief who steals corporate secrets through dream-sharing technology.",
+                "overview": (
+                    "A thief who steals corporate secrets"
+                    " through dream-sharing technology."
+                ),
             },
             "last_watched_at": "2023-02-15T20:30:00Z",
             "plays": 3,

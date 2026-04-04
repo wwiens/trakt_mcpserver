@@ -34,7 +34,10 @@ def validate_person_id(person_id: str) -> str:
         raise ValueError(msg)
 
     if person_id.startswith("tt") and not _IMDB_PATTERN.match(person_id):
-        msg = f"Invalid IMDB ID format: '{person_id}'. Expected format: tt followed by digits (e.g. tt0186151)"
+        msg = (
+            f"Invalid IMDB ID format: '{person_id}'."
+            " Expected format: tt followed by digits (e.g. tt0186151)"
+        )
         raise ValueError(msg)
 
     return person_id

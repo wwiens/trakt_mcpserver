@@ -8,6 +8,12 @@ import pytest
 
 from models.formatters.videos import VideoFormatters
 
+_IFRAME_INSTRUCTION = (
+    "**ALWAYS:** Preserve iframe HTML below exactly as"
+    + " provided so videos embed and display properly"
+    + " in the response"
+)
+
 if TYPE_CHECKING:
     from models.types.api_responses import VideoResponse, VideoSite, VideoType
 
@@ -129,7 +135,7 @@ class TestVideoFormatters:
         assert video_id is None
 
     def test_extract_youtube_video_id_modern_share_urls(self):
-        """Test YouTube video ID extraction from modern share URLs with ?si= parameters."""
+        """Test YouTube video ID extraction from modern share URLs with ?si= params."""
         modern_urls = [
             "youtu.be/mcvLKldPM08?si=nOWNYgjPFPezp47c",
             "https://youtu.be/mcvLKldPM08?si=nOWNYgjPFPezp47c",
@@ -226,7 +232,8 @@ class TestVideoFormatters:
             "https://youtube.123/embed/ZbsiKjVAV28",  # Numeric TLD
             "https://youtube.c/embed/ZbsiKjVAV28",  # TLD too short
             "https://fakeyoutube.de/embed/ZbsiKjVAV28",  # Wrong base domain
-            "https://youtube.evil.de/embed/ZbsiKjVAV28",  # Extra subdomain before country
+            # Extra subdomain before country TLD
+            "https://youtube.evil.de/embed/ZbsiKjVAV28",
         ]
 
         for test_url in invalid_country_domains:
@@ -446,7 +453,7 @@ class TestVideoFormatters:
 
         # Check iframe embed
         assert (
-            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            _IFRAME_INSTRUCTION
             in result
         )
         assert "<iframe" in result
@@ -487,7 +494,7 @@ class TestVideoFormatters:
 
         # Should not contain iframe or instructional text
         assert (
-            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            _IFRAME_INSTRUCTION
             not in result
         )
         assert "<iframe" not in result
@@ -574,7 +581,7 @@ class TestVideoFormatters:
 
         # Should not contain iframe for non-YouTube
         assert (
-            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            _IFRAME_INSTRUCTION
             not in result
         )
         assert "<iframe" not in result
@@ -619,12 +626,7 @@ class TestVideoFormatters:
         assert "## Teasers" in result
 
         # Check both videos have iframe embeds
-        assert (
-            result.count(
-                "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
-            )
-            == 1
-        )
+        assert result.count(_IFRAME_INSTRUCTION) == 1
         assert result.count("<iframe") == 2
 
     def test_format_videos_list_sorting_by_date(self):
@@ -713,7 +715,7 @@ class TestVideoFormatters:
 
         # Should fallback to simple link, not iframe
         assert (
-            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            _IFRAME_INSTRUCTION
             not in result
         )
         assert "<iframe" not in result
