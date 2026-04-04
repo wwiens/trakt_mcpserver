@@ -28,7 +28,8 @@ class SeasonListsClient(BaseClient):
             show_id: Trakt ID, slug, or IMDB ID
             season: Season number (0 for specials)
             list_type: Filter by type: 'all', 'personal', 'official', 'watchlists'
-            sort: Sort order: 'popular', 'likes', 'comments', 'items', 'added', 'updated'
+            sort: Sort order: 'popular', 'likes', 'comments', 'items', 'added',
+                'updated'
 
         Returns:
             List of list data

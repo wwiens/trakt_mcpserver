@@ -142,7 +142,7 @@ async def test_device_token_pending_authorization():
 
         client = AuthClient()
 
-        # Try to get a token, should raise AuthorizationPendingError because authorization is pending
+        # Try to get a token, should raise AuthorizationPendingError (auth pending)
         with pytest.raises(AuthorizationPendingError) as exc_info:
             await client.get_device_token("device_code_123")
 
@@ -186,7 +186,7 @@ async def test_device_token_expired():
 
         client = AuthClient()
 
-        # Try to get a token, should raise InvalidParamsError because the code has expired
+        # Try to get a token, should raise InvalidParamsError because code has expired
         with pytest.raises(InvalidParamsError) as exc_info:
             await client.get_device_token("device_code_123")
 

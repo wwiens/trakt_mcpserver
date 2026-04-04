@@ -32,7 +32,10 @@ def validate_media_id(media_id: str, field_name: str = "id") -> str:
         raise ValueError(msg)
 
     if media_id.startswith("tt") and not _IMDB_PATTERN.match(media_id):
-        msg = f"Invalid IMDB ID format for {field_name}: '{media_id}'. Expected format: tt followed by digits (e.g. tt1104001)"
+        msg = (
+            f"Invalid IMDB ID format for {field_name}: '{media_id}'."
+            " Expected format: tt followed by digits (e.g. tt1104001)"
+        )
         raise ValueError(msg)
 
     return media_id

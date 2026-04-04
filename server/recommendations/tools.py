@@ -314,7 +314,8 @@ def register_recommendation_tools(
     @mcp.tool(
         name=TOOL_NAMES["hide_show_recommendation"],
         description=(
-            "Hide a TV show from future recommendations. Requires OAuth authentication. "
+            "Hide a TV show from future recommendations. "
+            "Requires OAuth authentication. "
             "Use Trakt ID, slug, or IMDB ID to identify the show."
         ),
     )

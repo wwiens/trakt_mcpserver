@@ -6,7 +6,8 @@ This module provides domain-focused formatters for different types of Trakt data
 - models.formatters.checkin: Check-in formatting (CheckinFormatters)
 - models.formatters.comments: Comments formatting (CommentsFormatters)
 - models.formatters.movies: Movies formatting (MovieFormatters)
-- models.formatters.recommendations: Recommendations formatting (RecommendationFormatters)
+- models.formatters.recommendations: Recommendations formatting
+  (RecommendationFormatters)
 - models.formatters.search: Search formatting (SearchFormatters)
 - models.formatters.shows: Shows formatting (ShowFormatters)
 - models.formatters.sync_ratings: Sync ratings formatting (SyncRatingsFormatters)

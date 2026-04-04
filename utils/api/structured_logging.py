@@ -86,7 +86,8 @@ class StructuredFormatter(logging.Formatter):
         }
 
         # Add context information if available using type-safe approach
-        # Note: We can safely treat record as extended since ContextFilter adds the attributes
+        # Note: We can safely treat record as extended since ContextFilter
+        # adds the attributes
 
         correlation_id = getattr(record, "correlation_id", None)
         if correlation_id:

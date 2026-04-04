@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -24,6 +24,12 @@ from utils.api.error_types import (
 )
 from utils.api.errors import InternalError
 
+_IFRAME_INSTRUCTION: Final[str] = (
+    "**ALWAYS:** Preserve iframe HTML below exactly as"
+    + " provided so videos embed and display properly"
+    + " in the response"
+)
+
 
 @pytest.mark.asyncio
 async def test_fetch_trending_movies():
@@ -33,7 +39,10 @@ async def test_fetch_trending_movies():
             "movie": {
                 "title": "Inception",
                 "year": 2010,
-                "overview": "A thief who steals corporate secrets through dream-sharing technology.",
+                "overview": (
+                    "A thief who steals corporate secrets"
+                    " through dream-sharing technology."
+                ),
             },
         }
     ]
@@ -362,7 +371,7 @@ async def test_fetch_movie_videos_with_embeds():
         # Verify result content
         assert "# Videos for Test Movie" in result
         assert (
-            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            _IFRAME_INSTRUCTION
             in result
         )
         assert "<iframe" in result
@@ -393,7 +402,7 @@ async def test_fetch_movie_videos_without_embeds():
 
         # Should not contain iframe or instructional text
         assert (
-            "**ALWAYS:** Preserve iframe HTML below exactly as provided so videos embed and display properly in the response"
+            _IFRAME_INSTRUCTION
             not in result
         )
         assert "<iframe" not in result

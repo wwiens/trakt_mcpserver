@@ -306,7 +306,7 @@ class TestSyncRatingsFormatters:
         assert "Long Running Show - S12E34: Big Numbers (1990)" in result
 
     def test_format_user_ratings_edge_case_single_digit_episode(self) -> None:
-        """Test SxxExx formatting with single-digit season and episode numbers (zero-padded)."""
+        """Test SxxExx formatting with single-digit season and episode (zero-padded)."""
         episode_rating = TraktSyncRating(
             rated_at=datetime.fromisoformat("2024-01-01T10:00:00.000+00:00"),
             rating=5,

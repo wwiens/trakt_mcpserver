@@ -253,7 +253,10 @@ def register_movie_resources(
     @mcp.resource(
         uri=MCP_RESOURCES["movies_watched"],
         name="movies_watched",
-        description="Most watched movies by unique users from Trakt in the current weekly period",
+        description=(
+            "Most watched movies by unique users from Trakt "
+            "in the current weekly period"
+        ),
         mime_type="text/markdown",
     )
     async def movies_watched_resource() -> str:

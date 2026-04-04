@@ -172,9 +172,12 @@ def register_progress_tools(
     @mcp.tool(
         name=PROGRESS_TOOLS["fetch_show_progress"],
         description=(
-            "Check if a user has watched a specific TV show and their progress through it. "
-            "Use this for: 'have I seen X?', 'did I finish X?', 'where am I in X?', 'what episode am I on?'. "
-            "Returns episodes watched, completion percentage, next episode to watch, and per-season breakdown. "
+            "Check if a user has watched a specific TV show and their progress "
+            "through it. "
+            "Use this for: 'have I seen X?', 'did I finish X?', "
+            "'where am I in X?', 'what episode am I on?'. "
+            "Returns episodes watched, completion percentage, next episode to "
+            "watch, and per-season breakdown. "
             "For listing all watched shows, use fetch_user_watched_shows instead. "
             "Requires OAuth authentication."
         ),

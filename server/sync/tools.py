@@ -303,7 +303,8 @@ async def remove_user_ratings(
 
     Args:
         rating_type: Type of content to unrate (movies, shows, seasons, episodes)
-        items: List of items to remove ratings from (no rating values needed, just identification)
+        items: List of items to remove ratings from (no rating values needed,
+            just identification)
 
     Returns:
         Summary of removed ratings with counts
@@ -363,7 +364,8 @@ async def fetch_user_watchlist(
     """Fetch authenticated user's watchlist from Trakt.
 
     Args:
-        watchlist_type: Type of watchlist items to fetch (all, movies, shows, seasons, episodes)
+        watchlist_type: Type of watchlist items to fetch
+            (all, movies, shows, seasons, episodes)
         sort_by: Field to sort by (rank, added, title, released, runtime, etc.)
         sort_how: Sort direction (asc, desc)
         page: Optional page number for pagination (1-based)
@@ -428,7 +430,8 @@ async def add_user_watchlist(
 
     Args:
         watchlist_type: Type of content to add (movies, shows, seasons, episodes)
-        items: List of items to add with identification info and optional notes (VIP only)
+        items: List of items to add with identification info and optional notes
+            (VIP only)
 
     Returns:
         Summary of added watchlist items with counts
@@ -490,7 +493,8 @@ async def remove_user_watchlist(
 
     Args:
         watchlist_type: Type of content to remove (movies, shows, seasons, episodes)
-        items: List of items to remove from watchlist (no notes needed, just identification)
+        items: List of items to remove from watchlist (no notes needed,
+            just identification)
 
     Returns:
         Summary of removed watchlist items with counts
@@ -779,7 +783,10 @@ def register_sync_tools(
 
     @mcp.tool(
         name=SYNC_TOOLS["add_user_ratings"],
-        description="Add new ratings for the authenticated user. Requires OAuth authentication.",
+        description=(
+            "Add new ratings for the authenticated user. "
+            "Requires OAuth authentication."
+        ),
     )
     async def add_user_ratings_tool(
         rating_type: Annotated[
@@ -798,7 +805,10 @@ def register_sync_tools(
 
     @mcp.tool(
         name=SYNC_TOOLS["remove_user_ratings"],
-        description="Remove ratings for the authenticated user. Requires OAuth authentication.",
+        description=(
+            "Remove ratings for the authenticated user. "
+            "Requires OAuth authentication."
+        ),
     )
     async def remove_user_ratings_tool(
         rating_type: Annotated[

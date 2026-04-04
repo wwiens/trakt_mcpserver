@@ -485,11 +485,11 @@ async def test_multiple_pages_auto_paginate(
 async def test_auto_pagination_max_pages_returns_collected_items(
     trakt_env: None, patched_httpx_client: MagicMock
 ):
-    """Test that hitting max_pages with max_items set returns collected items without error.
+    """Test hitting max_pages with max_items set returns collected items without error.
 
-    When limit is passed (which sets max_items), hitting max_pages is graceful - we return
-    what we've collected so far. The error is only raised when max_items is None,
-    which can only happen at the base client level.
+    When limit is passed (which sets max_items), hitting max_pages is graceful -
+    we return what we have collected so far. The error is only raised when
+    max_items is None, which can only happen at the base client level.
     """
     # Create 101 mock pages (more than DEFAULT_MAX_PAGES which is 100)
     responses: list[MagicMock] = []

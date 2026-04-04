@@ -15,7 +15,11 @@ async def discover_trending() -> list[dict[str, Any]]:
     return [
         {
             "role": "user",
-            "content": "Show me what movies and TV shows are trending on Trakt right now. Please include both movies and shows, and provide details about ratings, genres, and why they're popular.",
+            "content": (
+                "Show me what movies and TV shows are trending on Trakt right now. "
+                "Please include both movies and shows, and provide details about "
+                "ratings, genres, and why they're popular."
+            ),
         }
     ]
 
@@ -25,7 +29,11 @@ async def search_entertainment() -> list[dict[str, Any]]:
     return [
         {
             "role": "user",
-            "content": "Help me search for a movie or TV show. I'd like to find something specific by title, and also get recommendations based on what I'm looking for. What would you like to find?",
+            "content": (
+                "Help me search for a movie or TV show. I'd like to find something "
+                "specific by title, and also get recommendations based on what I'm "
+                "looking for. What would you like to find?"
+            ),
         }
     ]
 
@@ -50,7 +58,9 @@ def register_basic_prompts(mcp: FastMCP) -> tuple[Any, Any]:
 
     @mcp.prompt(
         name="search_entertainment",
-        description="Search for movies or TV shows by title with personalized recommendations",
+        description=(
+            "Search for movies or TV shows by title with personalized recommendations"
+        ),
     )
     async def search_entertainment_prompt() -> list[dict[str, Any]]:
         """Wrapper for search_entertainment prompt."""

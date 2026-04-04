@@ -147,6 +147,6 @@ class TestAuthFlowThreadSafety:
             success_messages = [r for r in results if "Authentication Successful" in r]
             assert len(success_messages) >= 1
 
-            # The test verifies that concurrent access doesn't cause crashes or data corruption
-            # Multiple successes are OK - it means multiple coroutines authenticated before flow was cleared
-            # This is acceptable behavior as long as no errors occur
+            # Verifies concurrent access doesn't cause crashes or data corruption
+            # Multiple successes are OK - multiple coroutines may authenticate
+            # before flow is cleared; acceptable as long as no errors occur
