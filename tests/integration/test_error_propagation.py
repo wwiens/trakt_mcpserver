@@ -467,7 +467,6 @@ class TestErrorContextPreservation:
                 "method": "GET",
                 "resource_type": "show",
                 "resource_id": "breaking-bad",
-                "user_id": "test_user_123",
             }
 
             for field, expected_value in expected_fields.items():

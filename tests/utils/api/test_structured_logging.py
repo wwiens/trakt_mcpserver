@@ -64,7 +64,7 @@ def test_context_filter_with_context():
     assert extended_record.method == "GET"
     assert extended_record.resource_type == "test"
     assert extended_record.resource_id == "test-id"
-    assert extended_record.user_id == "user123"
+    assert not hasattr(record, "user_id")
     assert extended_record.elapsed_time is not None
 
 
@@ -100,7 +100,7 @@ def test_context_filter_without_context():
     assert extended_record.method is None
     assert extended_record.resource_type is None
     assert extended_record.resource_id is None
-    assert extended_record.user_id is None
+    assert not hasattr(record, "user_id")
     assert extended_record.elapsed_time is None
 
 

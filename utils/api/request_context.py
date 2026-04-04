@@ -94,7 +94,6 @@ class RequestContext:
             "method": self.method,
             "resource_type": self.resource_type,
             "resource_id": self.resource_id,
-            "user_id": self.user_id,
             "parameters": self.parameters,
             "elapsed_time": self.elapsed_time(),
         }
