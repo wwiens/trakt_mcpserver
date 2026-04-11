@@ -108,7 +108,7 @@ class MovieFormatters:
     @staticmethod
     def format_boxoffice_movies(data: list[BoxOfficeMovieWrapper]) -> str:
         """Format box office movies data for MCP resource."""
-        lines: list[str] = ["# Box Office Movies (U.S. Weekend)\n"]
+        lines: list[str] = ["# Box Office Movies (U.S. Weekend)", ""]
 
         if not data:
             return (
@@ -139,7 +139,7 @@ class MovieFormatters:
         ratings: TraktRating, movie_title: str = "Unknown movie"
     ) -> str:
         """Format movie ratings data for MCP resource."""
-        lines: list[str] = [f"# Ratings for {movie_title}\n"]
+        lines: list[str] = [f"# Ratings for {movie_title}", ""]
 
         if not ratings:
             return f"# Ratings for {movie_title}\n\nNo ratings data available."
@@ -148,9 +148,8 @@ class MovieFormatters:
         votes = ratings.get("votes", 0)
         distribution = ratings.get("distribution", {})
 
-        lines.append(
-            f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes\n"
-        )
+        lines.append(f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes")
+        lines.append("")
 
         if distribution:
             lines.append(format_rating_distribution(distribution, votes))
@@ -169,7 +168,7 @@ class MovieFormatters:
         ids = movie.get("ids", {})
         trakt_id = ids.get("trakt", "Unknown")
 
-        lines: list[str] = [f"## {title_str}\n"]
+        lines: list[str] = [f"## {title_str}", ""]
         lines.append(f"Trakt ID: {trakt_id}")
 
         return "\n".join(lines)
@@ -194,7 +193,9 @@ class MovieFormatters:
         if tagline:
             lines.append(f"*{tagline}*")
 
-        lines.append(f"\n{overview}\n")
+        lines.append("")
+        lines.append(overview)
+        lines.append("")
         lines.append("### Production Details")
         lines.append(f"- Status: {status.replace('_', ' ')}")
 
@@ -221,7 +222,8 @@ class MovieFormatters:
         if homepage := movie.get("homepage"):
             lines.append(f"- Homepage: {homepage}")
 
-        lines.append("\n### Ratings & Engagement")
+        lines.append("")
+        lines.append("### Ratings & Engagement")
 
         rating = movie.get("rating", 0)
         votes = movie.get("votes", 0)
@@ -230,7 +232,8 @@ class MovieFormatters:
         if comment_count := movie.get("comment_count"):
             lines.append(f"- Comments: {comment_count}")
 
-        lines.append(f"\nTrakt ID: {trakt_id}")
+        lines.append("")
+        lines.append(f"Trakt ID: {trakt_id}")
 
         return "\n".join(lines)
 
@@ -239,7 +242,7 @@ class MovieFormatters:
         data: list[MovieResponse] | PaginatedResponse[MovieResponse],
     ) -> str:
         """Format related movies data for MCP resource."""
-        lines: list[str] = ["# Related Movies\n"]
+        lines: list[str] = ["# Related Movies", ""]
 
         if isinstance(data, PaginatedResponse):
             lines.append(format_pagination_header(data))
@@ -278,10 +281,11 @@ class MovieFormatters:
         if not cast and not crew:
             return f"# People for {movie_title}\n\nNo people data available."
 
-        lines: list[str] = [f"# People for {movie_title}\n"]
+        lines: list[str] = [f"# People for {movie_title}", ""]
 
         if cast:
-            lines.append("## Cast\n")
+            lines.append("## Cast")
+            lines.append("")
             for member in cast:
                 person = member.get("person", {})
                 name = person.get("name", "Unknown")
@@ -291,9 +295,11 @@ class MovieFormatters:
             lines.append("")
 
         if crew:
-            lines.append("## Crew\n")
+            lines.append("## Crew")
+            lines.append("")
             for department, members in sorted(crew.items()):
-                lines.append(f"### {department.title()}\n")
+                lines.append(f"### {department.title()}")
+                lines.append("")
                 for member in members:
                     person = member.get("person", {})
                     name = person.get("name", "Unknown")

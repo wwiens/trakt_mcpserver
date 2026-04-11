@@ -109,7 +109,7 @@ class ShowFormatters:
         ratings: TraktRating, show_title: str = "Unknown show"
     ) -> str:
         """Format show ratings data for MCP resource."""
-        lines: list[str] = [f"# Ratings for {show_title}\n"]
+        lines: list[str] = [f"# Ratings for {show_title}", ""]
 
         if not ratings:
             return f"# Ratings for {show_title}\n\nNo ratings data available."
@@ -118,9 +118,8 @@ class ShowFormatters:
         votes = ratings.get("votes", 0)
         distribution = ratings.get("distribution", {})
 
-        lines.append(
-            f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes\n"
-        )
+        lines.append(f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes")
+        lines.append("")
 
         if distribution:
             lines.append(format_rating_distribution(distribution, votes))
@@ -139,7 +138,7 @@ class ShowFormatters:
         ids = show.get("ids", {})
         trakt_id = ids.get("trakt", "Unknown")
 
-        lines: list[str] = [f"## {title_str}\n"]
+        lines: list[str] = [f"## {title_str}", ""]
         lines.append(f"Trakt ID: {trakt_id}")
 
         return "\n".join(lines)
@@ -164,7 +163,9 @@ class ShowFormatters:
         if tagline:
             lines.append(f"*{tagline}*")
 
-        lines.append(f"\n{overview}\n")
+        lines.append("")
+        lines.append(overview)
+        lines.append("")
         lines.append("### Production Details")
         lines.append(f"- Status: {status.replace('_', ' ')}")
 
@@ -210,7 +211,8 @@ class ShowFormatters:
         if homepage := show.get("homepage"):
             lines.append(f"- Homepage: {homepage}")
 
-        lines.append("\n### Ratings & Engagement")
+        lines.append("")
+        lines.append("### Ratings & Engagement")
 
         rating = show.get("rating", 0)
         votes = show.get("votes", 0)
@@ -219,7 +221,8 @@ class ShowFormatters:
         if comment_count := show.get("comment_count"):
             lines.append(f"- Comments: {comment_count}")
 
-        lines.append(f"\nTrakt ID: {trakt_id}")
+        lines.append("")
+        lines.append(f"Trakt ID: {trakt_id}")
 
         return "\n".join(lines)
 
@@ -229,8 +232,9 @@ class ShowFormatters:
         if not seasons:
             return "No seasons data available."
 
-        lines: list[str] = ["# Seasons\n"]
-        lines.append(f"**{len(seasons)} season(s)**\n")
+        lines: list[str] = ["# Seasons", ""]
+        lines.append(f"**{len(seasons)} season(s)**")
+        lines.append("")
         lines.append("| Season | Title | Episodes | Aired | Rating |")
         lines.append("|--------|-------|----------|-------|--------|")
 
@@ -260,7 +264,7 @@ class ShowFormatters:
         data: list[ShowResponse] | PaginatedResponse[ShowResponse],
     ) -> str:
         """Format related shows data for MCP resource."""
-        lines: list[str] = ["# Related Shows\n"]
+        lines: list[str] = ["# Related Shows", ""]
 
         if isinstance(data, PaginatedResponse):
             lines.append(format_pagination_header(data))
@@ -293,7 +297,7 @@ class ShowFormatters:
         if not members:
             return ""
 
-        lines: list[str] = [f"## {heading}\n"]
+        lines: list[str] = [f"## {heading}", ""]
         for member in members:
             person = member.get("person", {})
             name = person.get("name", "Unknown")
@@ -320,7 +324,7 @@ class ShowFormatters:
         if not cast and not guest_stars and not crew:
             return f"# People for {show_title}\n\nNo people data available."
 
-        lines: list[str] = [f"# People for {show_title}\n"]
+        lines: list[str] = [f"# People for {show_title}", ""]
 
         cast_section = ShowFormatters._format_cast_section(cast, "Cast")
         if cast_section:
@@ -329,9 +333,11 @@ class ShowFormatters:
         if guest_section:
             lines.append(guest_section)
         if crew:
-            lines.append("## Crew\n")
+            lines.append("## Crew")
+            lines.append("")
             for department, members in sorted(crew.items()):
-                lines.append(f"### {department.title()}\n")
+                lines.append(f"### {department.title()}")
+                lines.append("")
                 for member in members:
                     person = member.get("person", {})
                     name = person.get("name", "Unknown")

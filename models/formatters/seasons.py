@@ -90,8 +90,9 @@ class SeasonFormatters:
         if not episodes:
             return f"# Season {season_number} Episodes\n\nNo episodes available."
 
-        lines: list[str] = [f"# Season {season_number} Episodes\n"]
-        lines.append(f"**{len(episodes)} episode(s)**\n")
+        lines: list[str] = [f"# Season {season_number} Episodes", ""]
+        lines.append(f"**{len(episodes)} episode(s)**")
+        lines.append("")
         lines.append("| # | Title | Rating | Runtime |")
         lines.append("|---|-------|--------|---------|")
 
@@ -121,19 +122,18 @@ class SeasonFormatters:
         Returns:
             Formatted markdown text with ratings information
         """
-        heading = f"# Ratings for {show_title} - Season {season}\n"
-        lines: list[str] = [heading]
+        heading = f"# Ratings for {show_title} - Season {season}"
+        lines: list[str] = [heading, ""]
 
         if not ratings:
-            return f"{heading}\nNo ratings data available."
+            return f"{heading}\n\nNo ratings data available."
 
         average_rating = ratings.get("rating", 0)
         votes = ratings.get("votes", 0)
         distribution = ratings.get("distribution", {})
 
-        lines.append(
-            f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes\n"
-        )
+        lines.append(f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes")
+        lines.append("")
 
         if distribution:
             lines.append(format_rating_distribution(distribution, votes))
@@ -160,7 +160,7 @@ class SeasonFormatters:
                 "No statistics available."
             )
 
-        lines: list[str] = [f"# Stats for {show_title} - Season {season}\n"]
+        lines: list[str] = [f"# Stats for {show_title} - Season {season}", ""]
 
         lines.append("| Metric | Value |")
         lines.append("|--------|-------|")
@@ -188,7 +188,7 @@ class SeasonFormatters:
         if not members:
             return ""
 
-        lines: list[str] = [f"## {heading}\n"]
+        lines: list[str] = [f"## {heading}", ""]
         for member in members:
             person = member.get("person", {})
             name = person.get("name", "Unknown")
@@ -222,7 +222,7 @@ class SeasonFormatters:
                 "No people data available."
             )
 
-        lines: list[str] = [f"# People for {show_title} - Season {season}\n"]
+        lines: list[str] = [f"# People for {show_title} - Season {season}", ""]
 
         cast_section = SeasonFormatters._format_cast_section(
             people.get("cast", []), "Cast"
@@ -237,9 +237,11 @@ class SeasonFormatters:
 
         crew: dict[str, list[CrewMember]] = people.get("crew", {})
         if crew:
-            lines.append("## Crew\n")
+            lines.append("## Crew")
+            lines.append("")
             for department, members in sorted(crew.items()):
-                lines.append(f"### {department.title()}\n")
+                lines.append(f"### {department.title()}")
+                lines.append("")
                 for member in members:
                     person = member.get("person", {})
                     name = person.get("name", "Unknown")
@@ -270,13 +272,14 @@ class SeasonFormatters:
         Returns:
             Formatted markdown text with user list
         """
-        heading = f"# Currently Watching {show_title} - Season {season}\n"
+        heading = f"# Currently Watching {show_title} - Season {season}"
 
         if not users:
-            return f"{heading}\nNo one is currently watching this season."
+            return f"{heading}\n\nNo one is currently watching this season."
 
-        lines: list[str] = [heading]
-        lines.append(f"**{len(users)} user(s) watching**\n")
+        lines: list[str] = [heading, ""]
+        lines.append(f"**{len(users)} user(s) watching**")
+        lines.append("")
 
         for user in users:
             username = user.get("username", "Unknown")
@@ -308,13 +311,14 @@ class SeasonFormatters:
         Returns:
             Formatted markdown text with translations
         """
-        heading = f"# Translations for {show_title} - Season {season}\n"
+        heading = f"# Translations for {show_title} - Season {season}"
 
         if not translations:
-            return f"{heading}\nNo translations available."
+            return f"{heading}\n\nNo translations available."
 
-        lines: list[str] = [heading]
-        lines.append(f"**{len(translations)} translation(s)**\n")
+        lines: list[str] = [heading, ""]
+        lines.append(f"**{len(translations)} translation(s)**")
+        lines.append("")
         lines.append("| Language | Country | Title |")
         lines.append("|----------|---------|-------|")
 

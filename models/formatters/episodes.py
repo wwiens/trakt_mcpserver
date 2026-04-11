@@ -39,12 +39,13 @@ class EpisodeFormatters:
         number = episode.get("number", 0)
         title = episode.get("title", "TBA")
 
-        lines: list[str] = [f"# {show_title} - S{season:02d}E{number:02d}: {title}\n"]
+        lines: list[str] = [f"# {show_title} - S{season:02d}E{number:02d}: {title}", ""]
 
         if overview := episode.get("overview"):
             if len(overview) > MAX_OVERVIEW_LENGTH:
                 overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-            lines.append(f"{overview}\n")
+            lines.append(overview)
+            lines.append("")
 
         lines.append("### Details")
 
@@ -78,7 +79,8 @@ class EpisodeFormatters:
         if tvdb_id := ids.get("tvdb"):
             id_parts.append(f"TVDB: {tvdb_id}")
         if id_parts:
-            lines.append(f"\n**IDs:** {' | '.join(id_parts)}")
+            lines.append("")
+            lines.append(f"**IDs:** {' | '.join(id_parts)}")
 
         return "\n".join(lines)
 
@@ -97,19 +99,18 @@ class EpisodeFormatters:
         Returns:
             Formatted markdown text with ratings information
         """
-        heading = f"# Ratings for {show_title} - S{season:02d}E{episode:02d}\n"
-        lines: list[str] = [heading]
+        heading = f"# Ratings for {show_title} - S{season:02d}E{episode:02d}"
+        lines: list[str] = [heading, ""]
 
         if not ratings:
-            return f"{heading}\nNo ratings data available."
+            return f"{heading}\n\nNo ratings data available."
 
         average_rating = ratings.get("rating", 0)
         votes = ratings.get("votes", 0)
         distribution = ratings.get("distribution", {})
 
-        lines.append(
-            f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes\n"
-        )
+        lines.append(f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes")
+        lines.append("")
 
         if distribution:
             lines.append(format_rating_distribution(distribution, votes))
@@ -137,7 +138,10 @@ class EpisodeFormatters:
                 "No statistics available."
             )
 
-        lines: list[str] = [f"# Stats for {show_title} - S{season:02d}E{episode:02d}\n"]
+        lines: list[str] = [
+            f"# Stats for {show_title} - S{season:02d}E{episode:02d}",
+            "",
+        ]
 
         lines.append("| Metric | Value |")
         lines.append("|--------|-------|")
@@ -165,7 +169,7 @@ class EpisodeFormatters:
         if not members:
             return ""
 
-        lines: list[str] = [f"## {heading}\n"]
+        lines: list[str] = [f"## {heading}", ""]
         for member in members:
             person = member.get("person", {})
             name = person.get("name", "Unknown")
@@ -207,7 +211,8 @@ class EpisodeFormatters:
             )
 
         lines: list[str] = [
-            f"# People for {show_title} - S{season:02d}E{episode:02d}\n"
+            f"# People for {show_title} - S{season:02d}E{episode:02d}",
+            "",
         ]
 
         cast_section = EpisodeFormatters._format_cast_section(cast, "Cast")
@@ -219,9 +224,11 @@ class EpisodeFormatters:
         if guest_section:
             lines.append(guest_section)
         if crew:
-            lines.append("## Crew\n")
+            lines.append("## Crew")
+            lines.append("")
             for department, members in sorted(crew.items()):
-                lines.append(f"### {department.title()}\n")
+                lines.append(f"### {department.title()}")
+                lines.append("")
                 for member in members:
                     person = member.get("person", {})
                     name = person.get("name", "Unknown")
@@ -247,13 +254,14 @@ class EpisodeFormatters:
         Returns:
             Formatted markdown text with user list
         """
-        heading = f"# Currently Watching {show_title} - S{season:02d}E{episode:02d}\n"
+        heading = f"# Currently Watching {show_title} - S{season:02d}E{episode:02d}"
 
         if not users:
-            return f"{heading}\nNo one is currently watching this episode."
+            return f"{heading}\n\nNo one is currently watching this episode."
 
-        lines: list[str] = [heading]
-        lines.append(f"**{len(users)} user(s) watching**\n")
+        lines: list[str] = [heading, ""]
+        lines.append(f"**{len(users)} user(s) watching**")
+        lines.append("")
 
         for user in users:
             username = user.get("username", "Unknown")
@@ -287,13 +295,14 @@ class EpisodeFormatters:
         Returns:
             Formatted markdown text with translations
         """
-        heading = f"# Translations for {show_title} - S{season:02d}E{episode:02d}\n"
+        heading = f"# Translations for {show_title} - S{season:02d}E{episode:02d}"
 
         if not translations:
-            return f"{heading}\nNo translations available."
+            return f"{heading}\n\nNo translations available."
 
-        lines: list[str] = [heading]
-        lines.append(f"**{len(translations)} translation(s)**\n")
+        lines: list[str] = [heading, ""]
+        lines.append(f"**{len(translations)} translation(s)**")
+        lines.append("")
         lines.append("| Language | Country | Title |")
         lines.append("|----------|---------|-------|")
 
