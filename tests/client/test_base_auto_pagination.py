@@ -54,6 +54,7 @@ async def test_auto_paginate_single_page():
         result = await client.auto_paginate(
             "/test/endpoint", response_type=MockResponseItem, params={"limit": 2}
         )
+        assert not isinstance(result, str)
 
         # Should return all items from single page
         assert isinstance(result, list)
@@ -127,6 +128,7 @@ async def test_auto_paginate_multiple_pages():
         result = await client.auto_paginate(
             "/test/endpoint", response_type=MockResponseItem, params={"limit": 2}
         )
+        assert not isinstance(result, str)
 
         # Should return all items from all pages
         assert isinstance(result, list)
@@ -168,6 +170,7 @@ async def test_auto_paginate_empty_results():
         result = await client.auto_paginate(
             "/test/endpoint", response_type=MockResponseItem, params={"limit": 10}
         )
+        assert not isinstance(result, str)
 
         # Should return empty list
         assert isinstance(result, list)
@@ -220,6 +223,7 @@ async def test_auto_paginate_uses_server_next_page():
         result = await client.auto_paginate(
             "/test/endpoint", response_type=MockResponseItem, params={"limit": 1}
         )
+        assert not isinstance(result, str)
 
         # Should successfully fetch both pages
         assert len(result) == 2
@@ -268,6 +272,7 @@ async def test_auto_paginate_preserves_params():
             response_type=MockResponseItem,
             params={"limit": 1, "period": "weekly", "sort": "newest"},
         )
+        assert not isinstance(result, str)
 
         # Should return results
         assert len(result) == 1
@@ -361,6 +366,7 @@ async def test_auto_paginate_with_none_params():
         result = await client.auto_paginate(
             "/test/endpoint", response_type=MockResponseItem, params=None
         )
+        assert not isinstance(result, str)
 
         # Should return results
         assert len(result) == 1

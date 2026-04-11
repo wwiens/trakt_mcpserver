@@ -40,6 +40,7 @@ async def test_search_shows_no_page_respects_limit():
 
         client = SearchClient()
         result = await client.search_shows(query="breaking", limit=2, page=None)
+        assert not isinstance(result, str)
 
         # Should return exactly 2 shows (capped by limit)
         assert isinstance(result, list)
@@ -84,6 +85,7 @@ async def test_search_shows_with_page_returns_paginated():
 
         client = SearchClient()
         result = await client.search_shows(query="breaking", limit=2, page=1)
+        assert not isinstance(result, str)
 
         # Should return PaginatedResponse
         assert isinstance(result, PaginatedResponse)
@@ -127,6 +129,7 @@ async def test_search_movies_no_page_respects_limit():
 
         client = SearchClient()
         result = await client.search_movies(query="in", limit=2, page=None)
+        assert not isinstance(result, str)
 
         # Should return exactly 2 movies (capped by limit)
         assert isinstance(result, list)
@@ -171,6 +174,7 @@ async def test_search_movies_with_page_returns_paginated():
 
         client = SearchClient()
         result = await client.search_movies(query="in", limit=2, page=2)
+        assert not isinstance(result, str)
 
         # Should return PaginatedResponse
         assert isinstance(result, PaginatedResponse)
@@ -214,6 +218,7 @@ async def test_search_pagination_metadata():
 
         client = SearchClient()
         result = await client.search_shows(query="show", limit=1, page=3)
+        assert not isinstance(result, str)
 
         # Verify pagination metadata
         assert result.pagination.current_page == 3
@@ -261,6 +266,7 @@ async def test_search_empty_results():
         result_paginated = await client.search_shows(
             query="nonexistent", limit=10, page=1
         )
+        assert not isinstance(result_paginated, str)
         assert isinstance(result_paginated, PaginatedResponse)
         assert len(result_paginated.data) == 0
         assert result_paginated.pagination.total_items == 0
@@ -272,5 +278,6 @@ async def test_search_empty_results():
         result_list = await client.search_movies(
             query="nonexistent", limit=10, page=None
         )
+        assert not isinstance(result_list, str)
         assert isinstance(result_list, list)
         assert len(result_list) == 0

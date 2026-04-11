@@ -44,6 +44,7 @@ async def test_get_episode_ratings():
 
         client = EpisodesClient()
         result = await client.get_episode_ratings("game-of-thrones", 1, 1)
+        assert not isinstance(result, str)
 
         assert result["rating"] == 8.57053
         assert result["votes"] == 1234

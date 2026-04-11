@@ -32,6 +32,7 @@ class TestShowProgressClient:
             result = await authenticated_progress_client.get_show_progress(
                 "breaking-bad"
             )
+            assert not isinstance(result, str)
 
             assert result.aired == 62
             assert result.completed == 45

@@ -41,6 +41,7 @@ async def test_get_season_videos():
 
         client = SeasonsClient()
         result = await client.get_season_videos("game-of-thrones", 1)
+        assert not isinstance(result, str)
 
         assert len(result) == 1
         assert result[0]["title"] == "Season 1 Trailer"

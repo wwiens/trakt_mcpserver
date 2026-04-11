@@ -368,8 +368,10 @@ async def fetch_episode_lists(
     show_id: str,
     season: int,
     episode: int,
-    list_type: str = "all",
-    sort: str = "popular",
+    list_type: Literal["all", "personal", "official", "watchlists"] = "all",
+    sort: Literal[
+        "popular", "likes", "comments", "items", "added", "updated"
+    ] = "popular",
 ) -> str:
     """Fetch lists containing a specific episode.
 

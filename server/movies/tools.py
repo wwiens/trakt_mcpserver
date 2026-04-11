@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Annotated, Literal
+from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
@@ -32,9 +32,6 @@ from models.formatters.movies import MovieFormatters
 from models.formatters.videos import VideoFormatters
 from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams
 from utils.api.errors import MCPError, handle_api_errors_func
-
-if TYPE_CHECKING:
-    from models.types import MovieResponse, TraktRating
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -242,6 +239,13 @@ async def fetch_boxoffice_movies() -> str:
     """
     client = BoxOfficeMoviesClient()
     movies = await client.get_boxoffice_movies()
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="boxoffice_movies",
+            resource_id="weekend",
+            error_message=movies,
+            operation="fetch_boxoffice_movies",
+        )
     return MovieFormatters.format_boxoffice_movies(movies)
 
 
@@ -266,7 +270,7 @@ async def fetch_movie_ratings(movie_id: str) -> str:
 
     try:
         client = MovieDetailsClient()
-        movie: MovieResponse = await client.get_movie(movie_id)
+        movie = await client.get_movie(movie_id)
 
         # Handle transitional case where API returns error strings
         if isinstance(movie, str):
@@ -279,7 +283,7 @@ async def fetch_movie_ratings(movie_id: str) -> str:
 
         movie_title = movie.get("title", f"Movie ID: {movie_id}")
 
-        ratings: TraktRating = await client.get_movie_ratings(movie_id)
+        ratings = await client.get_movie_ratings(movie_id)
 
         # Handle transitional case where API returns error strings
         if isinstance(ratings, str):
@@ -323,7 +327,7 @@ async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
     try:
         client = MovieDetailsClient()
         if extended:
-            movie: MovieResponse = await client.get_movie_extended(movie_id)
+            movie = await client.get_movie_extended(movie_id)
             # Handle transitional case where API returns error strings
             if isinstance(movie, str):
                 raise BaseToolErrorMixin.handle_api_string_error(
@@ -334,7 +338,7 @@ async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
                 )
             return MovieFormatters.format_movie_extended(movie)
         else:
-            movie: MovieResponse = await client.get_movie(movie_id)
+            movie = await client.get_movie(movie_id)
             # Handle transitional case where API returns error strings
             if isinstance(movie, str):
                 raise BaseToolErrorMixin.handle_api_string_error(

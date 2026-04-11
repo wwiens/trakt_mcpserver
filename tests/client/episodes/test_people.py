@@ -52,10 +52,11 @@ async def test_get_episode_people():
 
         client = EpisodesClient()
         result = await client.get_episode_people("game-of-thrones", 1, 1)
+        assert not isinstance(result, str)
 
         assert len(result["cast"]) == 1
         assert result["cast"][0]["person"]["name"] == "Sean Bean"
-        assert "directing" in result["crew"]
+        assert "directing" in result.get("crew", {})
 
         mock_instance.get.assert_called_once()
         call_args = mock_instance.get.call_args

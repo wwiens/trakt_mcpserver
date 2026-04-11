@@ -45,10 +45,11 @@ async def test_get_season_watching():
 
         client = SeasonsClient()
         result = await client.get_season_watching("game-of-thrones", 1)
+        assert not isinstance(result, str)
 
         assert len(result) == 2
         assert result[0]["username"] == "sean"
-        assert result[0]["vip"] is True
+        assert result[0].get("vip") is True
         assert result[1]["username"] == "justin"
 
         mock_instance.get.assert_called_once()

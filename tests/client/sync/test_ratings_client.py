@@ -2,6 +2,7 @@
 
 import re
 from datetime import datetime
+from typing import Literal
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -159,6 +160,7 @@ class TestSyncRatingsClient:
             mock_request.return_value = mock_paginated_response
 
             result = await authenticated_client.get_sync_ratings("movies")
+            assert not isinstance(result, str)
 
             assert len(result.data) == 2
             assert result.data[0].type == "movie"
@@ -191,6 +193,7 @@ class TestSyncRatingsClient:
             mock_request.return_value = mock_paginated_response
 
             result = await authenticated_client.get_sync_ratings("shows", rating=10)
+            assert not isinstance(result, str)
 
             assert len(result.data) == 1
             assert result.data[0].type == "show"
@@ -234,6 +237,7 @@ class TestSyncRatingsClient:
             mock_request.return_value = mock_summary
 
             result = await authenticated_client.add_sync_ratings(request)
+            assert not isinstance(result, str)
 
             assert result.added is not None
             assert result.added.movies == 1
@@ -294,6 +298,7 @@ class TestSyncRatingsClient:
             mock_request.return_value = mock_summary
 
             result = await authenticated_client.remove_sync_ratings(request)
+            assert not isinstance(result, str)
 
             assert result.deleted is not None
             assert result.deleted.movies == 2
@@ -370,7 +375,7 @@ class TestSyncRatingsClient:
     async def test_endpoint_url_construction(
         self,
         authenticated_client: SyncRatingsClient,
-        rating_type: str,
+        rating_type: Literal["movies", "shows", "seasons", "episodes"],
         rating: int | None,
         expected_endpoint: str,
     ) -> None:
@@ -416,6 +421,7 @@ class TestSyncRatingsClient:
             result = await authenticated_client.get_sync_ratings(
                 "movies", pagination=pagination_params
             )
+            assert not isinstance(result, str)
 
             assert len(result.data) == 2
             assert result.data[0].type == "movie"
@@ -455,6 +461,7 @@ class TestSyncRatingsClient:
             result = await authenticated_client.get_sync_ratings(
                 "shows", rating=10, pagination=pagination_params
             )
+            assert not isinstance(result, str)
 
             assert len(result.data) == 1
             assert result.data[0].rating == 10
@@ -497,6 +504,7 @@ class TestSyncRatingsClient:
             mock_request.return_value = mock_paginated_response
 
             result = await authenticated_client.get_sync_ratings("movies")
+            assert not isinstance(result, str)
 
             assert len(result.data) == 1
             assert result.is_single_page
@@ -527,6 +535,7 @@ class TestSyncRatingsClient:
             result = await authenticated_client.get_sync_ratings(
                 "movies", pagination=PaginationParams(page=2, limit=5)
             )
+            assert not isinstance(result, str)
 
             # Test pagination properties
             pagination = result.pagination
@@ -559,6 +568,7 @@ class TestSyncRatingsClient:
             mock_request.return_value = mock_paginated_response
 
             result = await authenticated_client.get_sync_ratings("movies")
+            assert not isinstance(result, str)
 
             assert len(result.data) == 0
             assert result.is_empty
@@ -620,6 +630,7 @@ class TestSyncClient:
             mock_request.return_value = empty_paginated_response
 
             result = await client.get_sync_ratings("movies")
+            assert not isinstance(result, str)
             assert result.data == []
 
             mock_request.assert_called_once()

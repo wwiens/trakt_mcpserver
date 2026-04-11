@@ -49,6 +49,7 @@ async def test_get_show_comments():
 
         client = CommentsClient()
         result = await client.get_show_comments("1", limit=10, sort="newest")
+        assert not isinstance(result, str)
 
         assert len(result) == 2
         assert result[0]["id"] == "123"
@@ -90,6 +91,7 @@ async def test_get_movie_comments():
 
         client = CommentsClient()
         result = await client.get_movie_comments("1", limit=10, sort="likes")
+        assert not isinstance(result, str)
 
         assert len(result) == 1
         assert result[0]["id"] == "456"
@@ -141,6 +143,7 @@ async def test_get_comment_replies():
 
         client = CommentsClient()
         result = await client.get_comment_replies("456", limit=10)
+        assert not isinstance(result, str)
 
         assert len(result) == 2
         assert result[0]["id"] == "789"

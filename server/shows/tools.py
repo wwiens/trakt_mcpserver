@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Annotated, Literal
+from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
@@ -32,9 +32,6 @@ from models.formatters.shows import ShowFormatters
 from models.formatters.videos import VideoFormatters
 from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams
 from utils.api.errors import MCPError, handle_api_errors_func
-
-if TYPE_CHECKING:
-    from models.types import ShowResponse, TraktRating
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -251,7 +248,7 @@ async def fetch_show_ratings(show_id: str) -> str:
 
     try:
         client: ShowDetailsClient = ShowDetailsClient()
-        show_data: ShowResponse = await client.get_show(show_id)
+        show_data = await client.get_show(show_id)
 
         # Handle transitional case where API returns error strings
         if isinstance(show_data, str):
@@ -262,9 +259,8 @@ async def fetch_show_ratings(show_id: str) -> str:
                 operation="fetch_show_details",
             )
 
-        show: ShowResponse = show_data
-        show_title = show.get("title", "Unknown Show")
-        ratings: TraktRating = await client.get_show_ratings(show_id)
+        show_title = show_data.get("title", "Unknown Show")
+        ratings = await client.get_show_ratings(show_id)
 
         # Handle transitional case where API returns error strings
         if isinstance(ratings, str):
@@ -309,7 +305,7 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
         client: ShowDetailsClient = ShowDetailsClient()
 
         if extended:
-            show_data: ShowResponse = await client.get_show_extended(show_id)
+            show_data = await client.get_show_extended(show_id)
             # Handle transitional case where API returns error strings
             if isinstance(show_data, str):
                 raise BaseToolErrorMixin.handle_api_string_error(
@@ -320,7 +316,7 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
                 )
             return ShowFormatters.format_show_extended(show_data)
         else:
-            show_data: ShowResponse = await client.get_show(show_id)
+            show_data = await client.get_show(show_id)
             # Handle transitional case where API returns error strings
             if isinstance(show_data, str):
                 raise BaseToolErrorMixin.handle_api_string_error(
@@ -352,6 +348,14 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
     try:
         client: ShowsClient = ShowsClient()  # Use unified client
         videos = await client.get_videos(show_id)
+
+        if isinstance(videos, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="show_videos",
+                resource_id=show_id,
+                error_message=videos,
+                operation="fetch_show_videos",
+            )
 
         # Get show title for context, fallback to ID if fetch fails
         try:
@@ -438,6 +442,13 @@ async def fetch_show_seasons(show_id: str) -> str:
 
     client = ShowsClient()
     seasons = await client.get_seasons(show_id)
+    if isinstance(seasons, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="show_seasons",
+            resource_id=show_id,
+            error_message=seasons,
+            operation="fetch_show_seasons",
+        )
     return ShowFormatters.format_show_seasons(seasons)
 
 

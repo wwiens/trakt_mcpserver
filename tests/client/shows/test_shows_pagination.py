@@ -42,6 +42,7 @@ async def test_trending_shows_no_page_respects_limit():
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=2, page=None)
+        assert not isinstance(result, str)
 
         # Should return exactly 2 shows (capped by limit)
         assert isinstance(result, list)
@@ -86,6 +87,7 @@ async def test_trending_shows_with_page_returns_paginated():
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=2, page=1)
+        assert not isinstance(result, str)
 
         # Should return PaginatedResponse
         assert isinstance(result, PaginatedResponse)
@@ -127,6 +129,7 @@ async def test_trending_shows_pagination_metadata():
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=2, page=2)
+        assert not isinstance(result, str)
 
         # Check metadata properties
         assert result.pagination.current_page == 2
@@ -166,6 +169,7 @@ async def test_trending_shows_navigation_properties():
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=1, page=2)
+        assert not isinstance(result, str)
 
         # Check navigation properties
         assert result.pagination.has_previous_page
@@ -207,6 +211,7 @@ async def test_popular_shows_no_page_returns_all():
 
         client = PopularShowsClient()
         result = await client.get_popular_shows(limit=2, page=None)
+        assert not isinstance(result, str)
 
         # Should return a plain list
         assert isinstance(result, list)
@@ -245,6 +250,7 @@ async def test_popular_shows_with_page_returns_paginated():
 
         client = PopularShowsClient()
         result = await client.get_popular_shows(limit=1, page=1)
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert len(result.data) == 1
@@ -282,6 +288,7 @@ async def test_favorited_shows_pagination():
 
         client = ShowStatsClient()
         result = await client.get_favorited_shows(limit=1, period="weekly", page=1)
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert len(result.data) == 1
@@ -325,6 +332,7 @@ async def test_played_shows_pagination():
 
         client = ShowStatsClient()
         result = await client.get_played_shows(limit=1, period="weekly", page=1)
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert len(result.data) == 1
@@ -361,6 +369,7 @@ async def test_watched_shows_pagination():
 
         client = ShowStatsClient()
         result = await client.get_watched_shows(limit=1, period="weekly", page=1)
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert len(result.data) == 1
@@ -397,6 +406,7 @@ async def test_single_page_result():
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=10, page=1)
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert result.is_single_page
@@ -434,6 +444,7 @@ async def test_empty_result():
 
         client = TrendingShowsClient()
         result = await client.get_trending_shows(limit=10, page=None)
+        assert not isinstance(result, str)
 
         # Auto-pagination with empty results should return empty list
         assert isinstance(result, list)
@@ -479,6 +490,7 @@ async def test_multiple_pages_auto_paginate():
         client = TrendingShowsClient()
         # Use limit=10 so we can fetch all 3 items without hitting max_items cap
         result = await client.get_trending_shows(limit=10, page=None)
+        assert not isinstance(result, str)
 
         # Should fetch all 3 pages and return flat list (total items < limit)
         assert isinstance(result, list)

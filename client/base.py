@@ -318,7 +318,6 @@ class BaseClient:
             return [response_type.model_validate(item) for item in result]
         return result  # type: ignore[return-value] # TypedDict runtime limitation
 
-    @handle_api_errors
     async def _make_paginated_request(
         self,
         endpoint: str,

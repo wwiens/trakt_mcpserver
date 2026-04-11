@@ -52,6 +52,7 @@ async def test_get_episode_translations(
 
     client = EpisodesClient()
     result = await client.get_episode_translations("game-of-thrones", 1, 1)
+    assert not isinstance(result, str)
 
     assert len(result) == 2
     assert result[0]["language"] == "en"
@@ -81,6 +82,7 @@ async def test_get_episode_translations_with_language(
 
     client = EpisodesClient()
     result = await client.get_episode_translations("game-of-thrones", 1, 1, "en")
+    assert not isinstance(result, str)
 
     assert len(result) == 1
     assert result[0]["language"] == "en"
@@ -109,6 +111,7 @@ async def test_get_episode_translations_normalizes_language(
 
     client = EpisodesClient()
     result = await client.get_episode_translations("game-of-thrones", 1, 1, " EN ")
+    assert not isinstance(result, str)
 
     assert len(result) == 1
     call_args = mock_instance.get.call_args

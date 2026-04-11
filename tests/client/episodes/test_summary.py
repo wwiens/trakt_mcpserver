@@ -41,11 +41,12 @@ async def test_get_episode():
 
         client = EpisodesClient()
         result = await client.get_episode("game-of-thrones", 1, 1)
+        assert not isinstance(result, str)
 
         assert result["season"] == 1
         assert result["number"] == 1
-        assert result["title"] == "Winter Is Coming"
-        assert result["runtime"] == 62
+        assert result.get("title") == "Winter Is Coming"
+        assert result.get("runtime") == 62
 
         mock_instance.get.assert_called_once()
         call_args = mock_instance.get.call_args

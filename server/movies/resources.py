@@ -122,6 +122,13 @@ async def get_boxoffice_movies() -> str:
     """
     client: MoviesClient = MoviesClient()
     movies = await client.get_boxoffice_movies()
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="boxoffice_movies",
+            resource_id="weekend",
+            error_message=movies,
+            operation="get_boxoffice_movies",
+        )
     return MovieFormatters.format_boxoffice_movies(movies)
 
 

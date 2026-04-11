@@ -65,14 +65,15 @@ async def test_get_seasons():
 
         client = ShowsClient()
         result = await client.get_seasons("game-of-thrones")
+        assert not isinstance(result, str)
 
         assert len(result) == 3
         assert result[0]["number"] == 0
-        assert result[0]["title"] == "Specials"
-        assert result[0]["episode_count"] == 10
+        assert result[0].get("title") == "Specials"
+        assert result[0].get("episode_count") == 10
         assert result[1]["number"] == 1
-        assert result[1]["title"] == "Season 1"
-        assert result[1]["aired_episodes"] == 10
+        assert result[1].get("title") == "Season 1"
+        assert result[1].get("aired_episodes") == 10
         assert result[2]["number"] == 2
 
         # Verify extended=full was passed

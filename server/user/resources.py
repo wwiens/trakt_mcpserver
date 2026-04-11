@@ -8,6 +8,7 @@ from mcp.server.fastmcp import FastMCP
 from client.user import UserClient
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.user import UserFormatters
+from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
 
 # Type alias for resource handlers
@@ -32,6 +33,13 @@ async def get_user_watched_shows() -> str:
         )
 
     shows = await client.get_user_watched_shows()
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="user_watched_shows",
+            resource_id="authenticated_user",
+            error_message=shows,
+            operation="get_user_watched_shows",
+        )
     return UserFormatters.format_user_watched_shows(shows)
 
 
@@ -53,6 +61,13 @@ async def get_user_watched_movies() -> str:
         )
 
     movies = await client.get_user_watched_movies()
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="user_watched_movies",
+            resource_id="authenticated_user",
+            error_message=movies,
+            operation="get_user_watched_movies",
+        )
     return UserFormatters.format_user_watched_movies(movies)
 
 

@@ -51,6 +51,7 @@ async def test_get_related_movies_auto_pagination():
 
         client = RelatedMoviesClient()
         result = await client.get_related_movies("the-dark-knight", limit=10)
+        assert not isinstance(result, str)
 
         assert isinstance(result, list)
         assert len(result) == 2
@@ -95,6 +96,7 @@ async def test_get_related_movies_single_page():
 
         client = RelatedMoviesClient()
         result = await client.get_related_movies("the-dark-knight", limit=10, page=2)
+        assert not isinstance(result, str)
 
         # Single-page mode returns PaginatedResponse with pagination metadata
         assert hasattr(result, "data")
@@ -175,6 +177,7 @@ async def test_get_related_movies_empty_results():
 
         client = RelatedMoviesClient()
         result = await client.get_related_movies("obscure-movie", limit=10)
+        assert not isinstance(result, str)
 
         assert isinstance(result, list)
         assert len(result) == 0

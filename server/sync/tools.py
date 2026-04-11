@@ -36,24 +36,19 @@ from models.formatters.sync_ratings import SyncRatingsFormatters
 from models.formatters.sync_watchlist import SyncWatchlistFormatters
 from models.sync.history import (
     HistoryQueryParams,
-    HistorySummary,
     TraktHistoryItem,
     TraktHistoryRequest,
 )
 from models.sync.ratings import (
-    SyncRatingsSummary,
-    TraktSyncRating,
     TraktSyncRatingItem,
     TraktSyncRatingsRequest,
 )
 from models.sync.watchlist import (
-    SyncWatchlistSummary,
     TraktSyncWatchlistItem,
     TraktSyncWatchlistRequest,
-    TraktWatchlistItem,
 )
 from models.types.ids import TraktIds
-from models.types.pagination import PaginatedResponse, PaginationParams
+from models.types.pagination import PaginationParams
 from server.base import BaseToolErrorMixin, IdentifierValidatorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
@@ -209,9 +204,7 @@ async def fetch_user_ratings(
             if page is not None
             else None
         )
-        paginated_result: PaginatedResponse[
-            TraktSyncRating
-        ] = await client.get_sync_ratings(
+        paginated_result = await client.get_sync_ratings(
             rating_type, rating, pagination=pagination_params
         )
 
@@ -275,7 +268,7 @@ async def add_user_ratings(
         request_data: dict[str, Any] = {rating_type: sync_items}
         request = TraktSyncRatingsRequest(**request_data)
 
-        summary: SyncRatingsSummary = await client.add_sync_ratings(request)
+        summary = await client.add_sync_ratings(request)
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
@@ -335,7 +328,7 @@ async def remove_user_ratings(
         request_data: dict[str, Any] = {rating_type: sync_items}
         request = TraktSyncRatingsRequest(**request_data)
 
-        summary: SyncRatingsSummary = await client.remove_sync_ratings(request)
+        summary = await client.remove_sync_ratings(request)
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
@@ -398,9 +391,7 @@ async def fetch_user_watchlist(
             if page is not None
             else None
         )
-        paginated_result: PaginatedResponse[
-            TraktWatchlistItem
-        ] = await client.get_sync_watchlist(
+        paginated_result = await client.get_sync_watchlist(
             watchlist_type, sort_by, sort_how, pagination=pagination_params
         )
 
@@ -465,7 +456,7 @@ async def add_user_watchlist(
         request_data: dict[str, Any] = {watchlist_type: sync_items}
         request = TraktSyncWatchlistRequest(**request_data)
 
-        summary: SyncWatchlistSummary = await client.add_sync_watchlist(request)
+        summary = await client.add_sync_watchlist(request)
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
@@ -525,7 +516,7 @@ async def remove_user_watchlist(
         request_data: dict[str, Any] = {watchlist_type: sync_items}
         request = TraktSyncWatchlistRequest(**request_data)
 
-        summary: SyncWatchlistSummary = await client.remove_sync_watchlist(request)
+        summary = await client.remove_sync_watchlist(request)
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
@@ -670,7 +661,7 @@ async def add_to_history(
 
     request = TraktHistoryRequest(**{history_type: history_items})
 
-    summary: HistorySummary = await client.add_to_history(request)
+    summary = await client.add_to_history(request)
 
     # Handle transitional case where API returns error strings
     if isinstance(summary, str):
@@ -719,7 +710,7 @@ async def remove_from_history(
 
     request = TraktHistoryRequest(**{history_type: history_items})
 
-    summary: HistorySummary = await client.remove_from_history(request)
+    summary = await client.remove_from_history(request)
 
     # Handle transitional case where API returns error strings
     if isinstance(summary, str):

@@ -17,7 +17,7 @@ from utils.api.error_types import AuthenticationRequiredError
 
 # Type aliases for user tools
 T = TypeVar("T")
-Fetcher = Callable[[], Awaitable[list[T]]]
+Fetcher = Callable[[], Awaitable[list[T] | str]]
 Formatter = Callable[[list[T]], str]
 ToolHandler = Callable[[int | None], Awaitable[str]]
 
@@ -87,6 +87,13 @@ async def _fetch_user_items(
             auth_url=AUTH_VERIFICATION_URL,
         )
     items = await fetcher()
+    if isinstance(items, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type=operation,
+            resource_id="authenticated_user",
+            error_message=items,
+            operation=operation,
+        )
     # Apply limit or safety cap when limit=0 (fetch all)
     _, max_items = effective_limit(limit)
     return formatter(items[:max_items])
