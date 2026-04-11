@@ -22,6 +22,7 @@ from config.mcp.tools.progress import PROGRESS_TOOLS
 from models.formatters.progress import ProgressFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
+from utils.api.request_context import set_tool_context
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -75,6 +76,7 @@ async def fetch_show_progress(
     # Validate show_id
     params = ShowIdParam(show_id=show_id)
     show_id = params.show_id
+    set_tool_context("show", show_id)
 
     logger.debug("fetch_show_progress called with show_id=%s", show_id)
 

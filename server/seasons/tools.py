@@ -18,12 +18,6 @@ from client.seasons.translations import SeasonTranslationsClient
 from client.seasons.videos import SeasonVideosClient
 from client.seasons.watching import SeasonWatchingClient
 from client.shows.details import ShowDetailsClient
-from config.api.lists import (
-    INVALID_LIST_SORT_MSG,
-    INVALID_LIST_TYPE_MSG,
-    VALID_LIST_SORTS,
-    VALID_LIST_TYPES,
-)
 from config.mcp.descriptions import (
     EMBED_MARKDOWN_DESCRIPTION,
     LANGUAGE_DESCRIPTION,
@@ -38,6 +32,7 @@ from models.formatters.videos import VideoFormatters
 from models.types.language import validate_language
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
+from utils.api.request_context import set_tool_context
 
 if TYPE_CHECKING:
     from models.types import (
@@ -118,6 +113,7 @@ async def fetch_season_info(show_id: str, season: int) -> str:
         Formatted markdown with season details
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     client = SeasonInfoClient()
     season_data: SeasonResponse | str = await client.get_season(
@@ -147,6 +143,7 @@ async def fetch_season_episodes(show_id: str, season: int) -> str:
         Formatted markdown with episode list
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     client = SeasonEpisodesClient()
     episodes: list[EpisodeResponse] | str = await client.get_season_episodes(
@@ -176,6 +173,7 @@ async def fetch_season_ratings(show_id: str, season: int) -> str:
         Formatted markdown with ratings and distribution
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     ratings_client = SeasonRatingsClient()
     show_title, ratings = await asyncio.gather(
@@ -207,6 +205,7 @@ async def fetch_season_stats(show_id: str, season: int) -> str:
         Formatted markdown with season statistics
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     stats_client = SeasonStatsClient()
     show_title, stats = await asyncio.gather(
@@ -238,6 +237,7 @@ async def fetch_season_people(show_id: str, season: int) -> str:
         Formatted markdown with cast and crew
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     people_client = SeasonPeopleClient()
     show_title, people = await asyncio.gather(
@@ -272,6 +272,7 @@ async def fetch_season_videos(
         Formatted markdown with videos
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     videos_client = SeasonVideosClient()
     videos, title = await asyncio.gather(
@@ -305,6 +306,7 @@ async def fetch_season_watching(show_id: str, season: int) -> str:
         Formatted markdown with user list
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     watching_client = SeasonWatchingClient()
     show_title, users = await asyncio.gather(
@@ -339,6 +341,7 @@ async def fetch_season_translations(
         Formatted markdown with translations
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     try:
         language = validate_language(language)
@@ -392,19 +395,7 @@ async def fetch_season_lists(
         Formatted markdown with lists
     """
     params = SeasonIdParam(show_id=show_id, season=season)
-
-    if list_type not in VALID_LIST_TYPES:
-        raise BaseToolErrorMixin.handle_validation_error(
-            INVALID_LIST_TYPE_MSG,
-            parameter="list_type",
-            provided_value=list_type,
-        )
-    if sort not in VALID_LIST_SORTS:
-        raise BaseToolErrorMixin.handle_validation_error(
-            INVALID_LIST_SORT_MSG,
-            parameter="sort",
-            provided_value=sort,
-        )
+    set_tool_context("show", params.show_id)
 
     lists_client = SeasonListsClient()
     show_title, lists = await asyncio.gather(

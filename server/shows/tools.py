@@ -32,6 +32,7 @@ from models.formatters.shows import ShowFormatters
 from models.formatters.videos import VideoFormatters
 from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams
 from utils.api.errors import MCPError, handle_api_errors_func
+from utils.api.request_context import set_tool_context
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -245,6 +246,7 @@ async def fetch_show_ratings(show_id: str) -> str:
     # Validate required parameters via Pydantic
     params = ShowIdParam(show_id=show_id)
     show_id = params.show_id
+    set_tool_context("show", show_id)
 
     try:
         client: ShowDetailsClient = ShowDetailsClient()
@@ -300,6 +302,7 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
     # Validate required parameters via Pydantic
     params = ShowSummaryParams(show_id=show_id, extended=extended)
     show_id, extended = params.show_id, params.extended
+    set_tool_context("show", show_id)
 
     try:
         client: ShowDetailsClient = ShowDetailsClient()
@@ -344,6 +347,7 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
     # Validate required parameters via Pydantic
     params = ShowVideoParams(show_id=show_id, embed_markdown=embed_markdown)
     show_id, embed_markdown = params.show_id, params.embed_markdown
+    set_tool_context("show", show_id)
 
     try:
         client: ShowsClient = ShowsClient()  # Use unified client
@@ -415,6 +419,7 @@ async def fetch_related_shows(
     id_params = ShowIdParam(show_id=show_id)
     # Validate limit/page
     params = LimitOnly(limit=limit, page=page)
+    set_tool_context("show", id_params.show_id)
 
     client = RelatedShowsClient()
     shows = await client.get_related_shows(
@@ -439,6 +444,7 @@ async def fetch_show_seasons(show_id: str) -> str:
     """
     params = ShowIdParam(show_id=show_id)
     show_id = params.show_id
+    set_tool_context("show", show_id)
 
     client = ShowsClient()
     seasons = await client.get_seasons(show_id)
@@ -497,6 +503,7 @@ async def fetch_show_people(show_id: str, include_guest_stars: bool = False) -> 
         Formatted markdown with cast and crew
     """
     params = ShowIdParam(show_id=show_id)
+    set_tool_context("show", params.show_id)
 
     people_client = ShowPeopleClient()
     show_title, people = await asyncio.gather(

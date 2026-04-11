@@ -359,10 +359,15 @@ def handle_api_errors_func(
 
     @functools.wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | str:
-        return await _execute_with_error_handling(
-            func(*args, **kwargs),
-            convert_auth_errors=True,
-        )
+        from .request_context import clear_current_context
+
+        try:
+            return await _execute_with_error_handling(
+                func(*args, **kwargs),
+                convert_auth_errors=True,
+            )
+        finally:
+            clear_current_context()
 
     return wrapper
 

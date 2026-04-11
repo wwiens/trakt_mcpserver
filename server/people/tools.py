@@ -12,12 +12,6 @@ from client.people.lists import PersonListsClient
 from client.people.movies import PersonMoviesClient
 from client.people.shows import PersonShowsClient
 from client.people.summary import PersonSummaryClient
-from config.api.lists import (
-    INVALID_LIST_SORT_MSG,
-    INVALID_LIST_TYPE_MSG,
-    VALID_LIST_SORTS,
-    VALID_LIST_TYPES,
-)
 from config.mcp.descriptions import (
     EXTENDED_DESCRIPTION,
     LIST_SORT_DESCRIPTION,
@@ -28,6 +22,7 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.people import PeopleFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
+from utils.api.request_context import set_tool_context
 
 logger: Final = logging.getLogger("trakt_mcp")
 
@@ -95,6 +90,7 @@ async def fetch_person_summary(person_id: str, extended: bool = True) -> str:
         Formatted markdown with person details
     """
     params = PersonIdParam(person_id=person_id)
+    set_tool_context("person", params.person_id)
 
     client = PersonSummaryClient()
     if extended:
@@ -124,6 +120,7 @@ async def fetch_person_movies(person_id: str) -> str:
         Formatted markdown with movie credits
     """
     params = PersonIdParam(person_id=person_id)
+    set_tool_context("person", params.person_id)
 
     movies_client = PersonMoviesClient()
     person_name, movie_credits = await asyncio.gather(
@@ -154,6 +151,7 @@ async def fetch_person_shows(person_id: str) -> str:
         Formatted markdown with show credits
     """
     params = PersonIdParam(person_id=person_id)
+    set_tool_context("person", params.person_id)
 
     shows_client = PersonShowsClient()
     person_name, show_credits = await asyncio.gather(
@@ -176,8 +174,10 @@ async def fetch_person_shows(person_id: str) -> str:
 @handle_api_errors_func
 async def fetch_person_lists(
     person_id: str,
-    list_type: str = "all",
-    sort: str = "popular",
+    list_type: Literal["all", "personal", "official", "watchlists"] = "all",
+    sort: Literal[
+        "popular", "likes", "comments", "items", "added", "updated"
+    ] = "popular",
 ) -> str:
     """Fetch lists containing a specific person.
 
@@ -190,19 +190,7 @@ async def fetch_person_lists(
         Formatted markdown with lists
     """
     params = PersonIdParam(person_id=person_id)
-
-    if list_type not in VALID_LIST_TYPES:
-        raise BaseToolErrorMixin.handle_validation_error(
-            INVALID_LIST_TYPE_MSG,
-            parameter="list_type",
-            provided_value=list_type,
-        )
-    if sort not in VALID_LIST_SORTS:
-        raise BaseToolErrorMixin.handle_validation_error(
-            INVALID_LIST_SORT_MSG,
-            parameter="sort",
-            provided_value=sort,
-        )
+    set_tool_context("person", params.person_id)
 
     lists_client = PersonListsClient()
     person_name, lists = await asyncio.gather(

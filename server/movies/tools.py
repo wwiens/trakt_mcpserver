@@ -32,6 +32,7 @@ from models.formatters.movies import MovieFormatters
 from models.formatters.videos import VideoFormatters
 from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams
 from utils.api.errors import MCPError, handle_api_errors_func
+from utils.api.request_context import set_tool_context
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -267,6 +268,7 @@ async def fetch_movie_ratings(movie_id: str) -> str:
     # Validate required parameters via Pydantic
     params = MovieIdParam(movie_id=movie_id)
     movie_id = params.movie_id
+    set_tool_context("movie", movie_id)
 
     try:
         client = MovieDetailsClient()
@@ -323,6 +325,7 @@ async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
     # Validate required parameters via Pydantic
     params = MovieSummaryParams(movie_id=movie_id, extended=extended)
     movie_id, extended = params.movie_id, params.extended
+    set_tool_context("movie", movie_id)
 
     try:
         client = MovieDetailsClient()
@@ -367,6 +370,7 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
     # Validate required parameters via Pydantic
     params = MovieVideoParams(movie_id=movie_id, embed_markdown=embed_markdown)
     movie_id, embed_markdown = params.movie_id, params.embed_markdown
+    set_tool_context("movie", movie_id)
 
     try:
         client: MoviesClient = MoviesClient()  # Use unified client
@@ -434,6 +438,7 @@ async def fetch_related_movies(
     id_params = MovieIdParam(movie_id=movie_id)
     # Validate limit/page
     params = LimitOnly(limit=limit, page=page)
+    set_tool_context("movie", id_params.movie_id)
 
     client = RelatedMoviesClient()
     movies = await client.get_related_movies(
@@ -489,6 +494,7 @@ async def fetch_movie_people(movie_id: str) -> str:
         Formatted markdown with cast and crew
     """
     params = MovieIdParam(movie_id=movie_id)
+    set_tool_context("movie", params.movie_id)
 
     people_client = MoviePeopleClient()
     movie_title, people = await asyncio.gather(

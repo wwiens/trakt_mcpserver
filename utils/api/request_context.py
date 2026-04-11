@@ -147,6 +147,30 @@ def get_correlation_id() -> str | None:
     return context.correlation_id if context else None
 
 
+def set_tool_context(
+    resource_type: str,
+    resource_id: str,
+    endpoint: str | None = None,
+    method: str = "GET",
+) -> None:
+    """Set request context from a tool function for accurate error reporting.
+
+    Call at the top of tool functions that operate on a specific resource,
+    before any client calls. The ``if get_current_context() is None`` guard
+    in ``BaseClient._make_request`` will then skip its URL-parsing fallback.
+
+    Args:
+        resource_type: Resource kind (e.g., ``"movie"``, ``"show"``)
+        resource_id: Caller-supplied identifier (slug, Trakt ID, IMDB ID)
+        endpoint: Optional API endpoint hint (informational)
+        method: HTTP method (default ``"GET"``)
+    """
+    ctx = RequestContext().with_resource(resource_type, resource_id)
+    if endpoint:
+        ctx = ctx.with_endpoint(endpoint, method)
+    set_current_context(ctx)
+
+
 def add_context_to_error_data(
     error_data: dict[str, Any],
     context: RequestContext | None = None,

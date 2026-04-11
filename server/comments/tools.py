@@ -33,6 +33,7 @@ from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
 from server.movies.tools import MovieIdParam
 from server.shows.tools import ShowIdParam
 from utils.api.errors import handle_api_errors_func
+from utils.api.request_context import set_tool_context
 
 # Comment sort options supported by Trakt API
 CommentSort = Literal["newest", "oldest", "likes", "replies"]
@@ -301,6 +302,7 @@ async def fetch_movie_comments(
         movie_id = id_params.movie_id
     except ValidationError as e:
         _handle_validation_error(e, "movie comments")
+    set_tool_context("movie", movie_id)
 
     client = MovieCommentsClient()
 
@@ -353,6 +355,7 @@ async def fetch_show_comments(
         show_id = id_params.show_id
     except ValidationError as e:
         _handle_validation_error(e, "show comments")
+    set_tool_context("show", show_id)
 
     client = ShowCommentsClient()
 
@@ -407,6 +410,7 @@ async def fetch_season_comments(
         show_id, season = id_params.show_id, id_params.season
     except ValidationError as e:
         _handle_validation_error(e, "season comments")
+    set_tool_context("show", show_id)
 
     client = SeasonCommentsClient()
 
@@ -468,6 +472,7 @@ async def fetch_episode_comments(
         )
     except ValidationError as e:
         _handle_validation_error(e, "episode comments")
+    set_tool_context("show", show_id)
 
     client = EpisodeCommentsClient()
 
@@ -508,6 +513,7 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
         comment_id = params.comment_id
     except ValidationError as e:
         _handle_validation_error(e, "comment")
+    set_tool_context("comment", comment_id)
 
     client = CommentDetailsClient()
 
@@ -551,6 +557,7 @@ async def fetch_comment_replies(
         comment_id = id_params.comment_id
     except ValidationError as e:
         _handle_validation_error(e, "comment replies")
+    set_tool_context("comment", comment_id)
 
     client = CommentDetailsClient()
 

@@ -20,6 +20,7 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.recommendations import RecommendationFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
+from utils.api.request_context import set_tool_context
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -167,6 +168,7 @@ async def hide_movie_recommendation(movie_id: str) -> str:
     """
     logger.debug("hide_movie_recommendation called with movie_id=%s", movie_id)
     params = HideRecommendationParams(item_id=movie_id)
+    set_tool_context("movie", params.item_id)
 
     client = RecommendationsClient()
     await client.hide_movie_recommendation(params.item_id)
@@ -188,6 +190,7 @@ async def hide_show_recommendation(show_id: str) -> str:
     """
     logger.debug("hide_show_recommendation called with show_id=%s", show_id)
     params = HideRecommendationParams(item_id=show_id)
+    set_tool_context("show", params.item_id)
 
     client = RecommendationsClient()
     await client.hide_show_recommendation(params.item_id)
@@ -209,6 +212,7 @@ async def unhide_movie_recommendation(movie_id: str) -> str:
     """
     logger.debug("unhide_movie_recommendation called with movie_id=%s", movie_id)
     params = HideRecommendationParams(item_id=movie_id)
+    set_tool_context("movie", params.item_id)
 
     client = RecommendationsClient()
     await client.unhide_movie_recommendation(params.item_id)
@@ -230,6 +234,7 @@ async def unhide_show_recommendation(show_id: str) -> str:
     """
     logger.debug("unhide_show_recommendation called with show_id=%s", show_id)
     params = HideRecommendationParams(item_id=show_id)
+    set_tool_context("show", params.item_id)
 
     client = RecommendationsClient()
     await client.unhide_show_recommendation(params.item_id)
