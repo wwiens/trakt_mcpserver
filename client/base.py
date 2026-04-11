@@ -29,12 +29,19 @@ def _is_dict_response(result: Any) -> TypeGuard[dict[str, Any]]:
     return isinstance(result, dict)
 
 
+def _is_list(result: Any) -> TypeGuard[list[Any]]:
+    """Type guard: narrows Any to list[Any]."""
+    return isinstance(result, list)
+
+
+def _is_list_of_dicts(result: list[Any]) -> TypeGuard[list[dict[str, Any]]]:
+    """Type guard: narrows list[Any] to list[dict[str, Any]]."""
+    return all(isinstance(item, dict) for item in result)
+
+
 def _is_list_response(result: Any) -> TypeGuard[list[dict[str, Any]]]:
     """Type guard for list responses."""
-    return isinstance(result, list) and all(
-        isinstance(item, dict)
-        for item in result  # type: ignore[reportUnknownVariableType]
-    )
+    return _is_list(result) and _is_list_of_dicts(result)
 
 
 def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
@@ -303,28 +310,64 @@ class BaseClient:
             )
             raise ValueError(msg)
 
-        return result  # type: ignore[return-value] # TypedDict runtime limitation
+        return result
 
+    @overload
     async def _make_typed_list_request(
         self,
         endpoint: str,
         *,
         response_type: type[T],
+        params: dict[str, Any] | None = ...,
+    ) -> list[T]: ...
+
+    @overload
+    async def _make_typed_list_request(
+        self,
+        endpoint: str,
+        *,
+        response_type: type[Any],
+        params: dict[str, Any] | None = ...,
+    ) -> list[Any]: ...
+
+    async def _make_typed_list_request(
+        self,
+        endpoint: str,
+        *,
+        response_type: type[Any],
         params: dict[str, Any] | None = None,
-    ) -> list[T]:
+    ) -> Any:
         """Make a typed GET request that returns a list."""
         result = await self._make_list_request(endpoint, params=params)
         if _is_pydantic_model(response_type):
             return [response_type.model_validate(item) for item in result]
-        return result  # type: ignore[return-value] # TypedDict runtime limitation
+        return result
 
+    @overload
     async def _make_paginated_request(
         self,
         endpoint: str,
         *,
         response_type: type[T],
+        params: dict[str, Any] | None = ...,
+    ) -> PaginatedResponse[T]: ...
+
+    @overload
+    async def _make_paginated_request(
+        self,
+        endpoint: str,
+        *,
+        response_type: type[Any],
+        params: dict[str, Any] | None = ...,
+    ) -> PaginatedResponse[Any]: ...
+
+    async def _make_paginated_request(
+        self,
+        endpoint: str,
+        *,
+        response_type: type[Any],
         params: dict[str, Any] | None = None,
-    ) -> PaginatedResponse[T]:  # type: ignore[return] # Complex generic typing with TypedDict compatibility
+    ) -> Any:
         """Make a paginated GET request to the Trakt API.
 
         Returns both the data and pagination metadata from response headers.
@@ -368,7 +411,7 @@ class BaseClient:
             if _is_pydantic_model(response_type):
                 typed_data = [response_type.model_validate(item) for item in result]
             else:
-                typed_data = result  # type: ignore[assignment] # TypedDict runtime limitation
+                typed_data = result
 
             # Extract pagination metadata from headers
             try:
@@ -387,7 +430,7 @@ class BaseClient:
                     total_items=len(typed_data),  # Actual count of items
                 )
 
-            return PaginatedResponse(  # type: ignore[return-value] # Generic type compatibility
+            return PaginatedResponse(
                 data=typed_data,
                 pagination=pagination,
             )
@@ -501,4 +544,4 @@ class BaseClient:
         if _is_pydantic_model(response_type):
             return response_type.model_validate(result)
 
-        return result  # type: ignore[return-value] # TypedDict runtime limitation
+        return result

@@ -293,7 +293,7 @@ class BaseToolErrorMixin:
     @classmethod
     def with_error_handling(
         cls, operation: str, **operation_context: Any
-    ) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
+    ) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T | str]]]:
         """Decorator to wrap tool functions with standardized error handling.
 
         This decorator ensures that:
@@ -309,15 +309,17 @@ class BaseToolErrorMixin:
             Decorator function
         """
 
-        def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+        def decorator(
+            func: Callable[..., Awaitable[T]],
+        ) -> Callable[..., Awaitable[T | str]]:
             @wraps(func)
-            async def wrapper(*args: Any, **kwargs: Any) -> T:
+            async def wrapper(*args: Any, **kwargs: Any) -> T | str:
                 try:
                     return await func(*args, **kwargs)
                 except MCPError as e:
                     # Return friendly message for auth errors instead of raising
                     if isinstance(e, AuthenticationRequiredError):
-                        return format_auth_required_message(  # type: ignore[return-value]
+                        return format_auth_required_message(
                             extract_auth_action(e)
                         )
                     # Let other MCP errors propagate unchanged

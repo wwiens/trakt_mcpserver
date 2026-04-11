@@ -328,7 +328,7 @@ def handle_api_errors(
             _auto_clear_invalid_token(self)
             raise
 
-    return wrapper  # type: ignore[return-value]
+    return wrapper
 
 
 def handle_api_errors_func(
@@ -357,7 +357,7 @@ def handle_api_errors_func(
             convert_auth_errors=True,
         )
 
-    return wrapper  # type: ignore[return-value]
+    return wrapper
 
 
 __all__ = [
