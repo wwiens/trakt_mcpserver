@@ -65,8 +65,7 @@ async def test_get_popular_shows():
             "title": "Breaking Bad",
             "year": 2008,
             "overview": (
-                "A high school chemistry teacher diagnosed"
-                " with inoperable lung cancer."
+                "A high school chemistry teacher diagnosed with inoperable lung cancer."
             ),
         }
     ]

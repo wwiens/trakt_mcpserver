@@ -265,8 +265,7 @@ async def test_search_shows_multiple_results():
                 "title": "Better Call Saul",
                 "year": 2015,
                 "overview": (
-                    "The trials and tribulations of criminal"
-                    " lawyer Jimmy McGill."
+                    "The trials and tribulations of criminal lawyer Jimmy McGill."
                 ),
                 "ids": {"trakt": "2"},
             }

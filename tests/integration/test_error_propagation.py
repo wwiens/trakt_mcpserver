@@ -42,8 +42,7 @@ class MockHttpErrorFactory(Protocol):
 
 
 class TestErrorPropagationThroughStack:
-    """Test error propagation through the complete Client → Tool → MCP → Response stack.
-    """
+    """Test error propagation through the full stack."""
 
     @pytest.fixture(autouse=True)
     def setup_context(self):

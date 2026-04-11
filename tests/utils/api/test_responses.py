@@ -196,8 +196,7 @@ class TestHelpersIntegration:
             pytest.fail("Error response should be JSON serializable")
 
     def test_format_error_response_consistent_with_error_handling(self) -> None:
-        """Test that error response format is consistent with error handling patterns.
-        """
+        """Test error response format consistency."""
         # This test ensures the helper integrates well with the decorator error handling
         common_error_messages = [
             "Error: Unauthorized. Please check your Trakt API credentials.",

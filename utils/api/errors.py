@@ -46,6 +46,19 @@ class ClearableAuthClient(Protocol):
         ...
 
 
+@runtime_checkable
+class RefreshableAuthClient(ClearableAuthClient, Protocol):
+    """Protocol for clients that support token refresh on 401."""
+
+    async def refresh_access_token(self) -> bool:
+        """Refresh the access token using the stored refresh token.
+
+        Returns:
+            True if refresh succeeded, False if refresh failed.
+        """
+        ...
+
+
 def _auto_clear_invalid_token(client: ClearableAuthClient | object) -> None:
     """Clear invalid auth token from client if it has one.
 
@@ -114,6 +127,109 @@ class InvalidRequestError(MCPError):
         super().__init__(INVALID_REQUEST, message, data)
 
 
+def _has_refresh_token(client: object) -> bool:
+    """Check if the client has a refresh token available for recovery."""
+    auth_token = getattr(client, "auth_token", None)
+    if auth_token is None:
+        return False
+    return bool(getattr(auth_token, "refresh_token", None))
+
+
+def _is_auth_required_error(error: MCPError) -> bool:
+    """Check if an MCPError originated from a 401 HTTP status."""
+    from .error_types import AuthenticationRequiredError
+
+    return isinstance(error, AuthenticationRequiredError)
+
+
+async def _execute_method_with_error_handling(
+    method: Callable[..., Awaitable[Any]],
+    self_obj: Any,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Any:
+    """Execute a client method with standard error handling.
+
+    Shared implementation for the first attempt and the retry after refresh.
+
+    Args:
+        method: The async method to call
+        self_obj: The client instance (self)
+        args: Positional arguments
+        kwargs: Keyword arguments
+
+    Returns:
+        Result from the method call
+
+    Raises:
+        MCPError: On API or internal errors
+    """
+    from .error_handler import TraktAPIErrorHandler
+    from .request_context import add_context_to_error_data, get_current_context
+
+    context = get_current_context()
+    correlation_id = context.correlation_id if context else None
+
+    try:
+        return await method(self_obj, *args, **kwargs)
+    except httpx.HTTPStatusError as e:
+        error = TraktAPIErrorHandler.handle_http_error(
+            error=e,
+            endpoint=context.endpoint if context else None,
+            resource_type=context.resource_type if context else None,
+            correlation_id=correlation_id,
+        )
+        if context:
+            error.data = add_context_to_error_data(error.data or {})
+        raise error from e
+    except httpx.RequestError as e:
+        error_data: dict[str, Any] = {
+            "error_type": "request_error",
+            "details": str(e),
+        }
+        if context:
+            error_data = add_context_to_error_data(error_data)
+        elif correlation_id is not None:
+            error_data["correlation_id"] = correlation_id
+
+        logger.error(f"Request error: {e!s}", extra=error_data)
+        raise InternalError(
+            "Unable to connect to Trakt API. Please check your internet connection.",
+            data=error_data,
+        ) from e
+    except MCPError:
+        raise
+    except json.JSONDecodeError as e:
+        error_data = {
+            "error_type": "json_decode_error",
+            "details": str(e),
+        }
+        if context:
+            error_data = add_context_to_error_data(error_data)
+        elif correlation_id is not None:
+            error_data["correlation_id"] = correlation_id
+
+        logger.error(f"JSON decode error: {e!s}", extra=error_data)
+        raise InternalError(
+            f"Invalid response format from API: {e!s}",
+            data=error_data,
+        ) from e
+    except (ValueError, TypeError, KeyError, AttributeError):
+        raise
+    except Exception as e:
+        error_data = {"error_type": "unexpected_error"}
+        if context:
+            error_data = add_context_to_error_data(error_data)
+        elif correlation_id is not None:
+            error_data["correlation_id"] = correlation_id
+
+        logger.exception("Unexpected error", extra=error_data)
+        raise InternalError(
+            f"An unexpected error occurred: {e!s}",
+            data=error_data,
+        ) from e
+
+
 def handle_api_errors(
     method: Callable[Concatenate[Any, ...], Awaitable[Any]],
 ) -> Callable[Concatenate[Any, ...], Awaitable[Any]]:
@@ -122,6 +238,9 @@ def handle_api_errors(
     This decorator is specifically designed for methods (functions with
     self/cls parameter). For standalone functions, use @handle_api_errors_func
     instead.
+
+    On 401 Unauthorized, attempts to refresh the access token (if the client
+    supports it) and retries the call once before clearing the token and raising.
 
     Args:
         method: The async method to wrap
@@ -132,102 +251,46 @@ def handle_api_errors(
 
     @functools.wraps(method)
     async def wrapper(self: Any, /, *args: Any, **kwargs: Any) -> Any:
-        # Import here to avoid circular imports
-        from .error_handler import TraktAPIErrorHandler
-        from .request_context import add_context_to_error_data, get_current_context
-
-        # Get current request context
-        context = get_current_context()
-        correlation_id = context.correlation_id if context else None
-
         try:
-            result = await method(self, *args, **kwargs)
-            return result
-        except httpx.HTTPStatusError as e:
-            # Use centralized error handler with enhanced context
-            error = TraktAPIErrorHandler.handle_http_error(
-                error=e,
-                endpoint=context.endpoint if context else None,
-                resource_type=context.resource_type if context else None,
-                correlation_id=correlation_id,
-            )
-            # Add full request context to error data
-            if context:
-                error.data = add_context_to_error_data(error.data or {})
+            # First attempt — do NOT clear token on 401 so refresh can recover
+            return await _execute_method_with_error_handling(method, self, args, kwargs)
+        except MCPError as first_error:
+            if not _is_auth_required_error(first_error):
+                raise
 
-            # Auto-clear invalid tokens on 401 Unauthorized
-            if e.response.status_code == 401:
-                _auto_clear_invalid_token(self)
+            # 401 path — attempt refresh if client supports it.
+            # Guard against recursive refresh: if _refresh_lock is held,
+            # we're already inside refresh_access_token's HTTP call chain.
+            refresh_lock = getattr(self, "_refresh_lock", None)
+            already_refreshing = refresh_lock is not None and refresh_lock.locked()
 
-            raise error from e
-        except httpx.RequestError as e:
-            # Create base error data with context
-            error_data = {
-                "error_type": "request_error",
-                "details": str(e),
-            }
-            if context:
-                error_data = add_context_to_error_data(error_data)
-            else:
-                if correlation_id is not None:
-                    error_data["correlation_id"] = correlation_id
+            if (
+                not already_refreshing
+                and isinstance(self, RefreshableAuthClient)
+                and _has_refresh_token(self)
+            ):
+                try:
+                    refreshed = await self.refresh_access_token()
+                except Exception:
+                    logger.warning(
+                        "Token refresh failed during 401 recovery", exc_info=True
+                    )
+                    refreshed = False
 
-            logger.error(
-                f"Request error: {e!s}",
-                extra=error_data,
-            )
-            raise InternalError(
-                "Unable to connect to Trakt API. "
-                + "Please check your internet connection.",
-                data=error_data,
-            ) from e
-        except MCPError:
-            # Re-raise MCP errors as-is — client methods should propagate auth
-            # errors to the server layer, where with_error_handling or
-            # handle_api_errors_func converts them to friendly messages.
+                if refreshed:
+                    try:
+                        # Retry once with refreshed token
+                        return await _execute_method_with_error_handling(
+                            method, self, args, kwargs
+                        )
+                    except MCPError:
+                        # Retry also failed — clear and raise the retry error
+                        _auto_clear_invalid_token(self)
+                        raise
+
+            # No refresh possible or refresh failed — clear and raise original
+            _auto_clear_invalid_token(self)
             raise
-        except json.JSONDecodeError as e:
-            # Treat JSON decode errors as internal errors
-            error_data = {
-                "error_type": "json_decode_error",
-                "details": str(e),
-            }
-            if context:
-                error_data = add_context_to_error_data(error_data)
-            else:
-                if correlation_id is not None:
-                    error_data["correlation_id"] = correlation_id
-
-            logger.error(
-                f"JSON decode error: {e!s}",
-                extra=error_data,
-            )
-            raise InternalError(
-                f"Invalid response format from API: {e!s}",
-                data=error_data,
-            ) from e
-        except (ValueError, TypeError, KeyError, AttributeError):
-            # Re-raise business logic errors as-is
-            raise
-        except Exception as e:
-            # Create base error data with context
-            error_data = {
-                "error_type": "unexpected_error",
-            }
-            if context:
-                error_data = add_context_to_error_data(error_data)
-            else:
-                if correlation_id is not None:
-                    error_data["correlation_id"] = correlation_id
-
-            logger.exception(
-                "Unexpected error",
-                extra=error_data,
-            )
-            raise InternalError(
-                f"An unexpected error occurred: {e!s}",
-                data=error_data,
-            ) from e
 
     return wrapper
 
@@ -364,6 +427,7 @@ __all__ = [
     "InvalidParamsError",
     "InvalidRequestError",
     "MCPError",
+    "RefreshableAuthClient",
     "handle_api_errors",
     "handle_api_errors_func",
 ]

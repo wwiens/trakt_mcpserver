@@ -27,8 +27,7 @@ class TestTraktUserShow:
             "year": 2008,
             "ids": {"trakt": "1", "slug": "breaking-bad"},
             "overview": (
-                "A high school chemistry teacher diagnosed"
-                " with inoperable lung cancer."
+                "A high school chemistry teacher diagnosed with inoperable lung cancer."
             ),
         }
 

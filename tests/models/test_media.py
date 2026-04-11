@@ -58,8 +58,7 @@ class TestTraktShow:
                 tmdb=1396,
             ),
             overview=(
-                "A high school chemistry teacher diagnosed"
-                " with inoperable lung cancer."
+                "A high school chemistry teacher diagnosed with inoperable lung cancer."
             ),
         )
 
@@ -161,8 +160,7 @@ class TestTraktMovie:
                 tmdb=27205,
             ),
             overview=(
-                "A thief who steals corporate secrets"
-                " through dream-sharing technology."
+                "A thief who steals corporate secrets through dream-sharing technology."
             ),
         )
 
