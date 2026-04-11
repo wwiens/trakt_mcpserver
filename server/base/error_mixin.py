@@ -319,9 +319,7 @@ class BaseToolErrorMixin:
                 except MCPError as e:
                     # Return friendly message for auth errors instead of raising
                     if isinstance(e, AuthenticationRequiredError):
-                        return format_auth_required_message(
-                            extract_auth_action(e)
-                        )
+                        return format_auth_required_message(extract_auth_action(e))
                     # Let other MCP errors propagate unchanged
                     raise
                 except Exception as e:
