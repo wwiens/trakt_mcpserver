@@ -46,7 +46,7 @@ async def test_complete_device_auth_flow():
         patch("os.open", return_value=3) as mock_os_open,
         patch("os.fdopen") as mock_fdopen,
         patch("os.fsync"),
-        patch("os.replace"),
+        patch("os.replace") as mock_replace,
         patch.dict(
             os.environ,
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
@@ -63,6 +63,13 @@ async def test_complete_device_auth_flow():
         mock_instance.aclose = AsyncMock()
         mock_client.return_value = mock_instance
 
+        # Set up the os.open and os.fdopen mocks
+        mock_os_open.return_value = 3
+        mock_file_obj = MagicMock()
+        mock_fdopen.return_value = mock_file_obj
+        mock_fdopen.return_value.__enter__ = mock_file_obj
+        mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
+
         client = AuthClient()
 
         device_code = await client.get_device_code()
@@ -78,6 +85,7 @@ async def test_complete_device_auth_flow():
         assert client.is_authenticated() is True
 
         assert mock_os_open.called
+        assert mock_replace.called
 
 
 # Test removed as refresh_token method doesn't exist in AuthClient

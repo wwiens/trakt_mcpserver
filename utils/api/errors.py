@@ -48,6 +48,19 @@ class ClearableAuthClient(Protocol):
         ...
 
 
+@runtime_checkable
+class RefreshableAuthClient(ClearableAuthClient, Protocol):
+    """Protocol for clients that support token refresh on 401."""
+
+    async def refresh_access_token(self) -> bool:
+        """Refresh the access token using the stored refresh token.
+
+        Returns:
+            True if refresh succeeded, False if refresh failed.
+        """
+        ...
+
+
 def _auto_clear_invalid_token(client: ClearableAuthClient | object) -> None:
     """Clear invalid auth token from client if it has one.
 
@@ -116,6 +129,21 @@ class InvalidRequestError(MCPError):
 
     def __init__(self, message: str, data: dict[str, Any] | None = None) -> None:
         super().__init__(INVALID_REQUEST, message, data)
+
+
+def _has_refresh_token(client: object) -> bool:
+    """Check if the client has a refresh token available for recovery."""
+    auth_token = getattr(client, "auth_token", None)
+    if auth_token is None:
+        return False
+    return bool(getattr(auth_token, "refresh_token", None))
+
+
+def _is_auth_required_error(error: MCPError) -> bool:
+    """Check if an MCPError originated from a 401 HTTP status."""
+    from .error_types import AuthenticationRequiredError
+
+    return isinstance(error, AuthenticationRequiredError)
 
 
 def _build_error_data(
@@ -245,6 +273,9 @@ def handle_api_errors(
     self/cls parameter). For standalone functions, use @handle_api_errors_func
     instead.
 
+    On 401 Unauthorized, attempts to refresh the access token (if the client
+    supports it) and retries the call once before clearing the token and raising.
+
     Args:
         method: The async method to wrap
 
@@ -254,10 +285,48 @@ def handle_api_errors(
 
     @functools.wraps(method)
     async def wrapper(self: Self, /, *args: P.args, **kwargs: P.kwargs) -> R | str:
-        return await _execute_with_error_handling(
-            method(self, *args, **kwargs),
-            on_401=lambda: _auto_clear_invalid_token(self),
-        )
+        try:
+            # First attempt — do NOT clear token on 401 so refresh can recover
+            return await _execute_with_error_handling(
+                method(self, *args, **kwargs),
+            )
+        except MCPError as first_error:
+            if not _is_auth_required_error(first_error):
+                raise
+
+            # 401 path — attempt refresh if client supports it.
+            # Guard against recursive refresh: if _refresh_lock is held,
+            # we're already inside refresh_access_token's HTTP call chain.
+            refresh_lock = getattr(self, "_refresh_lock", None)
+            already_refreshing = refresh_lock is not None and refresh_lock.locked()
+
+            if (
+                not already_refreshing
+                and isinstance(self, RefreshableAuthClient)
+                and _has_refresh_token(self)
+            ):
+                try:
+                    refreshed = await self.refresh_access_token()
+                except Exception:
+                    logger.warning(
+                        "Token refresh failed during 401 recovery", exc_info=True
+                    )
+                    refreshed = False
+
+                if refreshed:
+                    try:
+                        # Retry once with refreshed token
+                        return await _execute_with_error_handling(
+                            method(self, *args, **kwargs),
+                        )
+                    except MCPError:
+                        # Retry also failed — clear and raise the retry error
+                        _auto_clear_invalid_token(self)
+                        raise
+
+            # No refresh possible or refresh failed — clear and raise original
+            _auto_clear_invalid_token(self)
+            raise
 
     return wrapper  # type: ignore[return-value]
 
@@ -297,6 +366,7 @@ __all__ = [
     "InvalidParamsError",
     "InvalidRequestError",
     "MCPError",
+    "RefreshableAuthClient",
     "handle_api_errors",
     "handle_api_errors_func",
 ]

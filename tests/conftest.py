@@ -27,6 +27,23 @@ if project_root_pathlib not in sys.path:
     sys.path.insert(0, project_root_pathlib)
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _isolate_auth_token_file(  # pyright: ignore[reportUnusedFunction]
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Generator[None, None, None]:
+    """Prevent tests from reading/writing the real auth_token.json.
+
+    Patches AUTH_TOKEN_FILE to a temp path so no test can accidentally
+    overwrite the user's real OAuth token.
+    """
+    safe_token_path = str(tmp_path_factory.mktemp("auth") / "auth_token.json")
+    with (
+        patch.dict(os.environ, {"TRAKT_AUTH_TOKEN_PATH": safe_token_path}),
+        patch("client.auth.client.AUTH_TOKEN_FILE", safe_token_path),
+    ):
+        yield
+
+
 @pytest.fixture
 def trakt_env() -> Generator[None, None, None]:
     """Patch environment variables with test Trakt credentials.
