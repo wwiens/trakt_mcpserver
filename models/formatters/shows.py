@@ -267,7 +267,8 @@ class ShowFormatters:
         lines: list[str] = ["# Related Shows", ""]
 
         if isinstance(data, PaginatedResponse):
-            lines.append(format_pagination_header(data))
+            lines.append(format_pagination_header(data).rstrip("\n"))
+            lines.append("")
             shows = data.data
         else:
             shows = data

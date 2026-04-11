@@ -28,7 +28,8 @@ class CommentsFormatters:
 
         # Handle pagination metadata if present
         if isinstance(data, PaginatedResponse):
-            lines.append(format_pagination_header(data))
+            lines.append(format_pagination_header(data).rstrip("\n"))
+            lines.append("")
             comments = data.data
         else:
             comments = data
@@ -165,7 +166,8 @@ class CommentsFormatters:
 
             # Handle pagination metadata if present
             if isinstance(replies, PaginatedResponse):
-                lines.append(format_pagination_header(replies))
+                lines.append(format_pagination_header(replies).rstrip("\n"))
+                lines.append("")
                 replies_list = replies.data
             else:
                 replies_list = replies

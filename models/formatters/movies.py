@@ -245,7 +245,8 @@ class MovieFormatters:
         lines: list[str] = ["# Related Movies", ""]
 
         if isinstance(data, PaginatedResponse):
-            lines.append(format_pagination_header(data))
+            lines.append(format_pagination_header(data).rstrip("\n"))
+            lines.append("")
             movies = data.data
         else:
             movies = data
