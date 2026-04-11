@@ -345,8 +345,9 @@ async def test_remove_user_ratings_api_error() -> None:
             side_effect=TraktResourceNotFoundError("user", "ratings", "Not found")
         )
 
-        with pytest.raises(TraktResourceNotFoundError):
-            await remove_user_ratings(rating_type="movies", items=sample_items)
+        result = await remove_user_ratings(rating_type="movies", items=sample_items)
+        assert "# Error" in result
+        assert "Not found" in result
 
 
 @pytest.mark.asyncio

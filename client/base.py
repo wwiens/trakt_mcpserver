@@ -10,6 +10,11 @@ import httpx
 from config.api import DEFAULT_MAX_PAGES
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 from utils.api.errors import handle_api_errors
+from utils.api.request_context import (
+    RequestContext,
+    get_current_context,
+    set_current_context,
+)
 
 if TYPE_CHECKING:
     from models.auth import TraktAuthToken
@@ -151,6 +156,16 @@ class BaseClient:
         headers: dict[str, str] | None = None,
     ) -> Any:
         """Make an HTTP request to the Trakt API."""
+        # Set request context for error reporting if not already set
+        if get_current_context() is None:
+            parts = [p for p in endpoint.split("/") if p]
+            resource_type = parts[0] if parts else None
+            resource_id = parts[1] if len(parts) > 1 else None
+            ctx = RequestContext().with_endpoint(endpoint, method)
+            if resource_type and resource_id:
+                ctx = ctx.with_resource(resource_type, resource_id)
+            set_current_context(ctx)
+
         # Ensure Authorization header is present when authenticated
         self._update_headers_with_token()
         request_headers = self.headers.copy()
@@ -383,6 +398,16 @@ class BaseClient:
         Raises:
             ValueError: If response format is invalid or headers missing
         """
+        # Set request context for error reporting if not already set
+        if get_current_context() is None:
+            parts = [p for p in endpoint.split("/") if p]
+            resource_type = parts[0] if parts else None
+            resource_id = parts[1] if len(parts) > 1 else None
+            ctx = RequestContext().with_endpoint(endpoint, "GET")
+            if resource_type and resource_id:
+                ctx = ctx.with_resource(resource_type, resource_id)
+            set_current_context(ctx)
+
         # Ensure Authorization header is present when authenticated
         self._update_headers_with_token()
         request_headers = self.headers

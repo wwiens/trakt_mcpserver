@@ -173,9 +173,9 @@ async def test_fetch_movie_comments_string_error_handling():
         )
         mock_client.get_movie_comments.return_value = comments_future
 
-        # Verify the result contains the error message
-        with pytest.raises(TraktResourceNotFoundError):
-            await fetch_movie_comments(movie_id="1", limit=5)
+        result = await fetch_movie_comments(movie_id="1", limit=5)
+        assert "# Error" in result
+        assert "requested movie was not found" in result
 
         # Verify the client methods were called
         mock_client.get_movie_comments.assert_called_once_with(
@@ -306,14 +306,8 @@ async def test_fetch_movie_summary_extended_string_error():
         future.set_result("Error: Movie not found")
         mock_client.get_movie_extended.return_value = future
 
-        # handle_api_string_error returns InternalError for string errors
-        with pytest.raises(Exception) as exc_info:
-            await fetch_movie_summary(movie_id="12345")
-
-        # Check that it's an InternalError with the right message
-        assert "Error accessing movie_extended" in str(
-            exc_info.value
-        ) or "An unexpected error occurred" in str(exc_info.value)
+        result = await fetch_movie_summary(movie_id="12345")
+        assert "# Error" in result
 
         mock_client.get_movie_extended.assert_called_once_with("12345")
 
@@ -328,14 +322,8 @@ async def test_fetch_movie_summary_basic_string_error():
         future.set_result("Error: Movie not found")
         mock_client.get_movie.return_value = future
 
-        # handle_api_string_error returns InternalError for string errors
-        with pytest.raises(Exception) as exc_info:
-            await fetch_movie_summary(movie_id="12345", extended=False)
-
-        # Check that it's an InternalError with the right message
-        assert "Error accessing movie" in str(
-            exc_info.value
-        ) or "An unexpected error occurred" in str(exc_info.value)
+        result = await fetch_movie_summary(movie_id="12345", extended=False)
+        assert "# Error" in result
 
         mock_client.get_movie.assert_called_once_with("12345")
 

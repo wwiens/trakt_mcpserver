@@ -313,14 +313,8 @@ async def test_get_show_ratings_string_error_handling():
         future.set_result("Error: The requested resource was not found.")
         mock_client.get_show.return_value = future
 
-        # handle_api_string_error returns InternalError for string errors
-        with pytest.raises(InternalError) as exc_info:
-            await get_show_ratings("1")
-
-        # Check that it's an InternalError
-        assert "Error accessing show" in str(
-            exc_info.value
-        ) or "An unexpected error occurred" in str(exc_info.value)
+        result = await get_show_ratings("1")
+        assert "# Error" in result
 
         # Verify the client methods were called
         mock_client.get_show.assert_called_once_with("1")

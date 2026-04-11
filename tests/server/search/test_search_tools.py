@@ -12,7 +12,6 @@ import pytest
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.search.tools import search_movies, search_shows
-from utils.api.errors import InternalError
 
 
 @pytest.mark.asyncio
@@ -117,19 +116,9 @@ async def test_search_shows_error_handling():
         future.set_exception(Exception("API error"))
         mock_client.search_shows.return_value = future
 
-        with pytest.raises(InternalError) as exc_info:
-            await search_shows(query="breaking bad")
-
-        # The function should raise an InternalError for unexpected exceptions
-        assert exc_info.value.code == -32603  # INTERNAL_ERROR code
-        assert (
-            "An unexpected error occurred during search shows" in exc_info.value.message
-        )
-
-        # Optionally check structured data
-        if exc_info.value.data:
-            assert exc_info.value.data.get("operation") == "search shows"
-            assert exc_info.value.data.get("error_type") == "unexpected_error"
+        result = await search_shows(query="breaking bad")
+        assert "# Error" in result
+        assert "unexpected error occurred during search shows" in result
 
 
 @pytest.mark.asyncio
@@ -229,20 +218,9 @@ async def test_search_movies_error_handling():
         future.set_exception(Exception("API error"))
         mock_client.search_movies.return_value = future
 
-        with pytest.raises(InternalError) as exc_info:
-            await search_movies(query="inception")
-
-        # The function should raise an InternalError for unexpected exceptions
-        assert exc_info.value.code == -32603  # INTERNAL_ERROR code
-        assert (
-            "An unexpected error occurred during search movies"
-            in exc_info.value.message
-        )
-
-        # Optionally check structured data
-        if exc_info.value.data:
-            assert exc_info.value.data.get("operation") == "search movies"
-            assert exc_info.value.data.get("error_type") == "unexpected_error"
+        result = await search_movies(query="inception")
+        assert "# Error" in result
+        assert "unexpected error occurred during search movies" in result
 
 
 @pytest.mark.asyncio

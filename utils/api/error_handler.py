@@ -167,6 +167,8 @@ class TraktAPIErrorHandler:
     def handle_not_found(cls, **context: Any) -> TraktResourceNotFoundError:
         """Handle 404 Not Found errors."""
         resource_type = context.get("resource_type") or "resource"
+        if resource_type.endswith("s") and resource_type != "progress":
+            resource_type = resource_type[:-1]
         resource_id = context.get("resource_id") or "unknown"
 
         return TraktResourceNotFoundError(

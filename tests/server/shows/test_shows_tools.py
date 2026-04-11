@@ -274,9 +274,9 @@ async def test_fetch_show_comments_not_found_propagation():
             )
         )
 
-        # Verify the result contains the error message
-        with pytest.raises(TraktResourceNotFoundError):
-            await fetch_show_comments(show_id="1", limit=5)
+        result = await fetch_show_comments(show_id="1", limit=5)
+        assert "# Error" in result
+        assert "requested show was not found" in result
 
         # Verify the client methods were called
         mock_client.get_show_comments.assert_called_once_with(
@@ -300,9 +300,9 @@ async def test_fetch_season_comments_not_found_propagation():
             )
         )
 
-        # Verify the result contains the error message
-        with pytest.raises(TraktResourceNotFoundError):
-            await fetch_season_comments(show_id="1", season=1, limit=5)
+        result = await fetch_season_comments(show_id="1", season=1, limit=5)
+        assert "# Error" in result
+        assert "requested show was not found" in result
 
         # Verify the client methods were called
         mock_client.get_season_comments.assert_called_once_with(
@@ -326,14 +326,9 @@ async def test_fetch_episode_comments_not_found_propagation():
             )
         )
 
-        # With proper MCP error propagation, we expect an exception
-        with pytest.raises(TraktResourceNotFoundError) as exc_info:
-            await fetch_episode_comments(show_id="1", season=1, episode=1, limit=5)
-
-        assert exc_info.value.data is not None
-        assert exc_info.value.data["resource_type"] == "show"
-        assert exc_info.value.data["resource_id"] == "1"
-        assert "The requested show was not found" in str(exc_info.value)
+        result = await fetch_episode_comments(show_id="1", season=1, episode=1, limit=5)
+        assert "# Error" in result
+        assert "requested show was not found" in result
 
         # Verify the client methods were called
         mock_client.get_episode_comments.assert_called_once_with(
@@ -456,9 +451,8 @@ async def test_fetch_show_summary_extended_string_error():
 
         mock_client.get_show_extended = AsyncMock(return_value="Error: Show not found")
 
-        # handle_api_string_error returns InternalError for string errors
-        with pytest.raises(InternalError):
-            await fetch_show_summary(show_id="54321")
+        result = await fetch_show_summary(show_id="54321")
+        assert "# Error" in result
 
         mock_client.get_show_extended.assert_called_once_with("54321")
 
@@ -470,14 +464,8 @@ async def test_fetch_show_summary_basic_string_error():
         mock_client = mock_client_class.return_value
         mock_client.get_show = AsyncMock(return_value="Error: Show not found")
 
-        # handle_api_string_error returns InternalError for string errors
-        with pytest.raises(InternalError) as exc_info:
-            await fetch_show_summary(show_id="54321", extended=False)
-
-        # Check that it's an InternalError with the right message
-        assert "Error accessing show" in str(
-            exc_info.value
-        ) or "An unexpected error occurred" in str(exc_info.value)
+        result = await fetch_show_summary(show_id="54321", extended=False)
+        assert "# Error" in result
 
         mock_client.get_show.assert_called_once_with("54321")
 

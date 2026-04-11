@@ -14,7 +14,6 @@ from server.people.tools import (
     fetch_person_shows,
     fetch_person_summary,
 )
-from utils.api.errors import InternalError
 
 
 @pytest.mark.asyncio
@@ -95,8 +94,8 @@ async def test_fetch_person_summary_string_error():
         future.set_result("Not Found - person not found")
         mock_client.get_person_extended.return_value = future
 
-        with pytest.raises(InternalError):
-            await fetch_person_summary(person_id="unknown-person")
+        result = await fetch_person_summary(person_id="unknown-person")
+        assert "# Error" in result
 
 
 @pytest.mark.asyncio

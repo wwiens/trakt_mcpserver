@@ -247,8 +247,9 @@ async def test_fetch_movie_comments_error_handling():
         )
         mock_client.get_movie_comments.return_value = comments_future
 
-        with pytest.raises(TraktResourceNotFoundError):
-            await fetch_movie_comments(movie_id="123")
+        result = await fetch_movie_comments(movie_id="123")
+        assert "# Error" in result
+        assert "Movie comments not found" in result
 
         mock_client.get_movie_comments.assert_called_once_with(
             "123", limit=10, sort="newest", page=None, max_pages=DEFAULT_MAX_PAGES
@@ -267,8 +268,9 @@ async def test_fetch_show_comments_error_handling():
         )
         mock_client.get_show_comments.return_value = comments_future
 
-        with pytest.raises(TraktResourceNotFoundError):
-            await fetch_show_comments(show_id="123")
+        result = await fetch_show_comments(show_id="123")
+        assert "# Error" in result
+        assert "Show comments not found" in result
 
         mock_client.get_show_comments.assert_called_once_with(
             "123", limit=10, sort="newest", page=None, max_pages=DEFAULT_MAX_PAGES
@@ -287,8 +289,9 @@ async def test_fetch_season_comments_error_handling():
         )
         mock_client.get_season_comments.return_value = comments_future
 
-        with pytest.raises(TraktResourceNotFoundError):
-            await fetch_season_comments(show_id="1", season=1)
+        result = await fetch_season_comments(show_id="1", season=1)
+        assert "# Error" in result
+        assert "Season comments not found" in result
 
         mock_client.get_season_comments.assert_called_once_with(
             "1", 1, limit=10, sort="newest", page=None, max_pages=DEFAULT_MAX_PAGES
@@ -309,8 +312,9 @@ async def test_fetch_episode_comments_error_handling():
         )
         mock_client.get_episode_comments.return_value = comments_future
 
-        with pytest.raises(TraktResourceNotFoundError):
-            await fetch_episode_comments(show_id="1", season=1, episode=1)
+        result = await fetch_episode_comments(show_id="1", season=1, episode=1)
+        assert "# Error" in result
+        assert "Episode comments not found" in result
 
         mock_client.get_episode_comments.assert_called_once_with(
             "1", 1, 1, limit=10, sort="newest", page=None, max_pages=DEFAULT_MAX_PAGES
@@ -327,11 +331,9 @@ async def test_fetch_comment_string_error_handling():
         future.set_result("Error: The requested comment was not found.")
         mock_client.get_comment.return_value = future
 
-        with pytest.raises(Exception) as exc_info:
-            await fetch_comment(comment_id="123")
-
-        # Should be an InternalError from handle_api_string_error
-        assert "Error accessing comment" in str(exc_info.value)
+        result = await fetch_comment(comment_id="123")
+        assert "# Error" in result
+        assert "Error accessing comment" in result
         mock_client.get_comment.assert_called_once_with("123")
 
 
@@ -360,11 +362,9 @@ async def test_fetch_comment_replies_string_error_handling():
         replies_future.set_result("Error: Unable to fetch replies.")
         mock_client.get_comment_replies.return_value = replies_future
 
-        with pytest.raises(Exception) as exc_info:
-            await fetch_comment_replies(comment_id="123", limit=5)
-
-        # Should be an InternalError from handle_api_string_error
-        assert "Error accessing comment_replies" in str(exc_info.value)
+        result = await fetch_comment_replies(comment_id="123", limit=5)
+        assert "# Error" in result
+        assert "Error accessing comment_replies" in result
         mock_client.get_comment.assert_called_once_with("123")
         mock_client.get_comment_replies.assert_called_once_with(
             "123", limit=5, page=None, max_pages=DEFAULT_MAX_PAGES

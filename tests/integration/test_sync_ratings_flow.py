@@ -353,13 +353,11 @@ async def test_error_propagation_integration(
             ),
         ):
             from server.sync.tools import fetch_user_ratings
-            from utils.api.errors import InternalError
 
-            # Should raise InternalError for unexpected exceptions
-            with pytest.raises(InternalError) as exc_info:
-                await fetch_user_ratings(rating_type="movies")
-
-            assert "unexpected error occurred" in str(exc_info.value).lower()
+            result = await fetch_user_ratings(rating_type="movies")
+            assert isinstance(result, str)
+            assert "# Error" in result
+            assert "unexpected error occurred" in result.lower()
 
 
 @pytest.mark.asyncio
@@ -821,13 +819,11 @@ async def test_fetch_user_ratings_pagination_error_handling_integration(
             ),
         ):
             from server.sync.tools import fetch_user_ratings
-            from utils.api.errors import InternalError
 
-            # Should handle pagination errors gracefully
-            with pytest.raises(InternalError) as exc_info:
-                await fetch_user_ratings(rating_type="movies", page=1)
-
-            assert "unable to connect to trakt api" in str(exc_info.value).lower()
+            result = await fetch_user_ratings(rating_type="movies", page=1)
+            assert isinstance(result, str)
+            assert "# Error" in result
+            assert "unable to connect to trakt api" in result.lower()
             # Verify page parameter was attempted
             call_args = mock_http_client.get.call_args
             assert call_args[1]["params"]["page"] == 1

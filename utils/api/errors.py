@@ -208,10 +208,14 @@ async def _execute_with_error_handling(
     try:
         return await coro
     except httpx.HTTPStatusError as e:
+        # Re-read context — the coroutine may have set it during execution
+        context = get_current_context()
+        correlation_id = context.correlation_id if context else correlation_id
         error = TraktAPIErrorHandler.handle_http_error(
             error=e,
             endpoint=context.endpoint if context else None,
             resource_type=context.resource_type if context else None,
+            resource_id=context.resource_id if context else None,
             correlation_id=correlation_id,
         )
         if context:
@@ -243,6 +247,9 @@ async def _execute_with_error_handling(
 
             if isinstance(e, AuthenticationRequiredError):
                 return format_auth_required_message(extract_auth_action(e))
+            # Convert all MCPErrors to formatted strings so FastMCP
+            # returns them as normal text instead of wrapping in ToolError
+            return f"# Error\n\n{e.message}"
         raise
     except json.JSONDecodeError as e:
         error_data = _build_error_data(
