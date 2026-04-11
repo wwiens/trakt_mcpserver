@@ -180,23 +180,26 @@ async def _execute_with_error_handling(
     coro: Awaitable[R],
     *,
     on_401: Callable[[], None] | None = None,
-    convert_auth_errors: bool = False,
+    convert_errors_to_text: bool = False,
 ) -> R | str:
     """Execute an awaitable with shared error handling logic.
 
     Args:
         coro: The awaitable to execute
         on_401: Optional callback to invoke on 401 HTTP status (e.g., clear auth token)
-        convert_auth_errors: If True, convert AuthenticationRequiredError to
-            friendly messages instead of re-raising
+        convert_errors_to_text: If True, convert MCPErrors to friendly text
+            instead of re-raising. AuthenticationRequiredError gets special
+            formatting via format_auth_required_message; all other MCPErrors
+            become ``# Error\\n\\n{message}`` so FastMCP returns them as normal
+            text instead of wrapping in ToolError.
 
     Returns:
-        The awaited result of type R on success. When convert_auth_errors is True
-        and an AuthenticationRequiredError is caught, returns a formatted str
-        message (via format_auth_required_message) instead of re-raising.
+        The awaited result of type R on success. When convert_errors_to_text is
+        True and an MCPError is caught, returns a formatted str message instead
+        of re-raising.
 
     Raises:
-        MCPError: On API or internal errors
+        MCPError: On API or internal errors (when convert_errors_to_text is False)
         ValueError, TypeError, KeyError, AttributeError: Re-raised as-is
     """
     from .error_handler import TraktAPIErrorHandler
@@ -238,7 +241,7 @@ async def _execute_with_error_handling(
             data=error_data,
         ) from e
     except MCPError as e:
-        if convert_auth_errors:
+        if convert_errors_to_text:
             from .error_types import (
                 AuthenticationRequiredError,
                 extract_auth_action,
@@ -364,7 +367,7 @@ def handle_api_errors_func(
         try:
             return await _execute_with_error_handling(
                 func(*args, **kwargs),
-                convert_auth_errors=True,
+                convert_errors_to_text=True,
             )
         finally:
             clear_current_context()
