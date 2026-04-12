@@ -134,6 +134,13 @@ async def _batch_show_history_op(
             # No resolvable ID — send the show item directly
             request = TraktHistoryRequest(shows=[item])
             result = await client_method(request)
+            if isinstance(result, str):
+                BaseToolErrorMixin.handle_api_string_error(
+                    resource_type="sync_history_show",
+                    resource_id="unknown",
+                    error_message=result,
+                    operation=operation,
+                )
             _aggregate_summary(combined, result, operation)
             continue
 
@@ -146,6 +153,30 @@ async def _batch_show_history_op(
             )
             request = TraktHistoryRequest(shows=[item])
             result = await client_method(request)
+            if isinstance(result, str):
+                BaseToolErrorMixin.handle_api_string_error(
+                    resource_type="sync_history_show",
+                    resource_id=show_id,
+                    error_message=result,
+                    operation=operation,
+                )
+            _aggregate_summary(combined, result, operation)
+            continue
+
+        if not season_ids:
+            logger.warning(
+                "No seasons found for show %s, sending as single request",
+                show_id,
+            )
+            request = TraktHistoryRequest(shows=[item])
+            result = await client_method(request)
+            if isinstance(result, str):
+                BaseToolErrorMixin.handle_api_string_error(
+                    resource_type="sync_history_show",
+                    resource_id=show_id,
+                    error_message=result,
+                    operation=operation,
+                )
             _aggregate_summary(combined, result, operation)
             continue
 
@@ -153,10 +184,22 @@ async def _batch_show_history_op(
         failed_seasons: list[int] = []
         for season_id in season_ids:
             request = TraktHistoryRequest(
-                seasons=[TraktHistoryItem(ids=TraktIds(trakt=season_id))]
+                seasons=[
+                    TraktHistoryItem(
+                        ids=TraktIds(trakt=season_id),
+                        watched_at=item.watched_at,
+                    )
+                ]
             )
             try:
                 result = await client_method(request)
+                if isinstance(result, str):
+                    BaseToolErrorMixin.handle_api_string_error(
+                        resource_type="sync_history_season",
+                        resource_id=str(season_id),
+                        error_message=result,
+                        operation=operation,
+                    )
                 _aggregate_summary(combined, result, operation)
             except Exception:
                 logger.warning(

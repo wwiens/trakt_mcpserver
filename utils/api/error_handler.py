@@ -267,9 +267,8 @@ class TraktAPIErrorHandler:
         return TraktServerError(
             http_status=504,
             message=(
-                "Gateway timeout. The Trakt API took too long to respond."
-                " This can happen with large batch operations."
-                " Please try again with fewer items."
+                "Gateway timeout. The upstream service took too long to respond."
+                " Please try again later."
             ),
             endpoint=context.get("endpoint"),
             correlation_id=context.get("correlation_id"),
