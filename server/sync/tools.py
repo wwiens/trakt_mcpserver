@@ -8,6 +8,7 @@ from typing import Annotated, Any, ClassVar, Literal
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
 
+from client.shows.seasons import ShowSeasonsClient
 from client.sync.client import SyncClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.descriptions import (
@@ -37,6 +38,7 @@ from models.formatters.sync_watchlist import SyncWatchlistFormatters
 from models.sync.history import (
     HistoryQueryParams,
     HistorySummary,
+    HistorySummaryCount,
     TraktHistoryItem,
     TraktHistoryRequest,
 )
@@ -58,6 +60,104 @@ from server.base import BaseToolErrorMixin, IdentifierValidatorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
+
+
+def _aggregate_summary(
+    target: HistorySummary, source: HistorySummary, operation: str
+) -> None:
+    """Aggregate counts from source into target summary in-place.
+
+    Args:
+        target: Summary to accumulate into
+        source: Summary with new counts to add
+        operation: "added" or "deleted" — which count field to aggregate
+    """
+    src_counts = getattr(source, operation, None)
+    if src_counts is None:
+        return
+
+    tgt_counts = getattr(target, operation, None)
+    if tgt_counts is None:
+        tgt_counts = HistorySummaryCount()
+        setattr(target, operation, tgt_counts)
+
+    for field in ("movies", "shows", "seasons", "episodes"):
+        new_val = getattr(tgt_counts, field) + getattr(src_counts, field)
+        setattr(tgt_counts, field, new_val)
+
+    # Aggregate not_found lists
+    if source.not_found:
+        for field in ("movies", "shows", "seasons", "episodes"):
+            getattr(target.not_found, field).extend(getattr(source.not_found, field))
+
+
+async def _get_show_season_ids(show_id: str) -> list[int]:
+    """Fetch Trakt season IDs for a show, excluding specials (season 0).
+
+    Args:
+        show_id: Trakt show ID or slug
+
+    Returns:
+        List of Trakt season IDs
+    """
+    seasons_client = ShowSeasonsClient()
+    seasons = await seasons_client.get_seasons(show_id)
+    return [s["ids"]["trakt"] for s in seasons if s["number"] > 0]
+
+
+async def _batch_show_history_op(
+    client_method: Callable[[TraktHistoryRequest], Awaitable[HistorySummary]],
+    show_items: list[TraktHistoryItem],
+    operation: str,
+) -> HistorySummary:
+    """Execute a history add/remove for shows by batching per-season.
+
+    Large shows (100+ episodes) cause Trakt API 504 gateway timeouts.
+    This sends one request per season to keep each call small.
+
+    Args:
+        client_method: The client add_to_history or remove_from_history method
+        show_items: List of show items to process
+        operation: "added" or "deleted" — for aggregating the correct counts
+
+    Returns:
+        Aggregated HistorySummary across all season batches
+    """
+    combined = HistorySummary()
+
+    for item in show_items:
+        show_id = str(item.ids.trakt) if item.ids and item.ids.trakt else None
+        if show_id is None and item.ids and item.ids.slug:
+            show_id = item.ids.slug
+
+        if show_id is None:
+            # No resolvable ID — send as-is and hope for the best
+            request = TraktHistoryRequest(shows=[item])
+            result = await client_method(request)
+            _aggregate_summary(combined, result, operation)
+            continue
+
+        try:
+            season_ids = await _get_show_season_ids(show_id)
+        except Exception:
+            logger.warning(
+                "Failed to fetch seasons for show %s, sending as single request",
+                show_id,
+            )
+            request = TraktHistoryRequest(shows=[item])
+            result = await client_method(request)
+            _aggregate_summary(combined, result, operation)
+            continue
+
+        for season_id in season_ids:
+            request = TraktHistoryRequest(
+                seasons=[TraktHistoryItem(ids=TraktIds(trakt=season_id))]
+            )
+            result = await client_method(request)
+            _aggregate_summary(combined, result, operation)
+
+    return combined
+
 
 WatchlistSortField = Literal[
     "rank",
@@ -661,16 +761,21 @@ async def add_to_history(
         ids_dict = dict(item.build_ids_dict())
         history_items.append(
             TraktHistoryItem(
-                ids=TraktIds.model_validate(ids_dict),
+                ids=TraktIds.model_validate(ids_dict) if ids_dict else None,
                 title=item.title,
                 year=item.year,
                 watched_at=item.watched_at,
             )
         )
 
-    request = TraktHistoryRequest(**{history_type: history_items})
-
-    summary: HistorySummary = await client.add_to_history(request)
+    # For shows, batch per-season to avoid Trakt API gateway timeouts
+    if history_type == "shows":
+        summary = await _batch_show_history_op(
+            client.add_to_history, history_items, "added"
+        )
+    else:
+        request = TraktHistoryRequest(**{history_type: history_items})
+        summary = await client.add_to_history(request)
 
     # Handle transitional case where API returns error strings
     if isinstance(summary, str):
@@ -711,15 +816,20 @@ async def remove_from_history(
         ids_dict = dict(item.build_ids_dict())
         history_items.append(
             TraktHistoryItem(
-                ids=TraktIds.model_validate(ids_dict),
+                ids=TraktIds.model_validate(ids_dict) if ids_dict else None,
                 title=item.title,
                 year=item.year,
             )
         )
 
-    request = TraktHistoryRequest(**{history_type: history_items})
-
-    summary: HistorySummary = await client.remove_from_history(request)
+    # For shows, batch per-season to avoid Trakt API gateway timeouts
+    if history_type == "shows":
+        summary = await _batch_show_history_op(
+            client.remove_from_history, history_items, "deleted"
+        )
+    else:
+        request = TraktHistoryRequest(**{history_type: history_items})
+        summary = await client.remove_from_history(request)
 
     # Handle transitional case where API returns error strings
     if isinstance(summary, str):

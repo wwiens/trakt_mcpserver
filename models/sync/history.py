@@ -61,10 +61,10 @@ class TraktHistoryItem(BaseModel):
 class TraktHistoryRequest(BaseModel):
     """Request model for adding/removing history items."""
 
-    movies: Annotated[list[TraktHistoryItem], Field(default_factory=list)]
-    shows: Annotated[list[TraktHistoryItem], Field(default_factory=list)]
-    seasons: Annotated[list[TraktHistoryItem], Field(default_factory=list)]
-    episodes: Annotated[list[TraktHistoryItem], Field(default_factory=list)]
+    movies: list[TraktHistoryItem] | None = None
+    shows: list[TraktHistoryItem] | None = None
+    seasons: list[TraktHistoryItem] | None = None
+    episodes: list[TraktHistoryItem] | None = None
 
 
 class HistorySummaryCount(BaseModel):
