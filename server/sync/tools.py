@@ -131,7 +131,7 @@ async def _batch_show_history_op(
             show_id = item.ids.slug
 
         if show_id is None:
-            # No resolvable ID — send as-is and hope for the best
+            # No resolvable ID — send the show item directly
             request = TraktHistoryRequest(shows=[item])
             result = await client_method(request)
             _aggregate_summary(combined, result, operation)
@@ -149,12 +149,30 @@ async def _batch_show_history_op(
             _aggregate_summary(combined, result, operation)
             continue
 
+        # Process seasons sequentially to avoid Trakt API rate-limit pressure
+        failed_seasons: list[int] = []
         for season_id in season_ids:
             request = TraktHistoryRequest(
                 seasons=[TraktHistoryItem(ids=TraktIds(trakt=season_id))]
             )
-            result = await client_method(request)
-            _aggregate_summary(combined, result, operation)
+            try:
+                result = await client_method(request)
+                _aggregate_summary(combined, result, operation)
+            except Exception:
+                logger.warning(
+                    "Failed to process season %s for show %s",
+                    season_id,
+                    show_id,
+                )
+                failed_seasons.append(season_id)
+
+        if failed_seasons:
+            logger.warning(
+                "Show %s: %d of %d seasons failed",
+                show_id,
+                len(failed_seasons),
+                len(season_ids),
+            )
 
     return combined
 

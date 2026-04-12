@@ -161,10 +161,15 @@ class SyncHistoryFormatters:
 
             if total > 0:
                 preposition = "to" if operation == "added" else "from"
+                if len(type_breakdown) == 1:
+                    label = type_breakdown[0].split(":")[0].lower()
+                    if total == 1:
+                        label = label.rstrip("s")
+                else:
+                    label = "item" if total == 1 else "items"
                 result += (
                     f"Successfully {operation} **{total}** "
-                    f"item{'s' if total != 1 else ''} "
-                    f"{preposition} watch history.\n\n"
+                    f"{label} {preposition} watch history.\n\n"
                 )
 
                 if len(type_breakdown) > 1:

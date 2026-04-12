@@ -165,7 +165,7 @@ class TestSyncHistoryFormatters:
         )
 
         assert "# History Added - Movies" in result
-        assert "Successfully added **2** item" in result
+        assert "Successfully added **2** movies" in result
 
     def test_format_history_summary_removed(self) -> None:
         """Test formatting history remove operation summary."""
@@ -179,7 +179,7 @@ class TestSyncHistoryFormatters:
         )
 
         assert "# History Removed - Movies" in result
-        assert "Successfully removed **1** item" in result
+        assert "Successfully removed **1** movie" in result
 
     def test_format_history_summary_nothing_added(self) -> None:
         """Test formatting when nothing was added."""
