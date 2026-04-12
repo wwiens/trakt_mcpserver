@@ -135,7 +135,7 @@ async def _batch_show_history_op(
             request = TraktHistoryRequest(shows=[item])
             result = await client_method(request)
             if isinstance(result, str):
-                BaseToolErrorMixin.handle_api_string_error(
+                raise BaseToolErrorMixin.handle_api_string_error(
                     resource_type="sync_history_show",
                     resource_id="unknown",
                     error_message=result,
@@ -154,12 +154,12 @@ async def _batch_show_history_op(
             request = TraktHistoryRequest(shows=[item])
             result = await client_method(request)
             if isinstance(result, str):
-                BaseToolErrorMixin.handle_api_string_error(
+                raise BaseToolErrorMixin.handle_api_string_error(
                     resource_type="sync_history_show",
                     resource_id=show_id,
                     error_message=result,
                     operation=operation,
-                )
+                ) from None
             _aggregate_summary(combined, result, operation)
             continue
 
@@ -171,7 +171,7 @@ async def _batch_show_history_op(
             request = TraktHistoryRequest(shows=[item])
             result = await client_method(request)
             if isinstance(result, str):
-                BaseToolErrorMixin.handle_api_string_error(
+                raise BaseToolErrorMixin.handle_api_string_error(
                     resource_type="sync_history_show",
                     resource_id=show_id,
                     error_message=result,
@@ -194,13 +194,15 @@ async def _batch_show_history_op(
             try:
                 result = await client_method(request)
                 if isinstance(result, str):
-                    BaseToolErrorMixin.handle_api_string_error(
+                    raise BaseToolErrorMixin.handle_api_string_error(
                         resource_type="sync_history_season",
                         resource_id=str(season_id),
                         error_message=result,
                         operation=operation,
                     )
                 _aggregate_summary(combined, result, operation)
+            except MCPError:
+                raise
             except Exception:
                 logger.warning(
                     "Failed to process season %s for show %s",
