@@ -105,6 +105,7 @@ class TraktAPIErrorHandler:
             500: cls.handle_server_error,
             502: cls.handle_bad_gateway,
             503: cls.handle_service_unavailable,
+            504: cls.handle_gateway_timeout,
         }
 
         return handlers.get(status_code, cls.handle_unknown_error)
@@ -256,6 +257,19 @@ class TraktAPIErrorHandler:
         return TraktServerError(
             http_status=503,
             message="Service unavailable. Please try again in 30 seconds.",
+            endpoint=context.get("endpoint"),
+            correlation_id=context.get("correlation_id"),
+        )
+
+    @classmethod
+    def handle_gateway_timeout(cls, **context: Any) -> TraktServerError:
+        """Handle 504 Gateway Timeout errors."""
+        return TraktServerError(
+            http_status=504,
+            message=(
+                "Gateway timeout. The upstream service took too long to respond."
+                " Please try again later."
+            ),
             endpoint=context.get("endpoint"),
             correlation_id=context.get("correlation_id"),
         )
