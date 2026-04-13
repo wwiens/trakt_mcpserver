@@ -8,9 +8,9 @@ refresh when access tokens expire (every 24h).
 import asyncio
 import io
 import time
-from collections.abc import Generator
+from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, Final
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -20,7 +20,7 @@ from client.auth import AuthClient
 from models.auth import TraktAuthToken
 from utils.api.errors import handle_api_errors
 
-DAY: int = 86400
+DAY: Final[int] = 86400
 
 
 def _make_expired_token(days_ago: int) -> TraktAuthToken:
@@ -35,7 +35,7 @@ def _make_expired_token(days_ago: int) -> TraktAuthToken:
     )
 
 
-def _make_fresh_token_data(suffix: str = "new") -> dict[str, Any]:
+def _make_fresh_token_data(suffix: str = "new") -> dict[str, str | int]:
     """Return raw dict for a fresh token response from the API."""
     return {
         "access_token": f"fresh_access_{suffix}",
@@ -47,7 +47,7 @@ def _make_fresh_token_data(suffix: str = "new") -> dict[str, Any]:
     }
 
 
-def _mock_post_response(data: dict[str, Any]) -> MagicMock:
+def _mock_post_response(data: dict[str, str | int]) -> MagicMock:
     """Build a mock httpx.Response returning `data` as JSON."""
     resp = MagicMock(spec=httpx.Response)
     resp.status_code = 200
@@ -209,6 +209,12 @@ class TestTokenRefreshChain:
         """ensure_authenticated passes, but API returns 401 — decorator recovers."""
 
         class MidFlightService:
+            call_count: int
+            refresh_called: bool
+            clear_auth_token_called: bool
+            auth_token: MagicMock
+            _refresh_lock: asyncio.Lock
+
             def __init__(self) -> None:
                 self.call_count = 0
                 self.refresh_called = False
@@ -345,7 +351,8 @@ class TestTokenRefreshChain:
         assert result == {"title": "Breaking Bad"}
         patched_httpx_client.post.assert_called_once()
         patched_httpx_client.get.assert_called_once()
-        assert "Bearer fresh_access_e2e" in str(patched_httpx_client.get.call_args)
+        call_kwargs = patched_httpx_client.get.call_args.kwargs
+        assert call_kwargs["headers"]["Authorization"] == "Bearer fresh_access_e2e"
 
     # ------------------------------------------------------------------
     # 9. Transient error preserves refresh_token for next attempt
@@ -381,7 +388,7 @@ class TestTokenRefreshChain:
         assert client.auth_token.access_token == "fresh_access_recovered"
 
     # ------------------------------------------------------------------
-    # 10. Concurrent 401s — single refresh across multiple methods
+    # 10. Concurrent 401s — independent refreshes across multiple methods
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_concurrent_401_independent_refresh(self) -> None:
@@ -397,6 +404,12 @@ class TestTokenRefreshChain:
             Here we test that sequential 401→refresh→retry works for each
             concurrent caller independently.
             """
+
+            refresh_count: int
+            clear_count: int
+            auth_token: MagicMock
+            _refresh_lock: asyncio.Lock
+            call_counts: dict[str, int]
 
             def __init__(self) -> None:
                 self.refresh_count = 0
@@ -414,12 +427,12 @@ class TestTokenRefreshChain:
                 await asyncio.sleep(0.01)
                 return True
 
-            def make_method(self, name: str) -> Any:
+            def make_method(self, name: str) -> Callable[..., Awaitable[str]]:
                 svc = self
                 svc.call_counts[name] = 0
 
                 @handle_api_errors
-                async def method(self_arg: Any) -> str:
+                async def method(self_arg: ConcurrentService) -> str:
                     svc.call_counts[name] += 1
                     if svc.call_counts[name] == 1:
                         resp = MagicMock()
