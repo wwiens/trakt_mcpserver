@@ -141,9 +141,9 @@ class TestTokenRefreshChain:
 
         # Verify each refresh sent the previous cycle's refresh_token
         calls = patched_httpx_client.post.call_args_list
-        assert "refresh_token" in str(calls[0])
-        assert "fresh_refresh_day1" in str(calls[1])
-        assert "fresh_refresh_day2" in str(calls[2])
+        assert calls[0].kwargs["json"]["refresh_token"] == "refresh_token_1d"
+        assert calls[1].kwargs["json"]["refresh_token"] == "fresh_refresh_day1"
+        assert calls[2].kwargs["json"]["refresh_token"] == "fresh_refresh_day2"
 
     # ------------------------------------------------------------------
     # 3. Cold start after 30-day absence
@@ -384,8 +384,8 @@ class TestTokenRefreshChain:
     # 10. Concurrent 401s — single refresh across multiple methods
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
-    async def test_concurrent_401_single_refresh(self) -> None:
-        """Multiple methods get 401 concurrently; only one refresh fires."""
+    async def test_concurrent_401_independent_refresh(self) -> None:
+        """Multiple methods get 401 concurrently; each refreshes independently."""
 
         class ConcurrentService:
             """Service where refresh does NOT hold _refresh_lock.
