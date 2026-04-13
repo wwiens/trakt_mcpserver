@@ -10,7 +10,7 @@ import io
 import time
 from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
-from typing import Any, Final
+from typing import Final
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -182,7 +182,7 @@ class TestTokenRefreshChain:
         """Five concurrent callers share one refresh via _refresh_lock."""
         fresh_data = _make_fresh_token_data("concurrent")
 
-        async def slow_post(*args: Any, **kwargs: Any) -> MagicMock:
+        async def slow_post(*args: object, **kwargs: object) -> MagicMock:
             await asyncio.sleep(0.05)
             return _mock_post_response(fresh_data)
 
