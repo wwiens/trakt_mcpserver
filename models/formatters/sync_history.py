@@ -165,27 +165,31 @@ class SyncHistoryFormatters:
             counts = summary.deleted
 
         if counts:
-            total = getattr(counts, content_type, 0)
+            # Sum all non-zero counts — the API may report deletions
+            # under a different type (e.g., episodes when removing a show)
+            type_breakdown: list[str] = []
+            total = 0
+            for type_name in ("movies", "shows", "seasons", "episodes"):
+                count = getattr(counts, type_name, 0)
+                if count > 0:
+                    total += count
+                    type_breakdown.append(f"{type_name.title()}: {count}")
+
             if total > 0:
                 preposition = "to" if operation == "added" else "from"
+                if len(type_breakdown) == 1:
+                    label = type_breakdown[0].split(":")[0].lower()
+                    if total == 1:
+                        label = label.rstrip("s")
+                else:
+                    label = "item" if total == 1 else "items"
                 summary_msg = (
                     f"Successfully {operation} **{total}**"
-                    f" {content_type} {preposition}"
+                    f" {label} {preposition}"
                     " watch history."
                 )
                 lines.append(summary_msg)
                 lines.append("")
-
-                # Show breakdown by type if multiple types were processed
-                type_breakdown: list[str] = []
-                if counts.movies > 0:
-                    type_breakdown.append(f"Movies: {counts.movies}")
-                if counts.shows > 0:
-                    type_breakdown.append(f"Shows: {counts.shows}")
-                if counts.seasons > 0:
-                    type_breakdown.append(f"Seasons: {counts.seasons}")
-                if counts.episodes > 0:
-                    type_breakdown.append(f"Episodes: {counts.episodes}")
 
                 if len(type_breakdown) > 1:
                     lines.append("### Breakdown by Type")

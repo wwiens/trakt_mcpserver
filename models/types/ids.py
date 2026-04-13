@@ -39,7 +39,7 @@ class TraktIds(BaseModel):
     @classmethod
     def validate_slug(cls, v: object) -> str | None:
         """Validate slug format (lowercase alphanumerics and hyphens)."""
-        if v is None:
+        if v is None or v == "":
             return None
         if isinstance(v, str):
             if re.match(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", v):
@@ -50,8 +50,12 @@ class TraktIds(BaseModel):
     @field_validator("imdb", mode="before")
     @classmethod
     def validate_imdb_format(cls, v: object) -> str | None:
-        """Validate IMDB ID format (tt + digits)."""
-        if v is None:
+        """Validate IMDB ID format (tt + digits).
+
+        The Trakt API sometimes returns empty strings for imdb IDs
+        on episodes that lack an IMDB entry. Treat these as None.
+        """
+        if v is None or v == "":
             return None
         if isinstance(v, str):
             if re.match(r"^tt\d+$", v):
