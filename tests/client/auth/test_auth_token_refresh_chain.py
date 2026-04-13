@@ -56,16 +56,18 @@ def _mock_post_response(data: dict[str, str | int]) -> MagicMock:
     return resp
 
 
+def _fake_fdopen(*_args: object, **_kwargs: object) -> io.StringIO:
+    """Stand-in for os.fdopen that returns an in-memory stream."""
+    return io.StringIO()
+
+
 @contextmanager
 def _patch_file_io() -> Generator[None, None, None]:
     """Patch atomic-write file I/O used by _save_auth_token."""
     fake_fd = 99
     with (
         patch("os.open", return_value=fake_fd),
-        patch(
-            "os.fdopen",
-            side_effect=lambda *_a, **_kw: io.StringIO(),  # pyright: ignore[reportUnknownLambdaType]
-        ),
+        patch("os.fdopen", side_effect=_fake_fdopen),
         patch("os.replace"),
         patch("os.makedirs"),
         patch("os.fsync"),
@@ -427,7 +429,9 @@ class TestTokenRefreshChain:
                 await asyncio.sleep(0.01)
                 return True
 
-            def make_method(self, name: str) -> Callable[..., Awaitable[str]]:
+            def make_method(
+                self, name: str
+            ) -> Callable[["ConcurrentService"], Awaitable[str]]:
                 svc = self
                 svc.call_counts[name] = 0
 
