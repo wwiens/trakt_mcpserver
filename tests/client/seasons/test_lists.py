@@ -50,6 +50,7 @@ async def test_get_season_lists():
 
         client = SeasonsClient()
         result = await client.get_season_lists("game-of-thrones", 1)
+        assert not isinstance(result, str)
 
         assert len(result) == 1
         assert result[0]["name"] == "Best Seasons Ever"
@@ -90,6 +91,7 @@ async def test_get_season_lists_custom_type_and_sort():
         result = await client.get_season_lists(
             "game-of-thrones", 1, list_type="personal", sort="likes"
         )
+        assert not isinstance(result, str)
 
         assert result == []
 

@@ -29,30 +29,36 @@ class SyncRatingsFormatters:
 
         # Handle empty state
         if not ratings:
-            result = f"# Your {rating_type.title()} Ratings\n\n"
+            lines: list[str] = [f"# Your {rating_type.title()} Ratings", ""]
             if rating_filter:
-                result += (
-                    f"You haven't rated any {rating_type} with rating "
-                    f"{rating_filter} yet. "
+                empty_msg = (
+                    f"You haven't rated any {rating_type}"
+                    f" with rating {rating_filter} yet."
+                    f" Use the `add_user_ratings` tool"
+                    f" to add ratings for your {rating_type}."
                 )
+                lines.append(empty_msg)
             else:
-                result += f"You haven't rated any {rating_type} yet. "
-            result += (
-                f"Use the `add_user_ratings` tool to add ratings "
-                f"for your {rating_type}.\n\n"
-            )
+                empty_msg = (
+                    f"You haven't rated any {rating_type}"
+                    " yet. Use the `add_user_ratings` tool"
+                    f" to add ratings for your {rating_type}."
+                )
+                lines.append(empty_msg)
+            lines.append("")
 
             # Show pagination info even for empty results
-            result += (
-                f"📄 **Pagination Info:** {paginated_ratings.page_info_summary()}\n"
+            lines.append(
+                f"📄 **Pagination Info:** {paginated_ratings.page_info_summary()}"
             )
-            return result
+            return "\n".join(lines)
 
         filter_text = f" (filtered to rating {rating_filter})" if rating_filter else ""
-        result = f"# Your {rating_type.title()} Ratings{filter_text}\n\n"
+        lines = [f"# Your {rating_type.title()} Ratings{filter_text}", ""]
 
         # Show pagination summary at the top
-        result += f"📄 **{paginated_ratings.page_info_summary()}**\n\n"
+        lines.append(f"📄 **{paginated_ratings.page_info_summary()}**")
+        lines.append("")
 
         # Show page navigation hints
         navigation_hints: list[str] = []
@@ -62,12 +68,14 @@ class SyncRatingsFormatters:
             navigation_hints.append(f"Next: page {pagination.next_page()}")
 
         if navigation_hints:
-            result += f"📍 **Navigation:** {' | '.join(navigation_hints)}\n\n"
+            lines.append(f"📍 **Navigation:** {' | '.join(navigation_hints)}")
+            lines.append("")
 
         # Handle pluralization for "Found X rated Y" line
         count = len(ratings)
         noun = rating_type[:-1] if count == 1 else rating_type
-        result += f"Found {count} rated {noun} on this page:\n\n"
+        lines.append(f"Found {count} rated {noun} on this page:")
+        lines.append("")
 
         # Group ratings by rating value for better organization
         ratings_by_score: dict[int, list[TraktSyncRating]] = {}
@@ -83,7 +91,8 @@ class SyncRatingsFormatters:
             # Handle pluralization for rating section headings
             count = len(rated_items)
             noun = rating_type[:-1] if count == 1 else rating_type
-            result += f"## Rating {rating_score}/10 ({count} {noun})\n\n"
+            lines.append(f"## Rating {rating_score}/10 ({count} {noun})")
+            lines.append("")
 
             for rating_item in rated_items:
                 title = "Unknown"
@@ -124,11 +133,11 @@ class SyncRatingsFormatters:
                     else "Unknown date"
                 )
 
-                result += f"- **{title}{year}** (rated {rating_date})\n"
+                lines.append(f"- **{title}{year}** (rated {rating_date})")
 
-            result += "\n"
+            lines.append("")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_user_ratings_summary(
@@ -144,7 +153,10 @@ class SyncRatingsFormatters:
         Returns:
             Formatted markdown text with operation results and summary
         """
-        result = f"# Ratings {operation.title()} - {rating_type.title()}\n\n"
+        lines: list[str] = [
+            f"# Ratings {operation.title()} - {rating_type.title()}",
+            "",
+        ]
 
         # Get the counts for the specific operation
         counts = None
@@ -156,10 +168,10 @@ class SyncRatingsFormatters:
         if counts:
             total = getattr(counts, rating_type, 0)
             if total > 0:
-                result += (
-                    f"✅ Successfully {operation} **{total}** "
-                    f"{rating_type} rating(s).\n\n"
+                lines.append(
+                    f"✅ Successfully {operation} **{total}** {rating_type} rating(s)."
                 )
+                lines.append("")
 
                 # Show breakdown by type if multiple types were processed
                 type_breakdown: list[str] = []
@@ -173,21 +185,24 @@ class SyncRatingsFormatters:
                     type_breakdown.append(f"Episodes: {counts.episodes}")
 
                 if len(type_breakdown) > 1:
-                    result += "### Breakdown by Type\n"
-                    for breakdown in type_breakdown:
-                        result += f"- {breakdown}\n"
-                    result += "\n"
+                    lines.append("### Breakdown by Type")
+                    lines.extend(f"- {breakdown}" for breakdown in type_breakdown)
+                    lines.append("")
             else:
-                result += f"No {rating_type} ratings were {operation}.\n\n"
+                lines.append(f"No {rating_type} ratings were {operation}.")
+                lines.append("")
         else:
-            result += f"No {rating_type} ratings were {operation}.\n\n"
+            lines.append(f"No {rating_type} ratings were {operation}.")
+            lines.append("")
 
         # Show items that were not found
         if summary.not_found:
             not_found_items = getattr(summary.not_found, rating_type, [])
             if not_found_items:
-                result += f"## Items Not Found ({len(not_found_items)})\n\n"
-                result += "The following items could not be found on Trakt:\n\n"
+                lines.append(f"## Items Not Found ({len(not_found_items)})")
+                lines.append("")
+                lines.append("The following items could not be found on Trakt:")
+                lines.append("")
 
                 for item in not_found_items:
                     # Extract identifying information from the item
@@ -213,8 +228,9 @@ class SyncRatingsFormatters:
                     else:
                         display_name = "Unknown item"
 
-                    result += f"- {display_name}\n"
+                    lines.append(f"- {display_name}")
 
-                result += "\nPlease check the titles, years, and IDs for accuracy.\n"
+                lines.append("")
+                lines.append("Please check the titles, years, and IDs for accuracy.")
 
-        return result
+        return "\n".join(lines)

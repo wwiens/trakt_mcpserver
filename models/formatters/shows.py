@@ -1,6 +1,12 @@
 """Show formatting methods for the Trakt MCP server."""
 
-from models.formatters.utils import MAX_OVERVIEW_LENGTH, format_pagination_header
+from models.formatters.utils import (
+    MAX_OVERVIEW_LENGTH,
+    format_media_list,
+    format_pagination_header,
+    format_rating_distribution,
+    format_title_year,
+)
 from models.types import (
     AnticipatedShowWrapper,
     CastMember,
@@ -24,359 +30,154 @@ class ShowFormatters:
     def format_trending_shows(
         data: list[TrendingWrapper] | PaginatedResponse[TrendingWrapper],
     ) -> str:
-        """Format trending shows data for MCP resource.
-
-        Args:
-            data: Either a list of all trending shows or a paginated response
-
-        Returns:
-            Formatted markdown text with trending shows
-        """
-        result = "# Trending Shows on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            shows = data.data
-        else:
-            shows = data
-
-        for item in shows:
-            show = item.get("show")
-            if not show:
-                continue
-
-            watchers = item.get("watchers", 0)
-
-            title = show.get("title", "Unknown")
-            year = show.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += f"- **{title}{year_str}** - {watchers} watchers\n"
-
-            if overview := show.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format trending shows data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Trending Shows on Trakt",
+            media_key="show",
+            format_metric=lambda item: f"{item.get('watchers', 0)} watchers",
+        )
 
     @staticmethod
     def format_popular_shows(
         data: list[ShowResponse] | PaginatedResponse[ShowResponse],
     ) -> str:
-        """Format popular shows data for MCP resource.
-
-        Args:
-            data: Either a list of all popular shows or a paginated response
-
-        Returns:
-            Formatted markdown text with popular shows
-        """
-        result = "# Popular Shows on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            shows = data.data
-        else:
-            shows = data
-
-        for show in shows:
-            title = show.get("title", "Unknown")
-            year = show.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += f"- **{title}{year_str}**\n"
-
-            if overview := show.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format popular shows data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Popular Shows on Trakt",
+            media_key=None,
+        )
 
     @staticmethod
     def format_favorited_shows(
         data: list[FavoritedShowWrapper] | PaginatedResponse[FavoritedShowWrapper],
     ) -> str:
-        """Format favorited shows data for MCP resource.
-
-        Args:
-            data: Either a list of all favorited shows or a paginated response
-
-        Returns:
-            Formatted markdown text with favorited shows
-        """
-        result = "# Most Favorited Shows on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            shows = data.data
-        else:
-            shows = data
-
-        for item in shows:
-            show = item.get("show", {})
-            # The correct field is user_count in the API response
-            user_count = item.get("user_count", 0)
-
-            title = show.get("title", "Unknown")
-            year = show.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += f"- **{title}{year_str}** - Favorited by {user_count} users\n"
-
-            if overview := show.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format favorited shows data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Most Favorited Shows on Trakt",
+            media_key="show",
+            format_metric=lambda item: (
+                f"Favorited by {item.get('user_count', 0)} users"
+            ),
+        )
 
     @staticmethod
     def format_played_shows(
         data: list[PlayedShowWrapper] | PaginatedResponse[PlayedShowWrapper],
     ) -> str:
-        """Format played shows data for MCP resource.
-
-        Args:
-            data: Either a list of all played shows or a paginated response
-
-        Returns:
-            Formatted markdown text with played shows
-        """
-        result = "# Most Played Shows on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            shows = data.data
-        else:
-            shows = data
-
-        for item in shows:
-            show = item.get("show", {})
-            watcher_count = item.get("watcher_count", 0)
-            play_count = item.get("play_count", 0)
-
-            title = show.get("title", "Unknown")
-            year = show.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += (
-                f"- **{title}{year_str}** - "
-                f"{watcher_count} watchers, {play_count} plays\n"
-            )
-
-            if overview := show.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format played shows data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Most Played Shows on Trakt",
+            media_key="show",
+            format_metric=lambda item: (
+                f"{item.get('watcher_count', 0)} watchers, "
+                f"{item.get('play_count', 0)} plays"
+            ),
+        )
 
     @staticmethod
     def format_watched_shows(
         data: list[WatchedShowWrapper] | PaginatedResponse[WatchedShowWrapper],
     ) -> str:
-        """Format watched shows data for MCP resource.
-
-        Args:
-            data: Either a list of all watched shows or a paginated response
-
-        Returns:
-            Formatted markdown text with watched shows
-        """
-        result = "# Most Watched Shows on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            shows = data.data
-        else:
-            shows = data
-
-        for item in shows:
-            show = item.get("show", {})
-            watcher_count = item.get("watcher_count", 0)
-
-            title = show.get("title", "Unknown")
-            year = show.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += f"- **{title}{year_str}** - Watched by {watcher_count} users\n"
-
-            if overview := show.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format watched shows data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Most Watched Shows on Trakt",
+            media_key="show",
+            format_metric=lambda item: (
+                f"Watched by {item.get('watcher_count', 0)} users"
+            ),
+        )
 
     @staticmethod
     def format_anticipated_shows(
         data: list[AnticipatedShowWrapper] | PaginatedResponse[AnticipatedShowWrapper],
     ) -> str:
-        """Format anticipated shows data for MCP resource.
-
-        Args:
-            data: Either a list of all anticipated shows or a paginated response
-
-        Returns:
-            Formatted markdown text with anticipated shows
-        """
-        result = "# Most Anticipated Shows on Trakt\n\n"
-
-        # Handle pagination metadata if present
-        if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
-            shows = data.data
-        else:
-            shows = data
-
-        for item in shows:
-            show = item.get("show", {})
-            list_count = item.get("list_count", 0)
-
-            title = show.get("title", "Unknown")
-            year = show.get("year", "")
-            year_str = f" ({year})" if year else ""
-
-            result += f"- **{title}{year_str}** - On {list_count} lists\n"
-
-            if overview := show.get("overview"):
-                if len(overview) > MAX_OVERVIEW_LENGTH:
-                    overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
-
-            result += "\n"
-
-        return result
+        """Format anticipated shows data for MCP resource."""
+        return format_media_list(
+            data,
+            heading="Most Anticipated Shows on Trakt",
+            media_key="show",
+            format_metric=lambda item: f"On {item.get('list_count', 0)} lists",
+        )
 
     @staticmethod
     def format_show_ratings(
         ratings: TraktRating, show_title: str = "Unknown show"
     ) -> str:
-        """Format show ratings data for MCP resource.
-
-        Args:
-            ratings: The ratings data from Trakt API
-            show_title: The title of the show
-
-        Returns:
-            Formatted markdown text with ratings information
-        """
-        result = f"# Ratings for {show_title}\n\n"
+        """Format show ratings data for MCP resource."""
+        lines: list[str] = [f"# Ratings for {show_title}", ""]
 
         if not ratings:
-            return result + "No ratings data available."
+            return f"# Ratings for {show_title}\n\nNo ratings data available."
 
-        # Extract rating data
         average_rating = ratings.get("rating", 0)
         votes = ratings.get("votes", 0)
         distribution = ratings.get("distribution", {})
 
-        # Format average rating with 2 decimal places
-        result += f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes\n\n"
+        lines.append(f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes")
+        lines.append("")
 
-        # Add distribution if available
         if distribution:
-            result += "## Rating Distribution\n\n"
-            result += "| Rating | Votes | Percentage |\n"
-            result += "|--------|-------|------------|\n"
+            lines.append(format_rating_distribution(distribution, votes))
 
-            # Calculate percentages for each rating
-            for rating in range(10, 0, -1):  # 10 down to 1
-                rating_str = str(rating)
-                count = distribution.get(rating_str, 0)
-                percentage = (count / votes * 100) if votes > 0 else 0
-
-                result += f"| {rating}/10 | {count} | {percentage:.1f}% |\n"
-
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_show_summary(show: ShowResponse) -> str:
-        """Format basic show summary data.
-
-        Args:
-            show: Show data from Trakt API
-
-        Returns:
-            Formatted markdown text with basic show information (title, year, ID only)
-        """
+        """Format basic show summary data."""
         if not show:
             return "No show data available."
 
         title = show.get("title", "Unknown")
         year = show.get("year", "")
-        year_str = f" ({year})" if year else ""
+        title_str = format_title_year(title, year)
         ids = show.get("ids", {})
         trakt_id = ids.get("trakt", "Unknown")
 
-        result = f"## {title}{year_str}\n\n"
-        result += f"Trakt ID: {trakt_id}\n"
+        lines: list[str] = [f"## {title_str}", ""]
+        lines.append(f"Trakt ID: {trakt_id}")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_show_extended(show: ShowResponse) -> str:
-        """Format extended show details data.
-
-        Args:
-            show: Extended show data from Trakt API
-
-        Returns:
-            Formatted markdown text with comprehensive show information
-        """
+        """Format extended show details data."""
         if not show:
             return "No show data available."
 
-        # Basic info
         title = show.get("title", "Unknown")
         year = show.get("year", "")
-        year_str = f" ({year})" if year else ""
+        title_str = format_title_year(title, year)
         status = show.get("status", "unknown")
         tagline = show.get("tagline", "")
         overview = show.get("overview", "No overview available.")
         ids = show.get("ids", {})
         trakt_id = ids.get("trakt", "Unknown")
 
-        # Format title with status
-        result = f"## {title}{year_str} - {status.title().replace('_', ' ')}\n"
+        lines: list[str] = [f"## {title_str} - {status.title().replace('_', ' ')}"]
 
-        # Add tagline if available
         if tagline:
-            result += f"*{tagline}*\n"
+            lines.append(f"*{tagline}*")
 
-        result += f"\n{overview}\n\n"
-
-        # Production Details
-        result += "### Production Details\n"
-        result += f"- Status: {status.replace('_', ' ')}\n"
+        lines.append("")
+        lines.append(overview)
+        lines.append("")
+        lines.append("### Production Details")
+        lines.append(f"- Status: {status.replace('_', ' ')}")
 
         if runtime := show.get("runtime"):
-            result += f"- Runtime: {runtime} minutes\n"
+            lines.append(f"- Runtime: {runtime} minutes")
 
         if certification := show.get("certification"):
-            result += f"- Certification: {certification}\n"
+            lines.append(f"- Certification: {certification}")
 
         if network := show.get("network"):
-            result += f"- Network: {network}\n"
+            lines.append(f"- Network: {network}")
 
-        # Air time information
         if airs := show.get("airs"):
             day = airs.get("day", "")
             time = airs.get("time", "")
@@ -391,57 +192,51 @@ class ShowFormatters:
                     air_time_str += f"at {time}"
                 if timezone:
                     air_time_str += f" ({timezone})"
-                result += air_time_str + "\n"
+                lines.append(air_time_str)
 
         if aired_episodes := show.get("aired_episodes"):
-            result += f"- Aired Episodes: {aired_episodes}\n"
+            lines.append(f"- Aired Episodes: {aired_episodes}")
 
         if country := show.get("country"):
-            result += f"- Country: {country.upper()}\n"
+            lines.append(f"- Country: {country.upper()}")
 
         if genres := show.get("genres"):
             genres_str = ", ".join(genres)
-            result += f"- Genres: {genres_str}\n"
+            lines.append(f"- Genres: {genres_str}")
 
         if languages := show.get("languages"):
             languages_str = ", ".join(languages)
-            result += f"- Languages: {languages_str}\n"
+            lines.append(f"- Languages: {languages_str}")
 
         if homepage := show.get("homepage"):
-            result += f"- Homepage: {homepage}\n"
+            lines.append(f"- Homepage: {homepage}")
 
-        # Ratings & Engagement
-        result += "\n### Ratings & Engagement\n"
+        lines.append("")
+        lines.append("### Ratings & Engagement")
 
         rating = show.get("rating", 0)
         votes = show.get("votes", 0)
-        result += f"- Rating: {rating:.1f}/10 ({votes} votes)\n"
+        lines.append(f"- Rating: {rating:.1f}/10 ({votes} votes)")
 
         if comment_count := show.get("comment_count"):
-            result += f"- Comments: {comment_count}\n"
+            lines.append(f"- Comments: {comment_count}")
 
-        result += f"\nTrakt ID: {trakt_id}\n"
+        lines.append("")
+        lines.append(f"Trakt ID: {trakt_id}")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_show_seasons(seasons: list[SeasonResponse]) -> str:
-        """Format show seasons data for MCP response.
-
-        Args:
-            seasons: List of season data from Trakt API
-
-        Returns:
-            Formatted markdown text with season details
-        """
+        """Format show seasons data for MCP response."""
         if not seasons:
             return "No seasons data available."
 
-        result = "# Seasons\n\n"
-        result += f"**{len(seasons)} season(s)**\n\n"
-
-        result += "| Season | Title | Episodes | Aired | Rating |\n"
-        result += "|--------|-------|----------|-------|--------|\n"
+        lines: list[str] = ["# Seasons", ""]
+        lines.append(f"**{len(seasons)} season(s)**")
+        lines.append("")
+        lines.append("| Season | Title | Episodes | Aired | Rating |")
+        lines.append("|--------|-------|----------|-------|--------|")
 
         for season in seasons:
             number = season.get("number", 0)
@@ -456,68 +251,54 @@ class ShowFormatters:
             rating = season.get("rating")
             rating_str = f"{rating:.1f}/10" if rating is not None else "—"
 
-            result += (
-                f"| {number} | {title} | {episode_count} "
-                f"| {aired_episodes} | {rating_str} |\n"
+            row = (
+                f"| {number} | {title} | {episode_count}"
+                f" | {aired_episodes} | {rating_str} |"
             )
+            lines.append(row)
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_related_shows(
         data: list[ShowResponse] | PaginatedResponse[ShowResponse],
     ) -> str:
-        """Format related shows data for MCP resource.
+        """Format related shows data for MCP resource."""
+        lines: list[str] = ["# Related Shows", ""]
 
-        Args:
-            data: Either a list of all related shows or a paginated response
-
-        Returns:
-            Formatted markdown text with related shows
-        """
-        result = "# Related Shows\n\n"
-
-        # Handle pagination metadata if present
         if isinstance(data, PaginatedResponse):
-            result += format_pagination_header(data)
+            lines.append(format_pagination_header(data).rstrip("\n"))
+            lines.append("")
             shows = data.data
         else:
             shows = data
 
         if not shows:
-            return result + "No related shows found.\n"
+            return "# Related Shows\n\nNo related shows found.\n"
 
         for show in shows:
             title = show.get("title", "Unknown")
             year = show.get("year", "")
-            year_str = f" ({year})" if year else ""
+            title_str = format_title_year(title, year)
 
-            result += f"- **{title}{year_str}**\n"
+            lines.append(f"- **{title_str}**")
 
             if overview := show.get("overview"):
                 if len(overview) > MAX_OVERVIEW_LENGTH:
                     overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {overview}\n"
+                lines.append(f"  {overview}")
 
-            result += "\n"
+            lines.append("")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def _format_cast_section(members: list[CastMember], heading: str) -> str:
-        """Format a cast or guest stars section.
-
-        Args:
-            members: List of cast member data
-            heading: Section heading (e.g., "Cast", "Guest Stars")
-
-        Returns:
-            Formatted markdown section, empty string if no members
-        """
+        """Format a cast or guest stars section."""
         if not members:
             return ""
 
-        result = f"## {heading}\n\n"
+        lines: list[str] = [f"## {heading}", ""]
         for member in members:
             person = member.get("person", {})
             name = person.get("name", "Unknown")
@@ -527,21 +308,13 @@ class ShowFormatters:
             count_str = (
                 f" ({episode_count} episodes)" if episode_count is not None else ""
             )
-            result += f"- **{name}** as {char_str}{count_str}\n"
-        result += "\n"
-        return result
+            lines.append(f"- **{name}** as {char_str}{count_str}")
+        lines.append("")
+        return "\n".join(lines)
 
     @staticmethod
     def format_show_people(people: PeopleResponse, show_title: str) -> str:
-        """Format show cast and crew data.
-
-        Args:
-            people: People data from Trakt API
-            show_title: The title of the show
-
-        Returns:
-            Formatted markdown text with cast and crew
-        """
+        """Format show cast and crew data."""
         if not people:
             return f"# People for {show_title}\n\nNo people data available."
 
@@ -552,14 +325,20 @@ class ShowFormatters:
         if not cast and not guest_stars and not crew:
             return f"# People for {show_title}\n\nNo people data available."
 
-        result = f"# People for {show_title}\n\n"
+        lines: list[str] = [f"# People for {show_title}", ""]
 
-        result += ShowFormatters._format_cast_section(cast, "Cast")
-        result += ShowFormatters._format_cast_section(guest_stars, "Guest Stars")
+        cast_section = ShowFormatters._format_cast_section(cast, "Cast")
+        if cast_section:
+            lines.append(cast_section)
+        guest_section = ShowFormatters._format_cast_section(guest_stars, "Guest Stars")
+        if guest_section:
+            lines.append(guest_section)
         if crew:
-            result += "## Crew\n\n"
+            lines.append("## Crew")
+            lines.append("")
             for department, members in sorted(crew.items()):
-                result += f"### {department.title()}\n\n"
+                lines.append(f"### {department.title()}")
+                lines.append("")
                 for member in members:
                     person = member.get("person", {})
                     name = person.get("name", "Unknown")
@@ -571,7 +350,7 @@ class ShowFormatters:
                         if episode_count is not None
                         else ""
                     )
-                    result += f"- **{name}** - {jobs_str}{count_str}\n"
-                result += "\n"
+                    lines.append(f"- **{name}** - {jobs_str}{count_str}")
+                lines.append("")
 
-        return result
+        return "\n".join(lines)

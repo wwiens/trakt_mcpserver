@@ -51,12 +51,13 @@ async def test_get_person_shows(trakt_env: None, patched_httpx_client: MagicMock
 
     client = PeopleClient()
     result = await client.get_person_shows("bryan-cranston")
+    assert not isinstance(result, str)
 
     assert len(result["cast"]) == 1
     assert result["cast"][0]["show"]["title"] == "Breaking Bad"
-    assert result["cast"][0]["episode_count"] == 62
-    assert result["cast"][0]["series_regular"] is True
-    assert "production" in result["crew"]
+    assert result["cast"][0].get("episode_count") == 62
+    assert result["cast"][0].get("series_regular") is True
+    assert "production" in result.get("crew", {})
 
     patched_httpx_client.get.assert_called_once()
     call_args = patched_httpx_client.get.call_args

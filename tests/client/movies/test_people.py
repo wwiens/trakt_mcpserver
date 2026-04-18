@@ -45,10 +45,11 @@ async def test_get_movie_people(
 
     client = MoviePeopleClient()
     result = await client.get_movie_people("tron-legacy-2010")
+    assert not isinstance(result, str)
 
     assert len(result["cast"]) == 1
     assert result["cast"][0]["person"]["name"] == "Jeff Bridges"
-    assert "directing" in result["crew"]
+    assert "directing" in result.get("crew", {})
 
     patched_httpx_client.get.assert_called_once()
     call_args = patched_httpx_client.get.call_args

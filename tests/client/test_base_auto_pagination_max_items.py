@@ -60,6 +60,7 @@ async def test_auto_paginate_max_items_single_page():
             params={"limit": 5},
             max_items=5,  # Request exactly 5 items
         )
+        assert not isinstance(result, str)
 
         # Should return exactly 5 items (capped by max_items)
         assert isinstance(result, list)
@@ -112,6 +113,7 @@ async def test_auto_paginate_max_items_truncates():
             params={"limit": 10},
             max_items=3,  # Request only 3 items
         )
+        assert not isinstance(result, str)
 
         # Should return exactly 3 items (truncated by max_items)
         assert isinstance(result, list)
@@ -189,6 +191,7 @@ async def test_auto_paginate_max_items_stops_early():
             params={"limit": 2},
             max_items=3,  # Request only 3 items total
         )
+        assert not isinstance(result, str)
 
         # Should return exactly 3 items (from first 2 pages, truncated)
         assert isinstance(result, list)
@@ -243,6 +246,7 @@ async def test_auto_paginate_max_items_no_error_at_max_pages():
             max_pages=5,
             max_items=10,  # Request 10 items
         )
+        assert not isinstance(result, str)
 
         # Should return 5 items (one per page, limited by max_pages)
         assert len(result) == 5
@@ -287,6 +291,7 @@ async def test_auto_paginate_max_items_zero():
             params={"limit": 3},
             max_items=0,  # Request 0 items
         )
+        assert not isinstance(result, str)
 
         # Should return empty list (truncated to 0)
         assert isinstance(result, list)
@@ -334,6 +339,7 @@ async def test_auto_paginate_max_items_one():
             params={"limit": 5},
             max_items=1,  # Request only 1 item
         )
+        assert not isinstance(result, str)
 
         # Should return exactly 1 item
         assert isinstance(result, list)
@@ -376,6 +382,7 @@ async def test_auto_paginate_max_items_with_empty_first_page():
             params={"limit": 10},
             max_items=10,  # Request 10 items but none available
         )
+        assert not isinstance(result, str)
 
         # Should return empty list
         assert isinstance(result, list)
@@ -423,6 +430,7 @@ async def test_auto_paginate_max_items_larger_than_total():
             params={"limit": 10},
             max_items=1000,  # Request 1000 but only 5 available
         )
+        assert not isinstance(result, str)
 
         # Should return all 5 available items
         assert isinstance(result, list)
@@ -500,6 +508,7 @@ async def test_auto_paginate_max_items_exact_page_boundary():
             params={"limit": 2},
             max_items=4,  # Exactly 2 pages worth
         )
+        assert not isinstance(result, str)
 
         # Should return exactly 4 items
         assert isinstance(result, list)

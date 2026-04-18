@@ -7,7 +7,6 @@ import pytest
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from server.seasons.tools import fetch_season_translations
-from utils.api.errors import InvalidParamsError
 
 
 @pytest.mark.asyncio
@@ -16,10 +15,10 @@ from utils.api.errors import InvalidParamsError
     ["english", "xyz", "123", "", "e", "abc"],
 )
 async def test_fetch_season_translations_invalid_language(invalid_language: str):
-    with pytest.raises(InvalidParamsError):
-        await fetch_season_translations(
-            show_id="game-of-thrones", season=1, language=invalid_language
-        )
+    result = await fetch_season_translations(
+        show_id="game-of-thrones", season=1, language=invalid_language
+    )
+    assert "# Error" in result
 
 
 @pytest.mark.asyncio

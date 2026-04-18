@@ -30,6 +30,7 @@ class TestPlaybackClient:
             mock_request.return_value = sample_playback_progress_mixed
 
             result = await authenticated_progress_client.get_playback_progress()
+            assert not isinstance(result, str)
 
             assert len(result) == 2
             assert result[0].type == "movie"
@@ -51,6 +52,7 @@ class TestPlaybackClient:
             result = await authenticated_progress_client.get_playback_progress(
                 playback_type="movies"
             )
+            assert not isinstance(result, str)
 
             assert len(result) == 1
             assert result[0].type == "movie"
@@ -79,6 +81,7 @@ class TestPlaybackClient:
             result = await authenticated_progress_client.get_playback_progress(
                 playback_type="episodes"
             )
+            assert not isinstance(result, str)
 
             assert len(result) == 1
             assert result[0].type == "episode"

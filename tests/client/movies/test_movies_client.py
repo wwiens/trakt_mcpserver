@@ -39,6 +39,7 @@ async def test_movies_client_get_anticipated_movies():
 
         client = MoviesClient()
         result = await client.get_anticipated_movies(limit=1)
+        assert not isinstance(result, str)
 
         assert len(result) == 1
         assert result[0]["list_count"] == 5362
@@ -86,6 +87,7 @@ async def test_get_movie_ratings():
 
         client = MoviesClient()
         result = await client.get_movie_ratings("1")
+        assert not isinstance(result, str)
 
         assert isinstance(result, dict)
         assert result["rating"] == 8.5
@@ -146,6 +148,7 @@ async def test_get_movie_extended():
 
         client = MoviesClient()
         result = await client.get_movie_extended("1")
+        assert not isinstance(result, str)
 
         # Verify the request was made with extended parameter
         mock_instance.get.assert_called_once()

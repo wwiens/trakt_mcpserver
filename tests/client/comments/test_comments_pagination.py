@@ -71,6 +71,7 @@ async def test_movie_comments_no_page_respects_limit():
 
         client = MovieCommentsClient()
         result = await client.get_movie_comments("test-movie", limit=2, page=None)
+        assert not isinstance(result, str)
 
         # Should return exactly 2 comments (capped by limit)
         assert isinstance(result, list)
@@ -117,6 +118,7 @@ async def test_movie_comments_with_page_returns_paginated():
 
         client = MovieCommentsClient()
         result = await client.get_movie_comments("test-movie", limit=2, page=1)
+        assert not isinstance(result, str)
 
         # Should return PaginatedResponse
         assert isinstance(result, PaginatedResponse)
@@ -160,6 +162,7 @@ async def test_show_comments_pagination():
 
         client = ShowCommentsClient()
         result = await client.get_show_comments("test-show", limit=10, page=2)
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert result.pagination.current_page == 2
@@ -199,6 +202,7 @@ async def test_season_comments_pagination():
 
         client = SeasonCommentsClient()
         result = await client.get_season_comments("test-show", 1, limit=10, page=1)
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert result.pagination.current_page == 1
@@ -239,6 +243,7 @@ async def test_episode_comments_pagination():
 
         client = EpisodeCommentsClient()
         result = await client.get_episode_comments("test-show", 1, 1, limit=10, page=3)
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert result.pagination.current_page == 3
@@ -279,6 +284,7 @@ async def test_comment_replies_pagination():
 
         client = CommentDetailsClient()
         result = await client.get_comment_replies("test-comment", limit=10, page=1)
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert result.pagination.current_page == 1
@@ -318,6 +324,7 @@ async def test_comments_pagination_metadata():
 
         client = MovieCommentsClient()
         result = await client.get_movie_comments("test-movie", limit=10, page=2)
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert result.pagination.current_page == 2
@@ -362,6 +369,7 @@ async def test_comments_sort_with_pagination():
         result = await client.get_movie_comments(
             "test-movie", limit=10, page=1, sort="oldest"
         )
+        assert not isinstance(result, str)
 
         assert isinstance(result, PaginatedResponse)
         assert len(result.data) == 1
@@ -393,6 +401,7 @@ async def test_empty_comments_zero_pages():
 
         client = ShowCommentsClient()
         result = await client.get_show_comments("show-with-no-comments", page=1)
+        assert not isinstance(result, str)
 
         # Should successfully return empty PaginatedResponse
         assert isinstance(result, PaginatedResponse)

@@ -204,11 +204,8 @@ async def test_get_movie_ratings_string_error_handling():
         future.set_result("Error: The requested resource was not found.")
         mock_client.get_movie.return_value = future
 
-        # Should raise an InternalError from handle_api_string_error
-        with pytest.raises(Exception) as exc_info:
-            await get_movie_ratings("1")
-
-        assert "Error accessing movie" in str(exc_info.value)
+        result = await get_movie_ratings("1")
+        assert "# Error" in result
 
         # Verify the client methods were called
         mock_client.get_movie.assert_called_once_with("1")

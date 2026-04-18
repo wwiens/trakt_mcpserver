@@ -46,6 +46,7 @@ async def test_get_person_lists(
 
     client = PeopleClient()
     result = await client.get_person_lists("bryan-cranston", page=1)
+    assert not isinstance(result, str)
 
     assert len(result) == 1
     assert result[0]["name"] == "Incredible Thoughts"

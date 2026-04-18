@@ -25,7 +25,6 @@ class LogRecordExtended(logging.LogRecord):
     method: str | None
     resource_type: str | None
     resource_id: str | None
-    user_id: str | None
     elapsed_time: float | None
     extra_fields: dict[str, JSONValue] | None
 
@@ -50,7 +49,6 @@ class ContextFilter(logging.Filter):
             record.method = context.method
             record.resource_type = context.resource_type
             record.resource_id = context.resource_id
-            record.user_id = context.user_id
             record.elapsed_time = context.elapsed_time()
         else:
             # Set defaults when no context is available
@@ -59,7 +57,6 @@ class ContextFilter(logging.Filter):
             record.method = None
             record.resource_type = None
             record.resource_id = None
-            record.user_id = None
             record.elapsed_time = None
 
         return True
@@ -108,10 +105,6 @@ class StructuredFormatter(logging.Formatter):
         resource_id = getattr(record, "resource_id", None)
         if resource_id:
             log_entry["resource_id"] = resource_id
-
-        user_id = getattr(record, "user_id", None)
-        if user_id:
-            log_entry["user_id"] = user_id
 
         elapsed_time = getattr(record, "elapsed_time", None)
         if elapsed_time is not None:

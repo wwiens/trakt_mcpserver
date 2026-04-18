@@ -1,19 +1,12 @@
 """Tests for recommendations client."""
 
 from collections.abc import Generator
-from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from client.recommendations import RecommendationsClient
 from utils.api.error_types import AuthenticationRequiredError
-
-if TYPE_CHECKING:
-    from models.recommendations.recommendation import (
-        TraktRecommendedMovie,
-        TraktRecommendedShow,
-    )
 
 
 @pytest.fixture
@@ -122,9 +115,8 @@ async def test_get_movie_recommendations_success(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result: list[
-        TraktRecommendedMovie
-    ] = await authenticated_client.get_movie_recommendations(limit=10)
+    result = await authenticated_client.get_movie_recommendations(limit=10)
+    assert not isinstance(result, str)
 
     # Should return a list (no pagination support)
     assert isinstance(result, list)
@@ -157,9 +149,8 @@ async def test_get_show_recommendations_success(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result: list[
-        TraktRecommendedShow
-    ] = await authenticated_client.get_show_recommendations(limit=10)
+    result = await authenticated_client.get_show_recommendations(limit=10)
+    assert not isinstance(result, str)
 
     # Should return a list (no pagination support)
     assert isinstance(result, list)
@@ -181,6 +172,7 @@ async def test_hide_movie_recommendation_success(
     patched_httpx_with_delete.delete.return_value = mock_response
 
     result = await authenticated_client.hide_movie_recommendation("tron-legacy-2010")
+    assert not isinstance(result, str)
 
     assert result is True
     patched_httpx_with_delete.delete.assert_called_once()
@@ -200,6 +192,7 @@ async def test_hide_show_recommendation_success(
     patched_httpx_with_delete.delete.return_value = mock_response
 
     result = await authenticated_client.hide_show_recommendation("breaking-bad")
+    assert not isinstance(result, str)
 
     assert result is True
     patched_httpx_with_delete.delete.assert_called_once()
@@ -220,6 +213,7 @@ async def test_unhide_movie_recommendation_success(
     patched_httpx_client.post.return_value = mock_response
 
     result = await authenticated_client.unhide_movie_recommendation("tron-legacy-2010")
+    assert not isinstance(result, str)
 
     assert result is True
     patched_httpx_client.post.assert_called_once()
@@ -240,6 +234,7 @@ async def test_unhide_show_recommendation_success(
     patched_httpx_client.post.return_value = mock_response
 
     result = await authenticated_client.unhide_show_recommendation("breaking-bad")
+    assert not isinstance(result, str)
 
     assert result is True
     patched_httpx_client.post.assert_called_once()
@@ -265,11 +260,10 @@ async def test_get_movie_recommendations_with_filters(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result: list[
-        TraktRecommendedMovie
-    ] = await authenticated_client.get_movie_recommendations(
+    result = await authenticated_client.get_movie_recommendations(
         limit=10, ignore_collected=True, ignore_watchlisted=True
     )
+    assert not isinstance(result, str)
 
     assert isinstance(result, list)
     assert len(result) == 1

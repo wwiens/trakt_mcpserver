@@ -14,7 +14,6 @@ from client.recommendations import RecommendationsClient
 if TYPE_CHECKING:
     from models.recommendations.recommendation import (
         TraktRecommendedMovie,
-        TraktRecommendedShow,
     )
 
 
@@ -33,9 +32,8 @@ async def test_movie_recommendations_respects_limit(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result: list[
-        TraktRecommendedMovie
-    ] = await authenticated_client.get_movie_recommendations(limit=2)
+    result = await authenticated_client.get_movie_recommendations(limit=2)
+    assert not isinstance(result, str)
 
     # Should return a list
     assert isinstance(result, list)
@@ -64,9 +62,8 @@ async def test_show_recommendations_respects_limit(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result: list[
-        TraktRecommendedShow
-    ] = await authenticated_client.get_show_recommendations(limit=2)
+    result = await authenticated_client.get_show_recommendations(limit=2)
+    assert not isinstance(result, str)
 
     # Should return a list
     assert isinstance(result, list)
@@ -92,9 +89,8 @@ async def test_empty_recommendations_result(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result: list[
-        TraktRecommendedMovie
-    ] = await authenticated_client.get_movie_recommendations(limit=10)
+    result = await authenticated_client.get_movie_recommendations(limit=10)
+    assert not isinstance(result, str)
 
     # Should return empty list
     assert isinstance(result, list)
@@ -131,9 +127,8 @@ async def test_recommendations_with_favorited_by(
     mock_response.raise_for_status = MagicMock()
     patched_httpx_client.get.return_value = mock_response
 
-    result: list[
-        TraktRecommendedMovie
-    ] = await authenticated_client.get_movie_recommendations(limit=10)
+    result = await authenticated_client.get_movie_recommendations(limit=10)
+    assert not isinstance(result, str)
 
     assert isinstance(result, list)
     assert len(result) == 1

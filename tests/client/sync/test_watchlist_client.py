@@ -1,13 +1,14 @@
 """Tests for the client.sync.watchlist_client module."""
 
 from datetime import datetime
+from typing import Literal
 from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
 
 from client.sync.client import SyncClient
-from client.sync.watchlist_client import SyncWatchlistClient
+from client.sync.watchlist_client import SyncWatchlistClient, WatchlistSortField
 from models.auth.auth import TraktAuthToken
 from models.movies.movie import TraktMovie
 from models.shows.episode import TraktEpisode
@@ -170,6 +171,7 @@ class TestSyncWatchlistClient:
             mock_request.return_value = mock_paginated_response
 
             result = await authenticated_client.get_sync_watchlist("movies")
+            assert not isinstance(result, str)
 
             assert len(result.data) == 2
             assert result.data[0].type == "movie"
@@ -208,6 +210,7 @@ class TestSyncWatchlistClient:
             result = await authenticated_client.get_sync_watchlist(
                 "shows", sort_by="added", sort_how="desc"
             )
+            assert not isinstance(result, str)
 
             assert len(result.data) == 1
             assert result.data[0].type == "show"
@@ -240,6 +243,7 @@ class TestSyncWatchlistClient:
             mock_request.return_value = mock_paginated_response
 
             result = await authenticated_client.get_sync_watchlist("all")
+            assert not isinstance(result, str)
 
             assert len(result.data) == 2
             assert result.data[0].type == "movie"
@@ -271,6 +275,7 @@ class TestSyncWatchlistClient:
             result = await authenticated_client.get_sync_watchlist(
                 "movies", pagination=pagination_params
             )
+            assert not isinstance(result, str)
 
             assert result.pagination.current_page == 2
             assert result.pagination.total_pages == 3
@@ -333,6 +338,7 @@ class TestSyncWatchlistClient:
             mock_request.return_value = mock_summary
 
             result = await authenticated_client.add_sync_watchlist(request)
+            assert not isinstance(result, str)
 
             assert result.added is not None
             assert result.added.movies == 2
@@ -377,6 +383,7 @@ class TestSyncWatchlistClient:
             mock_request.return_value = mock_summary
 
             result = await authenticated_client.add_sync_watchlist(request)
+            assert not isinstance(result, str)
 
             assert result.added is not None
             assert result.added.movies == 1
@@ -424,6 +431,7 @@ class TestSyncWatchlistClient:
             mock_request.return_value = mock_summary
 
             result = await authenticated_client.remove_sync_watchlist(request)
+            assert not isinstance(result, str)
 
             assert result.deleted is not None
             assert result.deleted.movies == 2
@@ -501,9 +509,9 @@ class TestSyncWatchlistClient:
     async def test_endpoint_url_construction(
         self,
         authenticated_client: SyncWatchlistClient,
-        watchlist_type: str,
-        sort_by: str,
-        sort_how: str,
+        watchlist_type: Literal["all", "movies", "shows", "seasons", "episodes"],
+        sort_by: WatchlistSortField,
+        sort_how: Literal["asc", "desc"],
         expected_endpoint: str,
     ) -> None:
         """Test correct endpoint URL construction."""
@@ -550,6 +558,7 @@ class TestSyncWatchlistClient:
             result = await authenticated_client.get_sync_watchlist(
                 "movies", pagination=PaginationParams(page=2, limit=5)
             )
+            assert not isinstance(result, str)
 
             # Test pagination properties
             pagination = result.pagination
@@ -582,6 +591,7 @@ class TestSyncWatchlistClient:
             mock_request.return_value = mock_paginated_response
 
             result = await authenticated_client.get_sync_watchlist("movies")
+            assert not isinstance(result, str)
 
             assert len(result.data) == 0
             assert result.is_empty
@@ -711,6 +721,7 @@ class TestSyncClient:
             mock_request.return_value = empty_paginated_response
 
             result = await client.get_sync_watchlist("movies")
+            assert not isinstance(result, str)
             assert result.data == []
 
             mock_request.assert_called_once()

@@ -47,11 +47,12 @@ async def test_get_person_movies(trakt_env: None, patched_httpx_client: MagicMoc
 
     client = PeopleClient()
     result = await client.get_person_movies("bryan-cranston")
+    assert not isinstance(result, str)
 
     assert len(result["cast"]) == 1
     assert result["cast"][0]["movie"]["title"] == "Godzilla"
     assert result["cast"][0]["characters"] == ["Joe Brody"]
-    assert "directing" in result["crew"]
+    assert "directing" in result.get("crew", {})
 
     patched_httpx_client.get.assert_called_once()
     call_args = patched_httpx_client.get.call_args

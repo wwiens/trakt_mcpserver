@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Annotated, Literal
+from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
@@ -32,9 +32,7 @@ from models.formatters.shows import ShowFormatters
 from models.formatters.videos import VideoFormatters
 from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams
 from utils.api.errors import MCPError, handle_api_errors_func
-
-if TYPE_CHECKING:
-    from models.types import ShowResponse, TraktRating
+from utils.api.request_context import set_tool_context
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -143,8 +141,7 @@ async def fetch_favorited_shows(
     client = ShowStatsClient()
     shows = await client.get_favorited_shows(limit=limit, period=period, page=page)
 
-    # Trace structure in debug only (only for list responses to avoid pagination object)
-    if shows and isinstance(shows, list):
+    if logger.isEnabledFor(logging.DEBUG) and shows and isinstance(shows, list):
         logger.debug(
             "Favorited shows API response structure: %s",
             json.dumps(shows[0], indent=2),
@@ -249,10 +246,11 @@ async def fetch_show_ratings(show_id: str) -> str:
     # Validate required parameters via Pydantic
     params = ShowIdParam(show_id=show_id)
     show_id = params.show_id
+    set_tool_context("show", show_id)
 
     try:
         client: ShowDetailsClient = ShowDetailsClient()
-        show_data: ShowResponse = await client.get_show(show_id)
+        show_data = await client.get_show(show_id)
 
         # Handle transitional case where API returns error strings
         if isinstance(show_data, str):
@@ -263,9 +261,8 @@ async def fetch_show_ratings(show_id: str) -> str:
                 operation="fetch_show_details",
             )
 
-        show: ShowResponse = show_data
-        show_title = show.get("title", "Unknown Show")
-        ratings: TraktRating = await client.get_show_ratings(show_id)
+        show_title = show_data.get("title", "Unknown Show")
+        ratings = await client.get_show_ratings(show_id)
 
         # Handle transitional case where API returns error strings
         if isinstance(ratings, str):
@@ -305,12 +302,13 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
     # Validate required parameters via Pydantic
     params = ShowSummaryParams(show_id=show_id, extended=extended)
     show_id, extended = params.show_id, params.extended
+    set_tool_context("show", show_id)
 
     try:
         client: ShowDetailsClient = ShowDetailsClient()
 
         if extended:
-            show_data: ShowResponse = await client.get_show_extended(show_id)
+            show_data = await client.get_show_extended(show_id)
             # Handle transitional case where API returns error strings
             if isinstance(show_data, str):
                 raise BaseToolErrorMixin.handle_api_string_error(
@@ -321,7 +319,7 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
                 )
             return ShowFormatters.format_show_extended(show_data)
         else:
-            show_data: ShowResponse = await client.get_show(show_id)
+            show_data = await client.get_show(show_id)
             # Handle transitional case where API returns error strings
             if isinstance(show_data, str):
                 raise BaseToolErrorMixin.handle_api_string_error(
@@ -349,10 +347,19 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
     # Validate required parameters via Pydantic
     params = ShowVideoParams(show_id=show_id, embed_markdown=embed_markdown)
     show_id, embed_markdown = params.show_id, params.embed_markdown
+    set_tool_context("show", show_id)
 
     try:
         client: ShowsClient = ShowsClient()  # Use unified client
         videos = await client.get_videos(show_id)
+
+        if isinstance(videos, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="show_videos",
+                resource_id=show_id,
+                error_message=videos,
+                operation="fetch_show_videos",
+            )
 
         # Get show title for context, fallback to ID if fetch fails
         try:
@@ -412,6 +419,7 @@ async def fetch_related_shows(
     id_params = ShowIdParam(show_id=show_id)
     # Validate limit/page
     params = LimitOnly(limit=limit, page=page)
+    set_tool_context("show", id_params.show_id)
 
     client = RelatedShowsClient()
     shows = await client.get_related_shows(
@@ -436,9 +444,17 @@ async def fetch_show_seasons(show_id: str) -> str:
     """
     params = ShowIdParam(show_id=show_id)
     show_id = params.show_id
+    set_tool_context("show", show_id)
 
     client = ShowsClient()
     seasons = await client.get_seasons(show_id)
+    if isinstance(seasons, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="show_seasons",
+            resource_id=show_id,
+            error_message=seasons,
+            operation="fetch_show_seasons",
+        )
     return ShowFormatters.format_show_seasons(seasons)
 
 
@@ -487,6 +503,7 @@ async def fetch_show_people(show_id: str, include_guest_stars: bool = False) -> 
         Formatted markdown with cast and crew
     """
     params = ShowIdParam(show_id=show_id)
+    set_tool_context("show", params.show_id)
 
     people_client = ShowPeopleClient()
     show_title, people = await asyncio.gather(

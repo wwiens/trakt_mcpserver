@@ -155,7 +155,7 @@ def test_request_context_to_dict():
     assert context_dict["resource_type"] == "show"
     assert context_dict["resource_id"] == "test-show"
     assert context_dict["parameters"] == {"limit": 10}
-    assert context_dict["user_id"] == "user123"
+    assert "user_id" not in context_dict
     assert "elapsed_time" in context_dict
 
 

@@ -35,6 +35,7 @@ async def test_shows_client_get_anticipated_shows():
 
         client = ShowsClient()
         result = await client.get_anticipated_shows(limit=1)
+        assert not isinstance(result, str)
 
         assert len(result) == 1
         assert result[0]["list_count"] == 5383
@@ -73,6 +74,7 @@ async def test_shows_client_get_trending_shows():
 
         client = ShowsClient()
         result = await client.get_trending_shows(limit=1)
+        assert not isinstance(result, str)
 
         assert len(result) == 1
         assert result[0]["watchers"] == 100
@@ -121,6 +123,7 @@ async def test_get_show_ratings():
 
         client = ShowsClient()
         result = await client.get_show_ratings("1")
+        assert not isinstance(result, str)
 
         assert isinstance(result, dict)
         assert result["rating"] == 9.0
@@ -202,6 +205,7 @@ async def test_get_show_extended():
 
         client = ShowsClient()
         result = await client.get_show_extended("1")
+        assert not isinstance(result, str)
 
         # Verify the request was made with extended parameter
         mock_instance.get.assert_called_once()

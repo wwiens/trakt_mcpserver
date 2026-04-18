@@ -22,6 +22,7 @@ async def test_get_person(trakt_env: None, patched_httpx_client: MagicMock):
 
     client = PeopleClient()
     result = await client.get_person("bryan-cranston")
+    assert not isinstance(result, str)
 
     assert result["name"] == "Bryan Cranston"
     assert result["ids"]["trakt"] == 142
@@ -62,10 +63,11 @@ async def test_get_person_extended(trakt_env: None, patched_httpx_client: MagicM
 
     client = PeopleClient()
     result = await client.get_person_extended("bryan-cranston")
+    assert not isinstance(result, str)
 
     assert result["name"] == "Bryan Cranston"
-    assert result["biography"] == "Bryan Lee Cranston is an American actor."
-    assert result["gender"] == "male"
+    assert result.get("biography") == "Bryan Lee Cranston is an American actor."
+    assert result.get("gender") == "male"
 
     patched_httpx_client.get.assert_called_once()
     call_args = patched_httpx_client.get.call_args

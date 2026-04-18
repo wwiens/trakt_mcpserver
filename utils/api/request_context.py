@@ -94,7 +94,6 @@ class RequestContext:
             "method": self.method,
             "resource_type": self.resource_type,
             "resource_id": self.resource_id,
-            "user_id": self.user_id,
             "parameters": self.parameters,
             "elapsed_time": self.elapsed_time(),
         }
@@ -148,16 +147,46 @@ def get_correlation_id() -> str | None:
     return context.correlation_id if context else None
 
 
-def add_context_to_error_data(error_data: dict[str, Any]) -> dict[str, Any]:
-    """Add current request context to error data.
+def set_tool_context(
+    resource_type: str,
+    resource_id: str,
+    endpoint: str | None = None,
+    method: str = "GET",
+) -> None:
+    """Set request context from a tool function for accurate error reporting.
+
+    Call at the top of tool functions that operate on a specific resource,
+    before any client calls. The ``if get_current_context() is None`` guard
+    in ``BaseClient._make_request`` will then skip its URL-parsing fallback.
+
+    Args:
+        resource_type: Resource kind (e.g., ``"movie"``, ``"show"``)
+        resource_id: Caller-supplied identifier (slug, Trakt ID, IMDB ID)
+        endpoint: Optional API endpoint hint (informational)
+        method: HTTP method (default ``"GET"``)
+    """
+    ctx = RequestContext().with_resource(resource_type, resource_id)
+    if endpoint:
+        ctx = ctx.with_endpoint(endpoint, method)
+    set_current_context(ctx)
+
+
+def add_context_to_error_data(
+    error_data: dict[str, Any],
+    context: RequestContext | None = None,
+) -> dict[str, Any]:
+    """Add request context to error data.
 
     Args:
         error_data: Existing error data dictionary
+        context: Explicit request context to use. Falls back to the
+            current contextvar when None.
 
     Returns:
         Error data with context information added (always a copy)
     """
-    context = get_current_context()
+    if context is None:
+        context = get_current_context()
     # Always create a copy to avoid modifying the original
     enhanced_data = error_data.copy()
 

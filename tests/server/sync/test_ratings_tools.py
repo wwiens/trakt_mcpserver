@@ -3,6 +3,7 @@
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Literal
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -344,15 +345,21 @@ async def test_remove_user_ratings_api_error() -> None:
             side_effect=TraktResourceNotFoundError("user", "ratings", "Not found")
         )
 
-        with pytest.raises(TraktResourceNotFoundError):
-            await remove_user_ratings(rating_type="movies", items=sample_items)
+        result = await remove_user_ratings(rating_type="movies", items=sample_items)
+        assert "# Error" in result
+        assert "Not found" in result
 
 
 @pytest.mark.asyncio
 async def test_all_tools_content_type_validation() -> None:
     """Test that content_type parameter is validated correctly."""
     # fetch_user_ratings should accept valid content types
-    valid_types = ["movies", "shows", "seasons", "episodes"]
+    valid_types: list[Literal["movies", "shows", "seasons", "episodes"]] = [
+        "movies",
+        "shows",
+        "seasons",
+        "episodes",
+    ]
 
     for content_type in valid_types:
         with patch("server.sync.tools.SyncClient") as mock_client_class:

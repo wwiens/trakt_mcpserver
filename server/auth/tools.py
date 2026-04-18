@@ -3,10 +3,7 @@
 import asyncio
 import logging
 import time
-from typing import TYPE_CHECKING, Any, TypedDict
-
-if TYPE_CHECKING:
-    from models.auth import TraktDeviceCode
+from typing import Any, TypedDict
 
 from mcp.server.fastmcp import FastMCP
 
@@ -50,7 +47,7 @@ async def start_device_auth() -> str:
         return "You are already authenticated with Trakt."
 
     # Get device code
-    device_code_response: TraktDeviceCode = await client.get_device_code()
+    device_code_response = await client.get_device_code()
 
     # Handle transitional case where API returns error strings
     if isinstance(device_code_response, str):

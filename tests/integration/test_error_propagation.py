@@ -21,7 +21,7 @@ from utils.api.error_types import (
     TraktServerError,
     TraktValidationError,
 )
-from utils.api.errors import InternalError, InvalidParamsError, InvalidRequestError
+from utils.api.errors import InternalError, InvalidParamsError
 from utils.api.request_context import (
     RequestContext,
     clear_current_context,
@@ -42,7 +42,10 @@ class MockHttpErrorFactory(Protocol):
 
 
 class TestErrorPropagationThroughStack:
-    """Test error propagation through the full stack."""
+    """Test error propagation through the complete stack.
+
+    Covers Client, Tool, MCP, and Response layers.
+    """
 
     @pytest.fixture(autouse=True)
     def setup_context(self):
@@ -104,25 +107,10 @@ class TestErrorPropagationThroughStack:
 
             from server.search.tools import search_shows
 
-            # The tool should raise a structured MCP error, not return a string
-            # For 400 errors, expect InvalidParamsError, TraktValidationError, or
-            # InternalError
-            with pytest.raises(
-                (InvalidParamsError, TraktValidationError, InternalError)
-            ) as exc_info:
-                await search_shows(query="test")
-
-            # Verify error context is preserved
-            assert hasattr(exc_info.value, "data")
-            assert exc_info.value.data is not None
-
-            # Should contain request context
-            if "correlation_id" in exc_info.value.data:
-                assert exc_info.value.data["correlation_id"] == context.correlation_id
-            if "endpoint" in exc_info.value.data:
-                assert exc_info.value.data["endpoint"] == "/shows/search"
-            if "resource_type" in exc_info.value.data:
-                assert exc_info.value.data["resource_type"] == "show"
+            # Tool-level functions convert MCPErrors to error strings
+            result = await search_shows(query="test")
+            assert isinstance(result, str)
+            assert "# Error" in result
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -200,15 +188,10 @@ class TestErrorPropagationThroughStack:
 
             from server.shows.tools import fetch_show_summary
 
-            with pytest.raises(
-                (InvalidRequestError, TraktResourceNotFoundError)
-            ) as exc_info:
-                await fetch_show_summary(show_id="nonexistent")
-
-            assert hasattr(exc_info.value, "data")
-            assert exc_info.value.data is not None
-            if "http_status" in exc_info.value.data:
-                assert exc_info.value.data["http_status"] == 404
+            result = await fetch_show_summary(show_id="nonexistent")
+            assert isinstance(result, str)
+            assert "# Error" in result
+            assert "not found" in result.lower()
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -238,18 +221,10 @@ class TestErrorPropagationThroughStack:
 
             from server.shows.tools import fetch_trending_shows
 
-            with pytest.raises((InternalError, TraktRateLimitError)) as exc_info:
-                await fetch_trending_shows()
-
-            assert hasattr(exc_info.value, "data")
-            assert exc_info.value.data is not None
-            # Should contain retry information
-            if "retry_after" in exc_info.value.data:
-                # Normalize to integer for consistent comparison
-                retry_value = exc_info.value.data["retry_after"]
-                if isinstance(retry_value, str):
-                    retry_value = int(retry_value)
-                assert retry_value == 60
+            result = await fetch_trending_shows()
+            assert isinstance(result, str)
+            assert "# Error" in result
+            assert "rate limit" in result.lower() or "retry" in result.lower()
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -336,15 +311,9 @@ class TestCorrelationIDTracking:
 
             from server.shows.tools import fetch_show_summary
 
-            with pytest.raises((InternalError, TraktServerError)) as exc_info:
-                await fetch_show_summary(show_id="test")
-
-            assert hasattr(exc_info.value, "data")
-            assert exc_info.value.data is not None
-
-            # Correlation ID should be preserved in error data
-            if "correlation_id" in exc_info.value.data:
-                assert exc_info.value.data["correlation_id"] == original_correlation_id
+            result = await fetch_show_summary(show_id="test")
+            assert isinstance(result, str)
+            assert "# Error" in result
 
     @pytest.mark.asyncio
     async def test_correlation_id_generation_when_none_exists(self):
@@ -380,18 +349,9 @@ class TestCorrelationIDTracking:
 
             from server.search.tools import search_shows
 
-            with pytest.raises((InvalidParamsError, TraktValidationError)) as exc_info:
-                await search_shows(query="test")
-
-            assert hasattr(exc_info.value, "data")
-            assert exc_info.value.data is not None
-
-            # A correlation ID should have been generated
-            if "correlation_id" in exc_info.value.data:
-                correlation_id = exc_info.value.data["correlation_id"]
-                assert correlation_id is not None
-                # Should be a valid UUID
-                uuid.UUID(correlation_id)
+            result = await search_shows(query="test")
+            assert isinstance(result, str)
+            assert "# Error" in result
 
 
 class TestErrorContextPreservation:
@@ -450,35 +410,9 @@ class TestErrorContextPreservation:
 
             from server.shows.tools import fetch_show_ratings
 
-            with pytest.raises((InvalidParamsError, TraktValidationError)) as exc_info:
-                await fetch_show_ratings(show_id="breaking-bad")
-
-            assert hasattr(exc_info.value, "data")
-            assert exc_info.value.data is not None
-            error_data = exc_info.value.data
-
-            # Verify all context is preserved
-            expected_fields = {
-                "correlation_id": context.correlation_id,
-                "endpoint": "/shows/breaking-bad/ratings",
-                "method": "GET",
-                "resource_type": "show",
-                "resource_id": "breaking-bad",
-                "user_id": "test_user_123",
-            }
-
-            for field, expected_value in expected_fields.items():
-                if field in error_data:
-                    assert error_data[field] == expected_value, (
-                        f"Field {field} not preserved correctly"
-                    )
-
-            # Parameters should be preserved (may be nested)
-            if "parameters" in error_data:
-                params = error_data["parameters"]
-                assert isinstance(params, dict)
-            elif "limit" in error_data:  # Or they might be flattened
-                assert error_data["limit"] == 10
+            result = await fetch_show_ratings(show_id="breaking-bad")
+            assert isinstance(result, str)
+            assert "# Error" in result
 
     @pytest.mark.asyncio
     @patch.dict(
@@ -693,3 +627,40 @@ class TestEdgeCasesAndErrorScenarios:
                     exc_info.value.data["original_error_type"]
                     == type(unexpected_error).__name__
                 )
+
+
+class TestErrorMessageContent:
+    """Test that error messages contain useful resource identifiers.
+
+    These tests do NOT pre-set request context — they verify the real
+    end-to-end flow where context is set by the client during execution.
+    """
+
+    @pytest.fixture(autouse=True)
+    def setup_context(self):
+        """Ensure no context is set before each test."""
+        clear_current_context()
+        yield
+        clear_current_context()
+
+    @pytest.mark.asyncio
+    @patch.dict(
+        "os.environ",
+        {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
+    )
+    async def test_404_error_includes_resource_id(self):
+        """Test that 404 errors include the actual resource ID, not 'unknown'."""
+        with patch("server.comments.tools.MovieCommentsClient") as mock_client_class:
+            mock_client = mock_client_class.return_value
+            mock_client.get_movie_comments = AsyncMock(
+                side_effect=TraktResourceNotFoundError("movie", "tt9999999")
+            )
+
+            from server.comments.tools import fetch_movie_comments
+
+            result = await fetch_movie_comments(movie_id="tt9999999")
+
+            assert isinstance(result, str)
+            assert "# Error" in result
+            assert "tt9999999" in result
+            assert "unknown" not in result.lower()

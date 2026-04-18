@@ -1,6 +1,9 @@
 """Season formatting methods for the Trakt MCP server."""
 
-from models.formatters.utils import MAX_OVERVIEW_LENGTH
+from models.formatters.utils import (
+    format_list_items,
+    format_rating_distribution,
+)
 from models.types import (
     CastMember,
     CrewMember,
@@ -38,35 +41,38 @@ class SeasonFormatters:
         elif not title:
             title = f"Season {number}"
 
-        result = f"# {title}\n\n"
+        lines: list[str] = [f"# {title}"]
+        lines.append("")
 
         if overview := season.get("overview"):
-            result += f"{overview}\n\n"
+            lines.append(overview)
+            lines.append("")
 
-        result += "### Details\n"
-        result += f"- Season Number: {number}\n"
+        lines.append("### Details")
+        lines.append(f"- Season Number: {number}")
 
         episode_count = season.get("episode_count")
         if episode_count is not None:
-            result += f"- Total Episodes: {episode_count}\n"
+            lines.append(f"- Total Episodes: {episode_count}")
 
         aired_episodes = season.get("aired_episodes")
         if aired_episodes is not None:
-            result += f"- Aired Episodes: {aired_episodes}\n"
+            lines.append(f"- Aired Episodes: {aired_episodes}")
 
         if first_aired := season.get("first_aired"):
-            result += f"- First Aired: {first_aired}\n"
+            lines.append(f"- First Aired: {first_aired}")
 
         rating = season.get("rating")
         if rating is not None:
             votes = season.get("votes", 0)
-            result += f"- Rating: {rating:.1f}/10 ({votes} votes)\n"
+            lines.append(f"- Rating: {rating:.1f}/10 ({votes} votes)")
 
         ids = season.get("ids", {})
         if trakt_id := ids.get("trakt"):
-            result += f"\nTrakt ID: {trakt_id}\n"
+            lines.append("")
+            lines.append(f"Trakt ID: {trakt_id}")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_season_episodes(
@@ -84,11 +90,11 @@ class SeasonFormatters:
         if not episodes:
             return f"# Season {season_number} Episodes\n\nNo episodes available."
 
-        result = f"# Season {season_number} Episodes\n\n"
-        result += f"**{len(episodes)} episode(s)**\n\n"
-
-        result += "| # | Title | Rating | Runtime |\n"
-        result += "|---|-------|--------|---------|\n"
+        lines: list[str] = [f"# Season {season_number} Episodes", ""]
+        lines.append(f"**{len(episodes)} episode(s)**")
+        lines.append("")
+        lines.append("| # | Title | Rating | Runtime |")
+        lines.append("|---|-------|--------|---------|")
 
         for episode in episodes:
             number = episode.get("number", 0)
@@ -98,9 +104,9 @@ class SeasonFormatters:
             runtime = episode.get("runtime")
             runtime_str = f"{runtime}m" if runtime is not None else "—"
 
-            result += f"| {number} | {title} | {rating_str} | {runtime_str} |\n"
+            lines.append(f"| {number} | {title} | {rating_str} | {runtime_str} |")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_season_ratings(
@@ -116,29 +122,23 @@ class SeasonFormatters:
         Returns:
             Formatted markdown text with ratings information
         """
-        result = f"# Ratings for {show_title} - Season {season}\n\n"
+        heading = f"# Ratings for {show_title} - Season {season}"
+        lines: list[str] = [heading, ""]
 
         if not ratings:
-            return result + "No ratings data available."
+            return f"{heading}\n\nNo ratings data available."
 
         average_rating = ratings.get("rating", 0)
         votes = ratings.get("votes", 0)
         distribution = ratings.get("distribution", {})
 
-        result += f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes\n\n"
+        lines.append(f"**Average Rating:** {average_rating:.2f}/10 from {votes} votes")
+        lines.append("")
 
         if distribution:
-            result += "## Rating Distribution\n\n"
-            result += "| Rating | Votes | Percentage |\n"
-            result += "|--------|-------|------------|\n"
+            lines.append(format_rating_distribution(distribution, votes))
 
-            for rating in range(10, 0, -1):
-                rating_str = str(rating)
-                count = distribution.get(rating_str, 0)
-                percentage = (count / votes * 100) if votes > 0 else 0
-                result += f"| {rating}/10 | {count} | {percentage:.1f}% |\n"
-
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_season_stats(
@@ -160,19 +160,19 @@ class SeasonFormatters:
                 "No statistics available."
             )
 
-        result = f"# Stats for {show_title} - Season {season}\n\n"
+        lines: list[str] = [f"# Stats for {show_title} - Season {season}", ""]
 
-        result += "| Metric | Value |\n"
-        result += "|--------|-------|\n"
-        result += f"| Watchers | {stats.get('watchers', 0):,} |\n"
-        result += f"| Plays | {stats.get('plays', 0):,} |\n"
-        result += f"| Collectors | {stats.get('collectors', 0):,} |\n"
-        result += f"| Collected Episodes | {stats.get('collected_episodes', 0):,} |\n"
-        result += f"| Comments | {stats.get('comments', 0):,} |\n"
-        result += f"| Lists | {stats.get('lists', 0):,} |\n"
-        result += f"| Votes | {stats.get('votes', 0):,} |\n"
+        lines.append("| Metric | Value |")
+        lines.append("|--------|-------|")
+        lines.append(f"| Watchers | {stats.get('watchers', 0):,} |")
+        lines.append(f"| Plays | {stats.get('plays', 0):,} |")
+        lines.append(f"| Collectors | {stats.get('collectors', 0):,} |")
+        lines.append(f"| Collected Episodes | {stats.get('collected_episodes', 0):,} |")
+        lines.append(f"| Comments | {stats.get('comments', 0):,} |")
+        lines.append(f"| Lists | {stats.get('lists', 0):,} |")
+        lines.append(f"| Votes | {stats.get('votes', 0):,} |")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def _format_cast_section(members: list[CastMember], heading: str) -> str:
@@ -188,7 +188,7 @@ class SeasonFormatters:
         if not members:
             return ""
 
-        result = f"## {heading}\n\n"
+        lines: list[str] = [f"## {heading}", ""]
         for member in members:
             person = member.get("person", {})
             name = person.get("name", "Unknown")
@@ -198,9 +198,9 @@ class SeasonFormatters:
             count_str = (
                 f" ({episode_count} episodes)" if episode_count is not None else ""
             )
-            result += f"- **{name}** as {char_str}{count_str}\n"
-        result += "\n"
-        return result
+            lines.append(f"- **{name}** as {char_str}{count_str}")
+        lines.append("")
+        return "\n".join(lines)
 
     @staticmethod
     def format_season_people(
@@ -222,18 +222,26 @@ class SeasonFormatters:
                 "No people data available."
             )
 
-        result = f"# People for {show_title} - Season {season}\n\n"
+        lines: list[str] = [f"# People for {show_title} - Season {season}", ""]
 
-        result += SeasonFormatters._format_cast_section(people.get("cast", []), "Cast")
-        result += SeasonFormatters._format_cast_section(
+        cast_section = SeasonFormatters._format_cast_section(
+            people.get("cast", []), "Cast"
+        )
+        if cast_section:
+            lines.append(cast_section)
+        guest_section = SeasonFormatters._format_cast_section(
             people.get("guest_stars", []), "Guest Stars"
         )
+        if guest_section:
+            lines.append(guest_section)
 
         crew: dict[str, list[CrewMember]] = people.get("crew", {})
         if crew:
-            result += "## Crew\n\n"
+            lines.append("## Crew")
+            lines.append("")
             for department, members in sorted(crew.items()):
-                result += f"### {department.title()}\n\n"
+                lines.append(f"### {department.title()}")
+                lines.append("")
                 for member in members:
                     person = member.get("person", {})
                     name = person.get("name", "Unknown")
@@ -245,10 +253,10 @@ class SeasonFormatters:
                         if episode_count is not None
                         else ""
                     )
-                    result += f"- **{name}** - {jobs_str}{count_str}\n"
-                result += "\n"
+                    lines.append(f"- **{name}** - {jobs_str}{count_str}")
+                lines.append("")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_season_watching(
@@ -264,12 +272,14 @@ class SeasonFormatters:
         Returns:
             Formatted markdown text with user list
         """
-        result = f"# Currently Watching {show_title} - Season {season}\n\n"
+        heading = f"# Currently Watching {show_title} - Season {season}"
 
         if not users:
-            return result + "No one is currently watching this season."
+            return f"{heading}\n\nNo one is currently watching this season."
 
-        result += f"**{len(users)} user(s) watching**\n\n"
+        lines: list[str] = [heading, ""]
+        lines.append(f"**{len(users)} user(s) watching**")
+        lines.append("")
 
         for user in users:
             username = user.get("username", "Unknown")
@@ -281,9 +291,9 @@ class SeasonFormatters:
                 display += f" ({name})"
             if vip:
                 display += " [VIP]"
-            result += display + "\n"
+            lines.append(display)
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_season_translations(
@@ -301,23 +311,24 @@ class SeasonFormatters:
         Returns:
             Formatted markdown text with translations
         """
-        result = f"# Translations for {show_title} - Season {season}\n\n"
+        heading = f"# Translations for {show_title} - Season {season}"
 
         if not translations:
-            return result + "No translations available."
+            return f"{heading}\n\nNo translations available."
 
-        result += f"**{len(translations)} translation(s)**\n\n"
-
-        result += "| Language | Country | Title |\n"
-        result += "|----------|---------|-------|\n"
+        lines: list[str] = [heading, ""]
+        lines.append(f"**{len(translations)} translation(s)**")
+        lines.append("")
+        lines.append("| Language | Country | Title |")
+        lines.append("|----------|---------|-------|")
 
         for translation in translations:
             language = translation.get("language", "—")
             country = translation.get("country", "—")
             title = translation.get("title", "—")
-            result += f"| {language} | {country} | {title} |\n"
+            lines.append(f"| {language} | {country} | {title} |")
 
-        return result
+        return "\n".join(lines)
 
     @staticmethod
     def format_season_lists(
@@ -333,26 +344,8 @@ class SeasonFormatters:
         Returns:
             Formatted markdown text with lists
         """
-        result = f"# Lists Containing {show_title} - Season {season}\n\n"
-
-        if not lists:
-            return result + "No lists found containing this season."
-
-        result += f"**{len(lists)} list(s)**\n\n"
-
-        for list_item in lists:
-            name = list_item.get("name", "Unknown List")
-            item_count = list_item.get("item_count", 0)
-            likes = list_item.get("likes", 0)
-            user = list_item.get("user", {})
-            username = user.get("username", "Unknown")
-
-            result += f"- **{name}** by {username}"
-            result += f" ({item_count} items, {likes} likes)\n"
-
-            if description := list_item.get("description"):
-                if len(description) > MAX_OVERVIEW_LENGTH:
-                    description = description[: MAX_OVERVIEW_LENGTH - 3] + "..."
-                result += f"  {description}\n"
-
-        return result
+        return format_list_items(
+            lists,
+            context=f"{show_title} - Season {season}",
+            item_type="season",
+        )

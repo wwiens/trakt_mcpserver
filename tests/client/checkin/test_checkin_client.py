@@ -62,16 +62,19 @@ async def test_checkin_to_show():
             episode_number=1,
             message="Watching the pilot!",
         )
+        assert not isinstance(result, str)
 
         assert isinstance(result, dict)
         assert result["id"] == 12345  # id is int in CheckinResponse
 
         # Type-safe access to optional fields
-        assert "show" in result
-        assert result["show"]["title"] == "Breaking Bad"
+        show = result.get("show")
+        assert show is not None
+        assert show["title"] == "Breaking Bad"
 
-        assert "episode" in result
-        assert result["episode"]["title"] == "Pilot"
+        episode = result.get("episode")
+        assert episode is not None
+        assert episode.get("title") == "Pilot"
 
 
 @pytest.mark.asyncio
@@ -124,16 +127,19 @@ async def test_checkin_to_show_with_title():
         result = await client.checkin_to_show(
             show_title="The Wire", episode_season=1, episode_number=2
         )
+        assert not isinstance(result, str)
 
         assert isinstance(result, dict)
         assert result["id"] == 67890  # id is int in CheckinResponse
 
         # Type-safe access to optional fields
-        assert "show" in result
-        assert result["show"]["title"] == "The Wire"
+        show = result.get("show")
+        assert show is not None
+        assert show["title"] == "The Wire"
 
-        assert "episode" in result
-        assert result["episode"]["title"] == "The Detail"
+        episode = result.get("episode")
+        assert episode is not None
+        assert episode.get("title") == "The Detail"
 
 
 @pytest.mark.asyncio

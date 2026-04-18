@@ -44,6 +44,7 @@ async def test_get_season_translations():
 
         client = SeasonsClient()
         result = await client.get_season_translations("game-of-thrones", 1)
+        assert not isinstance(result, str)
 
         assert len(result) == 2
         assert result[0]["language"] == "es"
@@ -88,6 +89,7 @@ async def test_get_season_translations_explicit_language():
 
         client = SeasonsClient()
         result = await client.get_season_translations("game-of-thrones", 1, "es")
+        assert not isinstance(result, str)
 
         assert len(result) == 1
         assert result[0]["language"] == "es"
@@ -156,6 +158,7 @@ async def test_get_season_translations_uppercase_language():
 
         client = SeasonsClient()
         result = await client.get_season_translations("game-of-thrones", 1, "EN")
+        assert not isinstance(result, str)
 
         assert len(result) == 1
 

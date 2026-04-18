@@ -89,6 +89,15 @@ async def checkin_to_show(
             share_tumblr=share_tumblr,
         )
 
+        # Handle transitional case where API returns error strings
+        if isinstance(response, str):
+            raise BaseToolErrorMixin.handle_api_string_error(
+                resource_type="checkin",
+                resource_id=show_id or show_title or "unknown",
+                error_message=response,
+                operation="checkin_to_show",
+            )
+
         # Format the response
         return CheckinFormatters.format_checkin_response(response)
     except Exception as e:

@@ -43,14 +43,19 @@ async def test_complete_device_auth_flow():
 
     with (
         patch("httpx.AsyncClient") as mock_client,
-        patch("os.open") as mock_os_open,
+        patch("os.open", return_value=3) as mock_os_open,
         patch("os.fdopen") as mock_fdopen,
+        patch("os.fsync"),
         patch("os.replace") as mock_replace,
         patch.dict(
             os.environ,
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
+        mock_file_obj = MagicMock()
+        mock_file_obj.fileno.return_value = 3
+        mock_fdopen.return_value = mock_file_obj
+
         # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.post = AsyncMock(side_effect=mock_responses)
@@ -68,18 +73,19 @@ async def test_complete_device_auth_flow():
         client = AuthClient()
 
         device_code = await client.get_device_code()
+        assert not isinstance(device_code, str)
         assert isinstance(device_code, TraktDeviceCode)
         assert device_code.device_code == "device_code_123"
         assert device_code.user_code == "USER123"
 
         auth_token = await client.get_device_token(device_code.device_code)
+        assert not isinstance(auth_token, str)
         assert isinstance(auth_token, TraktAuthToken)
         assert auth_token.access_token == "access_token_123"
         assert auth_token.refresh_token == "refresh_token_123"
 
         assert client.is_authenticated() is True
 
-        # Verify secure file write and atomic replace
         assert mock_os_open.called
         assert mock_replace.called
 
@@ -136,7 +142,6 @@ async def test_device_token_pending_authorization():
     # Patch the AsyncClient to return our mock error response
     with (
         patch("httpx.AsyncClient") as mock_client,
-        patch("client.base.load_dotenv"),  # Mock dotenv loading
         patch("os.path.exists", return_value=False),  # No existing auth token
         patch.dict(
             os.environ,
@@ -180,7 +185,6 @@ async def test_device_token_expired():
     # Patch the AsyncClient to return our mock error response
     with (
         patch("httpx.AsyncClient") as mock_client,
-        patch("client.base.load_dotenv"),  # Mock dotenv loading
         patch("os.path.exists", return_value=False),  # No existing auth token
         patch.dict(
             os.environ,

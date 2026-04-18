@@ -47,6 +47,7 @@ async def test_search_shows():
 
         client = SearchClient()
         result = await client.search_shows("Breaking Bad", limit=10)
+        assert not isinstance(result, str)
 
         assert len(result) == 2
         assert result[0]["type"] == "show"
@@ -96,6 +97,7 @@ async def test_search_movies():
 
         client = SearchClient()
         result = await client.search_movies("Shawshank", limit=10)
+        assert not isinstance(result, str)
 
         assert len(result) == 2
         assert result[0]["type"] == "movie"

@@ -37,6 +37,7 @@ async def test_get_episode_stats():
 
         client = EpisodesClient()
         result = await client.get_episode_stats("game-of-thrones", 1, 1)
+        assert not isinstance(result, str)
 
         assert result["watchers"] == 50000
         assert result["plays"] == 75000

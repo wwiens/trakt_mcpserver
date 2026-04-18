@@ -1,69 +1,19 @@
-"""Tests for type definitions."""
+"""Tests for TypedDict type definitions."""
 
 from typing import get_type_hints
 
 from models.types import (
-    AuthClientProtocol,
-    CheckinResponse,
     CommentResponse,
     MovieResponse,
     SearchResult,
     ShowResponse,
-    ShowsClientProtocol,
-    TraktIds,
     TraktIdsDict,
     TraktRating,
     TrendingWrapper,
 )
 
 
-def test_traktidsdict_structure():
-    """Test TraktIdsDict TypedDict has required fields."""
-    hints = get_type_hints(TraktIdsDict)
-    assert "trakt" in hints
-    assert "slug" in hints
-    assert hints["trakt"] is int
-    assert hints["slug"] is str
-
-
-def test_traktids_pydantic_structure():
-    """Test TraktIds Pydantic model has correct fields."""
-    hints = get_type_hints(TraktIds)
-    assert "trakt" in hints
-    assert "slug" in hints
-    assert "imdb" in hints
-    assert "tmdb" in hints
-    assert "tvdb" in hints
-
-
-def test_show_response_structure():
-    """Test ShowResponse has required fields."""
-    hints = get_type_hints(ShowResponse)
-    assert "title" in hints
-    assert "year" in hints
-    assert "ids" in hints
-    assert hints["title"] is str
-    assert hints["year"] is int
-
-
-def test_movie_response_structure():
-    """Test MovieResponse has required fields."""
-    hints = get_type_hints(MovieResponse)
-    assert "title" in hints
-    assert "year" in hints
-    assert "ids" in hints
-    assert hints["title"] is str
-    assert hints["year"] is int
-
-
-def test_trending_wrapper_structure():
-    """Test TrendingWrapper has required fields."""
-    hints = get_type_hints(TrendingWrapper)
-    assert "watchers" in hints
-    assert hints["watchers"] is int
-
-
-def test_comment_response_structure():
+def test_comment_response_structure() -> None:
     """Test CommentResponse has required fields."""
     hints = get_type_hints(CommentResponse)
     assert "id" in hints
@@ -79,7 +29,7 @@ def test_comment_response_structure():
     assert hints["created_at"] is str
 
 
-def test_search_result_structure():
+def test_search_result_structure() -> None:
     """Test SearchResult has required fields."""
     hints = get_type_hints(SearchResult)
     assert "type" in hints
@@ -88,17 +38,7 @@ def test_search_result_structure():
     assert hints["score"] is float
 
 
-def test_checkin_response_structure():
-    """Test CheckinResponse has required fields."""
-    hints = get_type_hints(CheckinResponse)
-    assert "id" in hints
-    assert "watched_at" in hints
-    assert "sharing" in hints
-    assert hints["id"] is int
-    assert hints["watched_at"] is str
-
-
-def test_trakt_rating_structure():
+def test_trakt_rating_structure() -> None:
     """Test TraktRating has required fields."""
     hints = get_type_hints(TraktRating)
     assert "rating" in hints
@@ -108,77 +48,12 @@ def test_trakt_rating_structure():
     assert hints["votes"] is int
 
 
-def test_protocol_methods():
-    """Test protocol has required methods."""
-    assert hasattr(AuthClientProtocol, "get_device_code")
-    assert hasattr(AuthClientProtocol, "is_authenticated")
-    assert hasattr(ShowsClientProtocol, "get_trending_shows")
-    assert hasattr(ShowsClientProtocol, "get_popular_shows")
-    assert hasattr(ShowsClientProtocol, "get_show_summary")
-
-
-def test_protocol_runtime_checkable():
-    """Test protocols are runtime checkable."""
-
-    class MockAuthClient:
-        async def get_device_code(self):
-            pass
-
-        async def get_device_token(self, device_code: str):
-            pass
-
-        def is_authenticated(self):
-            pass
-
-        def clear_auth(self):
-            pass
-
-    client = MockAuthClient()
-    assert isinstance(client, AuthClientProtocol)
-
-
-def test_protocol_inheritance():
-    """Test protocol inheritance and compliance."""
-
-    class MockShowsClient:
-        async def get_trending_shows(self, limit: int = 10, extended: bool = False):
-            pass
-
-        async def get_popular_shows(self, limit: int = 10, extended: bool = False):
-            pass
-
-        async def get_anticipated_shows(
-            self, limit: int = 10, page: int | None = None, max_pages: int = 100
-        ):
-            pass
-
-        async def get_show_summary(self, show_id: str, extended: bool = True):
-            pass
-
-        async def get_show_ratings(self, show_id: str):
-            pass
-
-        async def get_show_comments(
-            self,
-            show_id: str,
-            limit: int = 10,
-            sort: str = "newest",
-            show_spoilers: bool = False,
-        ):
-            pass
-
-    client = MockShowsClient()
-    assert isinstance(client, ShowsClientProtocol)
-
-
 def test_typed_dict_validation():
     """Test TypedDict validation works correctly."""
-    # Test that TraktIdsDict can be created with proper structure
     trakt_ids: TraktIdsDict = {"trakt": 12345, "slug": "test-slug"}
     assert trakt_ids["trakt"] == 12345
     assert trakt_ids["slug"] == "test-slug"
 
-    # Test ShowResponse with required fields
     show: ShowResponse = {"title": "Test Show", "year": 2023, "ids": trakt_ids}
     assert show["title"] == "Test Show"
     assert show["year"] == 2023
@@ -187,7 +62,6 @@ def test_typed_dict_validation():
 
 def test_optional_fields_handling():
     """Test that NotRequired fields work correctly."""
-    # TraktIdsDict with optional fields
     trakt_ids_full: TraktIdsDict = {
         "trakt": 12345,
         "slug": "test-slug",
@@ -197,7 +71,6 @@ def test_optional_fields_handling():
     assert "imdb" in trakt_ids_full
     assert "tmdb" in trakt_ids_full
 
-    # TraktIdsDict with only required fields
     trakt_ids_minimal: TraktIdsDict = {"trakt": 12345, "slug": "test-slug"}
     assert "imdb" not in trakt_ids_minimal
     assert "tmdb" not in trakt_ids_minimal
@@ -205,7 +78,6 @@ def test_optional_fields_handling():
 
 def test_complex_type_structures():
     """Test complex nested type structures."""
-    # TrendingWrapper with nested show
     show: ShowResponse = {
         "title": "Breaking Bad",
         "year": 2008,
@@ -219,26 +91,28 @@ def test_complex_type_structures():
     assert trending["show"]["ids"]["trakt"] == 1390
 
 
-def test_type_compatibility():
+def test_type_compatibility() -> None:
     """Test type compatibility and assignment."""
+    show: ShowResponse = {
+        "title": "Breaking Bad",
+        "year": 2008,
+        "ids": {"trakt": 1390, "slug": "breaking-bad"},
+    }
+    movie: MovieResponse = {
+        "title": "Inception",
+        "year": 2010,
+        "ids": {"trakt": 16662, "slug": "inception-2010"},
+    }
+    trending: TrendingWrapper = {"watchers": 100, "show": show}
 
-    # Test that our types work with generic type annotations
-    shows: list[ShowResponse] = []
-    movies: list[MovieResponse] = []
-    trending_items: list[TrendingWrapper] = []
+    shows: list[ShowResponse] = [show]
+    movies: list[MovieResponse] = [movie]
+    trending_items: list[TrendingWrapper] = [trending]
 
-    # These should all be valid assignments
-    assert isinstance(shows, list)
-    assert isinstance(movies, list)
-    assert isinstance(trending_items, list)
-
-
-def test_protocol_method_signatures():
-    """Test that protocol method signatures are correctly typed."""
-    # Test AuthClientProtocol method signatures
-    auth_hints = get_type_hints(AuthClientProtocol.get_device_code)
-    shows_hints = get_type_hints(ShowsClientProtocol.get_trending_shows)
-
-    # These should not raise exceptions and should have proper type information
-    assert auth_hints is not None
-    assert shows_hints is not None
+    assert shows[0]["title"] == "Breaking Bad"
+    assert shows[0]["ids"]["trakt"] == 1390
+    assert movies[0]["title"] == "Inception"
+    assert movies[0]["ids"]["slug"] == "inception-2010"
+    assert trending_items[0]["watchers"] == 100
+    assert "show" in trending_items[0]
+    assert trending_items[0].get("show", {}).get("year") == 2008

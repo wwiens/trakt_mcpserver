@@ -1,27 +1,12 @@
 """Shared utilities for episode client modules."""
 
-from urllib.parse import quote
-
-from config.endpoints import TRAKT_ENDPOINTS
+from client.endpoints import build_endpoint
+from client.validation import validate_media_id
 
 
 def validate_show_id(show_id: str) -> str:
-    """Strip and validate a show ID, returning the stripped value.
-
-    Args:
-        show_id: Trakt ID, Trakt slug, IMDB ID (tt prefix), TMDB ID, or TVDB ID
-
-    Returns:
-        Stripped show_id
-
-    Raises:
-        ValueError: If show_id is empty after stripping
-    """
-    show_id = show_id.strip()
-    if not show_id:
-        msg = "show_id cannot be empty"
-        raise ValueError(msg)
-    return show_id
+    """Strip and validate a show ID, returning the stripped value."""
+    return validate_media_id(show_id, "show_id")
 
 
 def validate_season(season: int) -> int:
@@ -79,13 +64,10 @@ def build_episode_endpoint(
     Returns:
         Fully resolved endpoint URL
     """
-    encoded_id = quote(show_id, safe="")
-    endpoint = (
-        TRAKT_ENDPOINTS[endpoint_key]
-        .replace(":id", encoded_id)
-        .replace(":season", str(season))
-        .replace(":episode", str(episode))
+    return build_endpoint(
+        endpoint_key,
+        id=show_id,
+        season=season,
+        episode=episode,
+        **replacements,
     )
-    for placeholder, value in replacements.items():
-        endpoint = endpoint.replace(f":{placeholder}", value)
-    return endpoint

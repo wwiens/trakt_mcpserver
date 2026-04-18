@@ -1,7 +1,11 @@
 # Backward compatibility - import from new modular structure
 import sys
 
-from server.main import mcp
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from server.main import mcp  # noqa: E402
 
 if __name__ == "__main__":
     # Print to stderr to avoid polluting stdout (required for stdio transport)

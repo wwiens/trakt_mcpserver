@@ -33,6 +33,7 @@ async def test_trending_movies_no_page_respects_limit(
 
     client = TrendingMoviesClient()
     result = await client.get_trending_movies(limit=2, page=None)
+    assert not isinstance(result, str)
 
     # Should return exactly 2 movies (capped by limit)
     assert isinstance(result, list)
@@ -67,6 +68,7 @@ async def test_trending_movies_with_page_returns_paginated(
 
     client = TrendingMoviesClient()
     result = await client.get_trending_movies(limit=2, page=1)
+    assert not isinstance(result, str)
 
     # Should return PaginatedResponse
     assert isinstance(result, PaginatedResponse)
@@ -98,6 +100,7 @@ async def test_trending_movies_pagination_metadata(
 
     client = TrendingMoviesClient()
     result = await client.get_trending_movies(limit=2, page=2)
+    assert not isinstance(result, str)
 
     # Check metadata properties
     assert result.pagination.current_page == 2
@@ -127,6 +130,7 @@ async def test_trending_movies_navigation_properties(
 
     client = TrendingMoviesClient()
     result = await client.get_trending_movies(limit=1, page=2)
+    assert not isinstance(result, str)
 
     # Check navigation properties
     assert result.pagination.has_previous_page
@@ -158,6 +162,7 @@ async def test_popular_movies_no_page_returns_all(
 
     client = PopularMoviesClient()
     result = await client.get_popular_movies(limit=2, page=None)
+    assert not isinstance(result, str)
 
     # Should return a plain list
     assert isinstance(result, list)
@@ -186,6 +191,7 @@ async def test_popular_movies_with_page_returns_paginated(
 
     client = PopularMoviesClient()
     result = await client.get_popular_movies(limit=1, page=1)
+    assert not isinstance(result, str)
 
     assert isinstance(result, PaginatedResponse)
     assert len(result.data) == 1
@@ -214,6 +220,7 @@ async def test_favorited_movies_no_page_respects_limit(
 
     client = MovieStatsClient()
     result = await client.get_favorited_movies(limit=2, period="weekly", page=None)
+    assert not isinstance(result, str)
 
     # Should return exactly 2 movies (capped by limit)
     assert isinstance(result, list)
@@ -247,6 +254,7 @@ async def test_favorited_movies_pagination(
 
     client = MovieStatsClient()
     result = await client.get_favorited_movies(limit=1, period="weekly", page=1)
+    assert not isinstance(result, str)
 
     assert isinstance(result, PaginatedResponse)
     assert len(result.data) == 1
@@ -285,6 +293,7 @@ async def test_played_movies_no_page_respects_limit(
 
     client = MovieStatsClient()
     result = await client.get_played_movies(limit=2, period="weekly", page=None)
+    assert not isinstance(result, str)
 
     # Should return exactly 2 movies (capped by limit)
     assert isinstance(result, list)
@@ -322,6 +331,7 @@ async def test_played_movies_pagination(
 
     client = MovieStatsClient()
     result = await client.get_played_movies(limit=1, period="weekly", page=1)
+    assert not isinstance(result, str)
 
     assert isinstance(result, PaginatedResponse)
     assert len(result.data) == 1
@@ -349,6 +359,7 @@ async def test_watched_movies_no_page_respects_limit(
 
     client = MovieStatsClient()
     result = await client.get_watched_movies(limit=2, period="weekly", page=None)
+    assert not isinstance(result, str)
 
     # Should return exactly 2 movies (capped by limit)
     assert isinstance(result, list)
@@ -382,6 +393,7 @@ async def test_watched_movies_pagination(
 
     client = MovieStatsClient()
     result = await client.get_watched_movies(limit=1, period="weekly", page=1)
+    assert not isinstance(result, str)
 
     assert isinstance(result, PaginatedResponse)
     assert len(result.data) == 1
@@ -406,6 +418,7 @@ async def test_single_page_result(trakt_env: None, patched_httpx_client: MagicMo
 
     client = TrendingMoviesClient()
     result = await client.get_trending_movies(limit=10, page=1)
+    assert not isinstance(result, str)
 
     assert isinstance(result, PaginatedResponse)
     assert result.is_single_page
@@ -430,6 +443,7 @@ async def test_empty_result(trakt_env: None, patched_httpx_client: MagicMock):
 
     client = TrendingMoviesClient()
     result = await client.get_trending_movies(limit=10, page=None)
+    assert not isinstance(result, str)
 
     # Auto-pagination with empty results should return empty list
     assert isinstance(result, list)
@@ -466,6 +480,7 @@ async def test_multiple_pages_auto_paginate(
     client = TrendingMoviesClient()
     # Use limit=10 so we can fetch all 3 items without hitting max_items cap
     result = await client.get_trending_movies(limit=10, page=None)
+    assert not isinstance(result, str)
 
     # Should fetch all 3 pages and return flat list (total items < limit)
     assert isinstance(result, list)
@@ -517,6 +532,7 @@ async def test_auto_pagination_max_pages_returns_collected_items(
     # With limit=200 (sets max_items=200), we fetch up to 100 pages (max_pages default)
     # then return what we have (100 items) without error
     result = await client.get_trending_movies(limit=200, page=None)
+    assert not isinstance(result, str)
 
     # Should return all 100 items collected (one per page for 100 pages)
     assert isinstance(result, list)

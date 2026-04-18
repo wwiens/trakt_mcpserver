@@ -42,10 +42,11 @@ async def test_get_show_people(
 
     client = ShowPeopleClient()
     result = await client.get_show_people("breaking-bad")
+    assert not isinstance(result, str)
 
     assert len(result["cast"]) == 1
     assert result["cast"][0]["person"]["name"] == "Bryan Cranston"
-    assert "production" in result["crew"]
+    assert "production" in result.get("crew", {})
 
     patched_httpx_client.get.assert_called_once()
     call_args = patched_httpx_client.get.call_args
@@ -76,8 +77,9 @@ async def test_get_show_people_with_guest_stars(
 
     client = ShowPeopleClient()
     result = await client.get_show_people("breaking-bad", include_guest_stars=True)
+    assert not isinstance(result, str)
 
-    assert len(result["guest_stars"]) == 1
+    assert len(result.get("guest_stars", [])) == 1
 
     call_args = patched_httpx_client.get.call_args
     assert call_args[1].get("params") == {"extended": "guest_stars"}

@@ -49,6 +49,7 @@ async def test_get_related_shows_auto_pagination():
 
         client = RelatedShowsClient()
         result = await client.get_related_shows("breaking-bad", limit=10)
+        assert not isinstance(result, str)
 
         assert isinstance(result, list)
         assert len(result) == 2
@@ -93,6 +94,7 @@ async def test_get_related_shows_single_page():
 
         client = RelatedShowsClient()
         result = await client.get_related_shows("breaking-bad", limit=10, page=2)
+        assert not isinstance(result, str)
 
         # Single-page mode returns PaginatedResponse with pagination metadata
         assert hasattr(result, "data")
@@ -173,6 +175,7 @@ async def test_get_related_shows_empty_results():
 
         client = RelatedShowsClient()
         result = await client.get_related_shows("obscure-show", limit=10)
+        assert not isinstance(result, str)
 
         assert isinstance(result, list)
         assert len(result) == 0

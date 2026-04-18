@@ -124,7 +124,7 @@ class TestUserRatingIdentifierValidation:
         assert "Rating item must include either an identifier" in error_msg
 
     def test_invalid_empty_strings_no_title_year(self) -> None:
-        """Test validation error with empty string IDs."""
+        """Test error when identifiers are empty, no title/year."""
         with pytest.raises(ValidationError) as exc_info:
             UserRatingIdentifier(trakt_id="", imdb_id="", tmdb_id="")
 

@@ -60,12 +60,13 @@ async def test_get_season_people():
 
         client = SeasonsClient()
         result = await client.get_season_people("game-of-thrones", 1)
+        assert not isinstance(result, str)
 
         assert len(result["cast"]) == 2
         assert result["cast"][0]["person"]["name"] == "Emilia Clarke"
         assert result["cast"][0]["characters"] == ["Daenerys Targaryen"]
-        assert result["cast"][0]["episode_count"] == 10
-        assert "directing" in result["crew"]
+        assert result["cast"][0].get("episode_count") == 10
+        assert "directing" in result.get("crew", {})
 
         mock_instance.get.assert_called_once()
         call_args = mock_instance.get.call_args

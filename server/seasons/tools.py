@@ -1,5 +1,6 @@
 """Season tools for the Trakt MCP server."""
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Annotated, Final, Literal, TypeAlias
@@ -31,46 +32,20 @@ from models.formatters.videos import VideoFormatters
 from models.types.language import validate_language
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
+from utils.api.request_context import set_tool_context
 
 if TYPE_CHECKING:
     from models.types import (
         EpisodeResponse,
-        ListItemResponse,
-        PeopleResponse,
         SeasonResponse,
-        SeasonStatsResponse,
         ShowResponse,
-        TraktRating,
-        TranslationResponse,
-        UserResponse,
-        VideoResponse,
     )
 
 logger = logging.getLogger("trakt_mcp")
 
 ToolHandler: TypeAlias = Callable[..., Awaitable[str]]
 
-VALID_LIST_TYPES: Final[frozenset[str]] = frozenset(
-    {"all", "personal", "official", "watchlists"}
-)
-VALID_LIST_SORTS: Final[frozenset[str]] = frozenset(
-    {
-        "popular",
-        "likes",
-        "comments",
-        "items",
-        "added",
-        "updated",
-    }
-)
-
 INVALID_LANGUAGE_MSG: Final[str] = "Language must be 'all' or a 2-letter ISO 639-1 code"
-INVALID_LIST_TYPE_MSG: Final[str] = (
-    f"list_type must be one of: {', '.join(sorted(VALID_LIST_TYPES))}"
-)
-INVALID_LIST_SORT_MSG: Final[str] = (
-    f"sort must be one of: {', '.join(sorted(VALID_LIST_SORTS))}"
-)
 
 
 class SeasonIdParam(BaseModel):
@@ -138,6 +113,7 @@ async def fetch_season_info(show_id: str, season: int) -> str:
         Formatted markdown with season details
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     client = SeasonInfoClient()
     season_data: SeasonResponse | str = await client.get_season(
@@ -167,6 +143,7 @@ async def fetch_season_episodes(show_id: str, season: int) -> str:
         Formatted markdown with episode list
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     client = SeasonEpisodesClient()
     episodes: list[EpisodeResponse] | str = await client.get_season_episodes(
@@ -196,12 +173,12 @@ async def fetch_season_ratings(show_id: str, season: int) -> str:
         Formatted markdown with ratings and distribution
     """
     params = SeasonIdParam(show_id=show_id, season=season)
-
-    show_title = await _get_show_title(params.show_id)
+    set_tool_context("show", params.show_id)
 
     ratings_client = SeasonRatingsClient()
-    ratings: TraktRating | str = await ratings_client.get_season_ratings(
-        params.show_id, params.season
+    show_title, ratings = await asyncio.gather(
+        _get_show_title(params.show_id),
+        ratings_client.get_season_ratings(params.show_id, params.season),
     )
 
     if isinstance(ratings, str):
@@ -228,12 +205,12 @@ async def fetch_season_stats(show_id: str, season: int) -> str:
         Formatted markdown with season statistics
     """
     params = SeasonIdParam(show_id=show_id, season=season)
-
-    show_title = await _get_show_title(params.show_id)
+    set_tool_context("show", params.show_id)
 
     stats_client = SeasonStatsClient()
-    stats: SeasonStatsResponse | str = await stats_client.get_season_stats(
-        params.show_id, params.season
+    show_title, stats = await asyncio.gather(
+        _get_show_title(params.show_id),
+        stats_client.get_season_stats(params.show_id, params.season),
     )
 
     if isinstance(stats, str):
@@ -260,12 +237,12 @@ async def fetch_season_people(show_id: str, season: int) -> str:
         Formatted markdown with cast and crew
     """
     params = SeasonIdParam(show_id=show_id, season=season)
-
-    show_title = await _get_show_title(params.show_id)
+    set_tool_context("show", params.show_id)
 
     people_client = SeasonPeopleClient()
-    people: PeopleResponse | str = await people_client.get_season_people(
-        params.show_id, params.season
+    show_title, people = await asyncio.gather(
+        _get_show_title(params.show_id),
+        people_client.get_season_people(params.show_id, params.season),
     )
 
     if isinstance(people, str):
@@ -295,10 +272,12 @@ async def fetch_season_videos(
         Formatted markdown with videos
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     videos_client = SeasonVideosClient()
-    videos: list[VideoResponse] | str = await videos_client.get_season_videos(
-        params.show_id, params.season
+    videos, title = await asyncio.gather(
+        videos_client.get_season_videos(params.show_id, params.season),
+        _get_show_title(params.show_id),
     )
 
     if isinstance(videos, str):
@@ -308,8 +287,6 @@ async def fetch_season_videos(
             error_message=videos,
             operation="fetch_season_videos",
         )
-
-    title = await _get_show_title(params.show_id)
 
     season_title = f"{title} - Season {params.season}"
     return VideoFormatters.format_videos_list(
@@ -329,12 +306,12 @@ async def fetch_season_watching(show_id: str, season: int) -> str:
         Formatted markdown with user list
     """
     params = SeasonIdParam(show_id=show_id, season=season)
-
-    show_title = await _get_show_title(params.show_id)
+    set_tool_context("show", params.show_id)
 
     watching_client = SeasonWatchingClient()
-    users: list[UserResponse] | str = await watching_client.get_season_watching(
-        params.show_id, params.season
+    show_title, users = await asyncio.gather(
+        _get_show_title(params.show_id),
+        watching_client.get_season_watching(params.show_id, params.season),
     )
 
     if isinstance(users, str):
@@ -364,6 +341,7 @@ async def fetch_season_translations(
         Formatted markdown with translations
     """
     params = SeasonIdParam(show_id=show_id, season=season)
+    set_tool_context("show", params.show_id)
 
     try:
         language = validate_language(language)
@@ -374,13 +352,12 @@ async def fetch_season_translations(
             provided_value=language,
         ) from err
 
-    show_title = await _get_show_title(params.show_id)
-
     translations_client = SeasonTranslationsClient()
-    translations: (
-        list[TranslationResponse] | str
-    ) = await translations_client.get_season_translations(
-        params.show_id, params.season, language
+    show_title, translations = await asyncio.gather(
+        _get_show_title(params.show_id),
+        translations_client.get_season_translations(
+            params.show_id, params.season, language
+        ),
     )
 
     if isinstance(translations, str):
@@ -401,8 +378,10 @@ async def fetch_season_translations(
 async def fetch_season_lists(
     show_id: str,
     season: int,
-    list_type: str = "all",
-    sort: str = "popular",
+    list_type: Literal["all", "personal", "official", "watchlists"] = "all",
+    sort: Literal[
+        "popular", "likes", "comments", "items", "added", "updated"
+    ] = "popular",
 ) -> str:
     """Fetch lists containing a specific season.
 
@@ -416,25 +395,12 @@ async def fetch_season_lists(
         Formatted markdown with lists
     """
     params = SeasonIdParam(show_id=show_id, season=season)
-
-    if list_type not in VALID_LIST_TYPES:
-        raise BaseToolErrorMixin.handle_validation_error(
-            INVALID_LIST_TYPE_MSG,
-            parameter="list_type",
-            provided_value=list_type,
-        )
-    if sort not in VALID_LIST_SORTS:
-        raise BaseToolErrorMixin.handle_validation_error(
-            INVALID_LIST_SORT_MSG,
-            parameter="sort",
-            provided_value=sort,
-        )
-
-    show_title = await _get_show_title(params.show_id)
+    set_tool_context("show", params.show_id)
 
     lists_client = SeasonListsClient()
-    lists: list[ListItemResponse] | str = await lists_client.get_season_lists(
-        params.show_id, params.season, list_type, sort
+    show_title, lists = await asyncio.gather(
+        _get_show_title(params.show_id),
+        lists_client.get_season_lists(params.show_id, params.season, list_type, sort),
     )
 
     if isinstance(lists, str):

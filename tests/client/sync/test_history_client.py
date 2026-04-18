@@ -178,6 +178,7 @@ class TestSyncHistoryClient:
             mock_request.return_value = create_paginated_response(mock_items)
 
             result = await authenticated_sync_client.get_history()
+            assert not isinstance(result, str)
 
             assert len(result.data) == 2
             mock_request.assert_called_once()
@@ -196,6 +197,7 @@ class TestSyncHistoryClient:
             )
 
             result = await authenticated_sync_client.get_history(history_type="movies")
+            assert not isinstance(result, str)
 
             assert len(result.data) == 1
             assert result.data[0].type == "movie"
@@ -222,8 +224,10 @@ class TestSyncHistoryClient:
                 history_type="movies",
                 item_id="16662",
             )
+            assert not isinstance(result, str)
 
             assert len(result.data) == 1
+            assert result.data[0].movie is not None
             assert result.data[0].movie.title == "Inception"
 
             # Verify endpoint contains item_id
@@ -294,7 +298,9 @@ class TestSyncHistoryClient:
             )
 
             result = await authenticated_sync_client.add_to_history(request)
+            assert not isinstance(result, str)
 
+            assert result.added is not None
             assert result.added.movies == 1
             mock_request.assert_called_once()
 
@@ -317,6 +323,8 @@ class TestSyncHistoryClient:
             )
 
             result = await authenticated_sync_client.remove_from_history(request)
+            assert not isinstance(result, str)
 
+            assert result.deleted is not None
             assert result.deleted.movies == 1
             mock_request.assert_called_once()

@@ -37,6 +37,7 @@ async def test_get_episode_lists():
 
         client = EpisodesClient()
         result = await client.get_episode_lists("game-of-thrones", 1, 1)
+        assert not isinstance(result, str)
 
         assert len(result) == 1
         assert result[0]["name"] == "Best Episodes Ever"

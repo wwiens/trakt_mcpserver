@@ -32,6 +32,7 @@ from models.formatters.videos import VideoFormatters
 from models.types.language import validate_language
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
+from utils.api.request_context import set_tool_context
 
 if TYPE_CHECKING:
     from models.types import ShowResponse
@@ -40,27 +41,7 @@ logger = logging.getLogger("trakt_mcp")
 
 ToolHandler: TypeAlias = Callable[..., Awaitable[str]]
 
-VALID_LIST_TYPES: Final[frozenset[str]] = frozenset(
-    {"all", "personal", "official", "watchlists"}
-)
-VALID_LIST_SORTS: Final[frozenset[str]] = frozenset(
-    {
-        "popular",
-        "likes",
-        "comments",
-        "items",
-        "added",
-        "updated",
-    }
-)
-
 INVALID_LANGUAGE_MSG: Final[str] = "Language must be 'all' or a 2-letter ISO 639-1 code"
-INVALID_LIST_TYPE_MSG: Final[str] = (
-    f"list_type must be one of: {', '.join(sorted(VALID_LIST_TYPES))}"
-)
-INVALID_LIST_SORT_MSG: Final[str] = (
-    f"sort must be one of: {', '.join(sorted(VALID_LIST_SORTS))}"
-)
 
 
 class EpisodeIdParam(BaseModel):
@@ -134,6 +115,7 @@ async def fetch_episode_summary(show_id: str, season: int, episode: int) -> str:
         Formatted markdown with episode details
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
+    set_tool_context("show", params.show_id)
 
     client = EpisodeSummaryClient()
     show_title, episode_data = await asyncio.gather(
@@ -165,6 +147,7 @@ async def fetch_episode_ratings(show_id: str, season: int, episode: int) -> str:
         Formatted markdown with ratings and distribution
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
+    set_tool_context("show", params.show_id)
 
     ratings_client = EpisodeRatingsClient()
     show_title, ratings = await asyncio.gather(
@@ -201,6 +184,7 @@ async def fetch_episode_stats(show_id: str, season: int, episode: int) -> str:
         Formatted markdown with episode statistics
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
+    set_tool_context("show", params.show_id)
 
     stats_client = EpisodeStatsClient()
     show_title, stats = await asyncio.gather(
@@ -235,6 +219,7 @@ async def fetch_episode_people(show_id: str, season: int, episode: int) -> str:
         Formatted markdown with cast and crew
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
+    set_tool_context("show", params.show_id)
 
     people_client = EpisodePeopleClient()
     show_title, people = await asyncio.gather(
@@ -272,6 +257,7 @@ async def fetch_episode_videos(
         Formatted markdown with videos
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
+    set_tool_context("show", params.show_id)
 
     videos_client = EpisodeVideosClient()
     title, videos = await asyncio.gather(
@@ -306,6 +292,7 @@ async def fetch_episode_watching(show_id: str, season: int, episode: int) -> str
         Formatted markdown with user list
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
+    set_tool_context("show", params.show_id)
 
     watching_client = EpisodeWatchingClient()
     show_title, users = await asyncio.gather(
@@ -345,6 +332,7 @@ async def fetch_episode_translations(
         Formatted markdown with translations
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
+    set_tool_context("show", params.show_id)
 
     try:
         language = validate_language(language)
@@ -382,8 +370,10 @@ async def fetch_episode_lists(
     show_id: str,
     season: int,
     episode: int,
-    list_type: str = "all",
-    sort: str = "popular",
+    list_type: Literal["all", "personal", "official", "watchlists"] = "all",
+    sort: Literal[
+        "popular", "likes", "comments", "items", "added", "updated"
+    ] = "popular",
 ) -> str:
     """Fetch lists containing a specific episode.
 
@@ -398,19 +388,7 @@ async def fetch_episode_lists(
         Formatted markdown with lists
     """
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
-
-    if list_type not in VALID_LIST_TYPES:
-        raise BaseToolErrorMixin.handle_validation_error(
-            INVALID_LIST_TYPE_MSG,
-            parameter="list_type",
-            provided_value=list_type,
-        )
-    if sort not in VALID_LIST_SORTS:
-        raise BaseToolErrorMixin.handle_validation_error(
-            INVALID_LIST_SORT_MSG,
-            parameter="sort",
-            provided_value=sort,
-        )
+    set_tool_context("show", params.show_id)
 
     lists_client = EpisodeListsClient()
     show_title, lists = await asyncio.gather(

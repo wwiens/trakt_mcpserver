@@ -33,6 +33,7 @@ from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
 from server.movies.tools import MovieIdParam
 from server.shows.tools import ShowIdParam
 from utils.api.errors import handle_api_errors_func
+from utils.api.request_context import set_tool_context
 
 # Comment sort options supported by Trakt API
 CommentSort = Literal["newest", "oldest", "likes", "replies"]
@@ -222,7 +223,7 @@ async def _fetch_and_format_comment(
     *,
     resource_type: str,
     resource_id: str,
-    fetch_fn: Callable[[], Awaitable[CommentResponse]],
+    fetch_fn: Callable[[], Awaitable[CommentResponse | str]],
     show_spoilers: bool,
 ) -> str:
     """Helper to reduce duplication in single comment fetching functions.
@@ -240,12 +241,13 @@ async def _fetch_and_format_comment(
         BaseToolErrorMixin error: If API response is an error string
     """
     data = await fetch_fn()
-    _ensure_not_error_string(
-        data,
-        resource_type=resource_type,
-        resource_id=resource_id,
-        operation=f"fetch_{resource_type}",
-    )
+    if isinstance(data, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type=resource_type,
+            resource_id=resource_id,
+            error_message=data,
+            operation=f"fetch_{resource_type}",
+        )
     return CommentsFormatters.format_comment(data, show_spoilers=show_spoilers)
 
 
@@ -300,6 +302,7 @@ async def fetch_movie_comments(
         movie_id = id_params.movie_id
     except ValidationError as e:
         _handle_validation_error(e, "movie comments")
+    set_tool_context("movie", movie_id)
 
     client = MovieCommentsClient()
 
@@ -352,6 +355,7 @@ async def fetch_show_comments(
         show_id = id_params.show_id
     except ValidationError as e:
         _handle_validation_error(e, "show comments")
+    set_tool_context("show", show_id)
 
     client = ShowCommentsClient()
 
@@ -406,6 +410,7 @@ async def fetch_season_comments(
         show_id, season = id_params.show_id, id_params.season
     except ValidationError as e:
         _handle_validation_error(e, "season comments")
+    set_tool_context("show", show_id)
 
     client = SeasonCommentsClient()
 
@@ -467,6 +472,7 @@ async def fetch_episode_comments(
         )
     except ValidationError as e:
         _handle_validation_error(e, "episode comments")
+    set_tool_context("show", show_id)
 
     client = EpisodeCommentsClient()
 
@@ -507,6 +513,7 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
         comment_id = params.comment_id
     except ValidationError as e:
         _handle_validation_error(e, "comment")
+    set_tool_context("comment", comment_id)
 
     client = CommentDetailsClient()
 
@@ -550,17 +557,19 @@ async def fetch_comment_replies(
         comment_id = id_params.comment_id
     except ValidationError as e:
         _handle_validation_error(e, "comment replies")
+    set_tool_context("comment", comment_id)
 
     client = CommentDetailsClient()
 
     # Fetch comment data
     comment = await client.get_comment(comment_id)
-    _ensure_not_error_string(
-        comment,
-        resource_type="comment",
-        resource_id=comment_id,
-        operation="fetch_comment_replies",
-    )
+    if isinstance(comment, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="comment",
+            resource_id=comment_id,
+            error_message=comment,
+            operation="fetch_comment_replies",
+        )
 
     # Fetch replies data
     replies = await client.get_comment_replies(

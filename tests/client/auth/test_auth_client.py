@@ -155,6 +155,7 @@ async def test_auth_client_get_device_code(monkeypatch: pytest.MonkeyPatch):
 
         client = AuthClient()
         result = await client.get_device_code()
+        assert not isinstance(result, str)
 
         # Result is a TraktDeviceCode Pydantic model
         assert isinstance(result, TraktDeviceCode)
@@ -202,6 +203,7 @@ async def test_auth_client_get_device_token_success(monkeypatch: pytest.MonkeyPa
 
         client = AuthClient()
         result = await client.get_device_token("device_code_123")
+        assert not isinstance(result, str)
 
         # Result is a TraktAuthToken
         assert isinstance(result, TraktAuthToken)
@@ -456,6 +458,7 @@ async def test_refresh_access_token_success(monkeypatch: pytest.MonkeyPatch) -> 
         )
 
         result = await client.refresh_access_token()
+        assert not isinstance(result, str)
 
         assert result is True
         assert client.auth_token is not None
@@ -510,6 +513,7 @@ async def test_refresh_access_token_auth_failure_clears_token(
         )
 
         result = await client.refresh_access_token()
+        assert not isinstance(result, str)
 
         assert result is False
         assert client.auth_token is None
@@ -526,6 +530,7 @@ async def test_refresh_access_token_no_token(monkeypatch: pytest.MonkeyPatch) ->
         client.auth_token = None
 
         result = await client.refresh_access_token()
+        assert not isinstance(result, str)
 
         assert result is False
 
@@ -562,6 +567,7 @@ async def test_refresh_access_token_network_error_preserves_token(
         )
 
         result = await client.refresh_access_token()
+        assert not isinstance(result, str)
 
         assert result is False
         # Token must be preserved for next retry
@@ -615,6 +621,7 @@ async def test_refresh_access_token_invalid_grant_clears_token(
         )
 
         result = await client.refresh_access_token()
+        assert not isinstance(result, str)
 
         assert result is False
         assert client.auth_token is None
@@ -642,6 +649,7 @@ async def test_ensure_authenticated_valid_token(
         )
 
         result = await client.ensure_authenticated()
+        assert not isinstance(result, str)
 
         assert result is True
         # Token should be unchanged (no refresh happened)
@@ -700,6 +708,7 @@ async def test_ensure_authenticated_expired_token_refreshes(
         )
 
         result = await client.ensure_authenticated()
+        assert not isinstance(result, str)
 
         assert result is True
         assert client.auth_token is not None
@@ -717,6 +726,7 @@ async def test_ensure_authenticated_no_token(monkeypatch: pytest.MonkeyPatch) ->
         client.auth_token = None
 
         result = await client.ensure_authenticated()
+        assert not isinstance(result, str)
 
         assert result is False
 
@@ -745,6 +755,7 @@ async def test_ensure_authenticated_expired_no_refresh_token(
         )
 
         result = await client.ensure_authenticated()
+        assert not isinstance(result, str)
 
         assert result is False
         # Token should be unchanged (no refresh attempted)
