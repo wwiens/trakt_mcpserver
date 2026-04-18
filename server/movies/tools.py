@@ -359,7 +359,7 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
     set_tool_context("movie", movie_id)
 
     try:
-        client: MoviesClient = get_client(MoviesClient)  # Use unified client
+        client: MoviesClient = get_client(MoviesClient)
         videos = await client.get_videos(movie_id)
         # Transitional safeguard if client returns string errors
         if isinstance(videos, str):

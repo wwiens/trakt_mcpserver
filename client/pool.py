@@ -1,12 +1,14 @@
 """Process-wide pool of ``BaseClient`` instances and their shared ``httpx.AsyncClient``.
 
-Non-authenticated client classes are cached as singletons per class and share
-a single ``httpx.AsyncClient`` for connection reuse across all Trakt API
-requests. ``AuthClient`` subclasses are *not* pooled: each call returns a
-fresh instance, preserving the "disk is the source of truth" invariant for
-authentication state (so login, refresh, and clear propagate consistently
-across unrelated tool calls). Direct ``SomeClient()`` instantiation is
-unaffected and still opens/closes a fresh HTTP client per request.
+All clients share a single ``httpx.AsyncClient`` for connection reuse across
+Trakt API requests. Non-authenticated client *wrappers* are cached as
+singletons per class. ``AuthClient`` wrappers are returned fresh per call so
+each tool invocation re-reads ``auth_token.json`` from disk — auth state
+(``self.auth_token``, ``self.headers``) lives on the wrapper, so caching it
+would let login/refresh/clear go stale across tool calls. The shared httpx
+client carries no auth state and is safe to share. Direct ``SomeClient()``
+instantiation is unaffected and still opens/closes a fresh HTTP client per
+request.
 """
 
 from __future__ import annotations
@@ -50,10 +52,11 @@ def get_or_create_shared_http() -> httpx.AsyncClient:
 def get_client(cls: type[T]) -> T:
     """Return a pooled client for the given class.
 
-    For ``AuthClient`` subclasses, returns a fresh instance per call so
-    each tool invocation re-reads ``auth_token.json`` from disk. For all
-    other ``BaseClient`` subclasses, returns a cached singleton wired to
-    the shared ``httpx.AsyncClient``.
+    For ``AuthClient`` subclasses, returns a fresh wrapper per call so each
+    tool invocation re-reads ``auth_token.json`` from disk; the wrapper
+    shares the process-wide ``httpx.AsyncClient`` via ``enable_pooling()``.
+    For all other ``BaseClient`` subclasses, returns a cached singleton
+    wrapper wired to the same shared ``httpx.AsyncClient``.
     """
     # When server tests patch a client class at its import site (e.g.
     # ``patch("server.comments.tools.MovieCommentsClient")``), ``cls`` is
@@ -64,7 +67,9 @@ def get_client(cls: type[T]) -> T:
         return cls()
 
     if issubclass(cls, AuthClient):
-        return cls()
+        instance = cls()
+        instance.enable_pooling()
+        return instance
 
     with _LOCK:
         cached = _CACHE.get(cls)

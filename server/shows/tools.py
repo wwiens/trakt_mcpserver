@@ -336,7 +336,7 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
     set_tool_context("show", show_id)
 
     try:
-        client: ShowsClient = get_client(ShowsClient)  # Use unified client
+        client: ShowsClient = get_client(ShowsClient)
         videos = await client.get_videos(show_id)
 
         if isinstance(videos, str):

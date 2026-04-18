@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
+import pytest_asyncio
 
 from client import pool
 from client.auth import AuthClient
@@ -24,20 +25,23 @@ from client.user.client import UserClient
 from models.auth import TraktAuthToken
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import AsyncGenerator, Generator
     from pathlib import Path
 
 
-@pytest.fixture(autouse=True)
-def _reset_pool_state() -> Generator[None, None, None]:  # pyright: ignore[reportUnusedFunction]
-    """Clear `_CACHE` and `_shared_http` around each test."""
-    pool._CACHE.clear()
-    pool._shared_http = None
+@pytest_asyncio.fixture(autouse=True)
+async def _reset_pool_state() -> AsyncGenerator[None, None]:  # pyright: ignore[reportUnusedFunction]
+    """Close and reset pool state around each test.
+
+    Uses ``shutdown_clients`` on both setup and teardown so any real
+    ``httpx.AsyncClient`` created during the test is properly closed
+    rather than orphaned.
+    """
+    await shutdown_clients()
     try:
         yield
     finally:
-        pool._CACHE.clear()
-        pool._shared_http = None
+        await shutdown_clients()
 
 
 @pytest.fixture
@@ -80,11 +84,20 @@ def test_auth_client_is_fresh_per_call(trakt_env: None, _token_file: Path) -> No
     first = get_client(UserClient)
     second = get_client(UserClient)
     assert first is not second
-    assert first._persistent is False
-    assert first._owns_client is True
-    # Neither instance is cached — defeats the auth-divergence bug.
+    # Auth wrappers use the shared httpx client but are not cached.
+    assert first._persistent is True
+    assert first._owns_client is False
     assert UserClient not in pool._CACHE
     assert AuthClient not in pool._CACHE
+
+
+def test_auth_client_shares_httpx_with_non_auth(
+    trakt_env: None, _token_file: Path
+) -> None:
+    user = get_client(UserClient)
+    shows = get_client(ShowsClient)
+    assert user._client is shows._client
+    assert isinstance(user._client, httpx.AsyncClient)
 
 
 def test_auth_subclass_reloads_token_from_disk(
@@ -131,9 +144,6 @@ async def test_shutdown_allows_shared_http_to_recreate(trakt_env: None) -> None:
     await shutdown_clients()
     second = get_or_create_shared_http()
     assert first is not second
-    # The real httpx client was created and swapped; close the new one so
-    # the test doesn't leak a live pool.
-    await second.aclose()
 
 
 def test_non_pooled_client_path_unchanged(trakt_env: None) -> None:
