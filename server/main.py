@@ -32,7 +32,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("trakt_mcp")
 
-REGISTRATIONS: Final[list[Callable[[FastMCP], object]]] = [
+REGISTRATIONS: Final[tuple[Callable[[FastMCP], object], ...]] = (
     register_auth_resources,
     register_auth_tools,
     register_show_resources,
@@ -51,7 +51,7 @@ REGISTRATIONS: Final[list[Callable[[FastMCP], object]]] = [
     register_episode_tools,
     register_people_tools,
     register_basic_prompts,
-]
+)
 
 
 @asynccontextmanager

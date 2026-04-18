@@ -74,6 +74,13 @@ async def fetch_trending_shows(
 
     client = get_client(TrendingShowsClient)
     shows = await client.get_trending_shows(limit=limit, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="trending_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_trending_shows",
+        )
     return ShowFormatters.format_trending_shows(shows)
 
 
@@ -98,6 +105,13 @@ async def fetch_popular_shows(
 
     client = get_client(PopularShowsClient)
     shows = await client.get_popular_shows(limit=limit, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="popular_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_popular_shows",
+        )
     return ShowFormatters.format_popular_shows(shows)
 
 
@@ -126,6 +140,13 @@ async def fetch_favorited_shows(
 
     client = get_client(ShowStatsClient)
     shows = await client.get_favorited_shows(limit=limit, period=period, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="favorited_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_favorited_shows",
+        )
 
     if logger.isEnabledFor(logging.DEBUG) and shows and isinstance(shows, list):
         logger.debug(
@@ -160,6 +181,13 @@ async def fetch_played_shows(
 
     client = get_client(ShowStatsClient)
     shows = await client.get_played_shows(limit=limit, period=period, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="played_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_played_shows",
+        )
     return ShowFormatters.format_played_shows(shows)
 
 
@@ -187,6 +215,13 @@ async def fetch_watched_shows(
 
     client = get_client(ShowStatsClient)
     shows = await client.get_watched_shows(limit=limit, period=period, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="watched_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_watched_shows",
+        )
     return ShowFormatters.format_watched_shows(shows)
 
 
@@ -211,6 +246,13 @@ async def fetch_anticipated_shows(
 
     client = get_client(AnticipatedShowsClient)
     shows = await client.get_anticipated_shows(limit=limit, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="anticipated_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_anticipated_shows",
+        )
     return ShowFormatters.format_anticipated_shows(shows)
 
 
@@ -413,6 +455,13 @@ async def fetch_related_shows(
         limit=params.limit,
         page=params.page,
     )
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="related_shows",
+            resource_id=id_params.show_id,
+            error_message=shows,
+            operation="fetch_related_shows",
+        )
 
     return ShowFormatters.format_related_shows(shows)
 

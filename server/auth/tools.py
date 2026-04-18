@@ -71,7 +71,11 @@ async def start_device_auth() -> str:
     async with auth_flow_lock:
         active_auth_flow = auth_state
 
-    logger.info(f"Started device auth flow: {auth_state}")
+    logger.info(
+        "Started device auth flow (expires_at=%s, interval=%s)",
+        auth_state["expires_at"],
+        auth_state["interval"],
+    )
 
     # Return instructions for the user
     user_code = device_code_response.user_code

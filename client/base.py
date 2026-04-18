@@ -89,10 +89,16 @@ class BaseClient:
             self.headers["Authorization"] = f"Bearer {self.auth_token.access_token}"
 
     async def __aenter__(self) -> BaseClient:
-        """Enter async context and initialize shared client."""
-        self._client = httpx.AsyncClient(
-            base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT
-        )
+        """Enter async context and initialize shared client.
+
+        If pooling was already enabled (``_client`` is already assigned by
+        ``enable_pooling``), reuse that client instead of replacing it — otherwise
+        the pooled reference would be silently overwritten and leaked.
+        """
+        if self._client is None:
+            self._client = httpx.AsyncClient(
+                base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT
+            )
         return self
 
     async def __aexit__(

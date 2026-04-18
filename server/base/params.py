@@ -92,19 +92,9 @@ class SeasonIdParam(BaseModel):
     )
 
 
-class EpisodeIdParam(BaseModel):
+class EpisodeIdParam(SeasonIdParam):
     """Parameters for tools that require a show ID, season, and episode number."""
 
-    show_id: StrippedStr = Field(
-        ...,
-        min_length=1,
-        description=SHOW_ID_DESCRIPTION,
-    )
-    season: int = Field(
-        ...,
-        ge=0,
-        description=SEASON_DESCRIPTION,
-    )
     episode: int = Field(
         ...,
         ge=1,

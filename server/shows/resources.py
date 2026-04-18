@@ -38,6 +38,13 @@ async def get_trending_shows() -> str:
     """
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_trending_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="trending_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_trending_shows",
+        )
     return ShowFormatters.format_trending_shows(shows)
 
 
@@ -52,6 +59,13 @@ async def get_popular_shows() -> str:
     """
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_popular_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="popular_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_popular_shows",
+        )
     return ShowFormatters.format_popular_shows(shows)
 
 
@@ -66,6 +80,13 @@ async def get_favorited_shows() -> str:
     """
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_favorited_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="favorited_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_favorited_shows",
+        )
 
     # Debug log for API response structure analysis
     if shows:
@@ -93,6 +114,13 @@ async def get_played_shows() -> str:
     """
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_played_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="played_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_played_shows",
+        )
     return ShowFormatters.format_played_shows(shows)
 
 
@@ -108,6 +136,13 @@ async def get_watched_shows() -> str:
     """
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_watched_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="watched_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_watched_shows",
+        )
     return ShowFormatters.format_watched_shows(shows)
 
 
@@ -122,6 +157,13 @@ async def get_anticipated_shows() -> str:
     """
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_anticipated_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="anticipated_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_anticipated_shows",
+        )
     return ShowFormatters.format_anticipated_shows(shows)
 
 

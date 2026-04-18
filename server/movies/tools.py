@@ -74,6 +74,13 @@ async def fetch_trending_movies(
 
     client = get_client(TrendingMoviesClient)
     movies = await client.get_trending_movies(limit=limit, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="trending_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_trending_movies",
+        )
     return MovieFormatters.format_trending_movies(movies)
 
 
@@ -98,6 +105,13 @@ async def fetch_popular_movies(
 
     client = get_client(PopularMoviesClient)
     movies = await client.get_popular_movies(limit=limit, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="popular_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_popular_movies",
+        )
     return MovieFormatters.format_popular_movies(movies)
 
 
@@ -126,6 +140,13 @@ async def fetch_favorited_movies(
 
     client = get_client(MovieStatsClient)
     movies = await client.get_favorited_movies(limit=limit, period=period, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="favorited_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_favorited_movies",
+        )
 
     # Trace structure in debug only (only for list responses to avoid pagination object)
     if movies and isinstance(movies, list):
@@ -161,6 +182,13 @@ async def fetch_played_movies(
 
     client = get_client(MovieStatsClient)
     movies = await client.get_played_movies(limit=limit, period=period, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="played_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_played_movies",
+        )
     return MovieFormatters.format_played_movies(movies)
 
 
@@ -188,6 +216,13 @@ async def fetch_watched_movies(
 
     client = get_client(MovieStatsClient)
     movies = await client.get_watched_movies(limit=limit, period=period, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="watched_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_watched_movies",
+        )
     return MovieFormatters.format_watched_movies(movies)
 
 
@@ -212,6 +247,13 @@ async def fetch_anticipated_movies(
 
     client = get_client(AnticipatedMoviesClient)
     movies = await client.get_anticipated_movies(limit=limit, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="anticipated_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_anticipated_movies",
+        )
     return MovieFormatters.format_anticipated_movies(movies)
 
 
@@ -432,6 +474,13 @@ async def fetch_related_movies(
         limit=params.limit,
         page=params.page,
     )
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="related_movies",
+            resource_id=id_params.movie_id,
+            error_message=movies,
+            operation="fetch_related_movies",
+        )
 
     return MovieFormatters.format_related_movies(movies)
 
