@@ -55,9 +55,11 @@ def get_client(cls: type[T]) -> T:
     other ``BaseClient`` subclasses, returns a cached singleton wired to
     the shared ``httpx.AsyncClient``.
     """
-    # Tests that patch the client class name at the call site pass a
-    # ``MagicMock`` here; skip all pooling so the mock's call semantics
-    # stay intact.
+    # When server tests patch a client class at its import site (e.g.
+    # ``patch("server.comments.tools.MovieCommentsClient")``), ``cls`` is
+    # a ``MagicMock`` instance rather than a class. ``issubclass(mock,
+    # AuthClient)`` would raise ``TypeError``, so short-circuit to
+    # ``cls()`` and let the mock's call semantics take over.
     if not inspect.isclass(cls):
         return cls()
 

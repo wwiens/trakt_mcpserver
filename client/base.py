@@ -93,7 +93,6 @@ class BaseClient:
         self._client = httpx.AsyncClient(
             base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT
         )
-        self._owns_client = True
         return self
 
     async def __aexit__(
