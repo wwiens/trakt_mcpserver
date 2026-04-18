@@ -1,8 +1,11 @@
 """Movie endpoints."""
 
+from collections.abc import Mapping
 from typing import Final
 
-MOVIES_ENDPOINTS: Final[dict[str, str]] = {
+from .keys import EndpointKey
+
+MOVIES_ENDPOINTS: Final[Mapping[EndpointKey, str]] = {
     # Movie endpoints
     "movies_trending": "/movies/trending",
     "movies_popular": "/movies/popular",

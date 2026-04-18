@@ -5,6 +5,7 @@ from collections.abc import Callable, Coroutine
 from mcp.server.fastmcp import FastMCP
 
 from client.auth import AuthClient
+from client.pool import get_client
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.auth import AuthFormatters
 from utils.api.errors import handle_api_errors_func
@@ -17,7 +18,7 @@ async def get_auth_status() -> str:
     Returns:
         Formatted markdown text with authentication status
     """
-    client = AuthClient()
+    client = get_client(AuthClient)
     is_authenticated = client.is_authenticated()
     expires_at = client.get_token_expiry() if is_authenticated else None
     return AuthFormatters.format_auth_status(is_authenticated, expires_at)

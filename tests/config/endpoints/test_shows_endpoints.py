@@ -1,6 +1,11 @@
 """Tests for shows endpoints module."""
 
+from typing import TYPE_CHECKING
+
 from config.endpoints.shows import SHOWS_ENDPOINTS
+
+if TYPE_CHECKING:
+    from config.endpoints import EndpointKey
 
 
 class TestShowsEndpoints:
@@ -13,7 +18,7 @@ class TestShowsEndpoints:
 
     def test_show_endpoints_exist(self) -> None:
         """Test show-related endpoints are present."""
-        show_endpoints = [
+        show_endpoints: list[EndpointKey] = [
             "shows_trending",
             "shows_popular",
             "shows_favorited",

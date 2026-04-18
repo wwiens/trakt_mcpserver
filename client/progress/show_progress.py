@@ -3,12 +3,13 @@
 from typing import Literal
 from urllib.parse import quote
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from config.endpoints.progress import PROGRESS_ENDPOINTS
 from models.progress.show_progress import ShowProgressResponse
 from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
+from utils.validators import StrippedStr
 
 from ..auth import AuthClient
 
@@ -16,17 +17,11 @@ from ..auth import AuthClient
 class ShowProgressParams(BaseModel):
     """Parameters for show progress API requests."""
 
-    show_id: str = Field(..., min_length=1)
+    show_id: StrippedStr = Field(..., min_length=1)
     hidden: bool = False
     specials: bool = False
     count_specials: bool = True
     last_activity: Literal["aired", "watched"] = "aired"
-
-    @field_validator("show_id", mode="before")
-    @classmethod
-    def _strip_show_id(cls, v: object) -> object:
-        """Strip whitespace from show_id if string."""
-        return v.strip() if isinstance(v, str) else v
 
 
 class ShowProgressClient(AuthClient):

@@ -6,6 +6,7 @@ from typing import Annotated, Any
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field, ValidationError, field_validator
 
+from client.pool import get_client
 from client.search.client import SearchClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.descriptions import (
@@ -140,7 +141,7 @@ async def search_shows(
         InvalidParamsError: If query and limit are invalid
         InternalError: If an error occurs during search
     """
-    client = SearchClient()
+    client = get_client(SearchClient)
     return await _run_search(
         op="search shows",
         fetch=client.search_shows,
@@ -170,7 +171,7 @@ async def search_movies(
         InvalidParamsError: If query and limit are invalid
         InternalError: If an error occurs during search
     """
-    client = SearchClient()
+    client = get_client(SearchClient)
     return await _run_search(
         op="search movies",
         fetch=client.search_movies,

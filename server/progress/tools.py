@@ -5,8 +5,9 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
+from client.pool import get_client
 from client.progress.client import ProgressClient
 from config.mcp.descriptions import (
     PLAYBACK_ID_DESCRIPTION,
@@ -23,6 +24,7 @@ from models.formatters.progress import ProgressFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
+from utils.validators import StrippedStr
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -33,13 +35,7 @@ ToolHandler = Callable[..., Awaitable[str]]
 class ShowIdParam(BaseModel):
     """Parameters for tools that require a show ID."""
 
-    show_id: str = Field(..., min_length=1, description=SHOW_ID_DESCRIPTION)
-
-    @field_validator("show_id", mode="before")
-    @classmethod
-    def _strip_show_id(cls, v: object) -> object:
-        """Strip whitespace from show_id if string."""
-        return v.strip() if isinstance(v, str) else v
+    show_id: StrippedStr = Field(..., min_length=1, description=SHOW_ID_DESCRIPTION)
 
 
 class PlaybackIdParam(BaseModel):
@@ -80,7 +76,7 @@ async def fetch_show_progress(
 
     logger.debug("fetch_show_progress called with show_id=%s", show_id)
 
-    client = ProgressClient()
+    client = get_client(ProgressClient)
 
     result = await client.get_show_progress(
         show_id,
@@ -120,7 +116,7 @@ async def fetch_playback_progress(
     """
     logger.debug("fetch_playback_progress called with type=%s", playback_type)
 
-    client = ProgressClient()
+    client = get_client(ProgressClient)
 
     result = await client.get_playback_progress(playback_type)
 
@@ -155,7 +151,7 @@ async def remove_playback_item(playback_id: int) -> str:
 
     logger.debug("remove_playback_item called with id=%s", params.playback_id)
 
-    client = ProgressClient()
+    client = get_client(ProgressClient)
 
     await client.remove_playback_item(params.playback_id)
 

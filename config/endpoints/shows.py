@@ -1,8 +1,11 @@
 """Show endpoints."""
 
+from collections.abc import Mapping
 from typing import Final
 
-SHOWS_ENDPOINTS: Final[dict[str, str]] = {
+from .keys import EndpointKey
+
+SHOWS_ENDPOINTS: Final[Mapping[EndpointKey, str]] = {
     # Show endpoints
     "shows_trending": "/shows/trending",
     "shows_popular": "/shows/popular",

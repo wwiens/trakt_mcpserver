@@ -2,7 +2,7 @@
 
 from typing import overload
 
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import SearchResult
 from models.types.pagination import PaginatedResponse
@@ -40,21 +40,13 @@ class SearchClient(BaseClient):
         """
         endpoint = f"{TRAKT_ENDPOINTS['search']}/{kind}"
 
-        if page is None:
-            eff = effective_limit(limit)
-            return await self.auto_paginate(
-                endpoint,
-                response_type=SearchResult,
-                params={"query": query, "limit": eff.api_limit},
-                max_pages=max_pages,
-                max_items=eff.max_items,
-            )
-
-        eff = effective_limit(limit)
-        return await self._make_paginated_request(
+        return await self._fetch_paginated(
             endpoint,
             response_type=SearchResult,
-            params={"query": query, "page": page, "limit": eff.api_limit},
+            params={"query": query},
+            page=page,
+            limit=limit,
+            max_pages=max_pages,
         )
 
     @overload

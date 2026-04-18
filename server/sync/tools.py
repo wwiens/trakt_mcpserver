@@ -8,6 +8,7 @@ from typing import Annotated, Any, ClassVar, Literal
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
 
+from client.pool import get_client
 from client.shows.seasons import ShowSeasonsClient
 from client.sync.client import SyncClient
 from config.api import DEFAULT_LIMIT
@@ -96,7 +97,7 @@ async def _get_show_season_ids(show_id: str) -> list[int]:
     Returns:
         List of Trakt season IDs
     """
-    seasons_client = ShowSeasonsClient()
+    seasons_client = get_client(ShowSeasonsClient)
     seasons = await seasons_client.get_seasons(show_id)
     if isinstance(seasons, str):
         return []
@@ -362,7 +363,7 @@ async def fetch_user_ratings(
     rating_type, rating, page = params.rating_type, params.rating, params.page
 
     try:
-        client = SyncClient()
+        client = get_client(SyncClient)
 
         # If 'page' is provided, request that page; otherwise use default page=1.
         pagination_params = (
@@ -411,7 +412,7 @@ async def add_user_ratings(
     logger.debug("add_user_ratings called with rating_type=%s", rating_type)
 
     try:
-        client = SyncClient()
+        client = get_client(SyncClient)
 
         # Convert to sync request format
         sync_items: list[TraktSyncRatingItem] = []
@@ -474,7 +475,7 @@ async def remove_user_ratings(
     logger.debug("remove_user_ratings called with rating_type=%s", rating_type)
 
     try:
-        client = SyncClient()
+        client = get_client(SyncClient)
 
         # Convert to sync request format (no ratings needed for removal)
         sync_items: list[TraktSyncRatingItem] = []
@@ -549,7 +550,7 @@ async def fetch_user_watchlist(
     )
 
     try:
-        client = SyncClient()
+        client = get_client(SyncClient)
 
         # If 'page' is provided, request that page; otherwise use default page=1.
         pagination_params = (
@@ -599,7 +600,7 @@ async def add_user_watchlist(
     logger.debug("add_user_watchlist called with watchlist_type=%s", watchlist_type)
 
     try:
-        client = SyncClient()
+        client = get_client(SyncClient)
 
         # Convert to sync request format
         sync_items: list[TraktSyncWatchlistItem] = []
@@ -662,7 +663,7 @@ async def remove_user_watchlist(
     logger.debug("remove_user_watchlist called with watchlist_type=%s", watchlist_type)
 
     try:
-        client = SyncClient()
+        client = get_client(SyncClient)
 
         # Convert to sync request format (no notes for removal)
         sync_items: list[TraktSyncWatchlistItem] = []
@@ -760,7 +761,7 @@ async def fetch_history(
         params.item_id,
     )
 
-    client = SyncClient()
+    client = get_client(SyncClient)
 
     # Create pagination params if page is specified
     pagination_params = (
@@ -811,7 +812,7 @@ async def add_to_history(
     """
     logger.debug("add_to_history called with type=%s", history_type)
 
-    client = SyncClient()
+    client = get_client(SyncClient)
 
     history_items: list[TraktHistoryItem] = []
     for item in items:
@@ -866,7 +867,7 @@ async def remove_from_history(
     """
     logger.debug("remove_from_history called with type=%s", history_type)
 
-    client = SyncClient()
+    client = get_client(SyncClient)
 
     history_items: list[TraktHistoryItem] = []
     for item in items:

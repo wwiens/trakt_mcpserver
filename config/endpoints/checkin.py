@@ -1,8 +1,10 @@
 """Check-in endpoints."""
 
+from collections.abc import Mapping
 from typing import Final
 
-CHECKIN_ENDPOINTS: Final[dict[str, str]] = {
-    # Check-in endpoints
+from .keys import EndpointKey
+
+CHECKIN_ENDPOINTS: Final[Mapping[EndpointKey, str]] = {
     "checkin": "/checkin",
 }

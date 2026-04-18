@@ -5,6 +5,7 @@ from typing import TypeAlias
 
 from mcp.server.fastmcp import FastMCP
 
+from client.pool import get_client
 from client.user import UserClient
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.user import UserFormatters
@@ -23,7 +24,7 @@ async def get_user_watched_shows() -> str:
     Returns:
         Formatted markdown text with user's watched shows
     """
-    client: UserClient = UserClient()
+    client: UserClient = get_client(UserClient)
 
     if not await client.ensure_authenticated():
         return (
@@ -51,7 +52,7 @@ async def get_user_watched_movies() -> str:
     Returns:
         Formatted markdown text with user's watched movies
     """
-    client: UserClient = UserClient()
+    client: UserClient = get_client(UserClient)
 
     if not await client.ensure_authenticated():
         return (

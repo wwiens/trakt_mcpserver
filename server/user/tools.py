@@ -6,6 +6,7 @@ from typing import Annotated, Any, TypeVar
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, ValidationError
 
+from client.pool import get_client
 from client.user.client import UserClient
 from config.api import effective_limit
 from config.auth import AUTH_VERIFICATION_URL
@@ -119,7 +120,7 @@ async def fetch_user_watched_shows(limit: int | None = 0) -> str:
     Returns:
         Information about user's watched shows
     """
-    client = UserClient()
+    client = get_client(UserClient)
     return await _fetch_user_items(
         limit=limit,
         operation="fetch_user_watched_shows",
@@ -139,7 +140,7 @@ async def fetch_user_watched_movies(limit: int | None = 0) -> str:
     Returns:
         Information about user's watched movies
     """
-    client = UserClient()
+    client = get_client(UserClient)
     return await _fetch_user_items(
         limit=limit,
         operation="fetch_user_watched_movies",

@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Annotated, Final, Literal, TypeAlias
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from client.episodes.lists import EpisodeListsClient
 from client.episodes.people import EpisodePeopleClient
@@ -16,6 +16,7 @@ from client.episodes.summary import EpisodeSummaryClient
 from client.episodes.translations import EpisodeTranslationsClient
 from client.episodes.videos import EpisodeVideosClient
 from client.episodes.watching import EpisodeWatchingClient
+from client.pool import get_client
 from client.shows.details import ShowDetailsClient
 from config.mcp.descriptions import (
     EMBED_MARKDOWN_DESCRIPTION,
@@ -33,6 +34,7 @@ from models.types.language import validate_language
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
+from utils.validators import StrippedStr
 
 if TYPE_CHECKING:
     from models.types import ShowResponse
@@ -47,7 +49,7 @@ INVALID_LANGUAGE_MSG: Final[str] = "Language must be 'all' or a 2-letter ISO 639
 class EpisodeIdParam(BaseModel):
     """Parameters for tools that require a show ID, season, and episode number."""
 
-    show_id: str = Field(
+    show_id: StrippedStr = Field(
         ...,
         min_length=1,
         description=SHOW_ID_DESCRIPTION,
@@ -63,11 +65,6 @@ class EpisodeIdParam(BaseModel):
         description=EPISODE_DESCRIPTION,
     )
 
-    @field_validator("show_id", mode="before")
-    @classmethod
-    def _strip_show_id(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
-
 
 async def _get_show_title(show_id: str) -> str:
     """Fetch the show title for use in formatted responses.
@@ -82,7 +79,7 @@ async def _get_show_title(show_id: str) -> str:
         Show title string, or fallback ``Show ID: <show_id>`` on failure
     """
     try:
-        show_client = ShowDetailsClient()
+        show_client = get_client(ShowDetailsClient)
         show_data: ShowResponse | str = await show_client.get_show(show_id)
 
         if isinstance(show_data, str):
@@ -117,7 +114,7 @@ async def fetch_episode_summary(show_id: str, season: int, episode: int) -> str:
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
     set_tool_context("show", params.show_id)
 
-    client = EpisodeSummaryClient()
+    client = get_client(EpisodeSummaryClient)
     show_title, episode_data = await asyncio.gather(
         _get_show_title(params.show_id),
         client.get_episode(params.show_id, params.season, params.episode),
@@ -149,7 +146,7 @@ async def fetch_episode_ratings(show_id: str, season: int, episode: int) -> str:
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
     set_tool_context("show", params.show_id)
 
-    ratings_client = EpisodeRatingsClient()
+    ratings_client = get_client(EpisodeRatingsClient)
     show_title, ratings = await asyncio.gather(
         _get_show_title(params.show_id),
         ratings_client.get_episode_ratings(
@@ -186,7 +183,7 @@ async def fetch_episode_stats(show_id: str, season: int, episode: int) -> str:
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
     set_tool_context("show", params.show_id)
 
-    stats_client = EpisodeStatsClient()
+    stats_client = get_client(EpisodeStatsClient)
     show_title, stats = await asyncio.gather(
         _get_show_title(params.show_id),
         stats_client.get_episode_stats(params.show_id, params.season, params.episode),
@@ -221,7 +218,7 @@ async def fetch_episode_people(show_id: str, season: int, episode: int) -> str:
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
     set_tool_context("show", params.show_id)
 
-    people_client = EpisodePeopleClient()
+    people_client = get_client(EpisodePeopleClient)
     show_title, people = await asyncio.gather(
         _get_show_title(params.show_id),
         people_client.get_episode_people(params.show_id, params.season, params.episode),
@@ -259,7 +256,7 @@ async def fetch_episode_videos(
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
     set_tool_context("show", params.show_id)
 
-    videos_client = EpisodeVideosClient()
+    videos_client = get_client(EpisodeVideosClient)
     title, videos = await asyncio.gather(
         _get_show_title(params.show_id),
         videos_client.get_episode_videos(params.show_id, params.season, params.episode),
@@ -294,7 +291,7 @@ async def fetch_episode_watching(show_id: str, season: int, episode: int) -> str
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
     set_tool_context("show", params.show_id)
 
-    watching_client = EpisodeWatchingClient()
+    watching_client = get_client(EpisodeWatchingClient)
     show_title, users = await asyncio.gather(
         _get_show_title(params.show_id),
         watching_client.get_episode_watching(
@@ -343,7 +340,7 @@ async def fetch_episode_translations(
             provided_value=language,
         ) from err
 
-    translations_client = EpisodeTranslationsClient()
+    translations_client = get_client(EpisodeTranslationsClient)
     show_title, translations = await asyncio.gather(
         _get_show_title(params.show_id),
         translations_client.get_episode_translations(
@@ -390,7 +387,7 @@ async def fetch_episode_lists(
     params = EpisodeIdParam(show_id=show_id, season=season, episode=episode)
     set_tool_context("show", params.show_id)
 
-    lists_client = EpisodeListsClient()
+    lists_client = get_client(EpisodeListsClient)
     show_title, lists = await asyncio.gather(
         _get_show_title(params.show_id),
         lists_client.get_episode_lists(

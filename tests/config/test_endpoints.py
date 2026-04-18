@@ -3,7 +3,7 @@
 from typing import ClassVar
 
 # Test imports from domain-specific config modules
-from config.endpoints import TRAKT_ENDPOINTS
+from config.endpoints import TRAKT_ENDPOINTS, EndpointKey
 
 
 class TestTraktEndpoints:
@@ -16,7 +16,7 @@ class TestTraktEndpoints:
 
     def test_auth_endpoints_exist(self) -> None:
         """Test authentication endpoints are present."""
-        auth_endpoints = ["device_code", "device_token", "revoke"]
+        auth_endpoints: list[EndpointKey] = ["device_code", "device_token", "revoke"]
         for endpoint in auth_endpoints:
             assert endpoint in TRAKT_ENDPOINTS
             assert isinstance(TRAKT_ENDPOINTS[endpoint], str)
@@ -24,7 +24,7 @@ class TestTraktEndpoints:
 
     def test_show_endpoints_exist(self) -> None:
         """Test show-related endpoints are present."""
-        show_endpoints = [
+        show_endpoints: list[EndpointKey] = [
             "shows_trending",
             "shows_popular",
             "shows_favorited",
@@ -39,7 +39,7 @@ class TestTraktEndpoints:
 
     def test_movie_endpoints_exist(self) -> None:
         """Test movie-related endpoints are present."""
-        movie_endpoints = [
+        movie_endpoints: list[EndpointKey] = [
             "movies_trending",
             "movies_popular",
             "movies_favorited",
@@ -64,7 +64,7 @@ class TestTraktEndpoints:
 
     def test_comment_endpoints_exist(self) -> None:
         """Test comment-related endpoints are present."""
-        comment_endpoints = [
+        comment_endpoints: list[EndpointKey] = [
             "comments_movie",
             "comments_show",
             "comments_season",
@@ -79,7 +79,7 @@ class TestTraktEndpoints:
 
     def test_rating_endpoints_exist(self) -> None:
         """Test rating endpoints are present."""
-        rating_endpoints = ["show_ratings", "movie_ratings"]
+        rating_endpoints: list[EndpointKey] = ["show_ratings", "movie_ratings"]
         for endpoint in rating_endpoints:
             assert endpoint in TRAKT_ENDPOINTS
             assert isinstance(TRAKT_ENDPOINTS[endpoint], str)
@@ -87,7 +87,7 @@ class TestTraktEndpoints:
 
     def test_recommendation_endpoints_exist(self) -> None:
         """Test recommendation endpoints are present."""
-        recommendation_endpoints = [
+        recommendation_endpoints: list[EndpointKey] = [
             "recommendations_movies",
             "recommendations_shows",
             "hide_movie_recommendation",
@@ -118,19 +118,22 @@ class TestEndpointUrlFormats:
 
     def test_oauth_endpoints_contain_oauth(self) -> None:
         """Test OAuth endpoints contain 'oauth' in path."""
-        oauth_endpoints = ["device_code", "device_token", "revoke"]
+        oauth_endpoints: list[EndpointKey] = ["device_code", "device_token", "revoke"]
         for endpoint in oauth_endpoints:
             assert "oauth" in TRAKT_ENDPOINTS[endpoint]
 
     def test_sync_endpoints_contain_sync(self) -> None:
         """Test sync endpoints contain 'sync' in path."""
-        sync_endpoints = ["user_watched_shows", "user_watched_movies"]
+        sync_endpoints: list[EndpointKey] = [
+            "user_watched_shows",
+            "user_watched_movies",
+        ]
         for endpoint in sync_endpoints:
             assert "sync" in TRAKT_ENDPOINTS[endpoint]
 
     def test_parameterized_endpoints_contain_placeholders(self) -> None:
         """Test parameterized endpoints contain proper placeholders."""
-        parameterized_endpoints = {
+        parameterized_endpoints: dict[EndpointKey, list[str]] = {
             "comments_movie": [":id", ":sort"],
             "comments_show": [":id", ":sort"],
             "comments_season": [":id", ":season", ":sort"],
@@ -150,21 +153,15 @@ class TestEndpointUrlFormats:
 
     def test_endpoint_categories_consistency(self) -> None:
         """Test endpoint naming follows consistent patterns."""
-        # Show endpoints should start with 'shows_' or contain 'shows'
-        show_keys = [k for k in TRAKT_ENDPOINTS if "show" in k]
-        for key in show_keys:
-            url = TRAKT_ENDPOINTS[key]
-            assert "show" in url or "sync" in url, (
-                f"Show endpoint {key} should contain 'show' or 'sync'"
-            )
-
-        # Movie endpoints should start with 'movies_' or contain 'movies'
-        movie_keys = [k for k in TRAKT_ENDPOINTS if "movie" in k]
-        for key in movie_keys:
-            url = TRAKT_ENDPOINTS[key]
-            assert "movie" in url or "sync" in url, (
-                f"Movie endpoint {key} should contain 'movie' or 'sync'"
-            )
+        for key, url in TRAKT_ENDPOINTS.items():
+            if "show" in key:
+                assert "show" in url or "sync" in url, (
+                    f"Show endpoint {key} should contain 'show' or 'sync'"
+                )
+            if "movie" in key:
+                assert "movie" in url or "sync" in url, (
+                    f"Movie endpoint {key} should contain 'movie' or 'sync'"
+                )
 
     def test_combined_endpoints_match_domain_modules(self) -> None:
         """Test combined TRAKT_ENDPOINTS matches domain-specific endpoint modules."""
@@ -180,6 +177,7 @@ class TestEndpointUrlFormats:
         from config.endpoints.search import SEARCH_ENDPOINTS
         from config.endpoints.seasons import SEASONS_ENDPOINTS
         from config.endpoints.shows import SHOWS_ENDPOINTS
+        from config.endpoints.sync import SYNC_ENDPOINTS
         from config.endpoints.user import USER_ENDPOINTS
 
         # All domain endpoints should be present in combined TRAKT_ENDPOINTS
@@ -196,16 +194,17 @@ class TestEndpointUrlFormats:
             **USER_ENDPOINTS,
             **RECOMMENDATIONS_ENDPOINTS,
             **SEASONS_ENDPOINTS,
+            **SYNC_ENDPOINTS,
         }
 
-        # TRAKT_ENDPOINTS should contain all domain endpoints
+        # TRAKT_ENDPOINTS should contain all domain endpoints; also confirms
+        # that the aggregate dict and domain dicts agree on values.
+        combined_items = dict(TRAKT_ENDPOINTS)
         for key, value in all_domain_endpoints.items():
-            assert key in TRAKT_ENDPOINTS, (
+            assert key in combined_items, (
                 f"Domain endpoint {key} missing from TRAKT_ENDPOINTS"
             )
-            assert TRAKT_ENDPOINTS[key] == value, (
-                f"Domain endpoint {key} value mismatch"
-            )
+            assert combined_items[key] == value, f"Domain endpoint {key} value mismatch"
 
         # TRAKT_ENDPOINTS should not contain extra endpoints
         for key in TRAKT_ENDPOINTS:

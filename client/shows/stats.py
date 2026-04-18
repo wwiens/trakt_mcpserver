@@ -2,7 +2,7 @@
 
 from typing import Literal, overload
 
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import FavoritedShowWrapper, PlayedShowWrapper, WatchedShowWrapper
 from models.types.pagination import PaginatedResponse
@@ -55,24 +55,13 @@ class ShowStatsClient(BaseClient):
             If page is None: List of up to 'limit' favorited shows
             If page specified: Paginated response with metadata for that page
         """
-        if page is None:
-            eff = effective_limit(limit)
-            return await self.auto_paginate(
-                TRAKT_ENDPOINTS["shows_favorited"],
-                response_type=FavoritedShowWrapper,
-                params={"limit": eff.api_limit, "period": period},
-                max_pages=max_pages,
-                max_items=eff.max_items,
-            )
-
-        # Single page with metadata
-        if page < 1:
-            raise ValueError(f"page must be >= 1, got {page}")
-        eff = effective_limit(limit)
-        return await self._make_paginated_request(
+        return await self._fetch_paginated(
             TRAKT_ENDPOINTS["shows_favorited"],
             response_type=FavoritedShowWrapper,
-            params={"page": page, "limit": eff.api_limit, "period": period},
+            params={"period": period},
+            page=page,
+            limit=limit,
+            max_pages=max_pages,
         )
 
     @overload
@@ -116,24 +105,13 @@ class ShowStatsClient(BaseClient):
             If page is None: List of up to 'limit' played shows
             If page specified: Paginated response with metadata for that page
         """
-        if page is None:
-            eff = effective_limit(limit)
-            return await self.auto_paginate(
-                TRAKT_ENDPOINTS["shows_played"],
-                response_type=PlayedShowWrapper,
-                params={"limit": eff.api_limit, "period": period},
-                max_pages=max_pages,
-                max_items=eff.max_items,
-            )
-
-        # Single page with metadata
-        if page < 1:
-            raise ValueError(f"page must be >= 1, got {page}")
-        eff = effective_limit(limit)
-        return await self._make_paginated_request(
+        return await self._fetch_paginated(
             TRAKT_ENDPOINTS["shows_played"],
             response_type=PlayedShowWrapper,
-            params={"page": page, "limit": eff.api_limit, "period": period},
+            params={"period": period},
+            page=page,
+            limit=limit,
+            max_pages=max_pages,
         )
 
     @overload
@@ -177,22 +155,11 @@ class ShowStatsClient(BaseClient):
             If page is None: List of up to 'limit' watched shows
             If page specified: Paginated response with metadata for that page
         """
-        if page is None:
-            eff = effective_limit(limit)
-            return await self.auto_paginate(
-                TRAKT_ENDPOINTS["shows_watched"],
-                response_type=WatchedShowWrapper,
-                params={"limit": eff.api_limit, "period": period},
-                max_pages=max_pages,
-                max_items=eff.max_items,
-            )
-
-        # Single page with metadata
-        if page < 1:
-            raise ValueError(f"page must be >= 1, got {page}")
-        eff = effective_limit(limit)
-        return await self._make_paginated_request(
+        return await self._fetch_paginated(
             TRAKT_ENDPOINTS["shows_watched"],
             response_type=WatchedShowWrapper,
-            params={"page": page, "limit": eff.api_limit, "period": period},
+            params={"period": period},
+            page=page,
+            limit=limit,
+            max_pages=max_pages,
         )

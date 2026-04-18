@@ -5,8 +5,9 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
+from client.pool import get_client
 from client.recommendations import RecommendationsClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.descriptions import (
@@ -21,6 +22,7 @@ from models.formatters.recommendations import RecommendationFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
+from utils.validators import StrippedStr
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -49,12 +51,9 @@ class RecommendationParams(BaseModel):
 class HideRecommendationParams(BaseModel):
     """Parameters for hiding a recommendation."""
 
-    item_id: str = Field(..., min_length=1, description="Trakt ID, slug, or IMDB ID")
-
-    @field_validator("item_id", mode="before")
-    @classmethod
-    def _strip_id(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
+    item_id: StrippedStr = Field(
+        ..., min_length=1, description="Trakt ID, slug, or IMDB ID"
+    )
 
 
 @handle_api_errors_func
@@ -86,7 +85,7 @@ async def fetch_movie_recommendations(
         ignore_watchlisted=ignore_watchlisted,
     )
 
-    client = RecommendationsClient()
+    client = get_client(RecommendationsClient)
     recommendations = await client.get_movie_recommendations(
         limit=params.limit,
         ignore_collected=params.ignore_collected,
@@ -134,7 +133,7 @@ async def fetch_show_recommendations(
         ignore_watchlisted=ignore_watchlisted,
     )
 
-    client = RecommendationsClient()
+    client = get_client(RecommendationsClient)
     recommendations = await client.get_show_recommendations(
         limit=params.limit,
         ignore_collected=params.ignore_collected,
@@ -170,7 +169,7 @@ async def hide_movie_recommendation(movie_id: str) -> str:
     params = HideRecommendationParams(item_id=movie_id)
     set_tool_context("movie", params.item_id)
 
-    client = RecommendationsClient()
+    client = get_client(RecommendationsClient)
     await client.hide_movie_recommendation(params.item_id)
     return RecommendationFormatters.format_hide_result("movie", params.item_id)
 
@@ -192,7 +191,7 @@ async def hide_show_recommendation(show_id: str) -> str:
     params = HideRecommendationParams(item_id=show_id)
     set_tool_context("show", params.item_id)
 
-    client = RecommendationsClient()
+    client = get_client(RecommendationsClient)
     await client.hide_show_recommendation(params.item_id)
     return RecommendationFormatters.format_hide_result("show", params.item_id)
 
@@ -214,7 +213,7 @@ async def unhide_movie_recommendation(movie_id: str) -> str:
     params = HideRecommendationParams(item_id=movie_id)
     set_tool_context("movie", params.item_id)
 
-    client = RecommendationsClient()
+    client = get_client(RecommendationsClient)
     await client.unhide_movie_recommendation(params.item_id)
     return RecommendationFormatters.format_unhide_result("movie", params.item_id)
 
@@ -236,7 +235,7 @@ async def unhide_show_recommendation(show_id: str) -> str:
     params = HideRecommendationParams(item_id=show_id)
     set_tool_context("show", params.item_id)
 
-    client = RecommendationsClient()
+    client = get_client(RecommendationsClient)
     await client.unhide_show_recommendation(params.item_id)
     return RecommendationFormatters.format_unhide_result("show", params.item_id)
 

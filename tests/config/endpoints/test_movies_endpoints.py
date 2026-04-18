@@ -1,6 +1,11 @@
 """Tests for movies endpoints module."""
 
+from typing import TYPE_CHECKING
+
 from config.endpoints.movies import MOVIES_ENDPOINTS
+
+if TYPE_CHECKING:
+    from config.endpoints import EndpointKey
 
 
 class TestMoviesEndpoints:
@@ -13,7 +18,7 @@ class TestMoviesEndpoints:
 
     def test_movie_endpoints_exist(self) -> None:
         """Test movie-related endpoints are present."""
-        movie_endpoints = [
+        movie_endpoints: list[EndpointKey] = [
             "movies_trending",
             "movies_popular",
             "movies_favorited",

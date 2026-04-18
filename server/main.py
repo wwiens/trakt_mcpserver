@@ -2,6 +2,8 @@
 
 import logging
 import sys
+from collections.abc import Callable
+from typing import Final
 
 from mcp.server.fastmcp import FastMCP
 
@@ -27,6 +29,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger("trakt_mcp")
 
+REGISTRATIONS: Final[list[Callable[[FastMCP], object]]] = [
+    register_auth_resources,
+    register_auth_tools,
+    register_show_resources,
+    register_show_tools,
+    register_movie_resources,
+    register_movie_tools,
+    register_comment_tools,
+    register_user_resources,
+    register_user_tools,
+    register_search_tools,
+    register_checkin_tools,
+    register_sync_tools,
+    register_progress_tools,
+    register_recommendation_tools,
+    register_season_tools,
+    register_episode_tools,
+    register_people_tools,
+    register_basic_prompts,
+]
+
 
 def create_server() -> FastMCP:
     """Create and configure the Trakt MCP server with all modules.
@@ -34,36 +57,9 @@ def create_server() -> FastMCP:
     Returns:
         Configured FastMCP server instance
     """
-    # Create a named server with proper metadata for capability negotiation
     mcp = FastMCP(name="trakt-mcp-server")
-
-    # Register all modules and capture handlers for type checker
-    _ = register_auth_resources(mcp)
-    _ = register_auth_tools(mcp)
-
-    _ = register_show_resources(mcp)
-    _ = register_show_tools(mcp)
-
-    _ = register_movie_resources(mcp)
-    _ = register_movie_tools(mcp)
-
-    _ = register_comment_tools(mcp)
-
-    _ = register_user_resources(mcp)
-    _ = register_user_tools(mcp)
-
-    _ = register_search_tools(mcp)
-    _ = register_checkin_tools(mcp)
-    _ = register_sync_tools(mcp)
-    _ = register_progress_tools(mcp)
-    _ = register_recommendation_tools(mcp)
-    _ = register_season_tools(mcp)
-    _ = register_episode_tools(mcp)
-    _ = register_people_tools(mcp)
-
-    # Register prompts and capture handlers for type checker
-    _ = register_basic_prompts(mcp)
-
+    for register in REGISTRATIONS:
+        register(mcp)
     logger.info("All Trakt MCP modules registered successfully")
     return mcp
 
