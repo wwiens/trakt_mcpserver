@@ -121,6 +121,12 @@ Add to your Claude Desktop MCP configuration file:
 - Secure authentication with Trakt through device code flow
 - Personal data is fetched directly from your Trakt account
 
+### 🎯 Personalized Recommendations
+- **Get tailored movie and show suggestions** based on your watch history and ratings (requires authentication)
+- Filter out items you've already collected or watchlisted
+- **Hide recommendations** you're not interested in so they don't come back
+- **Unhide** previously hidden items to restore them
+
 ### 💬 Comments & Reviews
 - **View comments for shows and movies**: Read what others are saying about your favorite content
 - **See comments for specific seasons and episodes**: Get insights about particular parts of a show
@@ -510,8 +516,8 @@ fetch_show_comments(show_id="456", limit=10, show_spoilers=False, sort="likes")
 # Get comments for a show: single page with pagination metadata
 fetch_show_comments(show_id="456", limit=10, show_spoilers=False, sort="likes", page=1)
 
-# Get comments for a specific season sorted by highest rating
-fetch_season_comments(show_id="456", season=1, limit=10, show_spoilers=False, sort="highest")
+# Get comments for a specific season sorted by most liked
+fetch_season_comments(show_id="456", season=1, limit=10, show_spoilers=False, sort="likes")
 
 # Get comments for a specific episode sorted by most replies
 fetch_episode_comments(show_id="456", season=1, episode=3, limit=10, show_spoilers=False, sort="replies")
@@ -519,8 +525,36 @@ fetch_episode_comments(show_id="456", season=1, episode=3, limit=10, show_spoile
 # Get a specific comment
 fetch_comment(comment_id="789", show_spoilers=False)
 
-# Get a comment with its replies sorted by oldest first
-fetch_comment_replies(comment_id="789", limit=10, show_spoilers=False, sort="oldest")
+# Get a comment with its replies
+fetch_comment_replies(comment_id="789", limit=10, show_spoilers=False)
+```
+
+</details>
+
+<details>
+<summary><strong>Recommendation Tools</strong></summary>
+
+```python
+# Get personalized movie recommendations (requires authentication)
+fetch_movie_recommendations(limit=10)
+
+# Include movies you've already collected or watchlisted
+fetch_movie_recommendations(limit=10, ignore_collected=False, ignore_watchlisted=False)
+
+# Get personalized show recommendations
+fetch_show_recommendations(limit=10)
+
+# Hide a movie from future recommendations
+hide_movie_recommendation(movie_id="tron-legacy-2010")
+
+# Hide a show from future recommendations
+hide_show_recommendation(show_id="breaking-bad")
+
+# Unhide a previously-hidden movie
+unhide_movie_recommendation(movie_id="tron-legacy-2010")
+
+# Unhide a previously-hidden show
+unhide_show_recommendation(show_id="breaking-bad")
 ```
 
 </details>
@@ -635,7 +669,7 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 - "Show me comment #12345 with its replies"
 - "Show me comments for Breaking Bad but include spoilers"
 - "Show me the most liked comments for Breaking Bad"
-- "Get the highest rated comments for The Godfather movie"
+- "Get the most liked comments for The Godfather movie"
 - "Show me the comments with most replies for Season 1 of Stranger Things"
 - "Show me the rating distribution for The Godfather"
 - "How highly rated is Breaking Bad?"
