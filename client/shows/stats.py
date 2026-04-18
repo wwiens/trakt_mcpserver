@@ -55,10 +55,10 @@ class ShowStatsClient(BaseClient):
             If page is None: List of up to 'limit' favorited shows
             If page specified: Paginated response with metadata for that page
         """
+        endpoint = TRAKT_ENDPOINTS["shows_favorited"].replace(":period", period)
         return await self._fetch_paginated(
-            TRAKT_ENDPOINTS["shows_favorited"],
+            endpoint,
             response_type=FavoritedShowWrapper,
-            params={"period": period},
             page=page,
             limit=limit,
             max_pages=max_pages,
@@ -105,10 +105,10 @@ class ShowStatsClient(BaseClient):
             If page is None: List of up to 'limit' played shows
             If page specified: Paginated response with metadata for that page
         """
+        endpoint = TRAKT_ENDPOINTS["shows_played"].replace(":period", period)
         return await self._fetch_paginated(
-            TRAKT_ENDPOINTS["shows_played"],
+            endpoint,
             response_type=PlayedShowWrapper,
-            params={"period": period},
             page=page,
             limit=limit,
             max_pages=max_pages,
@@ -155,10 +155,10 @@ class ShowStatsClient(BaseClient):
             If page is None: List of up to 'limit' watched shows
             If page specified: Paginated response with metadata for that page
         """
+        endpoint = TRAKT_ENDPOINTS["shows_watched"].replace(":period", period)
         return await self._fetch_paginated(
-            TRAKT_ENDPOINTS["shows_watched"],
+            endpoint,
             response_type=WatchedShowWrapper,
-            params={"period": period},
             page=page,
             limit=limit,
             max_pages=max_pages,

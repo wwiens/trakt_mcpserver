@@ -41,9 +41,9 @@ class TestShowsEndpoints:
         """Test show endpoint URL formats."""
         assert SHOWS_ENDPOINTS["shows_trending"] == "/shows/trending"
         assert SHOWS_ENDPOINTS["shows_popular"] == "/shows/popular"
-        assert SHOWS_ENDPOINTS["shows_favorited"] == "/shows/favorited"
-        assert SHOWS_ENDPOINTS["shows_played"] == "/shows/played"
-        assert SHOWS_ENDPOINTS["shows_watched"] == "/shows/watched"
+        assert SHOWS_ENDPOINTS["shows_favorited"] == "/shows/favorited/:period"
+        assert SHOWS_ENDPOINTS["shows_played"] == "/shows/played/:period"
+        assert SHOWS_ENDPOINTS["shows_watched"] == "/shows/watched/:period"
         assert SHOWS_ENDPOINTS["shows_anticipated"] == "/shows/anticipated"
 
     def test_rating_endpoint_format(self) -> None:

@@ -55,10 +55,10 @@ class MovieStatsClient(BaseClient):
             If page is None: List of up to 'limit' favorited movies
             If page specified: Paginated response with metadata for that page
         """
+        endpoint = TRAKT_ENDPOINTS["movies_favorited"].replace(":period", period)
         return await self._fetch_paginated(
-            TRAKT_ENDPOINTS["movies_favorited"],
+            endpoint,
             response_type=FavoritedMovieWrapper,
-            params={"period": period},
             page=page,
             limit=limit,
             max_pages=max_pages,
@@ -105,10 +105,10 @@ class MovieStatsClient(BaseClient):
             If page is None: List of up to 'limit' played movies
             If page specified: Paginated response with metadata for that page
         """
+        endpoint = TRAKT_ENDPOINTS["movies_played"].replace(":period", period)
         return await self._fetch_paginated(
-            TRAKT_ENDPOINTS["movies_played"],
+            endpoint,
             response_type=PlayedMovieWrapper,
-            params={"period": period},
             page=page,
             limit=limit,
             max_pages=max_pages,
@@ -155,10 +155,10 @@ class MovieStatsClient(BaseClient):
             If page is None: List of up to 'limit' watched movies
             If page specified: Paginated response with metadata for that page
         """
+        endpoint = TRAKT_ENDPOINTS["movies_watched"].replace(":period", period)
         return await self._fetch_paginated(
-            TRAKT_ENDPOINTS["movies_watched"],
+            endpoint,
             response_type=WatchedMovieWrapper,
-            params={"period": period},
             page=page,
             limit=limit,
             max_pages=max_pages,
