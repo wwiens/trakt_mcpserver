@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Annotated, Final, Literal, TypeAlias
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from client.pool import get_client
 from client.seasons.episodes import SeasonEpisodesClient
@@ -31,10 +31,9 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.seasons import SeasonFormatters
 from models.formatters.videos import VideoFormatters
 from models.types.language import validate_language
-from server.base import BaseToolErrorMixin
+from server.base import BaseToolErrorMixin, SeasonIdParam
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
-from utils.validators import StrippedStr
 
 if TYPE_CHECKING:
     from models.types import (
@@ -48,21 +47,6 @@ logger = logging.getLogger("trakt_mcp")
 ToolHandler: TypeAlias = Callable[..., Awaitable[str]]
 
 INVALID_LANGUAGE_MSG: Final[str] = "Language must be 'all' or a 2-letter ISO 639-1 code"
-
-
-class SeasonIdParam(BaseModel):
-    """Parameters for tools that require a show ID and season number."""
-
-    show_id: StrippedStr = Field(
-        ...,
-        min_length=1,
-        description=SHOW_ID_DESCRIPTION,
-    )
-    season: int = Field(
-        ...,
-        ge=0,
-        description=SEASON_DESCRIPTION,
-    )
 
 
 async def _get_show_title(show_id: str) -> str:

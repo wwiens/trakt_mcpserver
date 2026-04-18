@@ -30,9 +30,13 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.comments import CommentsFormatters
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
-from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
-from server.movies.tools import MovieIdParam
-from server.shows.tools import ShowIdParam
+from server.base import (
+    BaseToolErrorMixin,
+    CommentIdParam,
+    LimitPageValidatorMixin,
+    MovieIdParam,
+    ShowIdParam,
+)
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
 from utils.validators import StrippedStr
@@ -48,16 +52,6 @@ class ValidationErrorDetail(TypedDict):
     message: str
     type: str
     input: object | None
-
-
-class CommentIdParam(BaseModel):
-    """Parameters for tools that require a comment ID."""
-
-    comment_id: StrippedStr = Field(
-        ...,
-        min_length=1,
-        description=COMMENT_ID_DESCRIPTION,
-    )
 
 
 class SeasonParam(BaseModel):

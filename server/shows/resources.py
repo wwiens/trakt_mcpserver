@@ -17,8 +17,7 @@ from client.shows.client import ShowsClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.shows import ShowFormatters
-from server.base import BaseToolErrorMixin
-from server.shows.tools import ShowIdParam
+from server.base import BaseToolErrorMixin, ShowIdParam
 from utils.api.error_types import TraktValidationError
 from utils.api.errors import handle_api_errors_func
 

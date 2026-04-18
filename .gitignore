@@ -107,3 +107,7 @@ auth_token.json
 auth_token.json.tmp
 
 phase-runner-script.sh
+
+# Local working notes
+CLEANUP*.md
+cleanup_todo.md

@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from client.movies.anticipated import AnticipatedMoviesClient
 from client.movies.boxoffice import BoxOfficeMoviesClient
@@ -31,25 +31,14 @@ from config.mcp.descriptions import (
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.movies import MovieFormatters
 from models.formatters.videos import VideoFormatters
-from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams
+from server.base import BaseToolErrorMixin, LimitOnly, MovieIdParam, PeriodParams
 from utils.api.errors import MCPError, handle_api_errors_func
 from utils.api.request_context import set_tool_context
-from utils.validators import StrippedStr
 
 logger = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
-
-
-class MovieIdParam(BaseModel):
-    """Parameters for tools that require a movie ID."""
-
-    movie_id: StrippedStr = Field(
-        ...,
-        min_length=1,
-        description=MOVIE_ID_DESCRIPTION,
-    )
 
 
 class MovieSummaryParams(MovieIdParam):

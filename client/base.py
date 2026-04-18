@@ -81,6 +81,7 @@ class BaseClient:
         self.auth_token: TraktAuthToken | None = None
         self._client: httpx.AsyncClient | None = None
         self._persistent: bool = False
+        self._owns_client: bool = True
 
     def _update_headers_with_token(self):
         """Update headers with authentication token."""
@@ -92,6 +93,7 @@ class BaseClient:
         self._client = httpx.AsyncClient(
             base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT
         )
+        self._owns_client = True
         return self
 
     async def __aexit__(
@@ -104,16 +106,27 @@ class BaseClient:
         await self.aclose()
 
     def enable_pooling(self) -> None:
-        """Opt this instance into connection pooling.
+        """Opt this instance into the process-wide ``httpx.AsyncClient`` pool.
 
-        Subsequent HTTP requests will lazily create a persistent
-        ``httpx.AsyncClient`` that is reused until ``aclose()`` is called.
+        Assigns the shared ``httpx.AsyncClient`` (lazily created by
+        ``client.pool``) to this instance. ``aclose()`` becomes a no-op for
+        pooled instances; the shared client is closed only by
+        ``client.pool.shutdown_clients()``.
         """
+        # Local import avoids circular dependency (pool imports base).
+        from .pool import get_or_create_shared_http
+
         self._persistent = True
+        self._owns_client = False
+        self._client = get_or_create_shared_http()
 
     async def aclose(self) -> None:
-        """Close the persistent ``httpx.AsyncClient`` if one is active."""
-        if self._client is not None:
+        """Close the ``httpx.AsyncClient`` if this instance owns it.
+
+        No-op for pooled instances; the shared client is closed by
+        ``client.pool.shutdown_clients()``.
+        """
+        if self._client is not None and self._owns_client:
             await self._client.aclose()
             self._client = None
 

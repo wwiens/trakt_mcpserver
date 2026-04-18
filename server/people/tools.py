@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Final, Literal, TypeAlias
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from client.people.lists import PersonListsClient
 from client.people.movies import PersonMoviesClient
@@ -21,25 +21,14 @@ from config.mcp.descriptions import (
 )
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.people import PeopleFormatters
-from server.base import BaseToolErrorMixin
+from server.base import BaseToolErrorMixin, PersonIdParam
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
-from utils.validators import StrippedStr
 
 logger: Final = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler: TypeAlias = Callable[..., Awaitable[str]]
-
-
-class PersonIdParam(BaseModel):
-    """Parameters for tools that require a person ID."""
-
-    person_id: StrippedStr = Field(
-        ...,
-        min_length=1,
-        description=PERSON_ID_DESCRIPTION,
-    )
 
 
 async def _get_person_name(person_id: str) -> str:

@@ -2,10 +2,13 @@
 
 import logging
 import sys
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from typing import Final
 
 from mcp.server.fastmcp import FastMCP
+
+from client.pool import shutdown_clients
 
 # Import all module registration functions
 from .auth import register_auth_resources, register_auth_tools
@@ -51,13 +54,22 @@ REGISTRATIONS: Final[list[Callable[[FastMCP], object]]] = [
 ]
 
 
+@asynccontextmanager
+async def _lifespan(_mcp: FastMCP) -> AsyncIterator[None]:
+    """Close pooled HTTP clients when the server stops."""
+    try:
+        yield
+    finally:
+        await shutdown_clients()
+
+
 def create_server() -> FastMCP:
     """Create and configure the Trakt MCP server with all modules.
 
     Returns:
         Configured FastMCP server instance
     """
-    mcp = FastMCP(name="trakt-mcp-server")
+    mcp = FastMCP(name="trakt-mcp-server", lifespan=_lifespan)
     for register in REGISTRATIONS:
         register(mcp)
     logger.info("All Trakt MCP modules registered successfully")

@@ -21,21 +21,14 @@ from config.mcp.descriptions import (
 )
 from config.mcp.tools.progress import PROGRESS_TOOLS
 from models.formatters.progress import ProgressFormatters
-from server.base import BaseToolErrorMixin
+from server.base import BaseToolErrorMixin, ShowIdParam
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
-from utils.validators import StrippedStr
 
 logger = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
-
-
-class ShowIdParam(BaseModel):
-    """Parameters for tools that require a show ID."""
-
-    show_id: StrippedStr = Field(..., min_length=1, description=SHOW_ID_DESCRIPTION)
 
 
 class PlaybackIdParam(BaseModel):

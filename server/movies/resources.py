@@ -17,8 +17,7 @@ from client.pool import get_client
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.movies import MovieFormatters
-from server.base import BaseToolErrorMixin
-from server.movies.tools import MovieIdParam
+from server.base import BaseToolErrorMixin, MovieIdParam
 from utils.api.error_types import TraktValidationError
 from utils.api.errors import handle_api_errors_func
 
