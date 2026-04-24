@@ -12,7 +12,7 @@ from config.api import effective_limit
 from config.auth import AUTH_VERIFICATION_URL
 from config.mcp.descriptions import USER_LIMIT_DESCRIPTION
 from models.formatters.user import UserFormatters
-from server.base import BaseToolErrorMixin
+from server.base import ToolErrors
 from utils.api.error_types import AuthenticationRequiredError
 
 # Type aliases for user tools
@@ -47,7 +47,7 @@ def _validate_and_normalize_limit(value: int | None, *, operation: str) -> int:
             f"Invalid parameters for {operation.replace('_', ' ')}: "
             + "; ".join(field_messages)
         )
-        raise BaseToolErrorMixin.handle_validation_error(
+        raise ToolErrors.handle_validation_error(
             summary_message,
             validation_errors=validation_errors,
             operation=f"{operation}_validation",
@@ -88,7 +88,7 @@ async def _fetch_user_items(
         )
     items = await fetcher()
     if isinstance(items, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type=operation,
             resource_id="authenticated_user",
             error_message=items,
@@ -170,7 +170,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
             "Requires OAuth authentication."
         ),
     )
-    @BaseToolErrorMixin.with_error_handling(
+    @ToolErrors.with_error_handling(
         operation="fetch_user_watched_shows_tool",
         tool="fetch_user_watched_shows",
     )
@@ -196,7 +196,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
             "Requires OAuth authentication."
         ),
     )
-    @BaseToolErrorMixin.with_error_handling(
+    @ToolErrors.with_error_handling(
         operation="fetch_user_watched_movies_tool",
         tool="fetch_user_watched_movies",
     )

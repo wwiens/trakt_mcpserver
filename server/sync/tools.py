@@ -52,7 +52,7 @@ from models.sync.watchlist import (
 )
 from models.types.ids import TraktIds
 from models.types.pagination import PaginationParams
-from server.base import BaseToolErrorMixin, IdentifierValidatorMixin
+from server.base import IdentifierValidatorMixin, ToolErrors
 from utils.api.errors import MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
@@ -133,7 +133,7 @@ async def _batch_show_history_op(
             request = TraktHistoryRequest(shows=[item])
             result = await client_method(request)
             if isinstance(result, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
+                raise ToolErrors.handle_api_string_error(
                     resource_type="sync_history_show",
                     resource_id="unknown",
                     error_message=result,
@@ -152,7 +152,7 @@ async def _batch_show_history_op(
             request = TraktHistoryRequest(shows=[item])
             result = await client_method(request)
             if isinstance(result, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
+                raise ToolErrors.handle_api_string_error(
                     resource_type="sync_history_show",
                     resource_id=show_id,
                     error_message=result,
@@ -169,7 +169,7 @@ async def _batch_show_history_op(
             request = TraktHistoryRequest(shows=[item])
             result = await client_method(request)
             if isinstance(result, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
+                raise ToolErrors.handle_api_string_error(
                     resource_type="sync_history_show",
                     resource_id=show_id,
                     error_message=result,
@@ -192,7 +192,7 @@ async def _batch_show_history_op(
             try:
                 result = await client_method(request)
                 if isinstance(result, str):
-                    raise BaseToolErrorMixin.handle_api_string_error(
+                    raise ToolErrors.handle_api_string_error(
                         resource_type="sync_history_season",
                         resource_id=str(season_id),
                         error_message=result,
@@ -376,7 +376,7 @@ async def fetch_user_ratings(
 
         # Handle transitional case where API returns error strings
         if isinstance(paginated_result, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"user_{rating_type}_ratings",
                 resource_id=f"user_ratings_{rating_type}",
                 error_message=paginated_result,
@@ -438,7 +438,7 @@ async def add_user_ratings(
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"add_user_{rating_type}_ratings",
                 resource_id=f"add_ratings_{rating_type}",
                 error_message=summary,
@@ -498,7 +498,7 @@ async def remove_user_ratings(
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"remove_user_{rating_type}_ratings",
                 resource_id=f"remove_ratings_{rating_type}",
                 error_message=summary,
@@ -563,7 +563,7 @@ async def fetch_user_watchlist(
 
         # Handle transitional case where API returns error strings
         if isinstance(paginated_result, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"user_{watchlist_type}_watchlist",
                 resource_id=f"user_watchlist_{watchlist_type}",
                 error_message=paginated_result,
@@ -626,7 +626,7 @@ async def add_user_watchlist(
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"add_user_{watchlist_type}_watchlist",
                 resource_id=f"add_watchlist_{watchlist_type}",
                 error_message=summary,
@@ -686,7 +686,7 @@ async def remove_user_watchlist(
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"remove_user_{watchlist_type}_watchlist",
                 resource_id=f"remove_watchlist_{watchlist_type}",
                 error_message=summary,
@@ -779,7 +779,7 @@ async def fetch_history(
 
     # Handle transitional case where API returns error strings
     if isinstance(result, str):
-        error = BaseToolErrorMixin.handle_api_string_error(
+        error = ToolErrors.handle_api_string_error(
             resource_type="history",
             resource_id=params.item_id or "all",
             error_message=result,
@@ -836,7 +836,7 @@ async def add_to_history(
 
     # Handle transitional case where API returns error strings
     if isinstance(summary, str):
-        error = BaseToolErrorMixin.handle_api_string_error(
+        error = ToolErrors.handle_api_string_error(
             resource_type=f"add_history_{history_type}",
             resource_id=f"add_history_{history_type}",
             error_message=summary,
@@ -890,7 +890,7 @@ async def remove_from_history(
 
     # Handle transitional case where API returns error strings
     if isinstance(summary, str):
-        error = BaseToolErrorMixin.handle_api_string_error(
+        error = ToolErrors.handle_api_string_error(
             resource_type=f"remove_history_{history_type}",
             resource_id=f"remove_history_{history_type}",
             error_message=summary,

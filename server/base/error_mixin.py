@@ -175,7 +175,7 @@ def sanitize_kwargs(kwargs: dict[str, Any]) -> str:
     return str(sanitized)
 
 
-class BaseToolErrorMixin:
+class ToolErrors:
     """Mixin providing standardized error handling for MCP tools.
 
     This mixin ensures all tools follow consistent error handling patterns:

@@ -11,7 +11,7 @@ from client.auth import AuthClient
 from client.pool import get_client
 from config.auth import AUTH_VERIFICATION_URL
 from models.formatters.auth import AuthFormatters
-from server.base.error_mixin import BaseToolErrorMixin
+from server.base.error_mixin import ToolErrors
 from utils.api.error_types import AuthorizationPendingError
 from utils.api.errors import InternalError
 
@@ -51,7 +51,7 @@ async def start_device_auth() -> str:
 
     # Handle transitional case where API returns error strings
     if isinstance(device_code_response, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="device_code",
             resource_id="auth_flow",
             error_message=device_code_response,

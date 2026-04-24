@@ -20,7 +20,7 @@ from config.mcp.descriptions import (
     PERSON_ID_DESCRIPTION,
 )
 from models.formatters.people import PeopleFormatters
-from server.base import BaseToolErrorMixin, PersonIdParam
+from server.base import PersonIdParam, ToolErrors
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
 
@@ -84,7 +84,7 @@ async def fetch_person_summary(person_id: str, extended: bool = True) -> str:
         person = await client.get_person(params.person_id)
 
     if isinstance(person, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="person",
             resource_id=params.person_id,
             error_message=person,
@@ -114,7 +114,7 @@ async def fetch_person_movies(person_id: str) -> str:
     )
 
     if isinstance(movie_credits, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="person_movies",
             resource_id=params.person_id,
             error_message=movie_credits,
@@ -145,7 +145,7 @@ async def fetch_person_shows(person_id: str) -> str:
     )
 
     if isinstance(show_credits, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="person_shows",
             resource_id=params.person_id,
             error_message=show_credits,
@@ -184,7 +184,7 @@ async def fetch_person_lists(
     )
 
     if isinstance(lists, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="person_lists",
             resource_id=params.person_id,
             error_message=lists,

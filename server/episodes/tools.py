@@ -30,7 +30,7 @@ from config.mcp.descriptions import (
 from models.formatters.episodes import EpisodeFormatters
 from models.formatters.videos import VideoFormatters
 from models.types.language import validate_language
-from server.base import BaseToolErrorMixin, EpisodeIdParam
+from server.base import EpisodeIdParam, ToolErrors
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
 
@@ -99,7 +99,7 @@ async def fetch_episode_summary(show_id: str, season: int, episode: int) -> str:
     )
 
     if isinstance(episode_data, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="episode",
             resource_id=f"{params.show_id}/S{params.season:02d}E{params.episode:02d}",
             error_message=episode_data,
@@ -133,7 +133,7 @@ async def fetch_episode_ratings(show_id: str, season: int, episode: int) -> str:
     )
 
     if isinstance(ratings, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="episode_ratings",
             resource_id=f"{params.show_id}/S{params.season:02d}E{params.episode:02d}",
             error_message=ratings,
@@ -168,7 +168,7 @@ async def fetch_episode_stats(show_id: str, season: int, episode: int) -> str:
     )
 
     if isinstance(stats, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="episode_stats",
             resource_id=f"{params.show_id}/S{params.season:02d}E{params.episode:02d}",
             error_message=stats,
@@ -203,7 +203,7 @@ async def fetch_episode_people(show_id: str, season: int, episode: int) -> str:
     )
 
     if isinstance(people, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="episode_people",
             resource_id=f"{params.show_id}/S{params.season:02d}E{params.episode:02d}",
             error_message=people,
@@ -241,7 +241,7 @@ async def fetch_episode_videos(
     )
 
     if isinstance(videos, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="episode_videos",
             resource_id=f"{params.show_id}/S{params.season:02d}E{params.episode:02d}",
             error_message=videos,
@@ -278,7 +278,7 @@ async def fetch_episode_watching(show_id: str, season: int, episode: int) -> str
     )
 
     if isinstance(users, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="episode_watching",
             resource_id=f"{params.show_id}/S{params.season:02d}E{params.episode:02d}",
             error_message=users,
@@ -312,7 +312,7 @@ async def fetch_episode_translations(
     try:
         language = validate_language(language)
     except ValueError as err:
-        raise BaseToolErrorMixin.handle_validation_error(
+        raise ToolErrors.handle_validation_error(
             INVALID_LANGUAGE_MSG,
             parameter="language",
             provided_value=language,
@@ -327,7 +327,7 @@ async def fetch_episode_translations(
     )
 
     if isinstance(translations, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="episode_translations",
             resource_id=f"{params.show_id}/S{params.season:02d}E{params.episode:02d}",
             error_message=translations,
@@ -374,7 +374,7 @@ async def fetch_episode_lists(
     )
 
     if isinstance(lists, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="episode_lists",
             resource_id=f"{params.show_id}/S{params.season:02d}E{params.episode:02d}",
             error_message=lists,

@@ -30,7 +30,7 @@ from config.mcp.descriptions import (
 )
 from models.formatters.movies import MovieFormatters
 from models.formatters.videos import VideoFormatters
-from server.base import BaseToolErrorMixin, LimitOnly, MovieIdParam, PeriodParams
+from server.base import LimitOnly, MovieIdParam, PeriodParams, ToolErrors
 from utils.api.errors import MCPError, handle_api_errors_func
 from utils.api.request_context import set_tool_context
 
@@ -74,7 +74,7 @@ async def fetch_trending_movies(
     client = get_client(TrendingMoviesClient)
     movies = await client.get_trending_movies(limit=limit, page=page)
     if isinstance(movies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="trending_movies",
             resource_id="list",
             error_message=movies,
@@ -105,7 +105,7 @@ async def fetch_popular_movies(
     client = get_client(PopularMoviesClient)
     movies = await client.get_popular_movies(limit=limit, page=page)
     if isinstance(movies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="popular_movies",
             resource_id="list",
             error_message=movies,
@@ -140,7 +140,7 @@ async def fetch_favorited_movies(
     client = get_client(MovieStatsClient)
     movies = await client.get_favorited_movies(limit=limit, period=period, page=page)
     if isinstance(movies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="favorited_movies",
             resource_id="list",
             error_message=movies,
@@ -182,7 +182,7 @@ async def fetch_played_movies(
     client = get_client(MovieStatsClient)
     movies = await client.get_played_movies(limit=limit, period=period, page=page)
     if isinstance(movies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="played_movies",
             resource_id="list",
             error_message=movies,
@@ -216,7 +216,7 @@ async def fetch_watched_movies(
     client = get_client(MovieStatsClient)
     movies = await client.get_watched_movies(limit=limit, period=period, page=page)
     if isinstance(movies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="watched_movies",
             resource_id="list",
             error_message=movies,
@@ -247,7 +247,7 @@ async def fetch_anticipated_movies(
     client = get_client(AnticipatedMoviesClient)
     movies = await client.get_anticipated_movies(limit=limit, page=page)
     if isinstance(movies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="anticipated_movies",
             resource_id="list",
             error_message=movies,
@@ -268,7 +268,7 @@ async def fetch_boxoffice_movies() -> str:
     client = get_client(BoxOfficeMoviesClient)
     movies = await client.get_boxoffice_movies()
     if isinstance(movies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="boxoffice_movies",
             resource_id="weekend",
             error_message=movies,
@@ -303,7 +303,7 @@ async def fetch_movie_ratings(movie_id: str) -> str:
 
         # Handle transitional case where API returns error strings
         if isinstance(movie, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
+            raise ToolErrors.handle_api_string_error(
                 resource_type="movie",
                 resource_id=movie_id,
                 error_message=movie,
@@ -316,7 +316,7 @@ async def fetch_movie_ratings(movie_id: str) -> str:
 
         # Handle transitional case where API returns error strings
         if isinstance(ratings, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
+            raise ToolErrors.handle_api_string_error(
                 resource_type="movie_ratings",
                 resource_id=movie_id,
                 error_message=ratings,
@@ -360,7 +360,7 @@ async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
             movie = await client.get_movie_extended(movie_id)
             # Handle transitional case where API returns error strings
             if isinstance(movie, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
+                raise ToolErrors.handle_api_string_error(
                     resource_type="movie_extended",
                     resource_id=movie_id,
                     error_message=movie,
@@ -371,7 +371,7 @@ async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
             movie = await client.get_movie(movie_id)
             # Handle transitional case where API returns error strings
             if isinstance(movie, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
+                raise ToolErrors.handle_api_string_error(
                     resource_type="movie",
                     resource_id=movie_id,
                     error_message=movie,
@@ -404,7 +404,7 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
         videos = await client.get_videos(movie_id)
         # Transitional safeguard if client returns string errors
         if isinstance(videos, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
+            raise ToolErrors.handle_api_string_error(
                 resource_type="movie_videos",
                 resource_id=movie_id,
                 error_message=videos,
@@ -417,7 +417,7 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
 
             # Handle transitional case where API returns error strings
             if isinstance(movie, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
+                raise ToolErrors.handle_api_string_error(
                     resource_type="movie",
                     resource_id=movie_id,
                     error_message=movie,
@@ -474,7 +474,7 @@ async def fetch_related_movies(
         page=params.page,
     )
     if isinstance(movies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="related_movies",
             resource_id=id_params.movie_id,
             error_message=movies,
@@ -537,7 +537,7 @@ async def fetch_movie_people(movie_id: str) -> str:
     )
 
     if isinstance(people, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="movie_people",
             resource_id=params.movie_id,
             error_message=people,

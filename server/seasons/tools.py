@@ -30,7 +30,7 @@ from config.mcp.descriptions import (
 from models.formatters.seasons import SeasonFormatters
 from models.formatters.videos import VideoFormatters
 from models.types.language import validate_language
-from server.base import BaseToolErrorMixin, SeasonIdParam
+from server.base import SeasonIdParam, ToolErrors
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
 
@@ -101,7 +101,7 @@ async def fetch_season_info(show_id: str, season: int) -> str:
     )
 
     if isinstance(season_data, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="season",
             resource_id=f"{params.show_id}/S{params.season:02d}",
             error_message=season_data,
@@ -131,7 +131,7 @@ async def fetch_season_episodes(show_id: str, season: int) -> str:
     )
 
     if isinstance(episodes, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="season_episodes",
             resource_id=f"{params.show_id}/S{params.season:02d}",
             error_message=episodes,
@@ -162,7 +162,7 @@ async def fetch_season_ratings(show_id: str, season: int) -> str:
     )
 
     if isinstance(ratings, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="season_ratings",
             resource_id=f"{params.show_id}/S{params.season:02d}",
             error_message=ratings,
@@ -194,7 +194,7 @@ async def fetch_season_stats(show_id: str, season: int) -> str:
     )
 
     if isinstance(stats, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="season_stats",
             resource_id=f"{params.show_id}/S{params.season:02d}",
             error_message=stats,
@@ -226,7 +226,7 @@ async def fetch_season_people(show_id: str, season: int) -> str:
     )
 
     if isinstance(people, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="season_people",
             resource_id=f"{params.show_id}/S{params.season:02d}",
             error_message=people,
@@ -261,7 +261,7 @@ async def fetch_season_videos(
     )
 
     if isinstance(videos, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="season_videos",
             resource_id=f"{params.show_id}/S{params.season:02d}",
             error_message=videos,
@@ -295,7 +295,7 @@ async def fetch_season_watching(show_id: str, season: int) -> str:
     )
 
     if isinstance(users, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="season_watching",
             resource_id=f"{params.show_id}/S{params.season:02d}",
             error_message=users,
@@ -326,7 +326,7 @@ async def fetch_season_translations(
     try:
         language = validate_language(language)
     except ValueError as err:
-        raise BaseToolErrorMixin.handle_validation_error(
+        raise ToolErrors.handle_validation_error(
             INVALID_LANGUAGE_MSG,
             parameter="language",
             provided_value=language,
@@ -341,7 +341,7 @@ async def fetch_season_translations(
     )
 
     if isinstance(translations, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="season_translations",
             resource_id=f"{params.show_id}/S{params.season:02d}",
             error_message=translations,
@@ -384,7 +384,7 @@ async def fetch_season_lists(
     )
 
     if isinstance(lists, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="season_lists",
             resource_id=f"{params.show_id}/S{params.season:02d}",
             error_message=lists,

@@ -17,7 +17,7 @@ from client.pool import get_client
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.movies import MovieFormatters
-from server.base import BaseToolErrorMixin, MovieIdParam
+from server.base import MovieIdParam, ToolErrors
 from utils.api.error_types import TraktValidationError
 from utils.api.errors import handle_api_errors_func
 
@@ -123,7 +123,7 @@ async def get_boxoffice_movies() -> str:
     client: MoviesClient = get_client(MoviesClient)
     movies = await client.get_boxoffice_movies()
     if isinstance(movies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="boxoffice_movies",
             resource_id="weekend",
             error_message=movies,
@@ -178,7 +178,7 @@ async def get_movie_ratings(movie_id: str) -> str:
 
     # Handle transitional case where API returns error strings
     if isinstance(movie, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="movie",
             resource_id=movie_id,
             error_message=movie,
@@ -193,7 +193,7 @@ async def get_movie_ratings(movie_id: str) -> str:
 
     # Handle transitional case where API returns error strings
     if isinstance(ratings, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="movie_ratings",
             resource_id=movie_id,
             error_message=ratings,

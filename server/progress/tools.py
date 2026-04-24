@@ -20,7 +20,7 @@ from config.mcp.descriptions import (
     SHOW_PROGRESS_VERBOSE_DESCRIPTION,
 )
 from models.formatters.progress import ProgressFormatters
-from server.base import BaseToolErrorMixin, ShowIdParam
+from server.base import ShowIdParam, ToolErrors
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
 
@@ -80,7 +80,7 @@ async def fetch_show_progress(
 
     # Handle transitional case where API returns error strings
     if isinstance(result, str):
-        error = BaseToolErrorMixin.handle_api_string_error(
+        error = ToolErrors.handle_api_string_error(
             resource_type="show_progress",
             resource_id=show_id,
             error_message=result,
@@ -114,7 +114,7 @@ async def fetch_playback_progress(
 
     # Handle transitional case where API returns error strings
     if isinstance(result, str):
-        error = BaseToolErrorMixin.handle_api_string_error(
+        error = ToolErrors.handle_api_string_error(
             resource_type="playback_progress",
             resource_id=playback_type or "all",
             error_message=result,

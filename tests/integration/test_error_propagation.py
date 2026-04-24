@@ -531,11 +531,11 @@ class TestEdgeCasesAndErrorScenarios:
     @pytest.mark.asyncio
     async def test_missing_required_parameters_validation(self):
         """Test validation of missing required parameters."""
-        from server.base.error_mixin import BaseToolErrorMixin
+        from server.base.error_mixin import ToolErrors
 
         # Test the validation mixin directly
         with pytest.raises(InvalidParamsError) as exc_info:
-            BaseToolErrorMixin.validate_required_params(
+            ToolErrors.validate_required_params(
                 show_id=None,
                 movie_id="",
                 query="   ",  # Whitespace only
@@ -555,11 +555,11 @@ class TestEdgeCasesAndErrorScenarios:
     @pytest.mark.asyncio
     async def test_either_or_parameter_validation(self):
         """Test validation of either/or parameter requirements."""
-        from server.base.error_mixin import BaseToolErrorMixin
+        from server.base.error_mixin import ToolErrors
 
         # Test successful validation - one valid set provided
         try:
-            BaseToolErrorMixin.validate_either_or_params(
+            ToolErrors.validate_either_or_params(
                 [("show_id",), ("show_title", "show_year")],
                 show_id="breaking-bad",
                 show_title="",
@@ -572,7 +572,7 @@ class TestEdgeCasesAndErrorScenarios:
 
         # Test failed validation - no valid sets provided
         with pytest.raises(InvalidParamsError) as exc_info:
-            BaseToolErrorMixin.validate_either_or_params(
+            ToolErrors.validate_either_or_params(
                 [("show_id",), ("show_title", "show_year")],
                 show_id="",
                 show_title="",

@@ -18,7 +18,7 @@ from config.mcp.descriptions import (
     SHOW_ID_DESCRIPTION,
 )
 from models.formatters.recommendations import RecommendationFormatters
-from server.base import BaseToolErrorMixin
+from server.base import ToolErrors
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
 from utils.validators import StrippedStr
@@ -93,7 +93,7 @@ async def fetch_movie_recommendations(
 
     # Handle transitional case where API returns error strings
     if isinstance(recommendations, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="movie_recommendations",
             resource_id="recommendations",
             error_message=recommendations,
@@ -141,7 +141,7 @@ async def fetch_show_recommendations(
 
     # Handle transitional case where API returns error strings
     if isinstance(recommendations, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="show_recommendations",
             resource_id="recommendations",
             error_message=recommendations,

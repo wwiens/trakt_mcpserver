@@ -30,11 +30,11 @@ from models.formatters.comments import CommentsFormatters
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
 from server.base import (
-    BaseToolErrorMixin,
     CommentIdParam,
     LimitPageValidatorMixin,
     MovieIdParam,
     ShowIdParam,
+    ToolErrors,
 )
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
@@ -115,14 +115,14 @@ class RepliesListOptionsParam(LimitPageValidatorMixin):
 
 
 def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
-    """Handle validation errors with consistent formatting via BaseToolErrorMixin.
+    """Handle validation errors with consistent formatting via ToolErrors.
 
     Args:
         e: The ValidationError to handle
         context: Context string for the error message
 
     Raises:
-        BaseToolErrorMixin error: Formatted validation error via mixin
+        ToolErrors error: Formatted validation error via mixin
     """
     validation_errors: list[ValidationErrorDetail] = [
         ValidationErrorDetail(
@@ -134,7 +134,7 @@ def _handle_validation_error(e: ValidationError, context: str) -> NoReturn:
         for error in e.errors()
     ]
 
-    raise BaseToolErrorMixin.handle_validation_error(
+    raise ToolErrors.handle_validation_error(
         f"Invalid parameters for {context}",
         validation_errors=validation_errors,
         operation=f"{context.replace(' ', '_')}_validation",
@@ -153,10 +153,10 @@ def _ensure_not_error_string(
         operation: Operation being performed for error context
 
     Raises:
-        BaseToolErrorMixin error: If value is an error string
+        ToolErrors error: If value is an error string
     """
     if isinstance(value, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type=resource_type,
             resource_id=resource_id,
             error_message=value,
@@ -187,7 +187,7 @@ async def _fetch_and_format_comments(
         Formatted comments as markdown string
 
     Raises:
-        BaseToolErrorMixin error: If API response is an error string
+        ToolErrors error: If API response is an error string
     """
     data = await fetch_fn()
     _ensure_not_error_string(
@@ -218,11 +218,11 @@ async def _fetch_and_format_comment(
         Formatted comment as markdown string
 
     Raises:
-        BaseToolErrorMixin error: If API response is an error string
+        ToolErrors error: If API response is an error string
     """
     data = await fetch_fn()
     if isinstance(data, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type=resource_type,
             resource_id=resource_id,
             error_message=data,
@@ -544,7 +544,7 @@ async def fetch_comment_replies(
     # Fetch comment data
     comment = await client.get_comment(comment_id)
     if isinstance(comment, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="comment",
             resource_id=comment_id,
             error_message=comment,
