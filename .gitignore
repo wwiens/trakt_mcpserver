@@ -55,6 +55,7 @@ coverage.xml
 # MCP specific
 logs/
 *.log
+.playwright-mcp/
 
 # Distribution / packaging
 .Python
