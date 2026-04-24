@@ -2,7 +2,4 @@
 
 from typing import Final
 
-# Check-in MCP Tool Names
-CHECKIN_TOOLS: Final[dict[str, str]] = {
-    "checkin_to_show": "checkin_to_show",
-}
+CHECKIN_TOOLS: Final[frozenset[str]] = frozenset({"checkin_to_show"})

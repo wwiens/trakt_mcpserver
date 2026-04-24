@@ -14,7 +14,6 @@ from config.mcp.descriptions import (
     SEARCH_LIMIT_DESCRIPTION,
     SEARCH_QUERY_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.search import SearchFormatters
 from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
 from utils.api.errors import MCPError, handle_api_errors_func
@@ -192,7 +191,7 @@ def register_search_tools(
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["search_shows"],
+        name="search_shows",
         description="Search for TV shows on Trakt by title",
     )
     async def search_shows_tool(
@@ -208,7 +207,7 @@ def register_search_tools(
         return await search_shows(query, limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["search_movies"],
+        name="search_movies",
         description="Search for movies on Trakt by title",
     )
     async def search_movies_tool(

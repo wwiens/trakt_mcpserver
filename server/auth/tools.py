@@ -10,7 +10,6 @@ from mcp.server.fastmcp import FastMCP
 from client.auth import AuthClient
 from client.pool import get_client
 from config.auth import AUTH_VERIFICATION_URL
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.auth import AuthFormatters
 from server.base.error_mixin import BaseToolErrorMixin
 from utils.api.error_types import AuthorizationPendingError
@@ -210,21 +209,21 @@ def register_auth_tools(mcp: FastMCP) -> tuple[Any, Any, Any]:
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["start_device_auth"],
+        name="start_device_auth",
         description="Start the device authentication flow with Trakt TV",
     )
     async def start_device_auth_tool() -> str:
         return await start_device_auth()
 
     @mcp.tool(
-        name=TOOL_NAMES["check_auth_status"],
+        name="check_auth_status",
         description="Check the status of an ongoing device authentication flow",
     )
     async def check_auth_status_tool() -> str:
         return await check_auth_status()
 
     @mcp.tool(
-        name=TOOL_NAMES["clear_auth"],
+        name="clear_auth",
         description="Clear the authentication token and log out of Trakt",
     )
     async def clear_auth_tool() -> str:

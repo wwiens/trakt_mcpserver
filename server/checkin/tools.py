@@ -13,7 +13,6 @@ from config.mcp.descriptions import (
     SEASON_DESCRIPTION,
     SHOW_ID_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.checkin import CheckinFormatters
 from server.base import BaseToolErrorMixin
 
@@ -122,7 +121,7 @@ def register_checkin_tools(mcp: FastMCP) -> Any:
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["checkin_to_show"],
+        name="checkin_to_show",
         description="Check in to a TV show episode you're currently watching on Trakt",
     )
     async def checkin_to_show_tool(

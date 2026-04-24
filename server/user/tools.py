@@ -11,7 +11,6 @@ from client.user.client import UserClient
 from config.api import effective_limit
 from config.auth import AUTH_VERIFICATION_URL
 from config.mcp.descriptions import USER_LIMIT_DESCRIPTION
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.user import UserFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.error_types import AuthenticationRequiredError
@@ -159,7 +158,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_user_watched_shows"],
+        name="fetch_user_watched_shows",
         description=(
             "Fetch list of TV shows the user has watched, "
             "sorted by most recently watched. "
@@ -173,7 +172,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
     )
     @BaseToolErrorMixin.with_error_handling(
         operation="fetch_user_watched_shows_tool",
-        tool=TOOL_NAMES["fetch_user_watched_shows"],
+        tool="fetch_user_watched_shows",
     )
     async def fetch_user_watched_shows_tool(
         limit: Annotated[
@@ -185,7 +184,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
         return await fetch_user_watched_shows(limit)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_user_watched_movies"],
+        name="fetch_user_watched_movies",
         description=(
             "Fetch list of movies the user has watched, "
             "sorted by most recently watched. "
@@ -199,7 +198,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
     )
     @BaseToolErrorMixin.with_error_handling(
         operation="fetch_user_watched_movies_tool",
-        tool=TOOL_NAMES["fetch_user_watched_movies"],
+        tool="fetch_user_watched_movies",
     )
     async def fetch_user_watched_movies_tool(
         limit: Annotated[

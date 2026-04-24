@@ -28,7 +28,6 @@ from config.mcp.descriptions import (
     PERIOD_DESCRIPTION,
     SHOW_ID_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.shows import ShowFormatters
 from models.formatters.videos import VideoFormatters
 from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams, ShowIdParam
@@ -569,7 +568,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_trending_shows"],
+        name="fetch_trending_shows",
         description=(
             "Fetch trending TV shows from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -582,7 +581,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_trending_shows(limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_popular_shows"],
+        name="fetch_popular_shows",
         description=(
             "Fetch popular TV shows from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -595,7 +594,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_popular_shows(limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_favorited_shows"],
+        name="fetch_favorited_shows",
         description=(
             "Fetch most favorited TV shows from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -612,7 +611,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_favorited_shows(limit, period, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_played_shows"],
+        name="fetch_played_shows",
         description=(
             "Fetch most played TV shows from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -629,7 +628,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_played_shows(limit, period, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_watched_shows"],
+        name="fetch_watched_shows",
         description=(
             "Fetch most watched TV shows from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -646,7 +645,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_watched_shows(limit, period, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_anticipated_shows"],
+        name="fetch_anticipated_shows",
         description=(
             "Fetch most anticipated TV shows from Trakt, sorted by list count. "
             "Use page parameter for paginated results, or omit for all results."
@@ -659,7 +658,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_anticipated_shows(limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_ratings"],
+        name="fetch_show_ratings",
         description="Fetch ratings and voting statistics for a specific TV show",
     )
     async def fetch_show_ratings_tool(
@@ -670,7 +669,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_show_ratings(params.show_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_summary"],
+        name="fetch_show_summary",
         description=(
             "Get TV show summary from Trakt. "
             "Default behavior (extended=true): Returns comprehensive data including "
@@ -688,7 +687,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_show_summary(params.show_id, params.extended)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_videos"],
+        name="fetch_show_videos",
         description=(
             "Get videos (trailers, teasers, etc.) for a show from Trakt. "
             "Set embed_markdown=False to return simple links instead of "
@@ -708,7 +707,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_show_videos(params.show_id, params.embed_markdown)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_related_shows"],
+        name="fetch_related_shows",
         description=(
             "Fetch TV shows related to a specific show. Returns similar shows "
             "based on genres, themes, and viewer patterns. "
@@ -723,7 +722,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_related_shows(show_id, limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_seasons"],
+        name="fetch_show_seasons",
         description=(
             "Fetch all seasons for a TV show from Trakt, including episode counts, "
             "aired episodes, and ratings per season."
@@ -735,7 +734,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_show_seasons(show_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_people"],
+        name="fetch_show_people",
         description=(
             "Get cast and crew for a TV show from Trakt. "
             "Set include_guest_stars=true to also return guest stars "

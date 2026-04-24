@@ -17,7 +17,6 @@ from config.mcp.descriptions import (
     RECOMMENDATIONS_LIMIT_DESCRIPTION,
     SHOW_ID_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.recommendations import RecommendationFormatters
 from server.base import BaseToolErrorMixin
 from utils.api.errors import handle_api_errors_func
@@ -252,7 +251,7 @@ def register_recommendation_tools(
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_movie_recommendations"],
+        name="fetch_movie_recommendations",
         description=(
             "Fetch personalized movie recommendations from Trakt based on your "
             "viewing history. Requires OAuth authentication. Use limit parameter "
@@ -278,7 +277,7 @@ def register_recommendation_tools(
         )
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_recommendations"],
+        name="fetch_show_recommendations",
         description=(
             "Fetch personalized TV show recommendations from Trakt based on your "
             "viewing history. Requires OAuth authentication. Use limit parameter "
@@ -303,7 +302,7 @@ def register_recommendation_tools(
         )
 
     @mcp.tool(
-        name=TOOL_NAMES["hide_movie_recommendation"],
+        name="hide_movie_recommendation",
         description=(
             "Hide a movie from future recommendations. Requires OAuth authentication. "
             "Use Trakt ID, slug, or IMDB ID to identify the movie."
@@ -316,7 +315,7 @@ def register_recommendation_tools(
         return await hide_movie_recommendation(movie_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["hide_show_recommendation"],
+        name="hide_show_recommendation",
         description=(
             "Hide a TV show from future recommendations. "
             "Requires OAuth authentication. "
@@ -330,7 +329,7 @@ def register_recommendation_tools(
         return await hide_show_recommendation(show_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["unhide_movie_recommendation"],
+        name="unhide_movie_recommendation",
         description=(
             "Unhide a movie to restore it in future recommendations. "
             "Requires OAuth authentication. "
@@ -344,7 +343,7 @@ def register_recommendation_tools(
         return await unhide_movie_recommendation(movie_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["unhide_show_recommendation"],
+        name="unhide_show_recommendation",
         description=(
             "Unhide a TV show to restore it in future recommendations. "
             "Requires OAuth authentication. "

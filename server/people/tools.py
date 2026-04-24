@@ -19,7 +19,6 @@ from config.mcp.descriptions import (
     LIST_TYPE_DESCRIPTION,
     PERSON_ID_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.people import PeopleFormatters
 from server.base import BaseToolErrorMixin, PersonIdParam
 from utils.api.errors import handle_api_errors_func
@@ -206,7 +205,7 @@ def register_people_tools(
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_person_summary"],
+        name="fetch_person_summary",
         description=(
             "Get person details from Trakt. "
             "Default (extended=true): full biographical data including "
@@ -224,7 +223,7 @@ def register_people_tools(
         return await fetch_person_summary(person_id, extended)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_person_movies"],
+        name="fetch_person_movies",
         description=(
             "Get all movie credits for a person from Trakt. "
             "Returns cast roles and crew positions grouped by "
@@ -240,7 +239,7 @@ def register_people_tools(
         return await fetch_person_movies(person_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_person_shows"],
+        name="fetch_person_shows",
         description=(
             "Get all show credits for a person from Trakt. "
             "Returns cast roles with episode counts and crew "
@@ -256,7 +255,7 @@ def register_people_tools(
         return await fetch_person_shows(person_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_person_lists"],
+        name="fetch_person_lists",
         description=(
             "Get lists containing a specific person from Trakt. "
             "Returns personal or official lists sorted by "

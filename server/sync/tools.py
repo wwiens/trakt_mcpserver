@@ -32,7 +32,6 @@ from config.mcp.descriptions import (
     WATCHLIST_TYPE_DESCRIPTION,
     WATCHLIST_TYPE_REQUIRED_DESCRIPTION,
 )
-from config.mcp.tools.sync import SYNC_TOOLS
 from models.formatters.sync_history import SyncHistoryFormatters
 from models.formatters.sync_ratings import SyncRatingsFormatters
 from models.formatters.sync_watchlist import SyncWatchlistFormatters
@@ -924,7 +923,7 @@ def register_sync_tools(
     """
 
     @mcp.tool(
-        name=SYNC_TOOLS["fetch_user_ratings"],
+        name="fetch_user_ratings",
         description=(
             "Fetch the authenticated user's personal ratings from Trakt. "
             "Supports optional pagination with 'page' parameter. "
@@ -950,7 +949,7 @@ def register_sync_tools(
         return await fetch_user_ratings(params.rating_type, params.rating, params.page)
 
     @mcp.tool(
-        name=SYNC_TOOLS["add_user_ratings"],
+        name="add_user_ratings",
         description=(
             "Add new ratings for the authenticated user. Requires OAuth authentication."
         ),
@@ -971,7 +970,7 @@ def register_sync_tools(
         return await add_user_ratings(rating_type, items)
 
     @mcp.tool(
-        name=SYNC_TOOLS["remove_user_ratings"],
+        name="remove_user_ratings",
         description=(
             "Remove ratings for the authenticated user. Requires OAuth authentication."
         ),
@@ -992,7 +991,7 @@ def register_sync_tools(
         return await remove_user_ratings(rating_type, items)
 
     @mcp.tool(
-        name=SYNC_TOOLS["fetch_user_watchlist"],
+        name="fetch_user_watchlist",
         description=(
             "Fetch the authenticated user's watchlist from Trakt. "
             "Supports optional pagination with 'page' parameter and sorting options. "
@@ -1026,7 +1025,7 @@ def register_sync_tools(
         )
 
     @mcp.tool(
-        name=SYNC_TOOLS["add_user_watchlist"],
+        name="add_user_watchlist",
         description=(
             "Add items to the authenticated user's watchlist. "
             "Supports optional notes (VIP only, 500 character limit). "
@@ -1049,7 +1048,7 @@ def register_sync_tools(
         return await add_user_watchlist(watchlist_type, items)
 
     @mcp.tool(
-        name=SYNC_TOOLS["remove_user_watchlist"],
+        name="remove_user_watchlist",
         description=(
             "Remove items from the authenticated user's watchlist. "
             "Requires OAuth authentication."
@@ -1071,7 +1070,7 @@ def register_sync_tools(
         return await remove_user_watchlist(watchlist_type, items)
 
     @mcp.tool(
-        name=SYNC_TOOLS["fetch_history"],
+        name="fetch_history",
         description=(
             "Check if a movie or show has been watched, or browse watch history. "
             "For 'Have I seen [movie]?': provide history_type='movies' and item_id. "
@@ -1105,7 +1104,7 @@ def register_sync_tools(
         return await fetch_history(history_type, item_id, start_at, end_at, page)
 
     @mcp.tool(
-        name=SYNC_TOOLS["add_to_history"],
+        name="add_to_history",
         description=(
             "Add items to watch history. Marks movies, shows, seasons, or episodes "
             "as watched. Optionally specify when they were watched. "
@@ -1125,7 +1124,7 @@ def register_sync_tools(
         return await add_to_history(history_type, items)
 
     @mcp.tool(
-        name=SYNC_TOOLS["remove_from_history"],
+        name="remove_from_history",
         description=(
             "Remove items from watch history. Removes movies, shows, seasons, "
             "or episodes from your watched history. "

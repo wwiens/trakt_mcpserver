@@ -26,7 +26,6 @@ from config.mcp.descriptions import (
     SHOW_ID_DESCRIPTION,
     SHOW_SPOILERS_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.comments import CommentsFormatters
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
@@ -591,7 +590,7 @@ def register_comment_tools(
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_movie_comments"],
+        name="fetch_movie_comments",
         description=(
             "Fetch comments for a specific movie from Trakt. "
             "Supports optional pagination with 'page' parameter and "
@@ -619,7 +618,7 @@ def register_comment_tools(
         )
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_comments"],
+        name="fetch_show_comments",
         description=(
             "Fetch comments for a specific TV show from Trakt. "
             "Supports optional pagination with 'page' parameter and "
@@ -647,7 +646,7 @@ def register_comment_tools(
         )
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_season_comments"],
+        name="fetch_season_comments",
         description=(
             "Fetch comments for a specific TV show season from Trakt. "
             "Supports optional pagination with 'page' parameter and "
@@ -676,7 +675,7 @@ def register_comment_tools(
         )
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_episode_comments"],
+        name="fetch_episode_comments",
         description=(
             "Fetch comments for a specific TV show episode from Trakt. "
             "Supports optional pagination with 'page' parameter and "
@@ -706,7 +705,7 @@ def register_comment_tools(
         )
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_comment"],
+        name="fetch_comment",
         description="Fetch a specific comment from Trakt",
     )
     async def fetch_comment_tool(
@@ -720,7 +719,7 @@ def register_comment_tools(
         return await fetch_comment(comment_id, show_spoilers)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_comment_replies"],
+        name="fetch_comment_replies",
         description=(
             "Fetch replies for a specific comment from Trakt. "
             "Supports optional pagination with 'page' parameter and "

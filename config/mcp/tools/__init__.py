@@ -1,5 +1,7 @@
 """MCP tools organized by domain."""
 
+from typing import Final
+
 from .auth import AUTH_TOOLS
 from .checkin import CHECKIN_TOOLS
 from .comments import COMMENT_TOOLS
@@ -14,22 +16,21 @@ from .shows import SHOW_TOOLS
 from .sync import SYNC_TOOLS
 from .user import USER_TOOLS
 
-# Combine all tools for backward compatibility
-TOOL_NAMES = {
-    **SHOW_TOOLS,
-    **MOVIE_TOOLS,
-    **PEOPLE_TOOLS,
-    **AUTH_TOOLS,
-    **USER_TOOLS,
-    **CHECKIN_TOOLS,
-    **COMMENT_TOOLS,
-    **EPISODE_TOOLS,
-    **PROGRESS_TOOLS,
-    **RECOMMENDATIONS_TOOLS,
-    **SEARCH_TOOLS,
-    **SEASON_TOOLS,
-    **SYNC_TOOLS,
-}
+TOOL_NAMES: Final[frozenset[str]] = (
+    SHOW_TOOLS
+    | MOVIE_TOOLS
+    | PEOPLE_TOOLS
+    | AUTH_TOOLS
+    | USER_TOOLS
+    | CHECKIN_TOOLS
+    | COMMENT_TOOLS
+    | EPISODE_TOOLS
+    | PROGRESS_TOOLS
+    | RECOMMENDATIONS_TOOLS
+    | SEARCH_TOOLS
+    | SEASON_TOOLS
+    | SYNC_TOOLS
+)
 
 __all__ = [
     "AUTH_TOOLS",

@@ -19,7 +19,6 @@ from config.mcp.descriptions import (
     SHOW_PROGRESS_SPECIALS_DESCRIPTION,
     SHOW_PROGRESS_VERBOSE_DESCRIPTION,
 )
-from config.mcp.tools.progress import PROGRESS_TOOLS
 from models.formatters.progress import ProgressFormatters
 from server.base import BaseToolErrorMixin, ShowIdParam
 from utils.api.errors import handle_api_errors_func
@@ -161,7 +160,7 @@ def register_progress_tools(
     """
 
     @mcp.tool(
-        name=PROGRESS_TOOLS["fetch_show_progress"],
+        name="fetch_show_progress",
         description=(
             "Check if a user has watched a specific TV show and their progress "
             "through it. "
@@ -197,7 +196,7 @@ def register_progress_tools(
         )
 
     @mcp.tool(
-        name=PROGRESS_TOOLS["fetch_playback_progress"],
+        name="fetch_playback_progress",
         description=(
             "Fetch paused playback progress items. Shows movies and episodes "
             "that were paused during playback with their progress percentage. "
@@ -213,7 +212,7 @@ def register_progress_tools(
         return await fetch_playback_progress(playback_type)
 
     @mcp.tool(
-        name=PROGRESS_TOOLS["remove_playback_item"],
+        name="remove_playback_item",
         description=(
             "Remove a paused playback progress item. Use the ID from "
             "fetch_playback_progress results. Requires OAuth authentication."

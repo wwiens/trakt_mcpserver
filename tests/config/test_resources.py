@@ -184,11 +184,11 @@ class TestResourceUriFormats:
 
 
 class TestToolNames:
-    """Test TOOL_NAMES dictionary structure and contents."""
+    """Test TOOL_NAMES frozenset structure and contents."""
 
-    def test_tool_names_is_dict(self) -> None:
-        """Test TOOL_NAMES is a dictionary."""
-        assert isinstance(TOOL_NAMES, dict)
+    def test_tool_names_is_frozenset(self) -> None:
+        """Test TOOL_NAMES is a non-empty frozenset."""
+        assert isinstance(TOOL_NAMES, frozenset)
         assert len(TOOL_NAMES) > 0
 
     def test_show_tools_exist(self) -> None:
@@ -202,7 +202,6 @@ class TestToolNames:
         ]
         for tool in show_tools:
             assert tool in TOOL_NAMES
-            assert isinstance(TOOL_NAMES[tool], str)
 
     def test_movie_tools_exist(self) -> None:
         """Test movie-related tools are present."""
@@ -215,7 +214,6 @@ class TestToolNames:
         ]
         for tool in movie_tools:
             assert tool in TOOL_NAMES
-            assert isinstance(TOOL_NAMES[tool], str)
 
     def test_auth_tools_exist(self) -> None:
         """Test authentication tools are present."""
@@ -226,7 +224,6 @@ class TestToolNames:
         ]
         for tool in auth_tools:
             assert tool in TOOL_NAMES
-            assert isinstance(TOOL_NAMES[tool], str)
 
     def test_user_tools_exist(self) -> None:
         """Test user-specific tools are present."""
@@ -237,7 +234,6 @@ class TestToolNames:
         ]
         for tool in user_tools:
             assert tool in TOOL_NAMES
-            assert isinstance(TOOL_NAMES[tool], str)
 
     def test_comment_tools_exist(self) -> None:
         """Test comment tools are present."""
@@ -251,7 +247,6 @@ class TestToolNames:
         ]
         for tool in comment_tools:
             assert tool in TOOL_NAMES
-            assert isinstance(TOOL_NAMES[tool], str)
 
     def test_rating_tools_exist(self) -> None:
         """Test rating tools are present."""
@@ -261,7 +256,6 @@ class TestToolNames:
         ]
         for tool in rating_tools:
             assert tool in TOOL_NAMES
-            assert isinstance(TOOL_NAMES[tool], str)
 
     def test_search_tools_exist(self) -> None:
         """Test search tools are present."""
@@ -271,16 +265,10 @@ class TestToolNames:
         ]
         for tool in search_tools:
             assert tool in TOOL_NAMES
-            assert isinstance(TOOL_NAMES[tool], str)
 
 
 class TestToolNamingConsistency:
     """Test tool naming consistency and conventions."""
-
-    def test_tool_names_match_keys(self) -> None:
-        """Test tool names match their dictionary keys."""
-        for key, value in TOOL_NAMES.items():
-            assert key == value, f"Tool name key {key} should match value {value}"
 
     def test_tool_naming_conventions(self) -> None:
         """Test tool names follow consistent naming conventions."""
@@ -336,12 +324,6 @@ class TestResourcesIntegration:
         # Most URIs should be unique (some aliases may exist)
         assert len(unique_uris) >= len(uris) * 0.9  # At least 90% should be unique
 
-    def test_no_duplicate_tool_names(self) -> None:
-        """Test there are no duplicate tool names."""
-        tool_names = list(TOOL_NAMES.values())
-        unique_names = set(tool_names)
-        assert len(unique_names) == len(tool_names), "All tool names should be unique"
-
     def test_resource_tool_correlation(self) -> None:
         """Test that resources and tools have logical correlation."""
         # For each show resource, there should be a corresponding tool
@@ -363,25 +345,21 @@ class TestResourcesIntegration:
             "Should have tools for most movie resources"
         )
 
-    def test_all_values_are_strings(self) -> None:
-        """Test all resource URIs and tool names are strings."""
+    def test_resources_all_values_are_strings(self) -> None:
+        """Test all resource URIs are non-empty strings."""
         for key, value in MCP_RESOURCES.items():
             assert isinstance(value, str), (
                 f"Resource {key} URI should be string, got {type(value)}"
             )
-
-        for key, value in TOOL_NAMES.items():
-            assert isinstance(value, str), (
-                f"Tool {key} name should be string, got {type(value)}"
-            )
-
-    def test_no_empty_values(self) -> None:
-        """Test no resource URIs or tool names are empty."""
-        for key, value in MCP_RESOURCES.items():
             assert value, f"Resource {key} URI should not be empty"
 
-        for key, value in TOOL_NAMES.items():
-            assert value, f"Tool {key} name should not be empty"
+    def test_tool_names_all_non_empty_strings(self) -> None:
+        """Test all tool names are non-empty strings."""
+        for tool_name in TOOL_NAMES:
+            assert isinstance(tool_name, str), (
+                f"Tool name should be string, got {type(tool_name)}"
+            )
+            assert tool_name, "Tool name should not be empty"
 
     def test_mcp_config_matches_domain_modules(self) -> None:
         """Test that MCP configs from main config match domain-specific modules."""
@@ -400,6 +378,5 @@ class TestResourcesIntegration:
             assert key in MCP_RESOURCES, f"Resource {key} missing from main config"
             assert MCP_RESOURCES[key] == value, f"Resource {key} value mismatch"
 
-        for key, value in TOOL_NAMES_DOMAIN.items():
-            assert key in TOOL_NAMES, f"Tool {key} missing from main config"
-            assert TOOL_NAMES[key] == value, f"Tool {key} value mismatch"
+        for tool in TOOL_NAMES_DOMAIN:
+            assert tool in TOOL_NAMES, f"Tool {tool} missing from main config"

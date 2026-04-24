@@ -27,7 +27,6 @@ from config.mcp.descriptions import (
     SEASON_DESCRIPTION,
     SHOW_ID_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.seasons import SeasonFormatters
 from models.formatters.videos import VideoFormatters
 from models.types.language import validate_language
@@ -404,7 +403,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_season_info"],
+        name="fetch_season_info",
         description=(
             "Fetch detailed information about a specific TV show season, "
             "including episode count, ratings, and air dates."
@@ -417,7 +416,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_season_info(show_id, season)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_season_episodes"],
+        name="fetch_season_episodes",
         description=(
             "Fetch all episodes for a specific TV show season "
             "with titles, ratings, and runtime."
@@ -430,7 +429,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_season_episodes(show_id, season)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_season_ratings"],
+        name="fetch_season_ratings",
         description=(
             "Fetch ratings and voting statistics for a specific TV show season."
         ),
@@ -442,7 +441,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_season_ratings(show_id, season)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_season_stats"],
+        name="fetch_season_stats",
         description=(
             "Fetch engagement statistics for a specific TV show season "
             "including watchers, plays, collectors, and comments."
@@ -455,7 +454,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_season_stats(show_id, season)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_season_people"],
+        name="fetch_season_people",
         description=(
             "Fetch cast and crew for a specific TV show season, "
             "including character names and episode counts."
@@ -468,7 +467,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_season_people(show_id, season)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_season_videos"],
+        name="fetch_season_videos",
         description=(
             "Fetch videos (trailers, recaps, etc.) for a specific TV show season. "
             "Set embed_markdown=False for simple links."
@@ -485,7 +484,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_season_videos(show_id, season, embed_markdown)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_season_watching"],
+        name="fetch_season_watching",
         description=(
             "Fetch users currently watching a specific TV show season right now."
         ),
@@ -497,7 +496,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_season_watching(show_id, season)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_season_translations"],
+        name="fetch_season_translations",
         description=(
             "Fetch translations for a specific TV show season in different languages."
         ),
@@ -510,7 +509,7 @@ def register_season_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_season_translations(show_id, season, language)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_season_lists"],
+        name="fetch_season_lists",
         description="Fetch lists that contain a specific TV show season.",
     )
     async def fetch_season_lists_tool(

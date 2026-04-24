@@ -28,7 +28,6 @@ from config.mcp.descriptions import (
     PAGE_DESCRIPTION,
     PERIOD_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.movies import MovieFormatters
 from models.formatters.videos import VideoFormatters
 from server.base import BaseToolErrorMixin, LimitOnly, MovieIdParam, PeriodParams
@@ -557,7 +556,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_trending_movies"],
+        name="fetch_trending_movies",
         description=(
             "Fetch trending movies from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -570,7 +569,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_trending_movies(limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_popular_movies"],
+        name="fetch_popular_movies",
         description=(
             "Fetch popular movies from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -583,7 +582,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_popular_movies(limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_favorited_movies"],
+        name="fetch_favorited_movies",
         description=(
             "Fetch most favorited movies from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -600,7 +599,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_favorited_movies(limit, period, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_played_movies"],
+        name="fetch_played_movies",
         description=(
             "Fetch most played movies from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -617,7 +616,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_played_movies(limit, period, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_watched_movies"],
+        name="fetch_watched_movies",
         description=(
             "Fetch most watched movies from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -634,7 +633,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_watched_movies(limit, period, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_anticipated_movies"],
+        name="fetch_anticipated_movies",
         description=(
             "Fetch most anticipated movies from Trakt, sorted by list count. "
             "Use page parameter for paginated results, or omit for all results."
@@ -647,7 +646,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_anticipated_movies(limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_boxoffice_movies"],
+        name="fetch_boxoffice_movies",
         description=(
             "Fetch the top 10 grossing movies in the U.S. box office last weekend. "
             "Updated every Monday morning."
@@ -657,7 +656,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_boxoffice_movies()
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_movie_ratings"],
+        name="fetch_movie_ratings",
         description="Fetch ratings and voting statistics for a specific movie",
     )
     async def fetch_movie_ratings_tool(
@@ -668,7 +667,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_movie_ratings(params.movie_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_movie_summary"],
+        name="fetch_movie_summary",
         description=(
             "Get movie summary from Trakt. "
             "Default behavior (extended=true): Returns comprehensive data including "
@@ -685,7 +684,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_movie_summary(params.movie_id, params.extended)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_movie_videos"],
+        name="fetch_movie_videos",
         description=(
             "Get videos (trailers, teasers, etc.) for a movie from Trakt. "
             "Set embed_markdown=False to return simple links instead of "
@@ -705,7 +704,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_movie_videos(params.movie_id, params.embed_markdown)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_related_movies"],
+        name="fetch_related_movies",
         description=(
             "Fetch movies related to a specific movie. Returns similar movies "
             "based on genres, themes, and viewer patterns. "
@@ -720,7 +719,7 @@ def register_movie_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_related_movies(movie_id, limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_movie_people"],
+        name="fetch_movie_people",
         description=(
             "Get cast and crew for a movie from Trakt. "
             "Returns cast with character names and crew "
