@@ -87,11 +87,9 @@ class TestErrorPropagationThroughStack:
         """Test 400 Bad Request error propagation from Client to Tool to MCP."""
         # Set up request context
         context = (
-            RequestContext()
+            RequestContext(parameters={"query": "test"})
             .with_endpoint("/shows/search", "GET")
             .with_resource("show", "test-show")
-            .with_parameters(query="test")
-            .with_user("test_user")
         )
         set_current_context(context)
 
@@ -373,11 +371,9 @@ class TestErrorContextPreservation:
         """Test that full request context is preserved in error responses."""
         # Set up comprehensive context
         context = (
-            RequestContext()
+            RequestContext(parameters={"limit": 10, "extended": "full"})
             .with_endpoint("/shows/breaking-bad/ratings", "GET")
             .with_resource("show", "breaking-bad")
-            .with_parameters(limit=10, extended="full")
-            .with_user("test_user_123")
         )
         set_current_context(context)
 
@@ -421,7 +417,7 @@ class TestErrorContextPreservation:
     )
     async def test_parameter_context_in_validation_errors(self):
         """Test that parameter context is preserved in validation errors."""
-        context = RequestContext().with_parameters(show_id="", season=0, episode=-1)
+        context = RequestContext(parameters={"show_id": "", "season": 0, "episode": -1})
         set_current_context(context)
 
         # Test parameter validation error

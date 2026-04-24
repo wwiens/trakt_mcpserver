@@ -26,7 +26,6 @@ class RequestContext:
     method: str | None = None
     resource_type: str | None = None
     resource_id: str | None = None
-    user_id: str | None = None
     parameters: dict[str, Any] = field(default_factory=lambda: {})
     start_time: float = field(default_factory=time.time)
 
@@ -53,30 +52,6 @@ class RequestContext:
             New RequestContext with resource information
         """
         return replace(self, resource_type=resource_type, resource_id=resource_id)
-
-    def with_parameters(self, **params: Any) -> RequestContext:
-        """Create a new context with additional parameters.
-
-        Args:
-            **params: Additional parameters to add to context
-
-        Returns:
-            New RequestContext with merged parameters
-        """
-        new_params = self.parameters.copy()
-        new_params.update(params)
-        return replace(self, parameters=new_params)
-
-    def with_user(self, user_id: str) -> RequestContext:
-        """Create a new context with user information.
-
-        Args:
-            user_id: ID of the authenticated user
-
-        Returns:
-            New RequestContext with user information
-        """
-        return replace(self, user_id=user_id)
 
     def elapsed_time(self) -> float:
         """Get elapsed time since request started."""
