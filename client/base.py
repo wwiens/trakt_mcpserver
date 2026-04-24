@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, TypeVar, overload
 
 import httpx
 
@@ -22,6 +22,13 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
+class PydanticModel(Protocol):
+    """Protocol for Pydantic models."""
+
+    @classmethod
+    def model_validate(cls, obj: Any) -> Any: ...
+
+
 def _is_dict_response(result: Any) -> TypeGuard[dict[str, Any]]:
     """Type guard for dict responses."""
     return isinstance(result, dict)
@@ -37,7 +44,7 @@ def _is_list_response(result: Any) -> TypeGuard[list[dict[str, Any]]]:
     return _is_list(result) and all(isinstance(item, dict) for item in result)
 
 
-def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[Any]]:
+def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
     """Type guard for Pydantic models."""
     return hasattr(cls, "model_validate") and hasattr(cls, "__annotations__")
 
