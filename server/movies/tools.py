@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field
 
 from client.movies.anticipated import AnticipatedMoviesClient
 from client.movies.boxoffice import BoxOfficeMoviesClient
@@ -18,6 +18,7 @@ from client.movies.popular import PopularMoviesClient
 from client.movies.related import RelatedMoviesClient
 from client.movies.stats import MovieStatsClient
 from client.movies.trending import TrendingMoviesClient
+from client.pool import get_client
 from config.api import DEFAULT_LIMIT
 from config.mcp.descriptions import (
     EMBED_MARKDOWN_DESCRIPTION,
@@ -30,7 +31,7 @@ from config.mcp.descriptions import (
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.movies import MovieFormatters
 from models.formatters.videos import VideoFormatters
-from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams
+from server.base import BaseToolErrorMixin, LimitOnly, MovieIdParam, PeriodParams
 from utils.api.errors import MCPError, handle_api_errors_func
 from utils.api.request_context import set_tool_context
 
@@ -38,21 +39,6 @@ logger = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
-
-
-class MovieIdParam(BaseModel):
-    """Parameters for tools that require a movie ID."""
-
-    movie_id: str = Field(
-        ...,
-        min_length=1,
-        description=MOVIE_ID_DESCRIPTION,
-    )
-
-    @field_validator("movie_id", mode="before")
-    @classmethod
-    def _strip_movie_id(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
 
 
 class MovieSummaryParams(MovieIdParam):
@@ -86,8 +72,15 @@ async def fetch_trending_movies(
     params = LimitOnly(limit=limit, page=page)
     limit, page = params.limit, params.page
 
-    client = TrendingMoviesClient()
+    client = get_client(TrendingMoviesClient)
     movies = await client.get_trending_movies(limit=limit, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="trending_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_trending_movies",
+        )
     return MovieFormatters.format_trending_movies(movies)
 
 
@@ -110,8 +103,15 @@ async def fetch_popular_movies(
     params = LimitOnly(limit=limit, page=page)
     limit, page = params.limit, params.page
 
-    client = PopularMoviesClient()
+    client = get_client(PopularMoviesClient)
     movies = await client.get_popular_movies(limit=limit, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="popular_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_popular_movies",
+        )
     return MovieFormatters.format_popular_movies(movies)
 
 
@@ -138,8 +138,15 @@ async def fetch_favorited_movies(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    client = MovieStatsClient()
+    client = get_client(MovieStatsClient)
     movies = await client.get_favorited_movies(limit=limit, period=period, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="favorited_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_favorited_movies",
+        )
 
     # Trace structure in debug only (only for list responses to avoid pagination object)
     if movies and isinstance(movies, list):
@@ -173,8 +180,15 @@ async def fetch_played_movies(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    client = MovieStatsClient()
+    client = get_client(MovieStatsClient)
     movies = await client.get_played_movies(limit=limit, period=period, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="played_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_played_movies",
+        )
     return MovieFormatters.format_played_movies(movies)
 
 
@@ -200,8 +214,15 @@ async def fetch_watched_movies(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    client = MovieStatsClient()
+    client = get_client(MovieStatsClient)
     movies = await client.get_watched_movies(limit=limit, period=period, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="watched_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_watched_movies",
+        )
     return MovieFormatters.format_watched_movies(movies)
 
 
@@ -224,8 +245,15 @@ async def fetch_anticipated_movies(
     params = LimitOnly(limit=limit, page=page)
     limit, page = params.limit, params.page
 
-    client = AnticipatedMoviesClient()
+    client = get_client(AnticipatedMoviesClient)
     movies = await client.get_anticipated_movies(limit=limit, page=page)
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="anticipated_movies",
+            resource_id="list",
+            error_message=movies,
+            operation="fetch_anticipated_movies",
+        )
     return MovieFormatters.format_anticipated_movies(movies)
 
 
@@ -238,7 +266,7 @@ async def fetch_boxoffice_movies() -> str:
     Returns:
         Information about box office movies with revenue.
     """
-    client = BoxOfficeMoviesClient()
+    client = get_client(BoxOfficeMoviesClient)
     movies = await client.get_boxoffice_movies()
     if isinstance(movies, str):
         raise BaseToolErrorMixin.handle_api_string_error(
@@ -271,7 +299,7 @@ async def fetch_movie_ratings(movie_id: str) -> str:
     set_tool_context("movie", movie_id)
 
     try:
-        client = MovieDetailsClient()
+        client = get_client(MovieDetailsClient)
         movie = await client.get_movie(movie_id)
 
         # Handle transitional case where API returns error strings
@@ -328,7 +356,7 @@ async def fetch_movie_summary(movie_id: str, extended: bool = True) -> str:
     set_tool_context("movie", movie_id)
 
     try:
-        client = MovieDetailsClient()
+        client = get_client(MovieDetailsClient)
         if extended:
             movie = await client.get_movie_extended(movie_id)
             # Handle transitional case where API returns error strings
@@ -373,7 +401,7 @@ async def fetch_movie_videos(movie_id: str, embed_markdown: bool = True) -> str:
     set_tool_context("movie", movie_id)
 
     try:
-        client: MoviesClient = MoviesClient()  # Use unified client
+        client: MoviesClient = get_client(MoviesClient)
         videos = await client.get_videos(movie_id)
         # Transitional safeguard if client returns string errors
         if isinstance(videos, str):
@@ -440,12 +468,19 @@ async def fetch_related_movies(
     params = LimitOnly(limit=limit, page=page)
     set_tool_context("movie", id_params.movie_id)
 
-    client = RelatedMoviesClient()
+    client = get_client(RelatedMoviesClient)
     movies = await client.get_related_movies(
         movie_id=id_params.movie_id,
         limit=params.limit,
         page=params.page,
     )
+    if isinstance(movies, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="related_movies",
+            resource_id=id_params.movie_id,
+            error_message=movies,
+            operation="fetch_related_movies",
+        )
 
     return MovieFormatters.format_related_movies(movies)
 
@@ -463,7 +498,7 @@ async def _get_movie_title(movie_id: str) -> str:
         Movie title string, or fallback on failure
     """
     try:
-        client = MovieDetailsClient()
+        client = get_client(MovieDetailsClient)
         movie_data = await client.get_movie(movie_id)
 
         if isinstance(movie_data, str):
@@ -496,7 +531,7 @@ async def fetch_movie_people(movie_id: str) -> str:
     params = MovieIdParam(movie_id=movie_id)
     set_tool_context("movie", params.movie_id)
 
-    people_client = MoviePeopleClient()
+    people_client = get_client(MoviePeopleClient)
     movie_title, people = await asyncio.gather(
         _get_movie_title(params.movie_id),
         people_client.get_movie_people(params.movie_id),

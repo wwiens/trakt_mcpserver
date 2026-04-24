@@ -2,6 +2,7 @@
 
 from client.endpoints import build_endpoint
 from client.validation import validate_media_id
+from config.endpoints import EndpointKey
 
 
 def validate_person_id(person_id: str) -> str:
@@ -10,7 +11,7 @@ def validate_person_id(person_id: str) -> str:
 
 
 def build_person_endpoint(
-    endpoint_key: str,
+    endpoint_key: EndpointKey,
     person_id: str,
     **replacements: str,
 ) -> str:

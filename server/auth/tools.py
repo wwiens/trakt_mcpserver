@@ -8,6 +8,7 @@ from typing import Any, TypedDict
 from mcp.server.fastmcp import FastMCP
 
 from client.auth import AuthClient
+from client.pool import get_client
 from config.auth import AUTH_VERIFICATION_URL
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.auth import AuthFormatters
@@ -40,7 +41,7 @@ async def start_device_auth() -> str:
     Returns:
         Authentication instructions for the user
     """
-    client = AuthClient()
+    client = get_client(AuthClient)
 
     # Check if already authenticated
     if client.is_authenticated():
@@ -70,7 +71,11 @@ async def start_device_auth() -> str:
     async with auth_flow_lock:
         active_auth_flow = auth_state
 
-    logger.info(f"Started device auth flow: {auth_state}")
+    logger.info(
+        "Started device auth flow (expires_at=%s, interval=%s)",
+        auth_state["expires_at"],
+        auth_state["interval"],
+    )
 
     # Return instructions for the user
     user_code = device_code_response.user_code
@@ -95,7 +100,7 @@ async def check_auth_status() -> str:
     Returns:
         Status of the authentication process
     """
-    client = AuthClient()
+    client = get_client(AuthClient)
 
     # Check if already authenticated
     if client.is_authenticated():
@@ -180,7 +185,7 @@ async def clear_auth() -> str:
     Returns:
         Status message about the logout
     """
-    client = AuthClient()
+    client = get_client(AuthClient)
 
     # Clear any active authentication flow
     global active_auth_flow

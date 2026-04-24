@@ -2,7 +2,7 @@
 
 from typing import overload
 
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types.api_responses import AnticipatedShowWrapper
 from models.types.pagination import PaginatedResponse
@@ -51,22 +51,10 @@ class AnticipatedShowsClient(BaseClient):
             If page is None: List of up to 'limit' anticipated shows
             If page specified: Paginated response with metadata for that page
         """
-        if page is None:
-            eff = effective_limit(limit)
-            return await self.auto_paginate(
-                TRAKT_ENDPOINTS["shows_anticipated"],
-                response_type=AnticipatedShowWrapper,
-                params={"limit": eff.api_limit},
-                max_pages=max_pages,
-                max_items=eff.max_items,
-            )
-        else:
-            # Single page with metadata
-            if page < 1:
-                raise ValueError(f"page must be >= 1, got {page}")
-            eff = effective_limit(limit)
-            return await self._make_paginated_request(
-                TRAKT_ENDPOINTS["shows_anticipated"],
-                response_type=AnticipatedShowWrapper,
-                params={"page": page, "limit": eff.api_limit},
-            )
+        return await self._fetch_paginated(
+            TRAKT_ENDPOINTS["shows_anticipated"],
+            response_type=AnticipatedShowWrapper,
+            page=page,
+            limit=limit,
+            max_pages=max_pages,
+        )

@@ -2,6 +2,7 @@
 
 from client.endpoints import build_endpoint
 from client.validation import validate_media_id
+from config.endpoints import EndpointKey
 
 
 def validate_show_id(show_id: str) -> str:
@@ -10,7 +11,7 @@ def validate_show_id(show_id: str) -> str:
 
 
 def build_season_endpoint(
-    endpoint_key: str,
+    endpoint_key: EndpointKey,
     show_id: str,
     season: int,
     **replacements: str,

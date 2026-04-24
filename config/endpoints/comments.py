@@ -1,9 +1,11 @@
 """Comment endpoints."""
 
+from collections.abc import Mapping
 from typing import Final
 
-COMMENTS_ENDPOINTS: Final[dict[str, str]] = {
-    # Comment endpoints
+from .keys import EndpointKey
+
+COMMENTS_ENDPOINTS: Final[Mapping[EndpointKey, str]] = {
     "comments_movie": "/movies/:id/comments/:sort",
     "comments_show": "/shows/:id/comments/:sort",
     "comments_season": "/shows/:id/seasons/:season/comments/:sort",

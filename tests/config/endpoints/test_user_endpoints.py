@@ -1,6 +1,11 @@
 """Tests for user endpoints module."""
 
+from typing import TYPE_CHECKING
+
 from config.endpoints.user import USER_ENDPOINTS
+
+if TYPE_CHECKING:
+    from config.endpoints import EndpointKey
 
 
 class TestUserEndpoints:
@@ -13,7 +18,7 @@ class TestUserEndpoints:
 
     def test_user_endpoints_exist(self) -> None:
         """Test user endpoints are present."""
-        user_endpoints = [
+        user_endpoints: list[EndpointKey] = [
             "user_watched_shows",
             "user_watched_movies",
         ]

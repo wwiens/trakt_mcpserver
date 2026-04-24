@@ -1,6 +1,11 @@
 """Tests for auth endpoints module."""
 
+from typing import TYPE_CHECKING
+
 from config.endpoints.auth import AUTH_ENDPOINTS
+
+if TYPE_CHECKING:
+    from config.endpoints import EndpointKey
 
 
 class TestAuthEndpoints:
@@ -13,7 +18,7 @@ class TestAuthEndpoints:
 
     def test_auth_endpoints_exist(self) -> None:
         """Test authentication endpoints are present."""
-        auth_endpoints = ["device_code", "device_token", "revoke"]
+        auth_endpoints: list[EndpointKey] = ["device_code", "device_token", "revoke"]
         for endpoint in auth_endpoints:
             assert endpoint in AUTH_ENDPOINTS
             assert isinstance(AUTH_ENDPOINTS[endpoint], str)

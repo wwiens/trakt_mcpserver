@@ -6,12 +6,13 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Final, Literal, TypeAlias
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field
 
 from client.people.lists import PersonListsClient
 from client.people.movies import PersonMoviesClient
 from client.people.shows import PersonShowsClient
 from client.people.summary import PersonSummaryClient
+from client.pool import get_client
 from config.mcp.descriptions import (
     EXTENDED_DESCRIPTION,
     LIST_SORT_DESCRIPTION,
@@ -20,7 +21,7 @@ from config.mcp.descriptions import (
 )
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.people import PeopleFormatters
-from server.base import BaseToolErrorMixin
+from server.base import BaseToolErrorMixin, PersonIdParam
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
 
@@ -28,21 +29,6 @@ logger: Final = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler: TypeAlias = Callable[..., Awaitable[str]]
-
-
-class PersonIdParam(BaseModel):
-    """Parameters for tools that require a person ID."""
-
-    person_id: str = Field(
-        ...,
-        min_length=1,
-        description=PERSON_ID_DESCRIPTION,
-    )
-
-    @field_validator("person_id", mode="before")
-    @classmethod
-    def _strip_person_id(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
 
 
 async def _get_person_name(person_id: str) -> str:
@@ -58,7 +44,7 @@ async def _get_person_name(person_id: str) -> str:
         Person name string, or fallback on failure
     """
     try:
-        client = PersonSummaryClient()
+        client = get_client(PersonSummaryClient)
         person_data = await client.get_person(person_id)
 
         if isinstance(person_data, str):
@@ -92,7 +78,7 @@ async def fetch_person_summary(person_id: str, extended: bool = True) -> str:
     params = PersonIdParam(person_id=person_id)
     set_tool_context("person", params.person_id)
 
-    client = PersonSummaryClient()
+    client = get_client(PersonSummaryClient)
     if extended:
         person = await client.get_person_extended(params.person_id)
     else:
@@ -122,7 +108,7 @@ async def fetch_person_movies(person_id: str) -> str:
     params = PersonIdParam(person_id=person_id)
     set_tool_context("person", params.person_id)
 
-    movies_client = PersonMoviesClient()
+    movies_client = get_client(PersonMoviesClient)
     person_name, movie_credits = await asyncio.gather(
         _get_person_name(params.person_id),
         movies_client.get_person_movies(params.person_id),
@@ -153,7 +139,7 @@ async def fetch_person_shows(person_id: str) -> str:
     params = PersonIdParam(person_id=person_id)
     set_tool_context("person", params.person_id)
 
-    shows_client = PersonShowsClient()
+    shows_client = get_client(PersonShowsClient)
     person_name, show_credits = await asyncio.gather(
         _get_person_name(params.person_id),
         shows_client.get_person_shows(params.person_id),
@@ -192,7 +178,7 @@ async def fetch_person_lists(
     params = PersonIdParam(person_id=person_id)
     set_tool_context("person", params.person_id)
 
-    lists_client = PersonListsClient()
+    lists_client = get_client(PersonListsClient)
     person_name, lists = await asyncio.gather(
         _get_person_name(params.person_id),
         lists_client.get_person_lists(params.person_id, list_type=list_type, sort=sort),

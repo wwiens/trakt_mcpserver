@@ -3,7 +3,9 @@
 from collections.abc import Mapping
 from typing import Final
 
-PROGRESS_ENDPOINTS: Final[Mapping[str, str]] = {
+from .keys import EndpointKey
+
+PROGRESS_ENDPOINTS: Final[Mapping[EndpointKey, str]] = {
     "show_progress_watched": "/shows/:id/progress/watched",
     "sync_playback": "/sync/playback",
     "sync_playback_type": "/sync/playback/:type",

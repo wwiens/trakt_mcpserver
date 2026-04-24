@@ -1,6 +1,11 @@
 """Tests for comments endpoints module."""
 
+from typing import TYPE_CHECKING
+
 from config.endpoints.comments import COMMENTS_ENDPOINTS
+
+if TYPE_CHECKING:
+    from config.endpoints import EndpointKey
 
 
 class TestCommentsEndpoints:
@@ -13,7 +18,7 @@ class TestCommentsEndpoints:
 
     def test_comment_endpoints_exist(self) -> None:
         """Test comment-related endpoints are present."""
-        comment_endpoints = [
+        comment_endpoints: list[EndpointKey] = [
             "comments_movie",
             "comments_show",
             "comments_season",
@@ -43,7 +48,7 @@ class TestCommentsEndpoints:
 
     def test_parameterized_endpoints_contain_placeholders(self) -> None:
         """Test parameterized endpoints contain proper placeholders."""
-        parameterized_endpoints = {
+        parameterized_endpoints: dict[EndpointKey, list[str]] = {
             "comments_movie": [":id", ":sort"],
             "comments_show": [":id", ":sort"],
             "comments_season": [":id", ":season", ":sort"],

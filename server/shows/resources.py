@@ -12,12 +12,12 @@ if TYPE_CHECKING:
     from models.types import ShowResponse
 from pydantic import ValidationError
 
+from client.pool import get_client
 from client.shows.client import ShowsClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.shows import ShowFormatters
-from server.base import BaseToolErrorMixin
-from server.shows.tools import ShowIdParam
+from server.base import BaseToolErrorMixin, ShowIdParam
 from utils.api.error_types import TraktValidationError
 from utils.api.errors import handle_api_errors_func
 
@@ -36,8 +36,15 @@ async def get_trending_shows() -> str:
     Returns:
         Formatted markdown text with trending shows
     """
-    client: ShowsClient = ShowsClient()
+    client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_trending_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="trending_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_trending_shows",
+        )
     return ShowFormatters.format_trending_shows(shows)
 
 
@@ -50,8 +57,15 @@ async def get_popular_shows() -> str:
     Returns:
         Formatted markdown text with popular shows
     """
-    client: ShowsClient = ShowsClient()
+    client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_popular_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="popular_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_popular_shows",
+        )
     return ShowFormatters.format_popular_shows(shows)
 
 
@@ -64,8 +78,15 @@ async def get_favorited_shows() -> str:
     Returns:
         Formatted markdown text with most favorited shows
     """
-    client: ShowsClient = ShowsClient()
+    client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_favorited_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="favorited_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_favorited_shows",
+        )
 
     # Debug log for API response structure analysis
     if shows:
@@ -91,8 +112,15 @@ async def get_played_shows() -> str:
     Returns:
         Formatted markdown text with most played shows
     """
-    client: ShowsClient = ShowsClient()
+    client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_played_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="played_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_played_shows",
+        )
     return ShowFormatters.format_played_shows(shows)
 
 
@@ -106,8 +134,15 @@ async def get_watched_shows() -> str:
     Returns:
         Formatted markdown text with most watched shows
     """
-    client: ShowsClient = ShowsClient()
+    client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_watched_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="watched_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_watched_shows",
+        )
     return ShowFormatters.format_watched_shows(shows)
 
 
@@ -120,8 +155,15 @@ async def get_anticipated_shows() -> str:
     Returns:
         Formatted markdown text with anticipated shows
     """
-    client: ShowsClient = ShowsClient()
+    client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_anticipated_shows(limit=DEFAULT_LIMIT)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="anticipated_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="get_anticipated_shows",
+        )
     return ShowFormatters.format_anticipated_shows(shows)
 
 
@@ -139,7 +181,7 @@ async def get_show_ratings(show_id: str) -> str:
         InvalidParamsError: If show_id is invalid
         InternalError: If an error occurs fetching show or ratings data
     """
-    client: ShowsClient = ShowsClient()
+    client: ShowsClient = get_client(ShowsClient)
 
     # Validate parameters with Pydantic for normalization and constraints
     try:

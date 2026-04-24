@@ -7,6 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 
 from client.checkin.client import CheckinClient
+from client.pool import get_client
 from config.mcp.descriptions import (
     EPISODE_DESCRIPTION,
     SEASON_DESCRIPTION,
@@ -56,7 +57,7 @@ async def checkin_to_show(
         InvalidParamsError: If required parameters are missing or invalid
         InternalError: If an unexpected error occurs
     """
-    client = CheckinClient()
+    client = get_client(CheckinClient)
 
     # Check authentication (attempts token refresh if expired)
     if not await client.ensure_authenticated():

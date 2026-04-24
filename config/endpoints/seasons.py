@@ -1,8 +1,11 @@
 """Season endpoints."""
 
+from collections.abc import Mapping
 from typing import Final
 
-SEASONS_ENDPOINTS: Final[dict[str, str]] = {
+from .keys import EndpointKey
+
+SEASONS_ENDPOINTS: Final[Mapping[EndpointKey, str]] = {
     "season_info": "/shows/:id/seasons/:season/info",
     "season_episodes": "/shows/:id/seasons/:season",
     "season_ratings": "/shows/:id/seasons/:season/ratings",

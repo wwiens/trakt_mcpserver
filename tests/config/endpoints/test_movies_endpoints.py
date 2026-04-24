@@ -1,6 +1,11 @@
 """Tests for movies endpoints module."""
 
+from typing import TYPE_CHECKING
+
 from config.endpoints.movies import MOVIES_ENDPOINTS
+
+if TYPE_CHECKING:
+    from config.endpoints import EndpointKey
 
 
 class TestMoviesEndpoints:
@@ -13,7 +18,7 @@ class TestMoviesEndpoints:
 
     def test_movie_endpoints_exist(self) -> None:
         """Test movie-related endpoints are present."""
-        movie_endpoints = [
+        movie_endpoints: list[EndpointKey] = [
             "movies_trending",
             "movies_popular",
             "movies_favorited",
@@ -36,9 +41,9 @@ class TestMoviesEndpoints:
         """Test movie endpoint URL formats."""
         assert MOVIES_ENDPOINTS["movies_trending"] == "/movies/trending"
         assert MOVIES_ENDPOINTS["movies_popular"] == "/movies/popular"
-        assert MOVIES_ENDPOINTS["movies_favorited"] == "/movies/favorited"
-        assert MOVIES_ENDPOINTS["movies_played"] == "/movies/played"
-        assert MOVIES_ENDPOINTS["movies_watched"] == "/movies/watched"
+        assert MOVIES_ENDPOINTS["movies_favorited"] == "/movies/favorited/:period"
+        assert MOVIES_ENDPOINTS["movies_played"] == "/movies/played/:period"
+        assert MOVIES_ENDPOINTS["movies_watched"] == "/movies/watched/:period"
         assert MOVIES_ENDPOINTS["movies_anticipated"] == "/movies/anticipated"
 
     def test_rating_endpoint_format(self) -> None:

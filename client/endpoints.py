@@ -2,10 +2,10 @@
 
 from urllib.parse import quote
 
-from config.endpoints import TRAKT_ENDPOINTS
+from config.endpoints import TRAKT_ENDPOINTS, EndpointKey
 
 
-def build_endpoint(endpoint_key: str, **replacements: str | int) -> str:
+def build_endpoint(endpoint_key: EndpointKey, **replacements: str | int) -> str:
     """Build an API endpoint URL from a template with placeholder substitution.
 
     Looks up the endpoint template in TRAKT_ENDPOINTS, then replaces ``:placeholder``

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, TypeVar, overload
 
 import httpx
 
-from config.api import DEFAULT_MAX_PAGES
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 from utils.api.errors import handle_api_errors
 from utils.api.request_context import (
@@ -80,6 +80,8 @@ class BaseClient:
 
         self.auth_token: TraktAuthToken | None = None
         self._client: httpx.AsyncClient | None = None
+        self._persistent: bool = False
+        self._owns_client: bool = True
 
     def _update_headers_with_token(self):
         """Update headers with authentication token."""
@@ -87,10 +89,16 @@ class BaseClient:
             self.headers["Authorization"] = f"Bearer {self.auth_token.access_token}"
 
     async def __aenter__(self) -> BaseClient:
-        """Enter async context and initialize shared client."""
-        self._client = httpx.AsyncClient(
-            base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT
-        )
+        """Enter async context and initialize shared client.
+
+        If pooling was already enabled (``_client`` is already assigned by
+        ``enable_pooling``), reuse that client instead of replacing it — otherwise
+        the pooled reference would be silently overwritten and leaked.
+        """
+        if self._client is None:
+            self._client = httpx.AsyncClient(
+                base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT
+            )
         return self
 
     async def __aexit__(
@@ -100,20 +108,47 @@ class BaseClient:
         exc_tb: object,
     ) -> None:
         """Exit async context and close shared client."""
-        if self._client:
+        await self.aclose()
+
+    def enable_pooling(self) -> None:
+        """Opt this instance into the process-wide ``httpx.AsyncClient`` pool.
+
+        Assigns the shared ``httpx.AsyncClient`` (lazily created by
+        ``client.pool``) to this instance. ``aclose()`` becomes a no-op for
+        pooled instances; the shared client is closed only by
+        ``client.pool.shutdown_clients()``.
+        """
+        # Local import avoids circular dependency (pool imports base).
+        from .pool import get_or_create_shared_http
+
+        self._persistent = True
+        self._owns_client = False
+        self._client = get_or_create_shared_http()
+
+    async def aclose(self) -> None:
+        """Close the ``httpx.AsyncClient`` if this instance owns it.
+
+        No-op for pooled instances; the shared client is closed by
+        ``client.pool.shutdown_clients()``.
+        """
+        if self._client is not None and self._owns_client:
             await self._client.aclose()
             self._client = None
 
     def _get_client(self) -> httpx.AsyncClient:
         """Get or create shared HTTP client.
 
-        Returns existing client if available, otherwise creates temporary client
-        for backward compatibility with non-context-manager usage.
+        Returns existing client if available, otherwise creates a client.
+        When ``self._persistent`` is True (pooled instances), the new client
+        is stored for reuse across requests. Otherwise it is returned
+        ephemerally and closed by the caller.
         """
         if self._client:
             return self._client
-        # Fallback for non-context-manager usage (backward compatibility)
-        return httpx.AsyncClient(base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT)
+        client = httpx.AsyncClient(base_url=self.BASE_URL, timeout=self.REQUEST_TIMEOUT)
+        if self._persistent:
+            self._client = client
+        return client
 
     def _extract_pagination_headers(
         self, response: httpx.Response
@@ -462,6 +497,54 @@ class BaseClient:
         finally:
             if should_close:
                 await client.aclose()
+
+    async def _fetch_paginated(
+        self,
+        endpoint: str,
+        *,
+        response_type: type[T],
+        params: dict[str, Any] | None = None,
+        page: int | None = None,
+        limit: int = DEFAULT_LIMIT,
+        max_pages: int = DEFAULT_MAX_PAGES,
+    ) -> list[T] | PaginatedResponse[T]:
+        """Fetch a paginated endpoint with validation and auto-dispatch.
+
+        When `page` is None, auto-paginates and returns a list. When `page` is
+        a positive integer, returns a single PaginatedResponse. The api_limit
+        and max_items are computed from `limit` via effective_limit().
+
+        Args:
+            endpoint: API endpoint
+            response_type: Type for individual items
+            params: Extra query params merged into the request (e.g. period, query);
+                do not include 'limit' or 'page' here.
+            page: None for auto-pagination, or an integer >= 1 for a single page.
+            limit: User-facing limit (0 = fetch all; otherwise max total items).
+            max_pages: Safety cap for auto-pagination loops.
+
+        Raises:
+            ValueError: If `page` is provided and < 1.
+        """
+        base_params = params or {}
+        eff = effective_limit(limit)
+
+        if page is None:
+            return await self.auto_paginate(
+                endpoint,
+                response_type=response_type,
+                params={**base_params, "limit": eff.api_limit},
+                max_pages=max_pages,
+                max_items=eff.max_items,
+            )
+
+        if page < 1:
+            raise ValueError(f"page must be >= 1, got {page}")
+        return await self._make_paginated_request(
+            endpoint,
+            response_type=response_type,
+            params={**base_params, "page": page, "limit": eff.api_limit},
+        )
 
     async def auto_paginate(
         self,

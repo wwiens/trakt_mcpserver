@@ -1,13 +1,14 @@
 """Playback progress client for Trakt API."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, BeforeValidator, Field
 
 from config.endpoints.progress import PROGRESS_ENDPOINTS
 from models.progress.playback import PlaybackProgressResponse
 from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
+from utils.validators import strip_if_string
 
 from ..auth import AuthClient
 
@@ -15,13 +16,9 @@ from ..auth import AuthClient
 class PlaybackTypeParam(BaseModel):
     """Parameters for playback type filtering."""
 
-    playback_type: Literal["movies", "episodes"] | None = None
-
-    @field_validator("playback_type", mode="before")
-    @classmethod
-    def _strip_type(cls, v: object) -> object:
-        """Strip whitespace if string."""
-        return v.strip() if isinstance(v, str) else v
+    playback_type: Annotated[
+        Literal["movies", "episodes"] | None, BeforeValidator(strip_if_string)
+    ] = None
 
 
 class PlaybackIdParam(BaseModel):

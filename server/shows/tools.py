@@ -7,8 +7,9 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field
 
+from client.pool import get_client
 from client.shows.anticipated import AnticipatedShowsClient
 from client.shows.client import ShowsClient
 from client.shows.details import ShowDetailsClient
@@ -30,7 +31,7 @@ from config.mcp.descriptions import (
 from config.mcp.tools import TOOL_NAMES
 from models.formatters.shows import ShowFormatters
 from models.formatters.videos import VideoFormatters
-from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams
+from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams, ShowIdParam
 from utils.api.errors import MCPError, handle_api_errors_func
 from utils.api.request_context import set_tool_context
 
@@ -38,21 +39,6 @@ logger = logging.getLogger("trakt_mcp")
 
 # Type alias for tool handlers
 ToolHandler = Callable[..., Awaitable[str]]
-
-
-class ShowIdParam(BaseModel):
-    """Parameters for tools that require a show ID."""
-
-    show_id: str = Field(
-        ...,
-        min_length=1,
-        description=SHOW_ID_DESCRIPTION,
-    )
-
-    @field_validator("show_id", mode="before")
-    @classmethod
-    def _strip_show_id(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
 
 
 class ShowSummaryParams(ShowIdParam):
@@ -86,8 +72,15 @@ async def fetch_trending_shows(
     params = LimitOnly(limit=limit, page=page)
     limit, page = params.limit, params.page
 
-    client = TrendingShowsClient()
+    client = get_client(TrendingShowsClient)
     shows = await client.get_trending_shows(limit=limit, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="trending_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_trending_shows",
+        )
     return ShowFormatters.format_trending_shows(shows)
 
 
@@ -110,8 +103,15 @@ async def fetch_popular_shows(
     params = LimitOnly(limit=limit, page=page)
     limit, page = params.limit, params.page
 
-    client = PopularShowsClient()
+    client = get_client(PopularShowsClient)
     shows = await client.get_popular_shows(limit=limit, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="popular_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_popular_shows",
+        )
     return ShowFormatters.format_popular_shows(shows)
 
 
@@ -138,8 +138,15 @@ async def fetch_favorited_shows(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    client = ShowStatsClient()
+    client = get_client(ShowStatsClient)
     shows = await client.get_favorited_shows(limit=limit, period=period, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="favorited_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_favorited_shows",
+        )
 
     if logger.isEnabledFor(logging.DEBUG) and shows and isinstance(shows, list):
         logger.debug(
@@ -172,8 +179,15 @@ async def fetch_played_shows(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    client = ShowStatsClient()
+    client = get_client(ShowStatsClient)
     shows = await client.get_played_shows(limit=limit, period=period, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="played_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_played_shows",
+        )
     return ShowFormatters.format_played_shows(shows)
 
 
@@ -199,8 +213,15 @@ async def fetch_watched_shows(
     params = PeriodParams(limit=limit, period=period, page=page)
     limit, period, page = params.limit, params.period, params.page
 
-    client = ShowStatsClient()
+    client = get_client(ShowStatsClient)
     shows = await client.get_watched_shows(limit=limit, period=period, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="watched_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_watched_shows",
+        )
     return ShowFormatters.format_watched_shows(shows)
 
 
@@ -223,8 +244,15 @@ async def fetch_anticipated_shows(
     params = LimitOnly(limit=limit, page=page)
     limit, page = params.limit, params.page
 
-    client = AnticipatedShowsClient()
+    client = get_client(AnticipatedShowsClient)
     shows = await client.get_anticipated_shows(limit=limit, page=page)
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="anticipated_shows",
+            resource_id="list",
+            error_message=shows,
+            operation="fetch_anticipated_shows",
+        )
     return ShowFormatters.format_anticipated_shows(shows)
 
 
@@ -249,7 +277,7 @@ async def fetch_show_ratings(show_id: str) -> str:
     set_tool_context("show", show_id)
 
     try:
-        client: ShowDetailsClient = ShowDetailsClient()
+        client: ShowDetailsClient = get_client(ShowDetailsClient)
         show_data = await client.get_show(show_id)
 
         # Handle transitional case where API returns error strings
@@ -305,7 +333,7 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
     set_tool_context("show", show_id)
 
     try:
-        client: ShowDetailsClient = ShowDetailsClient()
+        client: ShowDetailsClient = get_client(ShowDetailsClient)
 
         if extended:
             show_data = await client.get_show_extended(show_id)
@@ -350,7 +378,7 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
     set_tool_context("show", show_id)
 
     try:
-        client: ShowsClient = ShowsClient()  # Use unified client
+        client: ShowsClient = get_client(ShowsClient)
         videos = await client.get_videos(show_id)
 
         if isinstance(videos, str):
@@ -421,12 +449,19 @@ async def fetch_related_shows(
     params = LimitOnly(limit=limit, page=page)
     set_tool_context("show", id_params.show_id)
 
-    client = RelatedShowsClient()
+    client = get_client(RelatedShowsClient)
     shows = await client.get_related_shows(
         show_id=id_params.show_id,
         limit=params.limit,
         page=params.page,
     )
+    if isinstance(shows, str):
+        raise BaseToolErrorMixin.handle_api_string_error(
+            resource_type="related_shows",
+            resource_id=id_params.show_id,
+            error_message=shows,
+            operation="fetch_related_shows",
+        )
 
     return ShowFormatters.format_related_shows(shows)
 
@@ -446,7 +481,7 @@ async def fetch_show_seasons(show_id: str) -> str:
     show_id = params.show_id
     set_tool_context("show", show_id)
 
-    client = ShowsClient()
+    client = get_client(ShowsClient)
     seasons = await client.get_seasons(show_id)
     if isinstance(seasons, str):
         raise BaseToolErrorMixin.handle_api_string_error(
@@ -471,7 +506,7 @@ async def _get_show_title(show_id: str) -> str:
         Show title string, or fallback on failure
     """
     try:
-        client = ShowDetailsClient()
+        client = get_client(ShowDetailsClient)
         show_data = await client.get_show(show_id)
 
         if isinstance(show_data, str):
@@ -505,7 +540,7 @@ async def fetch_show_people(show_id: str, include_guest_stars: bool = False) -> 
     params = ShowIdParam(show_id=show_id)
     set_tool_context("show", params.show_id)
 
-    people_client = ShowPeopleClient()
+    people_client = get_client(ShowPeopleClient)
     show_title, people = await asyncio.gather(
         _get_show_title(params.show_id),
         people_client.get_show_people(

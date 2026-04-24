@@ -1,6 +1,11 @@
 """Tests for shows endpoints module."""
 
+from typing import TYPE_CHECKING
+
 from config.endpoints.shows import SHOWS_ENDPOINTS
+
+if TYPE_CHECKING:
+    from config.endpoints import EndpointKey
 
 
 class TestShowsEndpoints:
@@ -13,7 +18,7 @@ class TestShowsEndpoints:
 
     def test_show_endpoints_exist(self) -> None:
         """Test show-related endpoints are present."""
-        show_endpoints = [
+        show_endpoints: list[EndpointKey] = [
             "shows_trending",
             "shows_popular",
             "shows_favorited",
@@ -36,9 +41,9 @@ class TestShowsEndpoints:
         """Test show endpoint URL formats."""
         assert SHOWS_ENDPOINTS["shows_trending"] == "/shows/trending"
         assert SHOWS_ENDPOINTS["shows_popular"] == "/shows/popular"
-        assert SHOWS_ENDPOINTS["shows_favorited"] == "/shows/favorited"
-        assert SHOWS_ENDPOINTS["shows_played"] == "/shows/played"
-        assert SHOWS_ENDPOINTS["shows_watched"] == "/shows/watched"
+        assert SHOWS_ENDPOINTS["shows_favorited"] == "/shows/favorited/:period"
+        assert SHOWS_ENDPOINTS["shows_played"] == "/shows/played/:period"
+        assert SHOWS_ENDPOINTS["shows_watched"] == "/shows/watched/:period"
         assert SHOWS_ENDPOINTS["shows_anticipated"] == "/shows/anticipated"
 
     def test_rating_endpoint_format(self) -> None:

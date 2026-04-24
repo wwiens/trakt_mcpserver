@@ -13,11 +13,11 @@ if TYPE_CHECKING:
 from pydantic import ValidationError
 
 from client.movies import MoviesClient
+from client.pool import get_client
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.movies import MovieFormatters
-from server.base import BaseToolErrorMixin
-from server.movies.tools import MovieIdParam
+from server.base import BaseToolErrorMixin, MovieIdParam
 from utils.api.error_types import TraktValidationError
 from utils.api.errors import handle_api_errors_func
 
@@ -36,7 +36,7 @@ async def get_trending_movies() -> str:
     Returns:
         Formatted markdown text with trending movies
     """
-    client: MoviesClient = MoviesClient()
+    client: MoviesClient = get_client(MoviesClient)
     movies = await client.get_trending_movies(limit=DEFAULT_LIMIT)
     return MovieFormatters.format_trending_movies(movies)
 
@@ -50,7 +50,7 @@ async def get_popular_movies() -> str:
     Returns:
         Formatted markdown text with popular movies
     """
-    client: MoviesClient = MoviesClient()
+    client: MoviesClient = get_client(MoviesClient)
     movies = await client.get_popular_movies(limit=DEFAULT_LIMIT)
     return MovieFormatters.format_popular_movies(movies)
 
@@ -64,7 +64,7 @@ async def get_favorited_movies() -> str:
     Returns:
         Formatted markdown text with most favorited movies
     """
-    client: MoviesClient = MoviesClient()
+    client: MoviesClient = get_client(MoviesClient)
     movies = await client.get_favorited_movies(limit=DEFAULT_LIMIT)
 
     # Debug log for API response structure analysis
@@ -91,7 +91,7 @@ async def get_played_movies() -> str:
     Returns:
         Formatted markdown text with most played movies
     """
-    client: MoviesClient = MoviesClient()
+    client: MoviesClient = get_client(MoviesClient)
     movies = await client.get_played_movies(limit=DEFAULT_LIMIT)
     return MovieFormatters.format_played_movies(movies)
 
@@ -106,7 +106,7 @@ async def get_watched_movies() -> str:
     Returns:
         Formatted markdown text with most watched movies
     """
-    client: MoviesClient = MoviesClient()
+    client: MoviesClient = get_client(MoviesClient)
     movies = await client.get_watched_movies(limit=DEFAULT_LIMIT)
     return MovieFormatters.format_watched_movies(movies)
 
@@ -120,7 +120,7 @@ async def get_boxoffice_movies() -> str:
     Returns:
         Formatted markdown text with box office movies and revenue
     """
-    client: MoviesClient = MoviesClient()
+    client: MoviesClient = get_client(MoviesClient)
     movies = await client.get_boxoffice_movies()
     if isinstance(movies, str):
         raise BaseToolErrorMixin.handle_api_string_error(
@@ -141,7 +141,7 @@ async def get_anticipated_movies() -> str:
     Returns:
         Formatted markdown text with anticipated movies
     """
-    client: MoviesClient = MoviesClient()
+    client: MoviesClient = get_client(MoviesClient)
     movies = await client.get_anticipated_movies(limit=DEFAULT_LIMIT)
     return MovieFormatters.format_anticipated_movies(movies)
 
@@ -160,7 +160,7 @@ async def get_movie_ratings(movie_id: str) -> str:
         InvalidParamsError: If movie_id is invalid
         InternalError: If an error occurs fetching movie or ratings data
     """
-    client: MoviesClient = MoviesClient()
+    client: MoviesClient = get_client(MoviesClient)
 
     # Validate parameters with Pydantic for normalization and constraints
     try:

@@ -3,7 +3,7 @@
 from typing import overload
 from urllib.parse import quote
 
-from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
+from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
 from models.types import MovieResponse
 from models.types.pagination import PaginatedResponse
@@ -60,21 +60,10 @@ class RelatedMoviesClient(BaseClient):
             ":id", quote(movie_id, safe="")
         )
 
-        if page is None:
-            eff = effective_limit(limit)
-            return await self.auto_paginate(
-                endpoint,
-                response_type=MovieResponse,
-                params={"limit": eff.api_limit},
-                max_pages=max_pages,
-                max_items=eff.max_items,
-            )
-        else:
-            if page < 1:
-                raise ValueError(f"page must be >= 1, got {page}")
-            eff = effective_limit(limit)
-            return await self._make_paginated_request(
-                endpoint,
-                response_type=MovieResponse,
-                params={"page": page, "limit": eff.api_limit},
-            )
+        return await self._fetch_paginated(
+            endpoint,
+            response_type=MovieResponse,
+            page=page,
+            limit=limit,
+            max_pages=max_pages,
+        )

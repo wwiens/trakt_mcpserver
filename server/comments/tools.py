@@ -4,13 +4,14 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Literal, NoReturn, TypedDict
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, Field, PositiveInt, ValidationError, field_validator
+from pydantic import BaseModel, Field, PositiveInt, ValidationError
 
 from client.comments.details import CommentDetailsClient
 from client.comments.episode import EpisodeCommentsClient
 from client.comments.movie import MovieCommentsClient
 from client.comments.season import SeasonCommentsClient
 from client.comments.show import ShowCommentsClient
+from client.pool import get_client
 from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.mcp.descriptions import (
     COMMENT_ID_DESCRIPTION,
@@ -29,11 +30,16 @@ from config.mcp.tools import TOOL_NAMES
 from models.formatters.comments import CommentsFormatters
 from models.types import CommentResponse
 from models.types.pagination import PaginatedResponse
-from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
-from server.movies.tools import MovieIdParam
-from server.shows.tools import ShowIdParam
+from server.base import (
+    BaseToolErrorMixin,
+    CommentIdParam,
+    LimitPageValidatorMixin,
+    MovieIdParam,
+    ShowIdParam,
+)
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
+from utils.validators import StrippedStr
 
 # Comment sort options supported by Trakt API
 CommentSort = Literal["newest", "oldest", "likes", "replies"]
@@ -48,52 +54,27 @@ class ValidationErrorDetail(TypedDict):
     input: object | None
 
 
-class CommentIdParam(BaseModel):
-    """Parameters for tools that require a comment ID."""
-
-    comment_id: str = Field(
-        ...,
-        min_length=1,
-        description=COMMENT_ID_DESCRIPTION,
-    )
-
-    @field_validator("comment_id", mode="before")
-    @classmethod
-    def _strip_comment_id(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
-
-
 class SeasonParam(BaseModel):
     """Parameters for tools that require show ID and season."""
 
-    show_id: str = Field(
+    show_id: StrippedStr = Field(
         ...,
         min_length=1,
         description=SHOW_ID_DESCRIPTION,
     )
     season: PositiveInt = Field(..., description=SEASON_DESCRIPTION)
 
-    @field_validator("show_id", mode="before")
-    @classmethod
-    def _strip_show_id(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
-
 
 class EpisodeParam(BaseModel):
     """Parameters for tools that require show ID, season, and episode."""
 
-    show_id: str = Field(
+    show_id: StrippedStr = Field(
         ...,
         min_length=1,
         description=SHOW_ID_DESCRIPTION,
     )
     season: PositiveInt = Field(..., description=SEASON_DESCRIPTION)
     episode: PositiveInt = Field(..., description=EPISODE_DESCRIPTION)
-
-    @field_validator("show_id", mode="before")
-    @classmethod
-    def _strip_show_id(cls, v: object) -> object:
-        return v.strip() if isinstance(v, str) else v
 
 
 class CommentsListOptionsParam(LimitPageValidatorMixin):
@@ -304,7 +285,7 @@ async def fetch_movie_comments(
         _handle_validation_error(e, "movie comments")
     set_tool_context("movie", movie_id)
 
-    client = MovieCommentsClient()
+    client = get_client(MovieCommentsClient)
 
     return await _fetch_and_format_comments(
         resource_type="movie_comments",
@@ -357,7 +338,7 @@ async def fetch_show_comments(
         _handle_validation_error(e, "show comments")
     set_tool_context("show", show_id)
 
-    client = ShowCommentsClient()
+    client = get_client(ShowCommentsClient)
 
     return await _fetch_and_format_comments(
         resource_type="show_comments",
@@ -412,7 +393,7 @@ async def fetch_season_comments(
         _handle_validation_error(e, "season comments")
     set_tool_context("show", show_id)
 
-    client = SeasonCommentsClient()
+    client = get_client(SeasonCommentsClient)
 
     return await _fetch_and_format_comments(
         resource_type="season_comments",
@@ -474,7 +455,7 @@ async def fetch_episode_comments(
         _handle_validation_error(e, "episode comments")
     set_tool_context("show", show_id)
 
-    client = EpisodeCommentsClient()
+    client = get_client(EpisodeCommentsClient)
 
     return await _fetch_and_format_comments(
         resource_type="episode_comments",
@@ -515,7 +496,7 @@ async def fetch_comment(comment_id: str, show_spoilers: bool = False) -> str:
         _handle_validation_error(e, "comment")
     set_tool_context("comment", comment_id)
 
-    client = CommentDetailsClient()
+    client = get_client(CommentDetailsClient)
 
     return await _fetch_and_format_comment(
         resource_type="comment",
@@ -559,7 +540,7 @@ async def fetch_comment_replies(
         _handle_validation_error(e, "comment replies")
     set_tool_context("comment", comment_id)
 
-    client = CommentDetailsClient()
+    client = get_client(CommentDetailsClient)
 
     # Fetch comment data
     comment = await client.get_comment(comment_id)
