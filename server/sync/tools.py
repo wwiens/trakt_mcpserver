@@ -103,6 +103,45 @@ async def _get_show_season_ids(show_id: str) -> list[int]:
     return [s["ids"]["trakt"] for s in seasons if s["number"] > 0]
 
 
+def _resolve_show_id(item: TraktHistoryItem) -> str | None:
+    """Return the item's Trakt ID, falling back to its slug, else None."""
+    if not item.ids:
+        return None
+    if item.ids.trakt:
+        return str(item.ids.trakt)
+    return item.ids.slug
+
+
+async def _send_show_as_single(
+    item: TraktHistoryItem,
+    client_method: Callable[[TraktHistoryRequest], Awaitable[HistorySummary | str]],
+    show_id: str | None,
+    operation: str,
+    combined: HistorySummary,
+    *,
+    suppress_cause: bool = False,
+) -> None:
+    """Send a single show item as its own history request and aggregate the result.
+
+    Raises an MCPError if the API returns a string error. ``suppress_cause``
+    raises with ``from None`` so an in-flight ``except`` doesn't chain its
+    caught exception onto the user-facing error.
+    """
+    request = TraktHistoryRequest(shows=[item])
+    result = await client_method(request)
+    if isinstance(result, str):
+        error = ToolErrors.handle_api_string_error(
+            resource_type="sync_history_show",
+            resource_id=show_id or "unknown",
+            error_message=result,
+            operation=operation,
+        )
+        if suppress_cause:
+            raise error from None
+        raise error
+    _aggregate_summary(combined, result, operation)
+
+
 async def _batch_show_history_op(
     client_method: Callable[[TraktHistoryRequest], Awaitable[HistorySummary | str]],
     show_items: list[TraktHistoryItem],
@@ -124,22 +163,12 @@ async def _batch_show_history_op(
     combined = HistorySummary()
 
     for item in show_items:
-        show_id = str(item.ids.trakt) if item.ids and item.ids.trakt else None
-        if show_id is None and item.ids and item.ids.slug:
-            show_id = item.ids.slug
+        show_id = _resolve_show_id(item)
 
         if show_id is None:
-            # No resolvable ID — send the show item directly
-            request = TraktHistoryRequest(shows=[item])
-            result = await client_method(request)
-            if isinstance(result, str):
-                raise ToolErrors.handle_api_string_error(
-                    resource_type="sync_history_show",
-                    resource_id="unknown",
-                    error_message=result,
-                    operation=operation,
-                )
-            _aggregate_summary(combined, result, operation)
+            await _send_show_as_single(
+                item, client_method, show_id, operation, combined
+            )
             continue
 
         try:
@@ -149,16 +178,14 @@ async def _batch_show_history_op(
                 "Failed to fetch seasons for show %s, sending as single request",
                 show_id,
             )
-            request = TraktHistoryRequest(shows=[item])
-            result = await client_method(request)
-            if isinstance(result, str):
-                raise ToolErrors.handle_api_string_error(
-                    resource_type="sync_history_show",
-                    resource_id=show_id,
-                    error_message=result,
-                    operation=operation,
-                ) from None
-            _aggregate_summary(combined, result, operation)
+            await _send_show_as_single(
+                item,
+                client_method,
+                show_id,
+                operation,
+                combined,
+                suppress_cause=True,
+            )
             continue
 
         if not season_ids:
@@ -166,16 +193,9 @@ async def _batch_show_history_op(
                 "No seasons found for show %s, sending as single request",
                 show_id,
             )
-            request = TraktHistoryRequest(shows=[item])
-            result = await client_method(request)
-            if isinstance(result, str):
-                raise ToolErrors.handle_api_string_error(
-                    resource_type="sync_history_show",
-                    resource_id=show_id,
-                    error_message=result,
-                    operation=operation,
-                )
-            _aggregate_summary(combined, result, operation)
+            await _send_show_as_single(
+                item, client_method, show_id, operation, combined
+            )
             continue
 
         # Process seasons sequentially to avoid Trakt API rate-limit pressure
