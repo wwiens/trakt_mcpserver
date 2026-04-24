@@ -80,13 +80,12 @@ async def fetch_show_progress(
 
     # Handle transitional case where API returns error strings
     if isinstance(result, str):
-        error = ToolErrors.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="show_progress",
             resource_id=show_id,
             error_message=result,
             operation="fetch_show_progress",
         )
-        raise error
 
     return ProgressFormatters.format_show_progress(result, show_id, verbose=verbose)
 
@@ -114,13 +113,12 @@ async def fetch_playback_progress(
 
     # Handle transitional case where API returns error strings
     if isinstance(result, str):
-        error = ToolErrors.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="playback_progress",
             resource_id=playback_type or "all",
             error_message=result,
             operation="fetch_playback_progress",
         )
-        raise error
 
     return ProgressFormatters.format_playback_progress(result)
 

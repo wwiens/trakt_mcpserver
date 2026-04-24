@@ -2,11 +2,11 @@
 
 from models.formatters.utils import (
     format_cast_section,
+    format_crew_section,
     format_list_items,
     format_rating_distribution,
 )
 from models.types import (
-    CrewMember,
     EpisodeResponse,
     ListItemResponse,
     PeopleResponse,
@@ -207,26 +207,11 @@ class SeasonFormatters:
         if guest_section:
             lines.append(guest_section)
 
-        crew: dict[str, list[CrewMember]] = people.get("crew", {})
-        if crew:
-            lines.append("## Crew")
-            lines.append("")
-            for department, members in sorted(crew.items()):
-                lines.append(f"### {department.title()}")
-                lines.append("")
-                for member in members:
-                    person = member.get("person", {})
-                    name = person.get("name", "Unknown")
-                    jobs = member.get("jobs", [])
-                    jobs_str = ", ".join(jobs) if jobs else "Unknown"
-                    episode_count = member.get("episode_count")
-                    count_str = (
-                        f" ({episode_count} episodes)"
-                        if episode_count is not None
-                        else ""
-                    )
-                    lines.append(f"- **{name}** - {jobs_str}{count_str}")
-                lines.append("")
+        crew_section = format_crew_section(
+            people.get("crew", {}), include_episode_count=True
+        )
+        if crew_section:
+            lines.append(crew_section)
 
         return "\n".join(lines)
 

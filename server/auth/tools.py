@@ -11,7 +11,7 @@ from client.auth import AuthClient
 from client.pool import get_client
 from config.auth import AUTH_VERIFICATION_URL
 from models.formatters.auth import AuthFormatters
-from server.base.error_mixin import ToolErrors
+from server.base import ToolErrors
 from utils.api.error_types import AuthorizationPendingError
 from utils.api.errors import InternalError
 

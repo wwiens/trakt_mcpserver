@@ -3,6 +3,7 @@
 from models.formatters.utils import (
     MAX_OVERVIEW_LENGTH,
     format_cast_section,
+    format_crew_section,
     format_media_list,
     format_pagination_header,
     format_rating_distribution,
@@ -11,7 +12,6 @@ from models.formatters.utils import (
 from models.types import (
     AnticipatedShowWrapper,
     CastMember,
-    CrewMember,
     FavoritedShowWrapper,
     PeopleResponse,
     PlayedShowWrapper,
@@ -301,7 +301,7 @@ class ShowFormatters:
 
         cast: list[CastMember] = people.get("cast", [])
         guest_stars: list[CastMember] = people.get("guest_stars", [])
-        crew: dict[str, list[CrewMember]] = people.get("crew", {})
+        crew = people.get("crew", {})
 
         if not cast and not guest_stars and not crew:
             return f"# People for {show_title}\n\nNo people data available."
@@ -316,24 +316,8 @@ class ShowFormatters:
         )
         if guest_section:
             lines.append(guest_section)
-        if crew:
-            lines.append("## Crew")
-            lines.append("")
-            for department, members in sorted(crew.items()):
-                lines.append(f"### {department.title()}")
-                lines.append("")
-                for member in members:
-                    person = member.get("person", {})
-                    name = person.get("name", "Unknown")
-                    jobs = member.get("jobs", [])
-                    jobs_str = ", ".join(jobs) if jobs else "Unknown"
-                    episode_count = member.get("episode_count")
-                    count_str = (
-                        f" ({episode_count} episodes)"
-                        if episode_count is not None
-                        else ""
-                    )
-                    lines.append(f"- **{name}** - {jobs_str}{count_str}")
-                lines.append("")
+        crew_section = format_crew_section(crew, include_episode_count=True)
+        if crew_section:
+            lines.append(crew_section)
 
         return "\n".join(lines)

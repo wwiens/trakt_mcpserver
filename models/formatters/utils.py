@@ -3,7 +3,7 @@
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Final, TypeVar
 
-from models.types.api_responses import CastMember, ListItemResponse
+from models.types.api_responses import CastMember, CrewMember, ListItemResponse
 from models.types.pagination import PaginatedResponse
 from utils.formatting import DISPLAY_DATETIME_FORMAT, format_iso_timestamp
 
@@ -164,6 +164,45 @@ def format_cast_section(
                 count_str = f" ({episode_count} episodes)"
         lines.append(f"- **{name}** as {char_str}{count_str}")
     lines.append("")
+    return "\n".join(lines)
+
+
+def format_crew_section(
+    crew: dict[str, list[CrewMember]],
+    *,
+    include_episode_count: bool = False,
+    heading: str = "Crew",
+) -> str:
+    """Format a crew section grouped by department as markdown.
+
+    Args:
+        crew: Mapping of department name → crew member list (Trakt API shape).
+        include_episode_count: Append ``(N episodes)`` when the member carries
+            an ``episode_count`` (shows and seasons do; individual episodes do not).
+        heading: Section heading (default ``"Crew"``).
+
+    Returns:
+        Markdown section, or an empty string if ``crew`` is empty.
+    """
+    if not crew:
+        return ""
+
+    lines: list[str] = [f"## {heading}", ""]
+    for department, members in sorted(crew.items()):
+        lines.append(f"### {department.title()}")
+        lines.append("")
+        for member in members:
+            person = member.get("person", {})
+            name = person.get("name", "Unknown")
+            jobs = member.get("jobs", [])
+            jobs_str = ", ".join(jobs) if jobs else "Unknown"
+            count_str = ""
+            if include_episode_count:
+                episode_count = member.get("episode_count")
+                if episode_count is not None:
+                    count_str = f" ({episode_count} episodes)"
+            lines.append(f"- **{name}** - {jobs_str}{count_str}")
+        lines.append("")
     return "\n".join(lines)
 
 
