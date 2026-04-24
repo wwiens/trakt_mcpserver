@@ -1,11 +1,11 @@
 """Season formatting methods for the Trakt MCP server."""
 
 from models.formatters.utils import (
+    format_cast_section,
     format_list_items,
     format_rating_distribution,
 )
 from models.types import (
-    CastMember,
     CrewMember,
     EpisodeResponse,
     ListItemResponse,
@@ -175,34 +175,6 @@ class SeasonFormatters:
         return "\n".join(lines)
 
     @staticmethod
-    def _format_cast_section(members: list[CastMember], heading: str) -> str:
-        """Format a cast or guest stars section.
-
-        Args:
-            members: List of cast member data
-            heading: Section heading (e.g., "Cast", "Guest Stars")
-
-        Returns:
-            Formatted markdown section, empty string if no members
-        """
-        if not members:
-            return ""
-
-        lines: list[str] = [f"## {heading}", ""]
-        for member in members:
-            person = member.get("person", {})
-            name = person.get("name", "Unknown")
-            characters = member.get("characters", [])
-            char_str = ", ".join(characters) if characters else "Unknown Role"
-            episode_count = member.get("episode_count")
-            count_str = (
-                f" ({episode_count} episodes)" if episode_count is not None else ""
-            )
-            lines.append(f"- **{name}** as {char_str}{count_str}")
-        lines.append("")
-        return "\n".join(lines)
-
-    @staticmethod
     def format_season_people(
         people: PeopleResponse, show_title: str, season: int
     ) -> str:
@@ -224,13 +196,13 @@ class SeasonFormatters:
 
         lines: list[str] = [f"# People for {show_title} - Season {season}", ""]
 
-        cast_section = SeasonFormatters._format_cast_section(
-            people.get("cast", []), "Cast"
+        cast_section = format_cast_section(
+            people.get("cast", []), "Cast", include_episode_count=True
         )
         if cast_section:
             lines.append(cast_section)
-        guest_section = SeasonFormatters._format_cast_section(
-            people.get("guest_stars", []), "Guest Stars"
+        guest_section = format_cast_section(
+            people.get("guest_stars", []), "Guest Stars", include_episode_count=True
         )
         if guest_section:
             lines.append(guest_section)

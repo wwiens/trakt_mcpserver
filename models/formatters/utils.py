@@ -3,7 +3,7 @@
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Final, TypeVar
 
-from models.types.api_responses import ListItemResponse
+from models.types.api_responses import CastMember, ListItemResponse
 from models.types.pagination import PaginatedResponse
 from utils.formatting import DISPLAY_DATETIME_FORMAT, format_iso_timestamp
 
@@ -128,6 +128,42 @@ def format_list_items(
                 description = description[: MAX_OVERVIEW_LENGTH - 3] + "..."
             lines.append(f"  {description}")
 
+    return "\n".join(lines)
+
+
+def format_cast_section(
+    members: list[CastMember],
+    heading: str,
+    *,
+    include_episode_count: bool = False,
+) -> str:
+    """Format a cast or guest stars section as markdown.
+
+    Args:
+        members: Cast member data from the API.
+        heading: Section heading (e.g. "Cast", "Guest Stars").
+        include_episode_count: Append ``(N episodes)`` when the member carries
+            an ``episode_count`` (shows and seasons do; individual episodes do not).
+
+    Returns:
+        Markdown section, or an empty string if ``members`` is empty.
+    """
+    if not members:
+        return ""
+
+    lines: list[str] = [f"## {heading}", ""]
+    for member in members:
+        person = member.get("person", {})
+        name = person.get("name", "Unknown")
+        characters = member.get("characters", [])
+        char_str = ", ".join(characters) if characters else "Unknown Role"
+        count_str = ""
+        if include_episode_count:
+            episode_count = member.get("episode_count")
+            if episode_count is not None:
+                count_str = f" ({episode_count} episodes)"
+        lines.append(f"- **{name}** as {char_str}{count_str}")
+    lines.append("")
     return "\n".join(lines)
 
 
