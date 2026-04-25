@@ -12,6 +12,7 @@ from models.formatters.utils import (
 from models.types import (
     AnticipatedShowWrapper,
     CastMember,
+    CrewMember,
     FavoritedShowWrapper,
     PeopleResponse,
     PlayedShowWrapper,
@@ -301,7 +302,7 @@ class ShowFormatters:
 
         cast: list[CastMember] = people.get("cast", [])
         guest_stars: list[CastMember] = people.get("guest_stars", [])
-        crew = people.get("crew", {})
+        crew: dict[str, list[CrewMember]] = people.get("crew", {})
 
         if not cast and not guest_stars and not crew:
             return f"# People for {show_title}\n\nNo people data available."
