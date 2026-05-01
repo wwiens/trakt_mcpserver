@@ -2,8 +2,4 @@
 
 from typing import Final
 
-# Search MCP Tool Names
-SEARCH_TOOLS: Final[dict[str, str]] = {
-    "search_shows": "search_shows",
-    "search_movies": "search_movies",
-}
+SEARCH_TOOLS: Final[frozenset[str]] = frozenset({"search_shows", "search_movies"})

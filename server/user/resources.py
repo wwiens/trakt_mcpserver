@@ -9,7 +9,7 @@ from client.pool import get_client
 from client.user import UserClient
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.user import UserFormatters
-from server.base import BaseToolErrorMixin
+from server.base import ToolErrors
 from utils.api.errors import handle_api_errors_func
 
 # Type alias for resource handlers
@@ -35,7 +35,7 @@ async def get_user_watched_shows() -> str:
 
     shows = await client.get_user_watched_shows()
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="user_watched_shows",
             resource_id="authenticated_user",
             error_message=shows,
@@ -63,7 +63,7 @@ async def get_user_watched_movies() -> str:
 
     movies = await client.get_user_watched_movies()
     if isinstance(movies, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="user_watched_movies",
             resource_id="authenticated_user",
             error_message=movies,

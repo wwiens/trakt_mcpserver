@@ -19,9 +19,8 @@ from config.mcp.descriptions import (
     LIST_TYPE_DESCRIPTION,
     PERSON_ID_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.people import PeopleFormatters
-from server.base import BaseToolErrorMixin, PersonIdParam
+from server.base import PersonIdParam, ToolErrors
 from utils.api.errors import handle_api_errors_func
 from utils.api.request_context import set_tool_context
 
@@ -85,7 +84,7 @@ async def fetch_person_summary(person_id: str, extended: bool = True) -> str:
         person = await client.get_person(params.person_id)
 
     if isinstance(person, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="person",
             resource_id=params.person_id,
             error_message=person,
@@ -115,7 +114,7 @@ async def fetch_person_movies(person_id: str) -> str:
     )
 
     if isinstance(movie_credits, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="person_movies",
             resource_id=params.person_id,
             error_message=movie_credits,
@@ -146,7 +145,7 @@ async def fetch_person_shows(person_id: str) -> str:
     )
 
     if isinstance(show_credits, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="person_shows",
             resource_id=params.person_id,
             error_message=show_credits,
@@ -185,7 +184,7 @@ async def fetch_person_lists(
     )
 
     if isinstance(lists, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="person_lists",
             resource_id=params.person_id,
             error_message=lists,
@@ -206,7 +205,7 @@ def register_people_tools(
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_person_summary"],
+        name="fetch_person_summary",
         description=(
             "Get person details from Trakt. "
             "Default (extended=true): full biographical data including "
@@ -224,7 +223,7 @@ def register_people_tools(
         return await fetch_person_summary(person_id, extended)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_person_movies"],
+        name="fetch_person_movies",
         description=(
             "Get all movie credits for a person from Trakt. "
             "Returns cast roles and crew positions grouped by "
@@ -240,7 +239,7 @@ def register_people_tools(
         return await fetch_person_movies(person_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_person_shows"],
+        name="fetch_person_shows",
         description=(
             "Get all show credits for a person from Trakt. "
             "Returns cast roles with episode counts and crew "
@@ -256,7 +255,7 @@ def register_people_tools(
         return await fetch_person_shows(person_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_person_lists"],
+        name="fetch_person_lists",
         description=(
             "Get lists containing a specific person from Trakt. "
             "Returns personal or official lists sorted by "

@@ -29,7 +29,6 @@ def test_request_context_creation():
     assert context.method is None
     assert context.resource_type is None
     assert context.resource_id is None
-    assert context.user_id is None
     assert context.parameters == {}
 
     # Check start_time is set
@@ -71,45 +70,12 @@ def test_request_context_with_resource():
     assert new_context.correlation_id == context.correlation_id
 
 
-def test_request_context_with_parameters():
-    """Test adding parameters to context."""
-    context = RequestContext()
-    new_context = context.with_parameters(limit=10, period="weekly")
-
-    # Original context unchanged
-    assert context.parameters == {}
-
-    # New context has parameters
-    assert new_context.parameters == {"limit": 10, "period": "weekly"}
-
-    # Correlation ID is preserved
-    assert new_context.correlation_id == context.correlation_id
-
-
-def test_request_context_with_user():
-    """Test adding user information to context."""
-    context = RequestContext()
-    new_context = context.with_user("user123")
-
-    # Original context unchanged
-    assert context.user_id is None
-
-    # New context has user info
-    assert new_context.user_id == "user123"
-
-    # Correlation ID is preserved
-    assert new_context.correlation_id == context.correlation_id
-
-
 def test_request_context_chaining():
     """Test chaining context modifications."""
     context = RequestContext()
 
-    final_context = (
-        context.with_endpoint("/shows/search", "GET")
-        .with_resource("show", "breaking-bad")
-        .with_parameters(query="breaking")
-        .with_user("user123")
+    final_context = context.with_endpoint("/shows/search", "GET").with_resource(
+        "show", "breaking-bad"
     )
 
     # Final context has all information
@@ -117,8 +83,6 @@ def test_request_context_chaining():
     assert final_context.method == "GET"
     assert final_context.resource_type == "show"
     assert final_context.resource_id == "breaking-bad"
-    assert final_context.parameters == {"query": "breaking"}
-    assert final_context.user_id == "user123"
 
     # Correlation ID is preserved
     assert final_context.correlation_id == context.correlation_id
@@ -139,11 +103,9 @@ def test_request_context_elapsed_time():
 def test_request_context_to_dict():
     """Test context serialization to dictionary."""
     context = (
-        RequestContext()
+        RequestContext(parameters={"limit": 10})
         .with_endpoint("/shows/trending", "GET")
         .with_resource("show", "test-show")
-        .with_parameters(limit=10)
-        .with_user("user123")
     )
 
     context_dict = context.to_dict()
@@ -209,10 +171,9 @@ def test_add_context_to_error_data_with_context():
     """Test adding context to error data when context exists."""
     # Set up context
     context = (
-        RequestContext()
+        RequestContext(parameters={"limit": 10})
         .with_endpoint("/shows/trending", "GET")
         .with_resource("show", "test-show")
-        .with_parameters(limit=10)
     )
     set_current_context(context)
 

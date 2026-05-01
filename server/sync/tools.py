@@ -32,7 +32,6 @@ from config.mcp.descriptions import (
     WATCHLIST_TYPE_DESCRIPTION,
     WATCHLIST_TYPE_REQUIRED_DESCRIPTION,
 )
-from config.mcp.tools.sync import SYNC_TOOLS
 from models.formatters.sync_history import SyncHistoryFormatters
 from models.formatters.sync_ratings import SyncRatingsFormatters
 from models.formatters.sync_watchlist import SyncWatchlistFormatters
@@ -53,7 +52,7 @@ from models.sync.watchlist import (
 )
 from models.types.ids import TraktIds
 from models.types.pagination import PaginationParams
-from server.base import BaseToolErrorMixin, IdentifierValidatorMixin
+from server.base import IdentifierValidatorMixin, ToolErrors
 from utils.api.errors import MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
@@ -104,6 +103,45 @@ async def _get_show_season_ids(show_id: str) -> list[int]:
     return [s["ids"]["trakt"] for s in seasons if s["number"] > 0]
 
 
+def _resolve_show_id(item: TraktHistoryItem) -> str | None:
+    """Return the item's Trakt ID, falling back to its slug, else None."""
+    if not item.ids:
+        return None
+    if item.ids.trakt:
+        return str(item.ids.trakt)
+    return item.ids.slug
+
+
+async def _send_show_as_single(
+    item: TraktHistoryItem,
+    client_method: Callable[[TraktHistoryRequest], Awaitable[HistorySummary | str]],
+    show_id: str | None,
+    operation: str,
+    combined: HistorySummary,
+    *,
+    suppress_cause: bool = False,
+) -> None:
+    """Send a single show item as its own history request and aggregate the result.
+
+    Raises an MCPError if the API returns a string error. ``suppress_cause``
+    raises with ``from None`` so an in-flight ``except`` doesn't chain its
+    caught exception onto the user-facing error.
+    """
+    request = TraktHistoryRequest(shows=[item])
+    result = await client_method(request)
+    if isinstance(result, str):
+        error = ToolErrors.handle_api_string_error(
+            resource_type="sync_history_show",
+            resource_id=show_id or "unknown",
+            error_message=result,
+            operation=operation,
+        )
+        if suppress_cause:
+            raise error from None
+        raise error
+    _aggregate_summary(combined, result, operation)
+
+
 async def _batch_show_history_op(
     client_method: Callable[[TraktHistoryRequest], Awaitable[HistorySummary | str]],
     show_items: list[TraktHistoryItem],
@@ -125,22 +163,12 @@ async def _batch_show_history_op(
     combined = HistorySummary()
 
     for item in show_items:
-        show_id = str(item.ids.trakt) if item.ids and item.ids.trakt else None
-        if show_id is None and item.ids and item.ids.slug:
-            show_id = item.ids.slug
+        show_id = _resolve_show_id(item)
 
         if show_id is None:
-            # No resolvable ID — send the show item directly
-            request = TraktHistoryRequest(shows=[item])
-            result = await client_method(request)
-            if isinstance(result, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
-                    resource_type="sync_history_show",
-                    resource_id="unknown",
-                    error_message=result,
-                    operation=operation,
-                )
-            _aggregate_summary(combined, result, operation)
+            await _send_show_as_single(
+                item, client_method, show_id, operation, combined
+            )
             continue
 
         try:
@@ -150,16 +178,14 @@ async def _batch_show_history_op(
                 "Failed to fetch seasons for show %s, sending as single request",
                 show_id,
             )
-            request = TraktHistoryRequest(shows=[item])
-            result = await client_method(request)
-            if isinstance(result, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
-                    resource_type="sync_history_show",
-                    resource_id=show_id,
-                    error_message=result,
-                    operation=operation,
-                ) from None
-            _aggregate_summary(combined, result, operation)
+            await _send_show_as_single(
+                item,
+                client_method,
+                show_id,
+                operation,
+                combined,
+                suppress_cause=True,
+            )
             continue
 
         if not season_ids:
@@ -167,16 +193,9 @@ async def _batch_show_history_op(
                 "No seasons found for show %s, sending as single request",
                 show_id,
             )
-            request = TraktHistoryRequest(shows=[item])
-            result = await client_method(request)
-            if isinstance(result, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
-                    resource_type="sync_history_show",
-                    resource_id=show_id,
-                    error_message=result,
-                    operation=operation,
-                )
-            _aggregate_summary(combined, result, operation)
+            await _send_show_as_single(
+                item, client_method, show_id, operation, combined
+            )
             continue
 
         # Process seasons sequentially to avoid Trakt API rate-limit pressure
@@ -193,7 +212,7 @@ async def _batch_show_history_op(
             try:
                 result = await client_method(request)
                 if isinstance(result, str):
-                    raise BaseToolErrorMixin.handle_api_string_error(
+                    raise ToolErrors.handle_api_string_error(
                         resource_type="sync_history_season",
                         resource_id=str(season_id),
                         error_message=result,
@@ -377,7 +396,7 @@ async def fetch_user_ratings(
 
         # Handle transitional case where API returns error strings
         if isinstance(paginated_result, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"user_{rating_type}_ratings",
                 resource_id=f"user_ratings_{rating_type}",
                 error_message=paginated_result,
@@ -439,7 +458,7 @@ async def add_user_ratings(
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"add_user_{rating_type}_ratings",
                 resource_id=f"add_ratings_{rating_type}",
                 error_message=summary,
@@ -499,7 +518,7 @@ async def remove_user_ratings(
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"remove_user_{rating_type}_ratings",
                 resource_id=f"remove_ratings_{rating_type}",
                 error_message=summary,
@@ -564,7 +583,7 @@ async def fetch_user_watchlist(
 
         # Handle transitional case where API returns error strings
         if isinstance(paginated_result, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"user_{watchlist_type}_watchlist",
                 resource_id=f"user_watchlist_{watchlist_type}",
                 error_message=paginated_result,
@@ -627,7 +646,7 @@ async def add_user_watchlist(
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"add_user_{watchlist_type}_watchlist",
                 resource_id=f"add_watchlist_{watchlist_type}",
                 error_message=summary,
@@ -687,7 +706,7 @@ async def remove_user_watchlist(
 
         # Handle transitional case where API returns error strings
         if isinstance(summary, str):
-            error = BaseToolErrorMixin.handle_api_string_error(
+            error = ToolErrors.handle_api_string_error(
                 resource_type=f"remove_user_{watchlist_type}_watchlist",
                 resource_id=f"remove_watchlist_{watchlist_type}",
                 error_message=summary,
@@ -780,7 +799,7 @@ async def fetch_history(
 
     # Handle transitional case where API returns error strings
     if isinstance(result, str):
-        error = BaseToolErrorMixin.handle_api_string_error(
+        error = ToolErrors.handle_api_string_error(
             resource_type="history",
             resource_id=params.item_id or "all",
             error_message=result,
@@ -837,7 +856,7 @@ async def add_to_history(
 
     # Handle transitional case where API returns error strings
     if isinstance(summary, str):
-        error = BaseToolErrorMixin.handle_api_string_error(
+        error = ToolErrors.handle_api_string_error(
             resource_type=f"add_history_{history_type}",
             resource_id=f"add_history_{history_type}",
             error_message=summary,
@@ -891,7 +910,7 @@ async def remove_from_history(
 
     # Handle transitional case where API returns error strings
     if isinstance(summary, str):
-        error = BaseToolErrorMixin.handle_api_string_error(
+        error = ToolErrors.handle_api_string_error(
             resource_type=f"remove_history_{history_type}",
             resource_id=f"remove_history_{history_type}",
             error_message=summary,
@@ -924,7 +943,7 @@ def register_sync_tools(
     """
 
     @mcp.tool(
-        name=SYNC_TOOLS["fetch_user_ratings"],
+        name="fetch_user_ratings",
         description=(
             "Fetch the authenticated user's personal ratings from Trakt. "
             "Supports optional pagination with 'page' parameter. "
@@ -950,7 +969,7 @@ def register_sync_tools(
         return await fetch_user_ratings(params.rating_type, params.rating, params.page)
 
     @mcp.tool(
-        name=SYNC_TOOLS["add_user_ratings"],
+        name="add_user_ratings",
         description=(
             "Add new ratings for the authenticated user. Requires OAuth authentication."
         ),
@@ -971,7 +990,7 @@ def register_sync_tools(
         return await add_user_ratings(rating_type, items)
 
     @mcp.tool(
-        name=SYNC_TOOLS["remove_user_ratings"],
+        name="remove_user_ratings",
         description=(
             "Remove ratings for the authenticated user. Requires OAuth authentication."
         ),
@@ -992,7 +1011,7 @@ def register_sync_tools(
         return await remove_user_ratings(rating_type, items)
 
     @mcp.tool(
-        name=SYNC_TOOLS["fetch_user_watchlist"],
+        name="fetch_user_watchlist",
         description=(
             "Fetch the authenticated user's watchlist from Trakt. "
             "Supports optional pagination with 'page' parameter and sorting options. "
@@ -1026,7 +1045,7 @@ def register_sync_tools(
         )
 
     @mcp.tool(
-        name=SYNC_TOOLS["add_user_watchlist"],
+        name="add_user_watchlist",
         description=(
             "Add items to the authenticated user's watchlist. "
             "Supports optional notes (VIP only, 500 character limit). "
@@ -1049,7 +1068,7 @@ def register_sync_tools(
         return await add_user_watchlist(watchlist_type, items)
 
     @mcp.tool(
-        name=SYNC_TOOLS["remove_user_watchlist"],
+        name="remove_user_watchlist",
         description=(
             "Remove items from the authenticated user's watchlist. "
             "Requires OAuth authentication."
@@ -1071,7 +1090,7 @@ def register_sync_tools(
         return await remove_user_watchlist(watchlist_type, items)
 
     @mcp.tool(
-        name=SYNC_TOOLS["fetch_history"],
+        name="fetch_history",
         description=(
             "Check if a movie or show has been watched, or browse watch history. "
             "For 'Have I seen [movie]?': provide history_type='movies' and item_id. "
@@ -1105,7 +1124,7 @@ def register_sync_tools(
         return await fetch_history(history_type, item_id, start_at, end_at, page)
 
     @mcp.tool(
-        name=SYNC_TOOLS["add_to_history"],
+        name="add_to_history",
         description=(
             "Add items to watch history. Marks movies, shows, seasons, or episodes "
             "as watched. Optionally specify when they were watched. "
@@ -1125,7 +1144,7 @@ def register_sync_tools(
         return await add_to_history(history_type, items)
 
     @mcp.tool(
-        name=SYNC_TOOLS["remove_from_history"],
+        name="remove_from_history",
         description=(
             "Remove items from watch history. Removes movies, shows, seasons, "
             "or episodes from your watched history. "

@@ -2,6 +2,8 @@
 
 from models.formatters.utils import (
     MAX_OVERVIEW_LENGTH,
+    format_cast_section,
+    format_crew_section,
     format_media_list,
     format_pagination_header,
     format_rating_distribution,
@@ -293,26 +295,6 @@ class ShowFormatters:
         return "\n".join(lines)
 
     @staticmethod
-    def _format_cast_section(members: list[CastMember], heading: str) -> str:
-        """Format a cast or guest stars section."""
-        if not members:
-            return ""
-
-        lines: list[str] = [f"## {heading}", ""]
-        for member in members:
-            person = member.get("person", {})
-            name = person.get("name", "Unknown")
-            characters = member.get("characters", [])
-            char_str = ", ".join(characters) if characters else "Unknown Role"
-            episode_count = member.get("episode_count")
-            count_str = (
-                f" ({episode_count} episodes)" if episode_count is not None else ""
-            )
-            lines.append(f"- **{name}** as {char_str}{count_str}")
-        lines.append("")
-        return "\n".join(lines)
-
-    @staticmethod
     def format_show_people(people: PeopleResponse, show_title: str) -> str:
         """Format show cast and crew data."""
         if not people:
@@ -327,30 +309,16 @@ class ShowFormatters:
 
         lines: list[str] = [f"# People for {show_title}", ""]
 
-        cast_section = ShowFormatters._format_cast_section(cast, "Cast")
+        cast_section = format_cast_section(cast, "Cast", include_episode_count=True)
         if cast_section:
             lines.append(cast_section)
-        guest_section = ShowFormatters._format_cast_section(guest_stars, "Guest Stars")
+        guest_section = format_cast_section(
+            guest_stars, "Guest Stars", include_episode_count=True
+        )
         if guest_section:
             lines.append(guest_section)
-        if crew:
-            lines.append("## Crew")
-            lines.append("")
-            for department, members in sorted(crew.items()):
-                lines.append(f"### {department.title()}")
-                lines.append("")
-                for member in members:
-                    person = member.get("person", {})
-                    name = person.get("name", "Unknown")
-                    jobs = member.get("jobs", [])
-                    jobs_str = ", ".join(jobs) if jobs else "Unknown"
-                    episode_count = member.get("episode_count")
-                    count_str = (
-                        f" ({episode_count} episodes)"
-                        if episode_count is not None
-                        else ""
-                    )
-                    lines.append(f"- **{name}** - {jobs_str}{count_str}")
-                lines.append("")
+        crew_section = format_crew_section(crew, include_episode_count=True)
+        if crew_section:
+            lines.append(crew_section)
 
         return "\n".join(lines)

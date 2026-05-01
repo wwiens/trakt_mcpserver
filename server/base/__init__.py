@@ -1,6 +1,6 @@
 """Base classes and mixins for MCP server components."""
 
-from .error_mixin import BaseToolErrorMixin
+from .error_mixin import ToolErrors
 from .identifier_mixin import IdentifierValidatorMixin
 from .limit_page_mixin import LimitPageValidatorMixin
 from .params import (
@@ -15,7 +15,6 @@ from .params import (
 )
 
 __all__ = [
-    "BaseToolErrorMixin",
     "CommentIdParam",
     "EpisodeIdParam",
     "IdentifierValidatorMixin",
@@ -26,4 +25,5 @@ __all__ = [
     "PersonIdParam",
     "SeasonIdParam",
     "ShowIdParam",
+    "ToolErrors",
 ]

@@ -14,9 +14,8 @@ from config.mcp.descriptions import (
     SEARCH_LIMIT_DESCRIPTION,
     SEARCH_QUERY_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.search import SearchFormatters
-from server.base import BaseToolErrorMixin, LimitPageValidatorMixin
+from server.base import LimitPageValidatorMixin, ToolErrors
 from utils.api.errors import MCPError, handle_api_errors_func
 
 # Type alias for search tool handlers
@@ -77,7 +76,7 @@ def _validate_search_params(
         summary = "Invalid parameters for search: " + "; ".join(
             f"{ve['field']}: {ve['message']}" for ve in validation_errors
         )
-        raise BaseToolErrorMixin.handle_validation_error(
+        raise ToolErrors.handle_validation_error(
             summary, validation_errors=validation_errors, operation=operation
         ) from e
     else:
@@ -117,7 +116,7 @@ async def _run_search(
     except MCPError:
         raise
     except Exception as e:
-        raise BaseToolErrorMixin.handle_unexpected_error(
+        raise ToolErrors.handle_unexpected_error(
             operation=op, error=e, query=q, limit=lim, page=p
         ) from e
 
@@ -192,7 +191,7 @@ def register_search_tools(
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["search_shows"],
+        name="search_shows",
         description="Search for TV shows on Trakt by title",
     )
     async def search_shows_tool(
@@ -208,7 +207,7 @@ def register_search_tools(
         return await search_shows(query, limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["search_movies"],
+        name="search_movies",
         description="Search for movies on Trakt by title",
     )
     async def search_movies_tool(

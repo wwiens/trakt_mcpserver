@@ -17,7 +17,7 @@ from client.shows.client import ShowsClient
 from config.api import DEFAULT_LIMIT
 from config.mcp.resources import MCP_RESOURCES
 from models.formatters.shows import ShowFormatters
-from server.base import BaseToolErrorMixin, ShowIdParam
+from server.base import ShowIdParam, ToolErrors
 from utils.api.error_types import TraktValidationError
 from utils.api.errors import handle_api_errors_func
 
@@ -39,7 +39,7 @@ async def get_trending_shows() -> str:
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_trending_shows(limit=DEFAULT_LIMIT)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="trending_shows",
             resource_id="list",
             error_message=shows,
@@ -60,7 +60,7 @@ async def get_popular_shows() -> str:
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_popular_shows(limit=DEFAULT_LIMIT)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="popular_shows",
             resource_id="list",
             error_message=shows,
@@ -81,7 +81,7 @@ async def get_favorited_shows() -> str:
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_favorited_shows(limit=DEFAULT_LIMIT)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="favorited_shows",
             resource_id="list",
             error_message=shows,
@@ -115,7 +115,7 @@ async def get_played_shows() -> str:
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_played_shows(limit=DEFAULT_LIMIT)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="played_shows",
             resource_id="list",
             error_message=shows,
@@ -137,7 +137,7 @@ async def get_watched_shows() -> str:
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_watched_shows(limit=DEFAULT_LIMIT)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="watched_shows",
             resource_id="list",
             error_message=shows,
@@ -158,7 +158,7 @@ async def get_anticipated_shows() -> str:
     client: ShowsClient = get_client(ShowsClient)
     shows = await client.get_anticipated_shows(limit=DEFAULT_LIMIT)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="anticipated_shows",
             resource_id="list",
             error_message=shows,
@@ -199,7 +199,7 @@ async def get_show_ratings(show_id: str) -> str:
 
     # Handle transitional case where API returns error strings
     if isinstance(show, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="show",
             resource_id=show_id,
             error_message=show,
@@ -213,7 +213,7 @@ async def get_show_ratings(show_id: str) -> str:
 
     # Handle transitional case where API returns error strings
     if isinstance(ratings, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="show_ratings",
             resource_id=show_id,
             error_message=ratings,

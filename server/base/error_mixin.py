@@ -1,4 +1,4 @@
-"""Base error handling mixin for MCP tools."""
+"""Standardized error handling helpers for MCP tools."""
 
 from collections.abc import Awaitable, Callable
 from functools import wraps
@@ -175,14 +175,17 @@ def sanitize_kwargs(kwargs: dict[str, Any]) -> str:
     return str(sanitized)
 
 
-class BaseToolErrorMixin:
-    """Mixin providing standardized error handling for MCP tools.
+class ToolErrors:
+    """Static namespace of standardized error-handling helpers for MCP tools.
 
-    This mixin ensures all tools follow consistent error handling patterns:
-    1. Never return string errors - always raise structured MCP errors
-    2. Provide rich context for debugging
-    3. Handle authentication requirements consistently
-    4. Convert unexpected errors to proper MCP errors
+    Holds no instance state and is not meant to be inherited; every member is a
+    ``@staticmethod`` or ``@classmethod`` and call sites use ``ToolErrors.foo(...)``
+    directly. Responsibilities:
+
+    1. Raise structured MCP errors instead of returning string errors
+    2. Attach request context for debugging
+    3. Handle authentication-required failures consistently
+    4. Convert unexpected exceptions into proper MCP errors
     """
 
     @staticmethod

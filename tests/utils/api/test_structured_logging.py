@@ -33,7 +33,6 @@ def test_context_filter_with_context():
         RequestContext()
         .with_endpoint("/test/endpoint", "GET")
         .with_resource("test", "test-id")
-        .with_user("user123")
     )
     set_current_context(context)
 

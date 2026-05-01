@@ -87,11 +87,9 @@ class TestErrorPropagationThroughStack:
         """Test 400 Bad Request error propagation from Client to Tool to MCP."""
         # Set up request context
         context = (
-            RequestContext()
+            RequestContext(parameters={"query": "test"})
             .with_endpoint("/shows/search", "GET")
             .with_resource("show", "test-show")
-            .with_parameters(query="test")
-            .with_user("test_user")
         )
         set_current_context(context)
 
@@ -373,11 +371,9 @@ class TestErrorContextPreservation:
         """Test that full request context is preserved in error responses."""
         # Set up comprehensive context
         context = (
-            RequestContext()
+            RequestContext(parameters={"limit": 10, "extended": "full"})
             .with_endpoint("/shows/breaking-bad/ratings", "GET")
             .with_resource("show", "breaking-bad")
-            .with_parameters(limit=10, extended="full")
-            .with_user("test_user_123")
         )
         set_current_context(context)
 
@@ -421,7 +417,7 @@ class TestErrorContextPreservation:
     )
     async def test_parameter_context_in_validation_errors(self):
         """Test that parameter context is preserved in validation errors."""
-        context = RequestContext().with_parameters(show_id="", season=0, episode=-1)
+        context = RequestContext(parameters={"show_id": "", "season": 0, "episode": -1})
         set_current_context(context)
 
         # Test parameter validation error
@@ -531,11 +527,11 @@ class TestEdgeCasesAndErrorScenarios:
     @pytest.mark.asyncio
     async def test_missing_required_parameters_validation(self):
         """Test validation of missing required parameters."""
-        from server.base.error_mixin import BaseToolErrorMixin
+        from server.base.error_mixin import ToolErrors
 
         # Test the validation mixin directly
         with pytest.raises(InvalidParamsError) as exc_info:
-            BaseToolErrorMixin.validate_required_params(
+            ToolErrors.validate_required_params(
                 show_id=None,
                 movie_id="",
                 query="   ",  # Whitespace only
@@ -555,11 +551,11 @@ class TestEdgeCasesAndErrorScenarios:
     @pytest.mark.asyncio
     async def test_either_or_parameter_validation(self):
         """Test validation of either/or parameter requirements."""
-        from server.base.error_mixin import BaseToolErrorMixin
+        from server.base.error_mixin import ToolErrors
 
         # Test successful validation - one valid set provided
         try:
-            BaseToolErrorMixin.validate_either_or_params(
+            ToolErrors.validate_either_or_params(
                 [("show_id",), ("show_title", "show_year")],
                 show_id="breaking-bad",
                 show_title="",
@@ -572,7 +568,7 @@ class TestEdgeCasesAndErrorScenarios:
 
         # Test failed validation - no valid sets provided
         with pytest.raises(InvalidParamsError) as exc_info:
-            BaseToolErrorMixin.validate_either_or_params(
+            ToolErrors.validate_either_or_params(
                 [("show_id",), ("show_title", "show_year")],
                 show_id="",
                 show_title="",

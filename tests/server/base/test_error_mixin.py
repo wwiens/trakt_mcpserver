@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from server.base.error_mixin import (
-    BaseToolErrorMixin,
+    ToolErrors,
     is_sensitive_key,
     sanitize_args,
     sanitize_kwargs,
@@ -157,7 +157,7 @@ class TestErrorHandlingDecorator:
     async def test_with_error_handling_sanitizes_sensitive_args(self) -> None:
         """Test that sensitive args are sanitized in error data."""
 
-        @BaseToolErrorMixin.with_error_handling("test_operation")
+        @ToolErrors.with_error_handling("test_operation")
         async def failing_function(token: str, user_id: str) -> None:
             raise ValueError("Test error")
 
@@ -177,7 +177,7 @@ class TestErrorHandlingDecorator:
     async def test_with_error_handling_sanitizes_sensitive_kwargs(self) -> None:
         """Test that sensitive kwargs are sanitized in error data."""
 
-        @BaseToolErrorMixin.with_error_handling("test_operation")
+        @ToolErrors.with_error_handling("test_operation")
         async def failing_function(**kwargs: Any) -> None:
             raise ValueError("Test error")
 
@@ -206,7 +206,7 @@ class TestErrorHandlingDecorator:
     async def test_with_error_handling_preserves_non_sensitive_data(self) -> None:
         """Test that non-sensitive data is preserved in error data."""
 
-        @BaseToolErrorMixin.with_error_handling("test_operation")
+        @ToolErrors.with_error_handling("test_operation")
         async def failing_function(show_id: str, season: int, **kwargs: Any) -> None:
             raise ValueError("Test error")
 
@@ -233,7 +233,7 @@ class TestErrorHandlingDecorator:
     async def test_with_error_handling_returns_friendly_auth_message(self) -> None:
         """Test AuthenticationRequiredError returns friendly message, does not raise."""
 
-        @BaseToolErrorMixin.with_error_handling("test_operation")
+        @ToolErrors.with_error_handling("test_operation")
         async def auth_failing_function() -> str:
             raise AuthenticationRequiredError("access shows")
 

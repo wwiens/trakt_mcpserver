@@ -1,29 +1,18 @@
 """Formatters for recommendation data."""
 
-from typing import Protocol
-
 from models.recommendations.recommendation import (
-    FavoritedByEntry,
     TraktRecommendedMovie,
     TraktRecommendedShow,
 )
-from models.types.ids import TraktIds
-
-
-class _RecommendationItem(Protocol):
-    """Protocol for recommendation items with shared attributes."""
-
-    title: str
-    year: int | None
-    ids: TraktIds
-    favorited_by: list[FavoritedByEntry]
 
 
 class RecommendationFormatters:
     """Helper class for formatting recommendation data for MCP responses."""
 
     @staticmethod
-    def _format_recommendation_item(item: _RecommendationItem) -> str:
+    def _format_recommendation_item(
+        item: TraktRecommendedMovie | TraktRecommendedShow,
+    ) -> str:
         """Format a single recommendation item.
 
         Args:

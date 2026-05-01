@@ -28,10 +28,9 @@ from config.mcp.descriptions import (
     PERIOD_DESCRIPTION,
     SHOW_ID_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.shows import ShowFormatters
 from models.formatters.videos import VideoFormatters
-from server.base import BaseToolErrorMixin, LimitOnly, PeriodParams, ShowIdParam
+from server.base import LimitOnly, PeriodParams, ShowIdParam, ToolErrors
 from utils.api.errors import MCPError, handle_api_errors_func
 from utils.api.request_context import set_tool_context
 
@@ -75,7 +74,7 @@ async def fetch_trending_shows(
     client = get_client(TrendingShowsClient)
     shows = await client.get_trending_shows(limit=limit, page=page)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="trending_shows",
             resource_id="list",
             error_message=shows,
@@ -106,7 +105,7 @@ async def fetch_popular_shows(
     client = get_client(PopularShowsClient)
     shows = await client.get_popular_shows(limit=limit, page=page)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="popular_shows",
             resource_id="list",
             error_message=shows,
@@ -141,7 +140,7 @@ async def fetch_favorited_shows(
     client = get_client(ShowStatsClient)
     shows = await client.get_favorited_shows(limit=limit, period=period, page=page)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="favorited_shows",
             resource_id="list",
             error_message=shows,
@@ -182,7 +181,7 @@ async def fetch_played_shows(
     client = get_client(ShowStatsClient)
     shows = await client.get_played_shows(limit=limit, period=period, page=page)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="played_shows",
             resource_id="list",
             error_message=shows,
@@ -216,7 +215,7 @@ async def fetch_watched_shows(
     client = get_client(ShowStatsClient)
     shows = await client.get_watched_shows(limit=limit, period=period, page=page)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="watched_shows",
             resource_id="list",
             error_message=shows,
@@ -247,7 +246,7 @@ async def fetch_anticipated_shows(
     client = get_client(AnticipatedShowsClient)
     shows = await client.get_anticipated_shows(limit=limit, page=page)
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="anticipated_shows",
             resource_id="list",
             error_message=shows,
@@ -282,7 +281,7 @@ async def fetch_show_ratings(show_id: str) -> str:
 
         # Handle transitional case where API returns error strings
         if isinstance(show_data, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
+            raise ToolErrors.handle_api_string_error(
                 resource_type="show",
                 resource_id=show_id,
                 error_message=show_data,
@@ -294,7 +293,7 @@ async def fetch_show_ratings(show_id: str) -> str:
 
         # Handle transitional case where API returns error strings
         if isinstance(ratings, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
+            raise ToolErrors.handle_api_string_error(
                 resource_type="show_ratings",
                 resource_id=show_id,
                 error_message=ratings,
@@ -339,7 +338,7 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
             show_data = await client.get_show_extended(show_id)
             # Handle transitional case where API returns error strings
             if isinstance(show_data, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
+                raise ToolErrors.handle_api_string_error(
                     resource_type="show_extended",
                     resource_id=show_id,
                     error_message=show_data,
@@ -350,7 +349,7 @@ async def fetch_show_summary(show_id: str, extended: bool = True) -> str:
             show_data = await client.get_show(show_id)
             # Handle transitional case where API returns error strings
             if isinstance(show_data, str):
-                raise BaseToolErrorMixin.handle_api_string_error(
+                raise ToolErrors.handle_api_string_error(
                     resource_type="show",
                     resource_id=show_id,
                     error_message=show_data,
@@ -382,7 +381,7 @@ async def fetch_show_videos(show_id: str, embed_markdown: bool = True) -> str:
         videos = await client.get_videos(show_id)
 
         if isinstance(videos, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
+            raise ToolErrors.handle_api_string_error(
                 resource_type="show_videos",
                 resource_id=show_id,
                 error_message=videos,
@@ -456,7 +455,7 @@ async def fetch_related_shows(
         page=params.page,
     )
     if isinstance(shows, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="related_shows",
             resource_id=id_params.show_id,
             error_message=shows,
@@ -484,7 +483,7 @@ async def fetch_show_seasons(show_id: str) -> str:
     client = get_client(ShowsClient)
     seasons = await client.get_seasons(show_id)
     if isinstance(seasons, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="show_seasons",
             resource_id=show_id,
             error_message=seasons,
@@ -550,7 +549,7 @@ async def fetch_show_people(show_id: str, include_guest_stars: bool = False) -> 
     )
 
     if isinstance(people, str):
-        raise BaseToolErrorMixin.handle_api_string_error(
+        raise ToolErrors.handle_api_string_error(
             resource_type="show_people",
             resource_id=params.show_id,
             error_message=people,
@@ -569,7 +568,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_trending_shows"],
+        name="fetch_trending_shows",
         description=(
             "Fetch trending TV shows from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -582,7 +581,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_trending_shows(limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_popular_shows"],
+        name="fetch_popular_shows",
         description=(
             "Fetch popular TV shows from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -595,7 +594,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_popular_shows(limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_favorited_shows"],
+        name="fetch_favorited_shows",
         description=(
             "Fetch most favorited TV shows from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -612,7 +611,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_favorited_shows(limit, period, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_played_shows"],
+        name="fetch_played_shows",
         description=(
             "Fetch most played TV shows from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -629,7 +628,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_played_shows(limit, period, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_watched_shows"],
+        name="fetch_watched_shows",
         description=(
             "Fetch most watched TV shows from Trakt. "
             "Use page parameter for paginated results, or omit for all results."
@@ -646,7 +645,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_watched_shows(limit, period, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_anticipated_shows"],
+        name="fetch_anticipated_shows",
         description=(
             "Fetch most anticipated TV shows from Trakt, sorted by list count. "
             "Use page parameter for paginated results, or omit for all results."
@@ -659,7 +658,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_anticipated_shows(limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_ratings"],
+        name="fetch_show_ratings",
         description="Fetch ratings and voting statistics for a specific TV show",
     )
     async def fetch_show_ratings_tool(
@@ -670,7 +669,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_show_ratings(params.show_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_summary"],
+        name="fetch_show_summary",
         description=(
             "Get TV show summary from Trakt. "
             "Default behavior (extended=true): Returns comprehensive data including "
@@ -688,7 +687,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_show_summary(params.show_id, params.extended)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_videos"],
+        name="fetch_show_videos",
         description=(
             "Get videos (trailers, teasers, etc.) for a show from Trakt. "
             "Set embed_markdown=False to return simple links instead of "
@@ -708,7 +707,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_show_videos(params.show_id, params.embed_markdown)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_related_shows"],
+        name="fetch_related_shows",
         description=(
             "Fetch TV shows related to a specific show. Returns similar shows "
             "based on genres, themes, and viewer patterns. "
@@ -723,7 +722,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_related_shows(show_id, limit, page)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_seasons"],
+        name="fetch_show_seasons",
         description=(
             "Fetch all seasons for a TV show from Trakt, including episode counts, "
             "aired episodes, and ratings per season."
@@ -735,7 +734,7 @@ def register_show_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         return await fetch_show_seasons(show_id)
 
     @mcp.tool(
-        name=TOOL_NAMES["fetch_show_people"],
+        name="fetch_show_people",
         description=(
             "Get cast and crew for a TV show from Trakt. "
             "Set include_guest_stars=true to also return guest stars "

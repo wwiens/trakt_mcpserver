@@ -13,9 +13,8 @@ from config.mcp.descriptions import (
     SEASON_DESCRIPTION,
     SHOW_ID_DESCRIPTION,
 )
-from config.mcp.tools import TOOL_NAMES
 from models.formatters.checkin import CheckinFormatters
-from server.base import BaseToolErrorMixin
+from server.base import ToolErrors
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -61,7 +60,7 @@ async def checkin_to_show(
 
     # Check authentication (attempts token refresh if expired)
     if not await client.ensure_authenticated():
-        raise BaseToolErrorMixin.handle_authentication_required(
+        raise ToolErrors.handle_authentication_required(
             action="check in to a show episode",
             show_id=show_id,
             show_title=show_title,
@@ -70,7 +69,7 @@ async def checkin_to_show(
         )
 
     # Validate parameters
-    BaseToolErrorMixin.validate_either_or_params(
+    ToolErrors.validate_either_or_params(
         param_sets=[("show_id",), ("show_title",)],
         show_id=show_id,
         show_title=show_title,
@@ -92,7 +91,7 @@ async def checkin_to_show(
 
         # Handle transitional case where API returns error strings
         if isinstance(response, str):
-            raise BaseToolErrorMixin.handle_api_string_error(
+            raise ToolErrors.handle_api_string_error(
                 resource_type="checkin",
                 resource_id=show_id or show_title or "unknown",
                 error_message=response,
@@ -103,7 +102,7 @@ async def checkin_to_show(
         return CheckinFormatters.format_checkin_response(response)
     except Exception as e:
         # Convert any unexpected errors to structured MCP errors
-        raise BaseToolErrorMixin.handle_unexpected_error(
+        raise ToolErrors.handle_unexpected_error(
             operation="check in to show episode",
             error=e,
             show_id=show_id,
@@ -122,7 +121,7 @@ def register_checkin_tools(mcp: FastMCP) -> Any:
     """
 
     @mcp.tool(
-        name=TOOL_NAMES["checkin_to_show"],
+        name="checkin_to_show",
         description="Check in to a TV show episode you're currently watching on Trakt",
     )
     async def checkin_to_show_tool(

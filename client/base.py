@@ -39,14 +39,9 @@ def _is_list(result: Any) -> TypeGuard[list[Any]]:
     return isinstance(result, list)
 
 
-def _is_list_of_dicts(result: list[Any]) -> TypeGuard[list[dict[str, Any]]]:
-    """Type guard: narrows list[Any] to list[dict[str, Any]]."""
-    return all(isinstance(item, dict) for item in result)
-
-
 def _is_list_response(result: Any) -> TypeGuard[list[dict[str, Any]]]:
     """Type guard for list responses."""
-    return _is_list(result) and _is_list_of_dicts(result)
+    return _is_list(result) and all(isinstance(item, dict) for item in result)
 
 
 def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:

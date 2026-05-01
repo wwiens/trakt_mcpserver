@@ -173,7 +173,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 
 ### Error Handling
 - Use `@handle_api_errors` decorator from `utils.api.errors`
-- **Always check API results before formatting** — API clients may return error strings instead of typed data. Check `isinstance(result, str)` before passing to formatters; use `BaseToolErrorMixin.handle_api_string_error()` to raise structured errors.
+- **Always check API results before formatting** — API clients may return error strings instead of typed data. Check `isinstance(result, str)` before passing to formatters; use `ToolErrors.handle_api_string_error()` to raise structured errors.
 - Authentication checks at tool/resource level
 
 ### Data Flow
