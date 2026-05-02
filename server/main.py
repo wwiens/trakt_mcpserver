@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from typing import Final
 
@@ -55,7 +55,7 @@ REGISTRATIONS: Final[tuple[Callable[[FastMCP], object], ...]] = (
 
 
 @asynccontextmanager
-async def _lifespan(_mcp: FastMCP) -> AsyncIterator[None]:
+async def _lifespan(_mcp: FastMCP) -> AsyncGenerator[None]:
     """Close pooled HTTP clients when the server stops."""
     try:
         yield

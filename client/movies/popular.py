@@ -39,17 +39,8 @@ class PopularMoviesClient(BaseClient):
     ) -> list[MovieResponse] | PaginatedResponse[MovieResponse]:
         """Get popular movies from Trakt.
 
-        Args:
-            limit: Controls result size based on pagination mode:
-                - Auto-pagination (page=None): Maximum TOTAL items to return
-                - Single page (page=N): Items per page in the response
-                Use limit=0 with page=None to fetch all available results.
-            page: Page number for single-page mode, or None for auto-pagination.
-            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
-
-        Returns:
-            If page is None: List of up to 'limit' popular movies
-            If page specified: Paginated response with metadata for that page
+        See ``BaseClient._fetch_paginated`` for pagination semantics
+        (``page=None`` auto-paginates up to ``limit``; ``page=int`` returns one page).
         """
         return await self._fetch_paginated(
             TRAKT_ENDPOINTS["movies_popular"],

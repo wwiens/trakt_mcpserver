@@ -10,6 +10,8 @@ from utils.api.errors import handle_api_errors
 
 from ..base import BaseClient
 
+StatsPeriod = Literal["daily", "weekly", "monthly", "yearly", "all"]
+
 
 class ShowStatsClient(BaseClient):
     """Client for show statistics operations."""
@@ -18,7 +20,7 @@ class ShowStatsClient(BaseClient):
     async def get_favorited_shows(
         self,
         limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        period: StatsPeriod = "weekly",
         page: None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[FavoritedShowWrapper]: ...
@@ -27,7 +29,7 @@ class ShowStatsClient(BaseClient):
     async def get_favorited_shows(
         self,
         limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        period: StatsPeriod = "weekly",
         page: int = ...,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> PaginatedResponse[FavoritedShowWrapper]: ...
@@ -36,24 +38,13 @@ class ShowStatsClient(BaseClient):
     async def get_favorited_shows(
         self,
         limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        period: StatsPeriod = "weekly",
         page: int | None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[FavoritedShowWrapper] | PaginatedResponse[FavoritedShowWrapper]:
         """Get favorited shows from Trakt.
 
-        Args:
-            limit: Controls result size based on pagination mode:
-                - Auto-pagination (page=None): Maximum TOTAL items to return
-                - Single page (page=N): Items per page in the response
-                Use limit=0 with page=None to fetch all available results.
-            period: Time period for favorited shows
-            page: Page number for single-page mode, or None for auto-pagination.
-            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
-
-        Returns:
-            If page is None: List of up to 'limit' favorited shows
-            If page specified: Paginated response with metadata for that page
+        See ``BaseClient._fetch_paginated`` for pagination semantics.
         """
         endpoint = TRAKT_ENDPOINTS["shows_favorited"].replace(":period", period)
         return await self._fetch_paginated(
@@ -68,7 +59,7 @@ class ShowStatsClient(BaseClient):
     async def get_played_shows(
         self,
         limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        period: StatsPeriod = "weekly",
         page: None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[PlayedShowWrapper]: ...
@@ -77,7 +68,7 @@ class ShowStatsClient(BaseClient):
     async def get_played_shows(
         self,
         limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        period: StatsPeriod = "weekly",
         page: int = ...,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> PaginatedResponse[PlayedShowWrapper]: ...
@@ -86,24 +77,13 @@ class ShowStatsClient(BaseClient):
     async def get_played_shows(
         self,
         limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        period: StatsPeriod = "weekly",
         page: int | None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[PlayedShowWrapper] | PaginatedResponse[PlayedShowWrapper]:
         """Get played shows from Trakt.
 
-        Args:
-            limit: Controls result size based on pagination mode:
-                - Auto-pagination (page=None): Maximum TOTAL items to return
-                - Single page (page=N): Items per page in the response
-                Use limit=0 with page=None to fetch all available results.
-            period: Time period for played shows
-            page: Page number for single-page mode, or None for auto-pagination.
-            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
-
-        Returns:
-            If page is None: List of up to 'limit' played shows
-            If page specified: Paginated response with metadata for that page
+        See ``BaseClient._fetch_paginated`` for pagination semantics.
         """
         endpoint = TRAKT_ENDPOINTS["shows_played"].replace(":period", period)
         return await self._fetch_paginated(
@@ -118,7 +98,7 @@ class ShowStatsClient(BaseClient):
     async def get_watched_shows(
         self,
         limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        period: StatsPeriod = "weekly",
         page: None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[WatchedShowWrapper]: ...
@@ -127,7 +107,7 @@ class ShowStatsClient(BaseClient):
     async def get_watched_shows(
         self,
         limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        period: StatsPeriod = "weekly",
         page: int = ...,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> PaginatedResponse[WatchedShowWrapper]: ...
@@ -136,24 +116,13 @@ class ShowStatsClient(BaseClient):
     async def get_watched_shows(
         self,
         limit: int = DEFAULT_LIMIT,
-        period: Literal["daily", "weekly", "monthly", "yearly", "all"] = "weekly",
+        period: StatsPeriod = "weekly",
         page: int | None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
     ) -> list[WatchedShowWrapper] | PaginatedResponse[WatchedShowWrapper]:
         """Get watched shows from Trakt.
 
-        Args:
-            limit: Controls result size based on pagination mode:
-                - Auto-pagination (page=None): Maximum TOTAL items to return
-                - Single page (page=N): Items per page in the response
-                Use limit=0 with page=None to fetch all available results.
-            period: Time period for watched shows
-            page: Page number for single-page mode, or None for auto-pagination.
-            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
-
-        Returns:
-            If page is None: List of up to 'limit' watched shows
-            If page specified: Paginated response with metadata for that page
+        See ``BaseClient._fetch_paginated`` for pagination semantics.
         """
         endpoint = TRAKT_ENDPOINTS["shows_watched"].replace(":period", period)
         return await self._fetch_paginated(

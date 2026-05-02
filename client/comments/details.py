@@ -58,16 +58,8 @@ class CommentDetailsClient(BaseClient):
 
         Args:
             comment_id: The Trakt comment ID
-            limit: Controls result size based on pagination mode:
-                - Auto-pagination (page=None): Maximum TOTAL replies to return
-                - Single page (page=N): Replies per page in the response
-                Use limit=0 with page=None to fetch all available results.
-            page: Page number for single-page mode, or None for auto-pagination.
-            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
-        Returns:
-            If page is None: List of up to 'limit' comment replies
-            If page specified: Paginated response with metadata for that page
+        See ``BaseClient._fetch_paginated`` for pagination semantics.
         """
         endpoint = TRAKT_ENDPOINTS["comment_replies"].replace(
             ":id", quote(comment_id, safe="")

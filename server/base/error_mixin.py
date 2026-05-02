@@ -2,7 +2,7 @@
 
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, TypeGuard, TypeVar
+from typing import Any, TypeVar, cast
 
 from config.auth import AUTH_VERIFICATION_URL
 from utils.api.error_types import (
@@ -55,14 +55,39 @@ def is_sensitive_key(key: str) -> bool:
     )
 
 
-def _is_dict_type(value: Any) -> TypeGuard[dict[Any, Any]]:
-    """Type guard for dictionary values."""
-    return isinstance(value, dict)
+_TOKEN_LABEL_FRAGMENTS = ("bearer ", "token:", "secret:", "password:")
+_SENSITIVE_WORDS = ("secret", "token", "password", "auth", "key")
+_KEY_HINTS_FOR_TOKEN = ("token", "code", "auth", "key")
 
 
-def _is_list_or_tuple_type(value: Any) -> TypeGuard[list[Any] | tuple[Any, ...]]:
-    """Type guard for list or tuple values."""
-    return isinstance(value, list | tuple)
+def _looks_id_shaped(value: str) -> bool:
+    return (
+        value.replace("-", "").replace("_", "").isalnum()
+        or "_" in value
+        or "-" in value
+    )
+
+
+def _is_token_like_string(value: str, key: str | None) -> bool:
+    """Whether a string value should be redacted based on its contents and key."""
+    value_lower = value.lower()
+
+    if any(label in value_lower for label in _TOKEN_LABEL_FRAGMENTS):
+        return True
+
+    if (
+        len(value) > 10
+        and any(word in value_lower for word in _SENSITIVE_WORDS)
+        and _looks_id_shaped(value)
+    ):
+        return True
+
+    return bool(
+        len(value) > 20
+        and value.replace("-", "").replace("_", "").isalnum()
+        and key
+        and any(word in key.lower() for word in _KEY_HINTS_FOR_TOKEN)
+    )
 
 
 def sanitize_value(value: Any, key: str | None = None) -> Any:
@@ -75,58 +100,24 @@ def sanitize_value(value: Any, key: str | None = None) -> Any:
     Returns:
         Sanitized value or "[REDACTED]" if sensitive
     """
-    # Check if key indicates sensitive data
     if key and is_sensitive_key(key):
         return "[REDACTED]"
 
-    # Check string values for sensitive patterns
     if isinstance(value, str):
-        value_lower = value.lower()
-        # Check if the string itself looks like a token/secret
-        if any(
-            pattern in value_lower
-            for pattern in ["bearer ", "token:", "secret:", "password:"]
-        ):
+        if _is_token_like_string(value, key):
             return "[REDACTED]"
-        # Check if string contains sensitive words
-        if (
-            any(
-                word in value_lower
-                for word in ["secret", "token", "password", "auth", "key"]
-            )
-            and len(value) > 10
-            and (
-                value.replace("-", "").replace("_", "").isalnum()
-                or "_" in value
-                or "-" in value
-            )
-        ):
-            return "[REDACTED]"
-        # Long random strings might be tokens
-        if (
-            len(value) > 20
-            and value.replace("-", "").replace("_", "").isalnum()
-            and key
-            and any(word in key.lower() for word in ["token", "code", "auth", "key"])
-        ):
-            return "[REDACTED]"
+        return value
 
-    # Recursively sanitize dictionaries
-    if _is_dict_type(value):
-        result: dict[Any, Any] = {}
-        for k, v in value.items():
-            result[k] = sanitize_value(v, str(k) if k else None)
-        return result
+    if isinstance(value, dict):
+        items = cast("dict[Any, Any]", value)
+        return {k: sanitize_value(v, str(k) if k else None) for k, v in items.items()}
 
-    # Recursively sanitize lists
-    if _is_list_or_tuple_type(value):
-        sanitized: list[Any] = [sanitize_value(item) for item in value]
-        if isinstance(value, tuple):
-            return tuple(sanitized)
-        return sanitized
+    if isinstance(value, list | tuple):
+        seq = cast("list[Any] | tuple[Any, ...]", value)
+        sanitized = [sanitize_value(item) for item in seq]
+        return tuple(sanitized) if isinstance(value, tuple) else sanitized
 
-    # Preserve safe primitives; redact complex objects to avoid leaking reprs
-    if isinstance(value, str | int | float | bool) or value is None:
+    if isinstance(value, int | float | bool) or value is None:
         return value
     return f"<{type(value).__name__}>"
 
