@@ -1,6 +1,6 @@
 """Search client for searching shows and movies."""
 
-from typing import overload
+from typing import Literal, overload
 
 from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
@@ -16,7 +16,7 @@ class SearchClient(BaseClient):
 
     async def _search(
         self,
-        kind: str,
+        kind: Literal["show", "movie"],
         query: str,
         limit: int,
         page: int | None,

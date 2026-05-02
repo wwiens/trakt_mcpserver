@@ -2,7 +2,7 @@
 
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, TypeGuard, TypeVar
+from typing import Any, Final, TypeGuard, TypeVar
 
 from config.auth import AUTH_VERIFICATION_URL
 from utils.api.error_types import (
@@ -55,9 +55,20 @@ def is_sensitive_key(key: str) -> bool:
     )
 
 
-_TOKEN_LABEL_FRAGMENTS = ("bearer ", "token:", "secret:", "password:")
-_SENSITIVE_WORDS = ("secret", "token", "password", "auth", "key")
-_KEY_HINTS_FOR_TOKEN = ("token", "code", "auth", "key")
+_TOKEN_LABEL_FRAGMENTS: Final[tuple[str, ...]] = (
+    "bearer ",
+    "token:",
+    "secret:",
+    "password:",
+)
+_SENSITIVE_WORDS: Final[tuple[str, ...]] = (
+    "secret",
+    "token",
+    "password",
+    "auth",
+    "key",
+)
+_KEY_HINTS_FOR_TOKEN: Final[tuple[str, ...]] = ("token", "code", "auth", "key")
 
 
 def _is_dict_type(value: Any) -> TypeGuard[dict[Any, Any]]:
@@ -90,11 +101,15 @@ def _is_token_like_string(value: str, key: str | None) -> bool:
     ):
         return True
 
+    key_segments: set[str] = (
+        set(key.lower().replace("-", "_").replace(".", "_").split("_"))
+        if key
+        else set()
+    )
     return bool(
         len(value) > 20
         and value.replace("-", "").replace("_", "").isalnum()
-        and key
-        and any(word in key.lower() for word in _KEY_HINTS_FOR_TOKEN)
+        and key_segments & set(_KEY_HINTS_FOR_TOKEN)
     )
 
 

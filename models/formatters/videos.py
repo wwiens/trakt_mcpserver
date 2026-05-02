@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import UTC, datetime
 from html import escape
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 from urllib.parse import urlparse
 
 from pydantic import ValidationError
@@ -29,7 +29,7 @@ _YT_PATTERNS = [
 ]
 
 
-_IFRAME_TEMPLATE = (
+_IFRAME_TEMPLATE: Final[str] = (
     '<iframe width="560" height="315" '
     'src="{src}" '
     'title="YouTube video player" frameborder="0" '
@@ -99,7 +99,7 @@ def _render_video_metadata(video: VideoResponse) -> str | None:
 def _append_video_section(
     lines: list[str], video: VideoResponse, *, embed_markdown: bool
 ) -> None:
-    raw_title = video.get("title", "Unknown Video")
+    raw_title = video.get("title") or "Unknown Video"
     lines.append(f"### {VideoFormatters.escape_markdown(raw_title)}")
     lines.append(_render_video_link(video, embed_markdown))
     metadata_line = _render_video_metadata(video)
