@@ -26,7 +26,7 @@ T = TypeVar("T", bound=BaseClient)
 
 
 def _is_instance_of(obj: object, cls: type[T]) -> TypeGuard[T]:
-    """TypeGuard wrapper around ``isinstance`` that preserves the ``T`` binding."""
+    """TypeGuard wrapper — ``isinstance(obj, cls)`` alone does not bind ``T``."""
     return isinstance(obj, cls)
 
 

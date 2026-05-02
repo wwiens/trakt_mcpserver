@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Annotated, Any, ClassVar, Literal
+from typing import Annotated, Any, ClassVar, Literal, TypeVar
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, field_validator
@@ -56,6 +56,31 @@ from server.base import IdentifierValidatorMixin, ToolErrors
 from utils.api.errors import MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
+
+T = TypeVar("T")
+
+
+def _unwrap_or_raise(
+    result: T | str,
+    *,
+    resource_type: str,
+    resource_id: str,
+    operation: str,
+) -> T:
+    """Return ``result`` as ``T``, or raise a structured error if it is a string.
+
+    Trakt API clients still surface some failures as error strings instead of
+    raising. This helper folds the recurring guard-and-raise shape into a
+    single call, preserving pyright narrowing on the success path.
+    """
+    if isinstance(result, str):
+        raise ToolErrors.handle_api_string_error(
+            resource_type=resource_type,
+            resource_id=resource_id,
+            error_message=result,
+            operation=operation,
+        )
+    return result
 
 
 def _aggregate_summary(
@@ -394,15 +419,12 @@ async def fetch_user_ratings(
             rating_type, rating, pagination=pagination_params
         )
 
-        # Handle transitional case where API returns error strings
-        if isinstance(paginated_result, str):
-            error = ToolErrors.handle_api_string_error(
-                resource_type=f"user_{rating_type}_ratings",
-                resource_id=f"user_ratings_{rating_type}",
-                error_message=paginated_result,
-                operation="fetch_user_ratings",
-            )
-            raise error
+        paginated_result = _unwrap_or_raise(
+            paginated_result,
+            resource_type=f"user_{rating_type}_ratings",
+            resource_id=f"user_ratings_{rating_type}",
+            operation="fetch_user_ratings",
+        )
 
         return SyncRatingsFormatters.format_user_ratings(
             paginated_result, rating_type, rating
@@ -456,15 +478,12 @@ async def add_user_ratings(
 
         summary = await client.add_sync_ratings(request)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(summary, str):
-            error = ToolErrors.handle_api_string_error(
-                resource_type=f"add_user_{rating_type}_ratings",
-                resource_id=f"add_ratings_{rating_type}",
-                error_message=summary,
-                operation="add_user_ratings",
-            )
-            raise error
+        summary = _unwrap_or_raise(
+            summary,
+            resource_type=f"add_user_{rating_type}_ratings",
+            resource_id=f"add_ratings_{rating_type}",
+            operation="add_user_ratings",
+        )
 
         return SyncRatingsFormatters.format_user_ratings_summary(
             summary, "added", rating_type
@@ -516,15 +535,12 @@ async def remove_user_ratings(
 
         summary = await client.remove_sync_ratings(request)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(summary, str):
-            error = ToolErrors.handle_api_string_error(
-                resource_type=f"remove_user_{rating_type}_ratings",
-                resource_id=f"remove_ratings_{rating_type}",
-                error_message=summary,
-                operation="remove_user_ratings",
-            )
-            raise error
+        summary = _unwrap_or_raise(
+            summary,
+            resource_type=f"remove_user_{rating_type}_ratings",
+            resource_id=f"remove_ratings_{rating_type}",
+            operation="remove_user_ratings",
+        )
 
         return SyncRatingsFormatters.format_user_ratings_summary(
             summary, "removed", rating_type
@@ -581,15 +597,12 @@ async def fetch_user_watchlist(
             watchlist_type, sort_by, sort_how, pagination=pagination_params
         )
 
-        # Handle transitional case where API returns error strings
-        if isinstance(paginated_result, str):
-            error = ToolErrors.handle_api_string_error(
-                resource_type=f"user_{watchlist_type}_watchlist",
-                resource_id=f"user_watchlist_{watchlist_type}",
-                error_message=paginated_result,
-                operation="fetch_user_watchlist",
-            )
-            raise error
+        paginated_result = _unwrap_or_raise(
+            paginated_result,
+            resource_type=f"user_{watchlist_type}_watchlist",
+            resource_id=f"user_watchlist_{watchlist_type}",
+            operation="fetch_user_watchlist",
+        )
 
         return SyncWatchlistFormatters.format_user_watchlist(
             paginated_result, watchlist_type, sort_by, sort_how
@@ -644,15 +657,12 @@ async def add_user_watchlist(
 
         summary = await client.add_sync_watchlist(request)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(summary, str):
-            error = ToolErrors.handle_api_string_error(
-                resource_type=f"add_user_{watchlist_type}_watchlist",
-                resource_id=f"add_watchlist_{watchlist_type}",
-                error_message=summary,
-                operation="add_user_watchlist",
-            )
-            raise error
+        summary = _unwrap_or_raise(
+            summary,
+            resource_type=f"add_user_{watchlist_type}_watchlist",
+            resource_id=f"add_watchlist_{watchlist_type}",
+            operation="add_user_watchlist",
+        )
 
         return SyncWatchlistFormatters.format_user_watchlist_summary(
             summary, "added", watchlist_type
@@ -704,15 +714,12 @@ async def remove_user_watchlist(
 
         summary = await client.remove_sync_watchlist(request)
 
-        # Handle transitional case where API returns error strings
-        if isinstance(summary, str):
-            error = ToolErrors.handle_api_string_error(
-                resource_type=f"remove_user_{watchlist_type}_watchlist",
-                resource_id=f"remove_watchlist_{watchlist_type}",
-                error_message=summary,
-                operation="remove_user_watchlist",
-            )
-            raise error
+        summary = _unwrap_or_raise(
+            summary,
+            resource_type=f"remove_user_{watchlist_type}_watchlist",
+            resource_id=f"remove_watchlist_{watchlist_type}",
+            operation="remove_user_watchlist",
+        )
 
         return SyncWatchlistFormatters.format_user_watchlist_summary(
             summary, "removed", watchlist_type
@@ -797,15 +804,12 @@ async def fetch_history(
         pagination=pagination_params,
     )
 
-    # Handle transitional case where API returns error strings
-    if isinstance(result, str):
-        error = ToolErrors.handle_api_string_error(
-            resource_type="history",
-            resource_id=params.item_id or "all",
-            error_message=result,
-            operation="fetch_history",
-        )
-        raise error
+    result = _unwrap_or_raise(
+        result,
+        resource_type="history",
+        resource_id=params.item_id or "all",
+        operation="fetch_history",
+    )
 
     return SyncHistoryFormatters.format_watch_history(
         result, params.history_type, params.item_id
@@ -854,15 +858,12 @@ async def add_to_history(
         request = TraktHistoryRequest(**{history_type: history_items})
         summary = await client.add_to_history(request)
 
-    # Handle transitional case where API returns error strings
-    if isinstance(summary, str):
-        error = ToolErrors.handle_api_string_error(
-            resource_type=f"add_history_{history_type}",
-            resource_id=f"add_history_{history_type}",
-            error_message=summary,
-            operation="add_to_history",
-        )
-        raise error
+    summary = _unwrap_or_raise(
+        summary,
+        resource_type=f"add_history_{history_type}",
+        resource_id=f"add_history_{history_type}",
+        operation="add_to_history",
+    )
 
     return SyncHistoryFormatters.format_history_summary(summary, "added", history_type)
 
@@ -908,15 +909,12 @@ async def remove_from_history(
         request = TraktHistoryRequest(**{history_type: history_items})
         summary = await client.remove_from_history(request)
 
-    # Handle transitional case where API returns error strings
-    if isinstance(summary, str):
-        error = ToolErrors.handle_api_string_error(
-            resource_type=f"remove_history_{history_type}",
-            resource_id=f"remove_history_{history_type}",
-            error_message=summary,
-            operation="remove_from_history",
-        )
-        raise error
+    summary = _unwrap_or_raise(
+        summary,
+        resource_type=f"remove_history_{history_type}",
+        resource_id=f"remove_history_{history_type}",
+        operation="remove_from_history",
+    )
 
     return SyncHistoryFormatters.format_history_summary(
         summary, "removed", history_type

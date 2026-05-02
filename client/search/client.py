@@ -1,6 +1,6 @@
 """Search client for searching shows and movies."""
 
-from typing import overload
+from typing import Literal, overload
 
 from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES
 from config.endpoints import TRAKT_ENDPOINTS
@@ -16,7 +16,7 @@ class SearchClient(BaseClient):
 
     async def _search(
         self,
-        kind: str,
+        kind: Literal["show", "movie"],
         query: str,
         limit: int,
         page: int | None,
@@ -27,16 +27,8 @@ class SearchClient(BaseClient):
         Args:
             kind: Type of content to search ("show" or "movie")
             query: Search query string
-            limit: Controls result size based on pagination mode:
-                - Auto-pagination (page=None): Maximum TOTAL results to return
-                - Single page (page=N): Results per page in the response
-                Use limit=0 with page=None to fetch all available results.
-            page: Page number for single-page mode, or None for auto-pagination.
-            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
-        Returns:
-            If page is None: List of up to 'limit' search results
-            If page specified: Paginated response with metadata for that page
+        See ``BaseClient._fetch_paginated`` for pagination semantics.
         """
         endpoint = f"{TRAKT_ENDPOINTS['search']}/{kind}"
 
@@ -79,16 +71,8 @@ class SearchClient(BaseClient):
 
         Args:
             query: Search query string
-            limit: Controls result size based on pagination mode:
-                - Auto-pagination (page=None): Maximum TOTAL results to return
-                - Single page (page=N): Results per page in the response
-                Use limit=0 with page=None to fetch all available results.
-            page: Page number for single-page mode, or None for auto-pagination.
-            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
-        Returns:
-            If page is None: List of up to 'limit' search results
-            If page specified: Paginated response with metadata for that page
+        See ``BaseClient._fetch_paginated`` for pagination semantics.
         """
         return await self._search("show", query, limit, page, max_pages)
 
@@ -122,15 +106,7 @@ class SearchClient(BaseClient):
 
         Args:
             query: Search query string
-            limit: Controls result size based on pagination mode:
-                - Auto-pagination (page=None): Maximum TOTAL results to return
-                - Single page (page=N): Results per page in the response
-                Use limit=0 with page=None to fetch all available results.
-            page: Page number for single-page mode, or None for auto-pagination.
-            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
 
-        Returns:
-            If page is None: List of up to 'limit' search results
-            If page specified: Paginated response with metadata for that page
+        See ``BaseClient._fetch_paginated`` for pagination semantics.
         """
         return await self._search("movie", query, limit, page, max_pages)

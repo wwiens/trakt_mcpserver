@@ -44,22 +44,13 @@ class RelatedShowsClient(BaseClient):
         """Get shows related to a specific show.
 
         Args:
-            show_id: Show identifier (Trakt ID, Trakt slug, IMDB, TMDB, or TVDB ID)
-            limit: Controls result size based on pagination mode:
-                - Auto-pagination (page=None): Maximum TOTAL items to return
-                - Single page (page=N): Items per page in the response
-                Use limit=0 with page=None to fetch all available results.
-            page: Page number for single-page mode, or None for auto-pagination.
-            max_pages: Maximum pages to fetch (safety guard for auto-pagination)
+            show_id: Show identifier (Trakt ID, slug, IMDB, TMDB, or TVDB ID).
 
-        Returns:
-            If page is None: List of up to 'limit' related shows
-            If page specified: Paginated response with metadata for that page
+        See ``BaseClient._fetch_paginated`` for pagination semantics.
         """
         endpoint = TRAKT_ENDPOINTS["shows_related"].replace(
             ":id", quote(show_id, safe="")
         )
-
         return await self._fetch_paginated(
             endpoint,
             response_type=ShowResponse,

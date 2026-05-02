@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import UTC, datetime
 from html import escape
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 from urllib.parse import urlparse
 
 from pydantic import ValidationError
@@ -27,6 +27,85 @@ _YT_PATTERNS = [
         r"(?:https?://)?(?:(?:www|m)\.)?youtu\.be/([A-Za-z0-9_-]{11})(?=[?#&/\s]|$)"
     ),
 ]
+
+
+_IFRAME_TEMPLATE: Final[str] = (
+    '<iframe width="560" height="315" '
+    'src="{src}" '
+    'title="YouTube video player" frameborder="0" '
+    'allow="accelerometer; autoplay; clipboard-write; '
+    "encrypted-media; gyroscope; picture-in-picture; "
+    'web-share" '
+    'referrerpolicy="strict-origin-when-cross-origin" '
+    "allowfullscreen></iframe>"
+)
+
+
+def _video_published_at(video: VideoResponse) -> datetime:
+    """Sort key: published date or epoch (epoch sorts last under reverse=True)."""
+    return VideoFormatters.parse_iso_datetime(
+        video.get("published_at")
+    ) or datetime.min.replace(tzinfo=UTC)
+
+
+def _any_youtube_iframe(videos: list[VideoResponse]) -> bool:
+    return any(
+        (video.get("site") or "").lower() == "youtube"
+        and VideoFormatters.get_youtube_embed_url(video.get("url") or "") is not None
+        for video in videos
+    )
+
+
+def _watch_link(video: VideoResponse) -> str:
+    site = video.get("site") or "unknown"
+    site_display = VideoFormatters.normalize_site_name(site)
+    safe_url = VideoFormatters.validate_watch_url(video.get("url") or "")
+    if safe_url:
+        return f"[▶️ Watch on {site_display}](<{safe_url}>)"
+    return "Watch link unavailable"
+
+
+def _render_video_link(video: VideoResponse, embed_markdown: bool) -> str:
+    """Render a video's link: iframe for YouTube embeds, else a markdown link."""
+    if not embed_markdown:
+        return _watch_link(video)
+    if (video.get("site") or "").lower() != "youtube":
+        return _watch_link(video)
+    embed_url = VideoFormatters.get_youtube_embed_url(video.get("url") or "")
+    if embed_url is None:
+        return _watch_link(video)
+    return _IFRAME_TEMPLATE.format(src=escape(embed_url, quote=True))
+
+
+def _render_video_metadata(video: VideoResponse) -> str | None:
+    """Build the bullet-separated metadata line, or None if there is no metadata."""
+    metadata: list[str] = []
+    if video.get("official"):
+        metadata.append("**Official**")
+    if size := video.get("size"):
+        metadata.append(f"{size}p")
+    if language := video.get("language"):
+        metadata.append((language or "").upper())
+    if country := video.get("country"):
+        metadata.append(f"({(country or '').upper()})")
+    if published_at := video.get("published_at"):
+        date_obj = VideoFormatters.parse_iso_datetime(published_at)
+        metadata.append(
+            f"*{date_obj.strftime('%B %d, %Y')}*" if date_obj else "*Date unknown*"
+        )
+    return " • ".join(metadata) if metadata else None
+
+
+def _append_video_section(
+    lines: list[str], video: VideoResponse, *, embed_markdown: bool
+) -> None:
+    raw_title = video.get("title") or "Unknown Video"
+    lines.append(f"### {VideoFormatters.escape_markdown(raw_title)}")
+    lines.append(_render_video_link(video, embed_markdown))
+    metadata_line = _render_video_metadata(video)
+    if metadata_line is not None:
+        lines.append(metadata_line)
+    lines.append("")
 
 
 class VideoFormatters:
@@ -311,11 +390,8 @@ class VideoFormatters:
         Raises:
             ValueError: If validate_input=True and video data is invalid
         """
-        # Validate inputs if requested
-        # (follows project guideline: "Validate all inputs with Pydantic models")
         if validate_input and videos:
             try:
-                # Convert VideoResponse TypedDicts to plain dicts for validation
                 video_dicts = [dict(video) for video in videos]
                 VideoFormatters.validate_video_list(video_dicts)
             except ValueError as e:
@@ -324,22 +400,12 @@ class VideoFormatters:
             return f"# Videos for {title}\n\nNo videos available."
 
         lines = [f"# Videos for {title}\n"]
-
-        # Check if any YouTube videos will generate iframes
-        # (only when embed_markdown=True)
-        will_have_iframes = embed_markdown and any(
-            (video.get("site") or "").lower() == "youtube"
-            and VideoFormatters.get_youtube_embed_url(video.get("url") or "")
-            is not None
-            for video in videos
-        )
-
-        if will_have_iframes:
-            message = (
+        if embed_markdown and _any_youtube_iframe(videos):
+            iframe_warning = (
                 "**ALWAYS:** Preserve iframe HTML below exactly as provided "
                 "so videos embed and display properly in the response\n"
             )
-            lines.append(message)
+            lines.append(iframe_warning)
 
         by_type: dict[str, list[VideoResponse]] = {}
         for video in videos:
@@ -349,93 +415,9 @@ class VideoFormatters:
         for video_type in sorted(by_type):
             display_name = VideoFormatters.normalize_video_type_for_display(video_type)
             lines.append(f"## {display_name}\n")
-            type_videos = by_type[video_type]
-
-            def get_published_date(video: VideoResponse) -> datetime:
-                parsed_date = VideoFormatters.parse_iso_datetime(
-                    video.get("published_at")
-                )
-                return parsed_date or datetime.min.replace(tzinfo=UTC)
-
-            sorted_videos = sorted(type_videos, key=get_published_date, reverse=True)
-
-            for video in sorted_videos:
-                raw_title = video.get("title", "Unknown Video")
-                title_text = VideoFormatters.escape_markdown(raw_title)
-                lines.append(f"### {title_text}")
-
-                # Format video link
-                url = video.get("url") or ""
-                site = video.get("site") or "unknown"
-
-                if embed_markdown:
-                    # Generate HTML iframe for YouTube videos,
-                    # fallback to markdown for others
-                    if (site or "").lower() == "youtube":
-                        embed_url = VideoFormatters.get_youtube_embed_url(url)
-                        if embed_url:
-                            iframe_html = (
-                                f'<iframe width="560" height="315" '
-                                f'src="{escape(embed_url, quote=True)}" '
-                                f'title="YouTube video player" frameborder="0" '
-                                f'allow="accelerometer; autoplay; clipboard-write; '
-                                f"encrypted-media; gyroscope; picture-in-picture; "
-                                f'web-share" '
-                                f'referrerpolicy="strict-origin-when-cross-origin" '
-                                f"allowfullscreen></iframe>"
-                            )
-                            lines.append(iframe_html)
-                        else:
-                            # Fallback to markdown link if embed URL extraction fails
-                            site_display = VideoFormatters.normalize_site_name(site)
-                            safe_url = VideoFormatters.validate_watch_url(url)
-                            if safe_url:
-                                lines.append(
-                                    f"[▶️ Watch on {site_display}](<{safe_url}>)"
-                                )
-                            else:
-                                lines.append("Watch link unavailable")
-                    else:
-                        # For non-YouTube videos, use simple markdown link
-                        site_display = VideoFormatters.normalize_site_name(site)
-                        safe_url = VideoFormatters.validate_watch_url(url)
-                        if safe_url:
-                            lines.append(f"[▶️ Watch on {site_display}](<{safe_url}>)")
-                        else:
-                            lines.append("Watch link unavailable")
-                else:
-                    # Simple text link
-                    site_display = VideoFormatters.normalize_site_name(site)
-                    safe_url = VideoFormatters.validate_watch_url(url)
-                    if safe_url:
-                        lines.append(f"[▶️ Watch on {site_display}](<{safe_url}>)")
-                    else:
-                        lines.append("Watch link unavailable")
-
-                # Video metadata
-                metadata: list[str] = []
-                if video.get("official"):
-                    metadata.append("**Official**")
-
-                if size := video.get("size"):
-                    metadata.append(f"{size}p")
-
-                if language := video.get("language"):
-                    metadata.append((language or "").upper())
-
-                if country := video.get("country"):
-                    metadata.append(f"({(country or '').upper()})")
-
-                # Format publication date
-                if published_at := video.get("published_at"):
-                    date_obj = VideoFormatters.parse_iso_datetime(published_at)
-                    if date_obj:
-                        metadata.append(f"*{date_obj.strftime('%B %d, %Y')}*")
-                    else:
-                        metadata.append("*Date unknown*")
-
-                if metadata:
-                    lines.append(" • ".join(metadata))
-                lines.append("")  # Empty line between videos
+            for video in sorted(
+                by_type[video_type], key=_video_published_at, reverse=True
+            ):
+                _append_video_section(lines, video, embed_markdown=embed_markdown)
 
         return "\n".join(lines)
