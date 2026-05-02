@@ -2,7 +2,7 @@
 
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, TypeVar, cast
+from typing import Any, TypeGuard, TypeVar
 
 from config.auth import AUTH_VERIFICATION_URL
 from utils.api.error_types import (
@@ -60,6 +60,14 @@ _SENSITIVE_WORDS = ("secret", "token", "password", "auth", "key")
 _KEY_HINTS_FOR_TOKEN = ("token", "code", "auth", "key")
 
 
+def _is_dict_type(value: Any) -> TypeGuard[dict[Any, Any]]:
+    return isinstance(value, dict)
+
+
+def _is_list_or_tuple_type(value: Any) -> TypeGuard[list[Any] | tuple[Any, ...]]:
+    return isinstance(value, list | tuple)
+
+
 def _looks_id_shaped(value: str) -> bool:
     return (
         value.replace("-", "").replace("_", "").isalnum()
@@ -108,13 +116,11 @@ def sanitize_value(value: Any, key: str | None = None) -> Any:
             return "[REDACTED]"
         return value
 
-    if isinstance(value, dict):
-        items = cast("dict[Any, Any]", value)
-        return {k: sanitize_value(v, str(k) if k else None) for k, v in items.items()}
+    if _is_dict_type(value):
+        return {k: sanitize_value(v, str(k) if k else None) for k, v in value.items()}
 
-    if isinstance(value, list | tuple):
-        seq = cast("list[Any] | tuple[Any, ...]", value)
-        sanitized = [sanitize_value(item) for item in seq]
+    if _is_list_or_tuple_type(value):
+        sanitized = [sanitize_value(item) for item in value]
         return tuple(sanitized) if isinstance(value, tuple) else sanitized
 
     if isinstance(value, int | float | bool) or value is None:
