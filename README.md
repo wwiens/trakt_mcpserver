@@ -36,8 +36,10 @@ Requires Python 3.12 or newer.
    cd trakt_mcpserver
    ```
 
-2. **Install dependencies**
+2. **Create a virtual environment and install dependencies**
    ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
    pip install -e .
    ```
 
@@ -881,7 +883,9 @@ Ensure code quality with pytest, type checking, and linting before making change
 <summary><strong>View test commands</strong></summary>
 
 ```bash
-# Install the project (editable) and test dependencies
+# Create a virtual environment, then install the project (editable) and test dependencies
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e .
 pip install -r requirements-dev.txt
 
