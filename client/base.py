@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, overload
+from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast, overload
 
 import httpx
 
@@ -355,62 +355,27 @@ class BaseClient:
 
         return result
 
-    @overload
     async def _make_typed_list_request[T](
         self,
         endpoint: str,
         *,
         response_type: type[T],
-        params: dict[str, Any] | None = ...,
-    ) -> list[T]: ...
-
-    @overload
-    async def _make_typed_list_request(
-        self,
-        endpoint: str,
-        *,
-        response_type: type[Any],
-        params: dict[str, Any] | None = ...,
-    ) -> list[Any]: ...
-
-    async def _make_typed_list_request(
-        self,
-        endpoint: str,
-        *,
-        response_type: type[Any],
         params: dict[str, Any] | None = None,
-    ) -> Any:
+    ) -> list[T]:
         """Make a typed GET request that returns a list."""
         result = await self._make_list_request(endpoint, params=params)
         if _is_pydantic_model(response_type):
             return [response_type.model_validate(item) for item in result]
-        return result
+        # TypedDict response_types: raw dicts already match the declared shape.
+        return cast("list[T]", result)
 
-    @overload
     async def _make_paginated_request[T](
         self,
         endpoint: str,
         *,
         response_type: type[T],
-        params: dict[str, Any] | None = ...,
-    ) -> PaginatedResponse[T]: ...
-
-    @overload
-    async def _make_paginated_request(
-        self,
-        endpoint: str,
-        *,
-        response_type: type[Any],
-        params: dict[str, Any] | None = ...,
-    ) -> PaginatedResponse[Any]: ...
-
-    async def _make_paginated_request(
-        self,
-        endpoint: str,
-        *,
-        response_type: type[Any],
         params: dict[str, Any] | None = None,
-    ) -> Any:
+    ) -> PaginatedResponse[T]:
         """Make a paginated GET request to the Trakt API.
 
         Returns both the data and pagination metadata from response headers.
@@ -460,11 +425,13 @@ class BaseClient:
                     + f"got {type(result).__name__}: {result}"
                 )
 
-            # Convert to typed objects if Pydantic model
+            # Convert to typed objects if Pydantic model; for TypedDict
+            # response_types the raw dicts already match the declared shape.
+            typed_data: list[T]
             if _is_pydantic_model(response_type):
                 typed_data = [response_type.model_validate(item) for item in result]
             else:
-                typed_data = result
+                typed_data = cast("list[T]", result)
 
             # Extract pagination metadata from headers
             try:
