@@ -3,7 +3,7 @@
 from collections.abc import Awaitable, Callable
 from typing import Annotated, Any
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 from pydantic import Field, ValidationError, field_validator
 
 from client.pool import get_client

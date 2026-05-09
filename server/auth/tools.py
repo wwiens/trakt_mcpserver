@@ -5,7 +5,7 @@ import logging
 import time
 from typing import Any, TypedDict
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from client.auth import AuthClient
 from client.pool import get_client

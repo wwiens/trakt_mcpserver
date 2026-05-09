@@ -5,10 +5,11 @@ description = "Model Context Protocol server bridging AI models with the Trakt.t
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "python-dotenv>=1.1.1",
+    "python-dotenv>=1.2.2",
     "httpx>=0.27.0",
-    "mcp>=1.10.1",
-    "pydantic==2.11.7",
+    "fastmcp>=3.2.0,<4",
+    "mcp>=1.27.0",
+    "pydantic>=2.13,<3",
 ]
 
 [build-system]

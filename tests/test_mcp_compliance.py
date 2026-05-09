@@ -331,7 +331,7 @@ class TestMCPFunctionalCompliance:
         """Test that server uses compatible MCP transport."""
         # Verify FastMCP is being used (handles JSON-RPC 2.0 transport)
         try:
-            from mcp.server.fastmcp import FastMCP
+            from fastmcp import FastMCP
 
             import server
 

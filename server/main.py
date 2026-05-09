@@ -8,7 +8,7 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 from typing import Final
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from client.pool import shutdown_clients
 
@@ -66,17 +66,17 @@ async def _lifespan(_mcp: FastMCP) -> AsyncGenerator[None]:
 
 
 def create_server() -> FastMCP:
-    """Create and configure the Trakt MCP server with all modules.
-
-    Returns:
-        Configured FastMCP server instance
-    """
+    """Create and configure the Trakt MCP server with all modules."""
     try:
         version = _pkg_version("trakt-mcp-server")
     except PackageNotFoundError:
         version = "0.0.0+dev"
     logger.info("Starting trakt-mcp-server v%s", version)
-    mcp = FastMCP(name="trakt-mcp-server", lifespan=_lifespan)
+    mcp = FastMCP(
+        name="trakt-mcp-server",
+        version=version,
+        lifespan=_lifespan,
+    )
     for register in REGISTRATIONS:
         register(mcp)
     logger.info("All Trakt MCP modules registered successfully")

@@ -3,7 +3,7 @@
 from collections.abc import Awaitable, Callable
 from typing import Annotated, Literal, NoReturn, TypedDict
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 from pydantic import BaseModel, Field, PositiveInt, ValidationError
 
 from client.comments.details import CommentDetailsClient

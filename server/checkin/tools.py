@@ -3,7 +3,7 @@
 import logging
 from typing import Annotated, Any
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 from pydantic import Field
 
 from client.checkin.client import CheckinClient

@@ -3,7 +3,7 @@
 from collections.abc import Awaitable, Callable
 from typing import TypeAlias
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from client.pool import get_client
 from client.user import UserClient
