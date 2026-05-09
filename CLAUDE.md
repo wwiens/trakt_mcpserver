@@ -76,7 +76,7 @@ from config.endpoints.shows import SHOWS_ENDPOINTS
 
 ### Setup
 ```bash
-pip install -r requirements.txt
+pip install -e .
 pip install -r requirements-dev.txt
 cp .env.example .env
 ```
@@ -163,6 +163,60 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 - **Support all identifier types** - `trakt`, `slug`, `imdb`, `tmdb`, `tvdb` (validate formats: IMDB=`tt\d+`, others=numeric)
 - **Tool parameters must be unambiguous** - If flattening nested API structures (e.g., `{"movies": [...]}` → `items` + `type`), ensure LLM clients won't misinterpret; include examples in descriptions for complex inputs
 - **Tool parameter descriptions**: Use `Annotated[type, Field(description=...)]` with descriptions from `config/mcp/descriptions.py`
+
+## Versioning & Releases
+
+**Single source of truth**: `pyproject.toml` `[project] version`. Read at runtime via `importlib.metadata.version("trakt-mcp-server")`. Never hard-code `__version__`.
+
+**Runtime dependencies SSOT**: `pyproject.toml [project] dependencies`. Both Dockerfiles extract this list at build time using `tomllib`. Do not maintain a parallel `requirements.txt`.
+
+**Scheme**: Semantic Versioning. While `major_on_zero = false` is set in `pyproject.toml`, `feat:` bumps MINOR and `fix:` / `perf:` bump PATCH. Breaking-change markers (`!` or `BREAKING CHANGE:` footer) also bump MINOR under this setting — see `pyproject.toml` for the authoritative configuration.
+
+**Release flow** — fully automated, zero manual steps:
+1. Merge a PR to `main` with a Conventional Commit title.
+2. `release.yml` runs `python-semantic-release`: bumps `pyproject.toml`, appends to `CHANGELOG.md`, commits, tags `vX.Y.Z`, creates a GitHub Release.
+3. Same workflow's `docker` job builds and pushes versioned + `latest` images to GHCR.
+
+The very first run (no tags yet) self-bootstraps `v0.9.0` from `pyproject.toml`. After that, semantic-release drives every subsequent release.
+
+**Do not**:
+- Hand-edit `pyproject.toml` `version` or `CHANGELOG.md` after 0.9.0 — semantic-release owns them.
+- Hand-create git tags.
+- Hard-code version strings anywhere in source.
+
+## Commit Messages — Conventional Commits (mandatory)
+
+Every commit landing on `main` must follow [Conventional Commits](https://www.conventionalcommits.org/). Squash-merging from PRs uses the **PR title** as the commit message — the PR title must therefore conform.
+
+**Format**: `<type>(<optional-scope>): <subject>`
+
+**Allowed types** (anything else is rejected by the PR-title linter):
+
+| Type | Effect on version |
+|---|---|
+| `feat` | MINOR bump |
+| `fix`, `perf` | PATCH bump |
+| `refactor`, `docs`, `test`, `chore`, `ci`, `build`, `revert` | No release |
+
+**Breaking changes**: append `!` after the type (`feat!: drop legacy auth`) **or** add a `BREAKING CHANGE: <description>` footer.
+
+**Examples**:
+- `feat(seasons): add season people endpoint`
+- `fix(auth): retry 401 with refreshed token`
+- `refactor: dedupe sync error guards`
+- `feat!: rename fetch_user_history to fetch_history`
+
+A non-conforming PR title blocks merge via the `pr-title-lint.yml` check.
+
+**Optional local hooks** (catch issues before push — `ruff` lint/format on staged files + `commitizen` on commit message):
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit install --hook-type commit-msg
+```
+
+Skipping is fine — the existing `ruff` dev commands and the CI `pr-title-lint.yml` check remain the actual gates.
 
 ## Key Patterns
 

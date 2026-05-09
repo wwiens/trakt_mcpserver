@@ -1,0 +1,142 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  semantic-release:
+    runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.bootstrap.outputs.released || steps.release.outputs.released }}
+      version: ${{ steps.bootstrap.outputs.version || steps.release.outputs.version }}
+      tag: ${{ steps.bootstrap.outputs.tag || steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bootstrap initial tag (only on first ever run)
+        id: bootstrap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$(git tag -l 'v*')" ]; then
+            VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+            # Extract the curated `## v$VERSION` block from CHANGELOG.md as the release body.
+            # awk: print lines after the matching `## vX.Y.Z` heading until the next `## v` heading.
+            BODY=$(awk -v v="v$VERSION" '
+              $0 ~ "^## "v"( |$)" {flag=1; next}
+              /^## v/ {flag=0}
+              flag {print}
+            ' CHANGELOG.md)
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag "v$VERSION"
+            git push origin "v$VERSION"
+            jq -n --arg t "v$VERSION" --arg b "$BODY" \
+              '{tag_name:$t, name:$t, body:$b}' \
+              | curl -sSL --fail-with-body -X POST \
+                  -H "Authorization: Bearer $GITHUB_TOKEN" \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "https://api.github.com/repos/$GITHUB_REPOSITORY/releases" \
+                  -d @-
+            {
+              echo "released=true"
+              echo "version=$VERSION"
+              echo "tag=v$VERSION"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run python-semantic-release
+        id: release
+        if: steps.bootstrap.outputs.released != 'true'
+        uses: python-semantic-release/python-semantic-release@v10
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    needs: semantic-release
+    if: needs.semantic-release.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.semantic-release.outputs.tag }}
+
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Metadata (SSE)
+        id: meta-sse
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ needs.semantic-release.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push SSE image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: VERSION=${{ needs.semantic-release.outputs.version }}
+          tags: ${{ steps.meta-sse.outputs.tags }}
+          labels: ${{ steps.meta-sse.outputs.labels }}
+
+      - name: Metadata (stdio versioned)
+        id: meta-stdio
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          flavor: suffix=-stdio
+          tags: |
+            type=raw,value=${{ needs.semantic-release.outputs.version }}
+            type=raw,value=latest
+
+      - name: Metadata (stdio legacy alias — drop at v1.0.0)
+        id: meta-stdio-legacy
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=stdio
+
+      - name: Build and push stdio image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile.stdio
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: VERSION=${{ needs.semantic-release.outputs.version }}
+          tags: |
+            ${{ steps.meta-stdio.outputs.tags }}
+            ${{ steps.meta-stdio-legacy.outputs.tags }}
+          labels: ${{ steps.meta-stdio.outputs.labels }}

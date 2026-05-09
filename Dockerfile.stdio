@@ -3,6 +3,12 @@
 
 FROM python:3.12-slim
 
+ARG VERSION=0.9.0
+LABEL org.opencontainers.image.version=${VERSION}
+LABEL org.opencontainers.image.source=https://github.com/wwiens/trakt_mcpserver
+LABEL org.opencontainers.image.title="trakt-mcp-server"
+LABEL org.opencontainers.image.description="MCP server for Trakt.tv"
+
 # Install curl for potential debugging (optional, can be removed for smaller image)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
@@ -15,12 +21,18 @@ RUN groupadd -g 1000 appuser && \
 # Workdir
 WORKDIR /app
 
-# Copy and install dependencies first (better layer caching)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Layer 1 — extract deps from pyproject.toml and install them.
+# Cache key is only pyproject.toml; source-only changes do NOT invalidate this layer.
+COPY pyproject.toml ./
+RUN python -c "import tomllib; \
+print('\n'.join(tomllib.load(open('pyproject.toml','rb'))['project']['dependencies']))" \
+      > /tmp/requirements.txt \
+    && pip install --no-cache-dir -r /tmp/requirements.txt \
+    && rm /tmp/requirements.txt
 
-# Copy project (everything except what's in .dockerignore)
+# Layer 2 — copy source, install just the project (deps already satisfied).
 COPY . .
+RUN pip install --no-cache-dir --no-deps .
 
 # Environment variables (can be overridden at runtime)
 ENV TRAKT_CLIENT_ID=""

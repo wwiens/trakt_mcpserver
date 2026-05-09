@@ -60,7 +60,7 @@ logger = logging.getLogger("trakt_mcp")
 T = TypeVar("T")
 
 
-def _unwrap_or_raise(
+def _unwrap_or_raise[T](
     result: T | str,
     *,
     resource_type: str,

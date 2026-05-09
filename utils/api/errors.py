@@ -176,7 +176,7 @@ def _build_error_data(
     return error_data
 
 
-async def _execute_with_error_handling(
+async def _execute_with_error_handling[R](
     coro: Awaitable[R],
     *,
     on_401: Callable[[], None] | None = None,
@@ -274,7 +274,7 @@ async def _execute_with_error_handling(
         ) from e
 
 
-def handle_api_errors(
+def handle_api_errors[Self, **P, R](
     method: Callable[Concatenate[Self, P], Awaitable[R]],
 ) -> Callable[Concatenate[Self, P], Awaitable[R | str]]:
     """Handle API errors for class methods with perfect type inference.
@@ -341,7 +341,7 @@ def handle_api_errors(
     return wrapper
 
 
-def handle_api_errors_func(
+def handle_api_errors_func[**P, R](
     func: Callable[P, Awaitable[R]],
 ) -> Callable[P, Awaitable[R | str]]:
     """Handle API errors for standalone functions with perfect type inference.

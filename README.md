@@ -2,6 +2,7 @@
 
 ![MCP Trakt](https://img.shields.io/badge/MCP-Trakt-ff69b4)
 ![Built by AI+Humans](https://img.shields.io/badge/Built%20by-AI%2BHumans-blue)
+![Version](https://img.shields.io/github/v/release/wwiens/trakt_mcpserver?label=version)
 ![Powered by Claude](https://img.shields.io/badge/Powered%20by-Claude-blueviolet)
 
 A Model Context Protocol (MCP) server that creates a bridge between AI language models and the Trakt.tv API, allowing LLMs to access real-time entertainment data and personal Trakt viewing history. Built with a domain-focused architecture using FastMCP, providing clean separation of concerns across authentication, shows, seasons, episodes, movies, people, user data, comments, search, and check-in functionality.
@@ -35,7 +36,7 @@ docker run -d --rm --name trakt_mcpserver \
 
 2. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
+   pip install -e .
    ```
 
 3. **Set up your environment**

@@ -13,7 +13,7 @@ M = TypeVar("M", bound=Mapping[str, Any])
 MAX_OVERVIEW_LENGTH: Final[int] = 200
 
 
-def format_pagination_header(results: PaginatedResponse[T]) -> str:
+def format_pagination_header[T](results: PaginatedResponse[T]) -> str:
     """Format pagination metadata and navigation hints.
 
     Args:
