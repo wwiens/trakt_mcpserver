@@ -40,7 +40,7 @@ Requires Python 3.12 or newer.
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
-   pip install -e .
+   pip install .
    ```
 
 3. **Set up your environment**
