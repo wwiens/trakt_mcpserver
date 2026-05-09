@@ -1,7 +1,7 @@
 """User tools for the Trakt MCP server."""
 
 from collections.abc import Awaitable, Callable
-from typing import Annotated, Any, TypeVar
+from typing import Annotated, Any
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field, ValidationError
@@ -16,10 +16,9 @@ from server.base import ToolErrors
 from utils.api.error_types import AuthenticationRequiredError
 
 # Type aliases for user tools
-T = TypeVar("T")
-Fetcher = Callable[[], Awaitable[list[T] | str]]
-Formatter = Callable[[list[T]], str]
-ToolHandler = Callable[[int | None], Awaitable[str]]
+type Fetcher[T] = Callable[[], Awaitable[list[T] | str]]
+type Formatter[T] = Callable[[list[T]], str]
+type ToolHandler = Callable[[int | None], Awaitable[str]]
 
 
 def _validate_and_normalize_limit(value: int | None, *, operation: str) -> int:
@@ -54,7 +53,7 @@ def _validate_and_normalize_limit(value: int | None, *, operation: str) -> int:
         ) from e
 
 
-async def _fetch_user_items(
+async def _fetch_user_items[T](
     *,
     limit: int | None,
     operation: str,

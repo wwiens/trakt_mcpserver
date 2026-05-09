@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.12  # current latest; keep in lockstep with requirements-dev.txt's `ruff>=...`
+    rev: v0.15.12  # keep in lockstep with requirements-dev.txt's `ruff==...` pin
     hooks:
       - id: ruff
         args: [--fix]

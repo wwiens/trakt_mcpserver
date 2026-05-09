@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, overload
 
 import httpx
 
@@ -18,8 +18,6 @@ from utils.api.request_context import (
 
 if TYPE_CHECKING:
     from models.auth import TraktAuthToken
-
-T = TypeVar("T")
 
 
 class PydanticModel(Protocol):
@@ -305,7 +303,7 @@ class BaseClient:
                 await client.aclose()
 
     @overload
-    async def _make_typed_request(
+    async def _make_typed_request[T](
         self,
         endpoint: str,
         *,
@@ -321,7 +319,7 @@ class BaseClient:
         params: dict[str, Any] | None = None,
     ) -> dict[str, Any]: ...
 
-    async def _make_typed_request(
+    async def _make_typed_request[T](
         self,
         endpoint: str,
         *,
@@ -358,7 +356,7 @@ class BaseClient:
         return result
 
     @overload
-    async def _make_typed_list_request(
+    async def _make_typed_list_request[T](
         self,
         endpoint: str,
         *,
@@ -389,7 +387,7 @@ class BaseClient:
         return result
 
     @overload
-    async def _make_paginated_request(
+    async def _make_paginated_request[T](
         self,
         endpoint: str,
         *,
@@ -493,7 +491,7 @@ class BaseClient:
             if should_close:
                 await client.aclose()
 
-    async def _fetch_paginated(
+    async def _fetch_paginated[T](
         self,
         endpoint: str,
         *,
@@ -541,7 +539,7 @@ class BaseClient:
             params={**base_params, "page": page, "limit": eff.api_limit},
         )
 
-    async def auto_paginate(
+    async def auto_paginate[T](
         self,
         endpoint: str,
         *,
@@ -609,7 +607,7 @@ class BaseClient:
         return all_items
 
     @overload
-    async def _post_typed_request(
+    async def _post_typed_request[T](
         self,
         endpoint: str,
         data: dict[str, Any],
@@ -627,7 +625,7 @@ class BaseClient:
         headers: dict[str, str] | None = None,
     ) -> dict[str, Any]: ...
 
-    async def _post_typed_request(
+    async def _post_typed_request[T](
         self,
         endpoint: str,
         data: dict[str, Any],

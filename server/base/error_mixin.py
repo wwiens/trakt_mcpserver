@@ -2,7 +2,7 @@
 
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, Final, TypeGuard, TypeVar
+from typing import Any, Final, TypeGuard
 
 from config.auth import AUTH_VERIFICATION_URL
 from utils.api.error_types import (
@@ -15,8 +15,6 @@ from utils.api.request_context import add_context_to_error_data
 from utils.api.structured_logging import get_structured_logger
 
 logger = get_structured_logger("trakt_mcp.server.tools")
-
-T = TypeVar("T")
 
 # Sensitive parameter patterns that should be redacted in error logs
 # Keep specific names; avoid overly generic substrings like "key"
@@ -306,7 +304,7 @@ class ToolErrors:
         return InternalError(f"Error accessing {resource_type}", data=error_data)
 
     @classmethod
-    def with_error_handling(
+    def with_error_handling[T](
         cls, operation: str, **operation_context: Any
     ) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T | str]]]:
         """Decorator to wrap tool functions with standardized error handling.
