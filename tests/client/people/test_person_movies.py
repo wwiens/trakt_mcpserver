@@ -6,7 +6,7 @@ from client.people import PeopleClient
 
 
 @pytest.mark.asyncio
-async def test_get_person_movies(trakt_env: None, patched_httpx_client: MagicMock):
+async def test_get_person_movies(patched_httpx_client: MagicMock):
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "cast": [

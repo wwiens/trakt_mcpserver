@@ -47,7 +47,6 @@ def mock_auth_token() -> TraktAuthToken:
 
 @pytest.fixture
 def authenticated_progress_client(
-    trakt_env: None,
     mock_auth_token: TraktAuthToken,
 ) -> Generator[ProgressClient, None, None]:
     """Create an authenticated progress client for testing."""

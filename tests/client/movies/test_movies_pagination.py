@@ -11,9 +11,7 @@ from models.types.pagination import PaginatedResponse
 
 
 @pytest.mark.asyncio
-async def test_trending_movies_no_page_respects_limit(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_trending_movies_no_page_respects_limit(patched_httpx_client: MagicMock):
     """Test that trending movies with no page parameter respects limit as max items."""
     # Mock first page response
     mock_response_page1 = MagicMock()
@@ -48,7 +46,7 @@ async def test_trending_movies_no_page_respects_limit(
 
 @pytest.mark.asyncio
 async def test_trending_movies_with_page_returns_paginated(
-    trakt_env: None, patched_httpx_client: MagicMock
+    patched_httpx_client: MagicMock,
 ):
     """Test that trending movies with page parameter returns PaginatedResponse."""
     mock_response = MagicMock()
@@ -79,9 +77,7 @@ async def test_trending_movies_with_page_returns_paginated(
 
 
 @pytest.mark.asyncio
-async def test_trending_movies_pagination_metadata(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_trending_movies_pagination_metadata(patched_httpx_client: MagicMock):
     """Test that pagination metadata is correctly parsed and exposed."""
     mock_response = MagicMock()
     mock_response.json.return_value = [
@@ -110,9 +106,7 @@ async def test_trending_movies_pagination_metadata(
 
 
 @pytest.mark.asyncio
-async def test_trending_movies_navigation_properties(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_trending_movies_navigation_properties(patched_httpx_client: MagicMock):
     """Test that navigation properties work correctly."""
     mock_response = MagicMock()
     mock_response.json.return_value = [
@@ -140,9 +134,7 @@ async def test_trending_movies_navigation_properties(
 
 
 @pytest.mark.asyncio
-async def test_popular_movies_no_page_returns_all(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_popular_movies_no_page_returns_all(patched_httpx_client: MagicMock):
     """Test that popular movies with no page parameter auto-paginates."""
     # Mock single page response
     mock_response = MagicMock()
@@ -172,7 +164,7 @@ async def test_popular_movies_no_page_returns_all(
 
 @pytest.mark.asyncio
 async def test_popular_movies_with_page_returns_paginated(
-    trakt_env: None, patched_httpx_client: MagicMock
+    patched_httpx_client: MagicMock,
 ):
     """Test that popular movies with page parameter returns PaginatedResponse."""
     mock_response = MagicMock()
@@ -199,9 +191,7 @@ async def test_popular_movies_with_page_returns_paginated(
 
 
 @pytest.mark.asyncio
-async def test_favorited_movies_no_page_respects_limit(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_favorited_movies_no_page_respects_limit(patched_httpx_client: MagicMock):
     """Test that favorited movies with no page parameter respects limit."""
     mock_response = MagicMock()
     mock_response.json.return_value = [
@@ -234,9 +224,7 @@ async def test_favorited_movies_no_page_respects_limit(
 
 
 @pytest.mark.asyncio
-async def test_favorited_movies_pagination(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_favorited_movies_pagination(patched_httpx_client: MagicMock):
     """Test favorited movies pagination."""
     mock_response = MagicMock()
     mock_response.json.return_value = [
@@ -264,9 +252,7 @@ async def test_favorited_movies_pagination(
 
 
 @pytest.mark.asyncio
-async def test_played_movies_no_page_respects_limit(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_played_movies_no_page_respects_limit(patched_httpx_client: MagicMock):
     """Test that played movies with no page parameter respects limit."""
     mock_response = MagicMock()
     mock_response.json.return_value = [
@@ -307,9 +293,7 @@ async def test_played_movies_no_page_respects_limit(
 
 
 @pytest.mark.asyncio
-async def test_played_movies_pagination(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_played_movies_pagination(patched_httpx_client: MagicMock):
     """Test played movies pagination."""
     mock_response = MagicMock()
     mock_response.json.return_value = [
@@ -338,9 +322,7 @@ async def test_played_movies_pagination(
 
 
 @pytest.mark.asyncio
-async def test_watched_movies_no_page_respects_limit(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_watched_movies_no_page_respects_limit(patched_httpx_client: MagicMock):
     """Test that watched movies with no page parameter respects limit."""
     mock_response = MagicMock()
     mock_response.json.return_value = [
@@ -373,9 +355,7 @@ async def test_watched_movies_no_page_respects_limit(
 
 
 @pytest.mark.asyncio
-async def test_watched_movies_pagination(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_watched_movies_pagination(patched_httpx_client: MagicMock):
     """Test watched movies pagination."""
     mock_response = MagicMock()
     mock_response.json.return_value = [
@@ -400,7 +380,7 @@ async def test_watched_movies_pagination(
 
 
 @pytest.mark.asyncio
-async def test_single_page_result(trakt_env: None, patched_httpx_client: MagicMock):
+async def test_single_page_result(patched_httpx_client: MagicMock):
     """Test pagination with a single page of results."""
     mock_response = MagicMock()
     mock_response.json.return_value = [
@@ -427,7 +407,7 @@ async def test_single_page_result(trakt_env: None, patched_httpx_client: MagicMo
 
 
 @pytest.mark.asyncio
-async def test_empty_result(trakt_env: None, patched_httpx_client: MagicMock):
+async def test_empty_result(patched_httpx_client: MagicMock):
     """Test pagination with empty results."""
     mock_response = MagicMock()
     mock_response.json.return_value = []
@@ -451,9 +431,7 @@ async def test_empty_result(trakt_env: None, patched_httpx_client: MagicMock):
 
 
 @pytest.mark.asyncio
-async def test_multiple_pages_auto_paginate(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_multiple_pages_auto_paginate(patched_httpx_client: MagicMock):
     """Test auto-pagination fetches multiple pages when limit exceeds page size."""
     # Create 3 pages of mock responses (1 item each, total 3)
     # Use limit=10 so we fetch all 3 items (not capped by limit)
@@ -498,7 +476,7 @@ async def test_multiple_pages_auto_paginate(
 
 @pytest.mark.asyncio
 async def test_auto_pagination_max_pages_returns_collected_items(
-    trakt_env: None, patched_httpx_client: MagicMock
+    patched_httpx_client: MagicMock,
 ):
     """Test hitting max_pages with max_items set returns collected items without error.
 

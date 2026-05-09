@@ -6,9 +6,7 @@ from client.movies.people import MoviePeopleClient
 
 
 @pytest.mark.asyncio
-async def test_get_movie_people(
-    trakt_env: None, patched_httpx_client: MagicMock
-) -> None:
+async def test_get_movie_people(patched_httpx_client: MagicMock) -> None:
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "cast": [
@@ -58,7 +56,7 @@ async def test_get_movie_people(
 
 @pytest.mark.asyncio
 async def test_get_movie_people_validates_empty_id(
-    trakt_env: None, patched_httpx_client: MagicMock
+    patched_httpx_client: MagicMock,
 ) -> None:
     client = MoviePeopleClient()
     with pytest.raises(ValueError, match="movie_id cannot be empty"):

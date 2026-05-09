@@ -19,7 +19,6 @@ if TYPE_CHECKING:
 
 @pytest.mark.asyncio
 async def test_movie_recommendations_respects_limit(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -49,7 +48,6 @@ async def test_movie_recommendations_respects_limit(
 
 @pytest.mark.asyncio
 async def test_show_recommendations_respects_limit(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -79,7 +77,6 @@ async def test_show_recommendations_respects_limit(
 
 @pytest.mark.asyncio
 async def test_empty_recommendations_result(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -99,7 +96,6 @@ async def test_empty_recommendations_result(
 
 @pytest.mark.asyncio
 async def test_recommendations_with_favorited_by(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -141,7 +137,6 @@ async def test_recommendations_with_favorited_by(
 
 @pytest.mark.asyncio
 async def test_movie_recommendations_default_limit(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -161,7 +156,6 @@ async def test_movie_recommendations_default_limit(
 
 @pytest.mark.asyncio
 async def test_show_recommendations_default_limit(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
