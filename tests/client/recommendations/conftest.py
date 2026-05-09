@@ -7,7 +7,9 @@ from models.auth import TraktAuthToken
 
 
 @pytest.fixture
-def authenticated_client(mock_auth_token: TraktAuthToken) -> RecommendationsClient:
+def authenticated_client(
+    trakt_env: None, mock_auth_token: TraktAuthToken
+) -> RecommendationsClient:
     """Create an authenticated recommendations client for testing."""
     client = RecommendationsClient()
     client.auth_token = mock_auth_token

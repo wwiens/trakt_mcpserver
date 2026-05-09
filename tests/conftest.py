@@ -109,6 +109,7 @@ def mock_auth_token():
 
 @pytest.fixture
 def authenticated_sync_client(
+    trakt_env: None,
     mock_auth_token: "TraktAuthToken",
 ) -> Generator["SyncClient", None, None]:
     """Create an authenticated sync client for testing."""
