@@ -8,7 +8,6 @@ discovery and search scenarios.
 from fastmcp import FastMCP
 from fastmcp.prompts import Message
 
-
 _DISCOVER_TRENDING_TEXT = (
     "Show me what movies and TV shows are trending on Trakt right now. "
     "Please include both movies and shows, and provide details about "
