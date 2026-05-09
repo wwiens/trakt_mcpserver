@@ -1,11 +1,6 @@
 """Common type definitions and utilities."""
 
-from typing import TypedDict, TypeVar
-
-# Generic type variables
-T = TypeVar("T")
-TRequest = TypeVar("TRequest")
-TResponse = TypeVar("TResponse")
+from typing import TypedDict
 
 JSONValue = str | int | float | bool | None | dict[str, "JSONValue"] | list["JSONValue"]
 

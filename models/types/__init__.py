@@ -48,10 +48,7 @@ from .api_responses import (
 from .common import (
     ErrorResponse,
     JSONValue,
-    T,
     TraktHeaders,
-    TRequest,
-    TResponse,
 )
 from .ids import TraktIds
 from .language import INVALID_LANGUAGE_MSG, LANGUAGE_PATTERN, validate_language
@@ -109,9 +106,6 @@ __all__ = [
     "ShowCommentSort",
     "ShowResponse",
     "StatsResponse",
-    "T",
-    "TRequest",
-    "TResponse",
     "TokenResponse",
     "TraktHeaders",
     "TraktIds",

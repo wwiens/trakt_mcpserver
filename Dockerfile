@@ -1,9 +1,10 @@
 # mcp-proxy + Trakt MCP server (SSE -> stdio)
 FROM ghcr.io/sparfenyuk/mcp-proxy:latest
 
-ARG VERSION=0.9.0
+ARG VERSION=dev
+ARG REPO_URL=https://github.com/wwiens/trakt_mcpserver
 LABEL org.opencontainers.image.version=${VERSION}
-LABEL org.opencontainers.image.source=https://github.com/wwiens/trakt_mcpserver
+LABEL org.opencontainers.image.source=${REPO_URL}
 LABEL org.opencontainers.image.title="trakt-mcp-server"
 LABEL org.opencontainers.image.description="MCP server for Trakt.tv"
 
