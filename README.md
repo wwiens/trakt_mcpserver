@@ -881,7 +881,8 @@ Ensure code quality with pytest, type checking, and linting before making change
 <summary><strong>View test commands</strong></summary>
 
 ```bash
-# Install test dependencies
+# Install the project (editable) and test dependencies
+pip install -e .
 pip install -r requirements-dev.txt
 
 # Run all tests
