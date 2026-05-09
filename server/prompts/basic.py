@@ -5,20 +5,25 @@ This module provides fundamental conversation prompts for entertainment
 discovery and search scenarios.
 """
 
+from collections.abc import Awaitable, Callable
+from typing import Final
+
 from fastmcp import FastMCP
 from fastmcp.prompts import Message
 
-_DISCOVER_TRENDING_TEXT = (
+_DISCOVER_TRENDING_TEXT: Final[str] = (
     "Show me what movies and TV shows are trending on Trakt right now. "
     "Please include both movies and shows, and provide details about "
     "ratings, genres, and why they're popular."
 )
 
-_SEARCH_ENTERTAINMENT_TEXT = (
+_SEARCH_ENTERTAINMENT_TEXT: Final[str] = (
     "Help me search for a movie or TV show. I'd like to find something "
     "specific by title, and also get recommendations based on what I'm "
     "looking for. What would you like to find?"
 )
+
+BasicPromptHandler = Callable[[], Awaitable[list[Message]]]
 
 
 async def discover_trending() -> list[Message]:
@@ -31,7 +36,9 @@ async def search_entertainment() -> list[Message]:
     return [Message(_SEARCH_ENTERTAINMENT_TEXT)]
 
 
-def register_basic_prompts(mcp: FastMCP) -> tuple[object, object]:
+def register_basic_prompts(
+    mcp: FastMCP,
+) -> tuple[BasicPromptHandler, BasicPromptHandler]:
     """Register basic prompts with the MCP server."""
 
     @mcp.prompt(
