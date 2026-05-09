@@ -1,14 +1,11 @@
 """Shared formatting utilities for Trakt MCP server."""
 
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, Final, TypeVar
+from typing import Any, Final
 
 from models.types.api_responses import CastMember, CrewMember, ListItemResponse
 from models.types.pagination import PaginatedResponse
 from utils.formatting import DISPLAY_DATETIME_FORMAT, format_iso_timestamp
-
-T = TypeVar("T")
-M = TypeVar("M", bound=Mapping[str, Any])
 
 MAX_OVERVIEW_LENGTH: Final[int] = 200
 
@@ -206,7 +203,7 @@ def format_crew_section(
     return "\n".join(lines)
 
 
-def format_media_list(
+def format_media_list[M: Mapping[str, Any]](
     data: list[M] | PaginatedResponse[M],
     heading: str,
     media_key: str | None,
@@ -234,7 +231,7 @@ def format_media_list(
     if isinstance(data, PaginatedResponse):
         lines.append(format_pagination_header(data).rstrip("\n"))
         lines.append("")
-        items: list[M] = data.data
+        items = data.data
     else:
         items = data
 

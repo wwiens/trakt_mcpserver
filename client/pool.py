@@ -15,14 +15,12 @@ from __future__ import annotations
 
 import inspect
 import threading
-from typing import TypeGuard, TypeVar
+from typing import TypeGuard
 
 import httpx
 
 from .auth import AuthClient
 from .base import BaseClient
-
-T = TypeVar("T", bound=BaseClient)
 
 
 def _is_instance_of[T: BaseClient](obj: object, cls: type[T]) -> TypeGuard[T]:

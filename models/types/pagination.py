@@ -1,13 +1,8 @@
 """Pagination models for Trakt API responses."""
 
-from typing import TypeVar
-
 from pydantic import BaseModel, Field, PositiveInt
 
 from config.api import DEFAULT_LIMIT
-
-# Generic type for pagination data
-T = TypeVar("T")
 
 
 class PaginationParams(BaseModel):
