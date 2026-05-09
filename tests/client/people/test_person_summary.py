@@ -6,7 +6,7 @@ from client.people import PeopleClient
 
 
 @pytest.mark.asyncio
-async def test_get_person(trakt_env: None, patched_httpx_client: MagicMock):
+async def test_get_person(patched_httpx_client: MagicMock):
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "name": "Bryan Cranston",
@@ -33,7 +33,7 @@ async def test_get_person(trakt_env: None, patched_httpx_client: MagicMock):
 
 
 @pytest.mark.asyncio
-async def test_get_person_extended(trakt_env: None, patched_httpx_client: MagicMock):
+async def test_get_person_extended(patched_httpx_client: MagicMock):
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "name": "Bryan Cranston",
@@ -76,9 +76,7 @@ async def test_get_person_extended(trakt_env: None, patched_httpx_client: MagicM
 
 
 @pytest.mark.asyncio
-async def test_get_person_validates_empty_id(
-    trakt_env: None, patched_httpx_client: MagicMock
-):
+async def test_get_person_validates_empty_id(patched_httpx_client: MagicMock):
     client = PeopleClient()
     with pytest.raises(ValueError, match="person_id cannot be empty"):
         await client.get_person("   ")

@@ -6,9 +6,7 @@ from client.shows.people import ShowPeopleClient
 
 
 @pytest.mark.asyncio
-async def test_get_show_people(
-    trakt_env: None, patched_httpx_client: MagicMock
-) -> None:
+async def test_get_show_people(patched_httpx_client: MagicMock) -> None:
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "cast": [
@@ -56,7 +54,7 @@ async def test_get_show_people(
 
 @pytest.mark.asyncio
 async def test_get_show_people_with_guest_stars(
-    trakt_env: None, patched_httpx_client: MagicMock
+    patched_httpx_client: MagicMock,
 ) -> None:
     mock_response = MagicMock()
     mock_response.json.return_value = {
@@ -87,7 +85,7 @@ async def test_get_show_people_with_guest_stars(
 
 @pytest.mark.asyncio
 async def test_get_show_people_validates_empty_id(
-    trakt_env: None, patched_httpx_client: MagicMock
+    patched_httpx_client: MagicMock,
 ) -> None:
     client = ShowPeopleClient()
     with pytest.raises(ValueError, match="show_id cannot be empty"):

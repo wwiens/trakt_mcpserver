@@ -67,7 +67,7 @@ def _write_token(path: Path, access_token: str) -> None:
     path.write_text(token.model_dump_json())
 
 
-def test_non_auth_client_is_cached_singleton(trakt_env: None) -> None:
+def test_non_auth_client_is_cached_singleton() -> None:
     first = get_client(SearchClient)
     second = get_client(SearchClient)
     assert first is second
@@ -75,12 +75,12 @@ def test_non_auth_client_is_cached_singleton(trakt_env: None) -> None:
     assert first._owns_client is False
 
 
-def test_get_client_returns_subclass_type(trakt_env: None) -> None:
+def test_get_client_returns_subclass_type() -> None:
     client = get_client(ShowsClient)
     assert isinstance(client, ShowsClient)
 
 
-def test_auth_client_is_fresh_per_call(trakt_env: None, _token_file: Path) -> None:
+def test_auth_client_is_fresh_per_call(_token_file: Path) -> None:
     first = get_client(UserClient)
     second = get_client(UserClient)
     assert first is not second
@@ -91,18 +91,14 @@ def test_auth_client_is_fresh_per_call(trakt_env: None, _token_file: Path) -> No
     assert AuthClient not in pool._CACHE
 
 
-def test_auth_client_shares_httpx_with_non_auth(
-    trakt_env: None, _token_file: Path
-) -> None:
+def test_auth_client_shares_httpx_with_non_auth(_token_file: Path) -> None:
     user = get_client(UserClient)
     shows = get_client(ShowsClient)
     assert user._client is shows._client
     assert isinstance(user._client, httpx.AsyncClient)
 
 
-def test_auth_subclass_reloads_token_from_disk(
-    trakt_env: None, _token_file: Path
-) -> None:
+def test_auth_subclass_reloads_token_from_disk(_token_file: Path) -> None:
     _write_token(_token_file, "first_token")
     first = get_client(UserClient)
     assert first.auth_token is not None
@@ -114,7 +110,7 @@ def test_auth_subclass_reloads_token_from_disk(
     assert second.auth_token.access_token == "second_token"
 
 
-def test_pooled_clients_share_httpx(trakt_env: None) -> None:
+def test_pooled_clients_share_httpx() -> None:
     shows = get_client(ShowsClient)
     search = get_client(SearchClient)
     assert shows._client is search._client
@@ -122,9 +118,7 @@ def test_pooled_clients_share_httpx(trakt_env: None) -> None:
 
 
 @pytest.mark.asyncio
-async def test_shutdown_clients_closes_shared_http_and_clears_cache(
-    trakt_env: None,
-) -> None:
+async def test_shutdown_clients_closes_shared_http_and_clears_cache() -> None:
     get_client(ShowsClient)
     shared = pool._shared_http
     assert shared is not None
@@ -139,14 +133,14 @@ async def test_shutdown_clients_closes_shared_http_and_clears_cache(
 
 
 @pytest.mark.asyncio
-async def test_shutdown_allows_shared_http_to_recreate(trakt_env: None) -> None:
+async def test_shutdown_allows_shared_http_to_recreate() -> None:
     first = get_or_create_shared_http()
     await shutdown_clients()
     second = get_or_create_shared_http()
     assert first is not second
 
 
-def test_non_pooled_client_path_unchanged(trakt_env: None) -> None:
+def test_non_pooled_client_path_unchanged() -> None:
     direct = ShowsClient()
     assert direct._persistent is False
     assert direct._owns_client is True

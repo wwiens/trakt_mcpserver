@@ -82,9 +82,7 @@ class TestTokenRefreshChain:
     # 1. Single expiry: token expired 2 days ago, refresh succeeds
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
-    async def test_single_expiry_refresh(
-        self, trakt_env: None, patched_httpx_client: MagicMock
-    ) -> None:
+    async def test_single_expiry_refresh(self, patched_httpx_client: MagicMock) -> None:
         """Token expired 2 days ago is silently refreshed."""
         fresh_data = _make_fresh_token_data("day2")
         patched_httpx_client.post.return_value = _mock_post_response(fresh_data)
@@ -108,7 +106,7 @@ class TestTokenRefreshChain:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_consecutive_refresh_chain_3_days(
-        self, trakt_env: None, patched_httpx_client: MagicMock
+        self, patched_httpx_client: MagicMock
     ) -> None:
         """Three successive refresh cycles, each using the previous refresh_token."""
         with _patch_file_io():
@@ -152,7 +150,7 @@ class TestTokenRefreshChain:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_cold_start_30_day_absence(
-        self, trakt_env: None, patched_httpx_client: MagicMock
+        self, patched_httpx_client: MagicMock
     ) -> None:
         """Token expired 30 days ago recovers seamlessly."""
         fresh_data = _make_fresh_token_data("cold_start")
@@ -179,7 +177,7 @@ class TestTokenRefreshChain:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_concurrent_ensure_authenticated_single_refresh(
-        self, trakt_env: None, patched_httpx_client: MagicMock
+        self, patched_httpx_client: MagicMock
     ) -> None:
         """Five concurrent callers share one refresh via _refresh_lock."""
         fresh_data = _make_fresh_token_data("concurrent")
@@ -257,7 +255,7 @@ class TestTokenRefreshChain:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_refresh_token_revoked_after_chain(
-        self, trakt_env: None, patched_httpx_client: MagicMock
+        self, patched_httpx_client: MagicMock
     ) -> None:
         """First refresh OK, then refresh_token is revoked on Trakt side."""
         fresh_data = _make_fresh_token_data("first")
@@ -301,7 +299,7 @@ class TestTokenRefreshChain:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_recursive_refresh_avoidance(
-        self, trakt_env: None, patched_httpx_client: MagicMock
+        self, patched_httpx_client: MagicMock
     ) -> None:
         """401 on the refresh HTTP call does not deadlock or recurse."""
         resp_401 = MagicMock(spec=httpx.Response)
@@ -325,7 +323,7 @@ class TestTokenRefreshChain:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_end_to_end_proactive_refresh_then_api_call(
-        self, trakt_env: None, patched_httpx_client: MagicMock
+        self, patched_httpx_client: MagicMock
     ) -> None:
         """Full tool-call simulation: refresh + GET succeeds seamlessly."""
         fresh_data = _make_fresh_token_data("e2e")
@@ -361,7 +359,7 @@ class TestTokenRefreshChain:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_transient_error_preserves_refresh_token(
-        self, trakt_env: None, patched_httpx_client: MagicMock
+        self, patched_httpx_client: MagicMock
     ) -> None:
         """Network error on refresh keeps refresh_token; next attempt works."""
         # First attempt: network failure

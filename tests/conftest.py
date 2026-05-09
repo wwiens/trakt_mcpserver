@@ -44,8 +44,8 @@ def _isolate_auth_token_file(  # pyright: ignore[reportUnusedFunction]
         yield
 
 
-@pytest.fixture
-def trakt_env() -> Generator[None, None, None]:
+@pytest.fixture(autouse=True, scope="session")
+def trakt_env() -> Generator[None, None, None]:  # pyright: ignore[reportUnusedFunction]
     """Patch environment variables with test Trakt credentials.
 
     This fixture patches the environment with test credentials for
@@ -83,7 +83,7 @@ def patched_httpx_client(
     instance, making it easy to configure mock responses in tests.
 
     Usage:
-        async def test_something(trakt_env: None, patched_httpx_client: MagicMock):
+        async def test_something(patched_httpx_client: MagicMock):
             patched_httpx_client.get.return_value = mock_response
             # Your test code here
     """

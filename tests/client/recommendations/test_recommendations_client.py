@@ -21,9 +21,7 @@ def patched_httpx_with_delete(
 
 
 @pytest.mark.asyncio
-async def test_get_movie_recommendations_not_authenticated(
-    trakt_env: None,
-) -> None:
+async def test_get_movie_recommendations_not_authenticated() -> None:
     """Test that get_movie_recommendations requires authentication."""
     client = RecommendationsClient()
     # Mock ensure_authenticated to return False (in case auth_token.json exists)
@@ -33,9 +31,7 @@ async def test_get_movie_recommendations_not_authenticated(
 
 
 @pytest.mark.asyncio
-async def test_get_show_recommendations_not_authenticated(
-    trakt_env: None,
-) -> None:
+async def test_get_show_recommendations_not_authenticated() -> None:
     """Test that get_show_recommendations requires authentication."""
     client = RecommendationsClient()
     # Mock ensure_authenticated to return False (in case auth_token.json exists)
@@ -45,9 +41,7 @@ async def test_get_show_recommendations_not_authenticated(
 
 
 @pytest.mark.asyncio
-async def test_hide_movie_recommendation_not_authenticated(
-    trakt_env: None,
-) -> None:
+async def test_hide_movie_recommendation_not_authenticated() -> None:
     """Test that hide_movie_recommendation requires authentication."""
     client = RecommendationsClient()
     # Mock ensure_authenticated to return False (in case auth_token.json exists)
@@ -57,9 +51,7 @@ async def test_hide_movie_recommendation_not_authenticated(
 
 
 @pytest.mark.asyncio
-async def test_hide_show_recommendation_not_authenticated(
-    trakt_env: None,
-) -> None:
+async def test_hide_show_recommendation_not_authenticated() -> None:
     """Test that hide_show_recommendation requires authentication."""
     client = RecommendationsClient()
     # Mock ensure_authenticated to return False (in case auth_token.json exists)
@@ -69,9 +61,7 @@ async def test_hide_show_recommendation_not_authenticated(
 
 
 @pytest.mark.asyncio
-async def test_unhide_movie_recommendation_not_authenticated(
-    trakt_env: None,
-) -> None:
+async def test_unhide_movie_recommendation_not_authenticated() -> None:
     """Test that unhide_movie_recommendation requires authentication."""
     client = RecommendationsClient()
     # Mock ensure_authenticated to return False (in case auth_token.json exists)
@@ -81,9 +71,7 @@ async def test_unhide_movie_recommendation_not_authenticated(
 
 
 @pytest.mark.asyncio
-async def test_unhide_show_recommendation_not_authenticated(
-    trakt_env: None,
-) -> None:
+async def test_unhide_show_recommendation_not_authenticated() -> None:
     """Test that unhide_show_recommendation requires authentication."""
     client = RecommendationsClient()
     # Mock ensure_authenticated to return False (in case auth_token.json exists)
@@ -94,7 +82,6 @@ async def test_unhide_show_recommendation_not_authenticated(
 
 @pytest.mark.asyncio
 async def test_get_movie_recommendations_success(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -128,7 +115,6 @@ async def test_get_movie_recommendations_success(
 
 @pytest.mark.asyncio
 async def test_get_show_recommendations_success(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -162,7 +148,6 @@ async def test_get_show_recommendations_success(
 
 @pytest.mark.asyncio
 async def test_hide_movie_recommendation_success(
-    trakt_env: None,
     patched_httpx_with_delete: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -182,7 +167,6 @@ async def test_hide_movie_recommendation_success(
 
 @pytest.mark.asyncio
 async def test_hide_show_recommendation_success(
-    trakt_env: None,
     patched_httpx_with_delete: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -202,7 +186,6 @@ async def test_hide_show_recommendation_success(
 
 @pytest.mark.asyncio
 async def test_unhide_movie_recommendation_success(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -223,7 +206,6 @@ async def test_unhide_movie_recommendation_success(
 
 @pytest.mark.asyncio
 async def test_unhide_show_recommendation_success(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
@@ -244,7 +226,6 @@ async def test_unhide_show_recommendation_success(
 
 @pytest.mark.asyncio
 async def test_get_movie_recommendations_with_filters(
-    trakt_env: None,
     patched_httpx_client: MagicMock,
     authenticated_client: RecommendationsClient,
 ) -> None:
