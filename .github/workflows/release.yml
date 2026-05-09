@@ -61,8 +61,6 @@ jobs:
               echo "version=$VERSION"
               echo "tag=v$VERSION"
             } >> "$GITHUB_OUTPUT"
-          else
-            echo "released=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run python-semantic-release
