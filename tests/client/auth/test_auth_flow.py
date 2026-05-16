@@ -171,7 +171,7 @@ async def test_device_token_pending_authorization():
 
 
 @pytest.mark.asyncio
-async def test_device_token_400_returns_authorization_pending():
+async def test_device_token_400_returns_authorization_pending() -> None:
     """A 400 on /oauth/device/token surfaces as AuthorizationPendingError.
 
     Trakt returns HTTP 400 with no discriminating body while the user has

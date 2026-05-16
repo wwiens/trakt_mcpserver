@@ -7,12 +7,12 @@ the FastMCP CLI (``fastmcp inspect --format mcp``) — no Node dependency.
 import json
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 import pytest
 
-REPO_ROOT = Path(__file__).parent.parent
-SERVER_PATH = str(REPO_ROOT / "server.py")
+REPO_ROOT: Final[Path] = Path(__file__).parent.parent
+SERVER_PATH: Final[str] = str(REPO_ROOT / "server.py")
 
 
 @pytest.fixture(scope="module")
