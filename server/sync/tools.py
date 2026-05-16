@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Annotated, Any, ClassVar, Literal
 
 from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field, field_validator
 
 from client.pool import get_client
@@ -945,6 +946,8 @@ def register_sync_tools(
             "Supports optional pagination with 'page' parameter. "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read", "auth_required"},
     )
     async def fetch_user_ratings_tool(
         rating_type: Annotated[
@@ -969,6 +972,8 @@ def register_sync_tools(
         description=(
             "Add new ratings for the authenticated user. Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(destructiveHint=True),
+        tags={"write", "auth_required"},
     )
     async def add_user_ratings_tool(
         rating_type: Annotated[
@@ -990,6 +995,8 @@ def register_sync_tools(
         description=(
             "Remove ratings for the authenticated user. Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(destructiveHint=True),
+        tags={"write", "auth_required"},
     )
     async def remove_user_ratings_tool(
         rating_type: Annotated[
@@ -1013,6 +1020,8 @@ def register_sync_tools(
             "Supports optional pagination with 'page' parameter and sorting options. "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read", "auth_required"},
     )
     async def fetch_user_watchlist_tool(
         watchlist_type: Annotated[
@@ -1047,6 +1056,8 @@ def register_sync_tools(
             "Supports optional notes (VIP only, 500 character limit). "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(destructiveHint=True),
+        tags={"write", "auth_required"},
     )
     async def add_user_watchlist_tool(
         watchlist_type: Annotated[
@@ -1069,6 +1080,8 @@ def register_sync_tools(
             "Remove items from the authenticated user's watchlist. "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(destructiveHint=True),
+        tags={"write", "auth_required"},
     )
     async def remove_user_watchlist_tool(
         watchlist_type: Annotated[
@@ -1094,6 +1107,8 @@ def register_sync_tools(
             "Supports optional pagination with 'page' parameter. "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read", "auth_required"},
     )
     async def fetch_history_tool(
         history_type: Annotated[
@@ -1126,6 +1141,8 @@ def register_sync_tools(
             "as watched. Optionally specify when they were watched. "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(destructiveHint=True),
+        tags={"write", "auth_required"},
     )
     async def add_to_history_tool(
         history_type: Annotated[
@@ -1146,6 +1163,8 @@ def register_sync_tools(
             "or episodes from your watched history. "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(destructiveHint=True),
+        tags={"write", "auth_required"},
     )
     async def remove_from_history_tool(
         history_type: Annotated[

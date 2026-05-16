@@ -110,19 +110,18 @@ pytest
 pytest tests/client/auth/ -v  # Focused testing
 
 # Code quality (zero tolerance for errors/warnings)
-ruff check --fix    # Linting  
+ruff check --fix    # Linting
 ruff format         # Formatting
 pyright             # Type checking
 pip-audit           # Security scanning
-npx @modelcontextprotocol/inspector --cli python server.py --method tools/list    # MCP validation
+fastmcp inspect server.py                                # MCP validation (text summary)
 
 # MCP server
-python server.py                                                        # Direct run
-mcp dev server.py                                                      # Development mode
-npx @modelcontextprotocol/inspector --cli python server.py --method tools/list    # MCP validation (list tools)
-npx @modelcontextprotocol/inspector --cli python server.py --method resources/list # MCP validation (list resources)
-npx @modelcontextprotocol/inspector --cli python server.py --method prompts/list   # MCP validation (list prompts)
-npx @modelcontextprotocol/inspector --cli python server.py --method tools/call     # Call specific tool
+python server.py                                                          # Direct run
+fastmcp dev inspector server.py                                           # Launch in MCP Inspector
+fastmcp inspect server.py --format mcp -o report.json                     # Full MCP-protocol JSON
+fastmcp list server.py --json --resources --prompts                       # List tools/resources/prompts as JSON
+fastmcp call server.py <tool-name> [--args '{"k": "v"}']                  # Invoke a tool
 ```
 
 ## Code Quality Requirements

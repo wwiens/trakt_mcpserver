@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Any
 
 from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field, ValidationError
 
 from client.pool import get_client
@@ -168,6 +169,8 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
             "use fetch_history with history_type='shows' and item_id instead. "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read", "auth_required"},
     )
     @ToolErrors.with_error_handling(
         operation="fetch_user_watched_shows_tool",
@@ -194,6 +197,8 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
             "use fetch_history with history_type='movies' and item_id instead. "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read", "auth_required"},
     )
     @ToolErrors.with_error_handling(
         operation="fetch_user_watched_movies_tool",
