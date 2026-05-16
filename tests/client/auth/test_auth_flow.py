@@ -8,7 +8,6 @@ import pytest
 from client.auth import AuthClient
 from models.auth import TraktAuthToken, TraktDeviceCode
 from utils.api.error_types import AuthorizationPendingError
-from utils.api.errors import InvalidParamsError
 
 
 @pytest.mark.asyncio
@@ -172,26 +171,28 @@ async def test_device_token_pending_authorization():
 
 
 @pytest.mark.asyncio
-async def test_device_token_expired():
-    """Test getting a device token when the code has expired."""
-    # Mock a 400 error response for expired code
+async def test_device_token_400_returns_authorization_pending():
+    """A 400 on /oauth/device/token surfaces as AuthorizationPendingError.
+
+    Trakt returns HTTP 400 with no discriminating body while the user has
+    not yet authorized in the browser. The endpoint identity is the
+    canonical signal — body content is not required.
+    """
     mock_error_response = MagicMock()
     mock_error_response.raise_for_status.side_effect = httpx.HTTPStatusError(
         "Bad Request",
         request=MagicMock(),
-        response=MagicMock(status_code=400, text="expired_token"),
+        response=MagicMock(status_code=400, text=""),
     )
 
-    # Patch the AsyncClient to return our mock error response
     with (
         patch("httpx.AsyncClient") as mock_client,
-        patch("os.path.exists", return_value=False),  # No existing auth token
+        patch("os.path.exists", return_value=False),
         patch.dict(
             os.environ,
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.post = AsyncMock(return_value=mock_error_response)
         mock_instance.get = AsyncMock()
@@ -200,12 +201,7 @@ async def test_device_token_expired():
 
         client = AuthClient()
 
-        # Try to get a token, should raise InvalidParamsError because code has expired
-        with pytest.raises(InvalidParamsError) as exc_info:
+        with pytest.raises(AuthorizationPendingError):
             await client.get_device_token("device_code_123")
 
-        # Verify the error contains information about expired token
-        assert "expired_token" in str(exc_info.value.data)
-
-        # Verify the client is not authenticated
         assert client.is_authenticated() is False
