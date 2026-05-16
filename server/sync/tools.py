@@ -972,7 +972,7 @@ def register_sync_tools(
         description=(
             "Add new ratings for the authenticated user. Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructiveHint=False),
         tags={"write", "auth_required"},
     )
     async def add_user_ratings_tool(
@@ -1056,7 +1056,7 @@ def register_sync_tools(
             "Supports optional notes (VIP only, 500 character limit). "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructiveHint=False),
         tags={"write", "auth_required"},
     )
     async def add_user_watchlist_tool(
@@ -1141,7 +1141,7 @@ def register_sync_tools(
             "as watched. Optionally specify when they were watched. "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructiveHint=False),
         tags={"write", "auth_required"},
     )
     async def add_to_history_tool(

@@ -312,7 +312,7 @@ def register_recommendation_tools(
             "Hide a movie from future recommendations. Requires OAuth authentication. "
             "Use Trakt ID, slug, or IMDB ID to identify the movie."
         ),
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructiveHint=False),
         tags={"write", "auth_required"},
     )
     async def hide_movie_recommendation_tool(
@@ -328,7 +328,7 @@ def register_recommendation_tools(
             "Requires OAuth authentication. "
             "Use Trakt ID, slug, or IMDB ID to identify the show."
         ),
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructiveHint=False),
         tags={"write", "auth_required"},
     )
     async def hide_show_recommendation_tool(
@@ -344,7 +344,7 @@ def register_recommendation_tools(
             "Requires OAuth authentication. "
             "Use Trakt ID, slug, or IMDB ID to identify the movie."
         ),
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructiveHint=False),
         tags={"write", "auth_required"},
     )
     async def unhide_movie_recommendation_tool(
@@ -360,7 +360,7 @@ def register_recommendation_tools(
             "Requires OAuth authentication. "
             "Use Trakt ID, slug, or IMDB ID to identify the show."
         ),
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructiveHint=False),
         tags={"write", "auth_required"},
     )
     async def unhide_show_recommendation_tool(

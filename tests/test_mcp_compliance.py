@@ -222,16 +222,48 @@ class TestToolAnnotationsAndTags:
             f"Unexpected tools with null annotations: {unannotated}"
         )
 
-    def test_all_write_tools_marked_destructive(
+    def test_write_tools_destructive_partition(
         self, mcp_report: dict[str, Any]
     ) -> None:
-        """Every tool tagged ``write`` declares ``destructiveHint=True``."""
+        """Writes split into destructive (lose state) vs additive (create/toggle)."""
+        destructive_writes = {
+            "clear_auth",
+            "remove_user_ratings",
+            "remove_user_watchlist",
+            "remove_from_history",
+            "remove_playback_item",
+        }
+        additive_writes = {
+            "checkin_to_show",
+            "add_user_ratings",
+            "add_user_watchlist",
+            "add_to_history",
+            "hide_movie_recommendation",
+            "hide_show_recommendation",
+            "unhide_movie_recommendation",
+            "unhide_show_recommendation",
+        }
+
+        write_tools = {
+            t["name"]
+            for t in mcp_report["tools"]
+            if "write" in t.get("_meta", {}).get("fastmcp", {}).get("tags", [])
+        }
+        expected = destructive_writes | additive_writes
+        assert write_tools == expected, (
+            f"Write tag drift — unexpected: {write_tools - expected}, "
+            f"missing: {expected - write_tools}"
+        )
+
         for tool in mcp_report["tools"]:
-            tags = tool.get("_meta", {}).get("fastmcp", {}).get("tags", [])
-            if "write" in tags:
-                ann: dict[str, Any] = tool.get("annotations") or {}
+            ann: dict[str, Any] = tool.get("annotations") or {}
+            if tool["name"] in destructive_writes:
                 assert ann.get("destructiveHint") is True, (
-                    f"Write tool {tool['name']} missing destructiveHint=True"
+                    f"{tool['name']} must have destructiveHint=True"
+                )
+            elif tool["name"] in additive_writes:
+                assert ann.get("destructiveHint") is False, (
+                    f"{tool['name']} must have destructiveHint=False"
                 )
 
     def test_all_read_tools_marked_readonly(self, mcp_report: dict[str, Any]) -> None:
