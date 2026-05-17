@@ -26,6 +26,43 @@ docker run -d --rm --name trakt_mcpserver \
   ghcr.io/wwiens/trakt_mcpserver:latest
 ```
 
+### Run with uvx (no clone, no install)
+
+Requires [uv](https://docs.astral.sh/uv/) installed.
+
+```bash
+uvx --from git+https://github.com/wwiens/trakt_mcpserver trakt-mcp
+```
+
+Pin to a release tag for reproducibility:
+
+```bash
+uvx --from git+https://github.com/wwiens/trakt_mcpserver@v0.9.0 trakt-mcp
+```
+
+**Claude Desktop / MCPhub configuration:**
+```json
+{
+  "mcpServers": {
+    "trakt": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/wwiens/trakt_mcpserver",
+        "trakt-mcp"
+      ],
+      "env": {
+        "TRAKT_CLIENT_ID": "your_client_id",
+        "TRAKT_CLIENT_SECRET": "your_client_secret",
+        "TRAKT_AUTH_TOKEN_PATH": "/absolute/path/to/auth_token.json"
+      }
+    }
+  }
+}
+```
+
+`TRAKT_AUTH_TOKEN_PATH` is recommended because uvx runs in an ephemeral temp directory — without it, the auth token file lands somewhere unpredictable and is lost between runs.
+
 ### Local Installation
 
 Requires Python 3.12 or newer.

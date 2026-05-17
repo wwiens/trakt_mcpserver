@@ -11,6 +11,9 @@ dependencies = [
     "pydantic==2.11.7",
 ]
 
+[project.scripts]
+trakt-mcp = "server.main:run"
+
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
