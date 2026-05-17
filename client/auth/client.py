@@ -23,9 +23,14 @@ from ..base import BaseClient
 
 logger = logging.getLogger(__name__)
 
-# User authentication token storage path
-# Docker sets TRAKT_AUTH_TOKEN_PATH for volume-based persistence
-AUTH_TOKEN_FILE: Final[str] = os.environ.get("TRAKT_AUTH_TOKEN_PATH", "auth_token.json")
+# User authentication token storage path.
+# Default lives under the user's home so the token survives across uvx invocations
+# (uvx's CWD is a throwaway temp dir). Override via TRAKT_AUTH_TOKEN_PATH —
+# Docker images set it to /data/auth_token.json for volume-based persistence.
+AUTH_TOKEN_FILE: Final[str] = os.environ.get(
+    "TRAKT_AUTH_TOKEN_PATH",
+    os.path.expanduser("~/.trakt-mcp/auth_token.json"),
+)
 
 
 class AuthClient(BaseClient):

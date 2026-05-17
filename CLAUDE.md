@@ -239,7 +239,7 @@ Skipping is fine — the existing `ruff` dev commands and the CI `pr-title-lint.
 
 ### Authentication
 - OAuth device code flow
-- Tokens in `auth_token.json` (gitignored)
+- Tokens persisted to `~/.trakt-mcp/auth_token.json` by default; override with `TRAKT_AUTH_TOKEN_PATH` (Docker images set this to `/data/auth_token.json`)
 - `TraktAuthToken` model handles persistence
 - Global `active_auth_flow` tracks authorization
 
