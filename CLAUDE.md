@@ -166,7 +166,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 
 ## Versioning & Releases
 
-**Single source of truth**: `pyproject.toml` `[project] version`. Read at runtime via `importlib.metadata.version("trakt-mcp-server")`. Never hard-code `__version__`.
+**Single source of truth**: `pyproject.toml` `[project] version`. Read at runtime via `importlib.metadata.version("trakt-mcp")`. Never hard-code `__version__`.
 
 **Runtime dependencies SSOT**: `pyproject.toml [project] dependencies`. Both Dockerfiles extract this list at build time using `tomllib`. Do not maintain a parallel `requirements.txt`.
 

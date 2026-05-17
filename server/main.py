@@ -72,11 +72,11 @@ def create_server() -> FastMCP:
         Configured FastMCP server instance
     """
     try:
-        version = _pkg_version("trakt-mcp-server")
+        version = _pkg_version("trakt-mcp")
     except PackageNotFoundError:
         version = "0.0.0+dev"
-    logger.info("Starting trakt-mcp-server v%s", version)
-    mcp = FastMCP(name="trakt-mcp-server", lifespan=_lifespan)
+    logger.info("Starting trakt-mcp v%s", version)
+    mcp = FastMCP(name="trakt-mcp", lifespan=_lifespan)
     for register in REGISTRATIONS:
         register(mcp)
     logger.info("All Trakt MCP modules registered successfully")
