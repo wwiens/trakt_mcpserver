@@ -89,9 +89,6 @@ mcp = create_server()
 
 def run() -> None:
     """Console-script entry point (used by `[project.scripts]` and uvx)."""
-    from dotenv import load_dotenv
-
-    load_dotenv()
     # Print to stderr to avoid polluting stdout (required for stdio transport)
     print("Starting Trakt MCP server...", file=sys.stderr)
     mcp.run()
