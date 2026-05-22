@@ -72,11 +72,11 @@ def create_server() -> FastMCP:
         Configured FastMCP server instance
     """
     try:
-        version = _pkg_version("trakt-mcp-server")
+        version = _pkg_version("trakt-mcp")
     except PackageNotFoundError:
         version = "0.0.0+dev"
-    logger.info("Starting trakt-mcp-server v%s", version)
-    mcp = FastMCP(name="trakt-mcp-server", lifespan=_lifespan)
+    logger.info("Starting trakt-mcp v%s", version)
+    mcp = FastMCP(name="trakt-mcp", lifespan=_lifespan)
     for register in REGISTRATIONS:
         register(mcp)
     logger.info("All Trakt MCP modules registered successfully")
@@ -87,9 +87,12 @@ def create_server() -> FastMCP:
 mcp = create_server()
 
 
-if __name__ == "__main__":
+def run() -> None:
+    """Console-script entry point (used by `[project.scripts]` and uvx)."""
     # Print to stderr to avoid polluting stdout (required for stdio transport)
     print("Starting Trakt MCP server...", file=sys.stderr)
-    print("Run 'mcp dev server.py' to test with the MCP Inspector", file=sys.stderr)
-    print("Run 'mcp install server.py' to install in Claude Desktop", file=sys.stderr)
     mcp.run()
+
+
+if __name__ == "__main__":
+    run()

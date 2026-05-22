@@ -5,7 +5,7 @@ ARG VERSION=dev
 ARG REPO_URL=https://github.com/wwiens/trakt_mcpserver
 LABEL org.opencontainers.image.version=${VERSION}
 LABEL org.opencontainers.image.source=${REPO_URL}
-LABEL org.opencontainers.image.title="trakt-mcp-server"
+LABEL org.opencontainers.image.title="trakt-mcp"
 LABEL org.opencontainers.image.description="MCP server for Trakt.tv"
 
 # Install Python and tools (base image is Alpine)
