@@ -5,6 +5,25 @@ From v0.9.1 onward, entries are generated automatically by `python-semantic-rele
 
 <!-- version list -->
 
+## v0.10.0 (2026-05-22)
+
+### Continuous Integration
+
+- Add quality gates (#50) ([#50](https://github.com/wwiens/trakt_mcpserver/pull/50),
+  [`09fde32`](https://github.com/wwiens/trakt_mcpserver/commit/09fde32a81f05af7170b5d22ef66425dd6b4916a))
+
+### Documentation
+
+- Recommend venv before pip install -e . (#48)
+  ([#48](https://github.com/wwiens/trakt_mcpserver/pull/48),
+  [`ed0fd16`](https://github.com/wwiens/trakt_mcpserver/commit/ed0fd165fc1a500408e3cdf0f9d8e3d51e625472))
+
+### Features
+
+- Add uvx install option (#51) ([#51](https://github.com/wwiens/trakt_mcpserver/pull/51),
+  [`1a3ff31`](https://github.com/wwiens/trakt_mcpserver/commit/1a3ff3188d28a6c21fc86b401bbf2dc6abf6c0e9))
+
+
 ## v0.9.0 (2026-05-09)
 
 First tagged release. Consolidates ~13 months of development into a tagged baseline ahead of the FastMCP 3 upgrade and tool consolidation milestones. Entries below summarize work delivered before automated changelog generation began.
