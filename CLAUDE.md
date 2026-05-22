@@ -165,7 +165,7 @@ fastmcp call server.py <tool-name> [--args '{"k": "v"}']                  # Invo
 
 ## Versioning & Releases
 
-**Single source of truth**: `pyproject.toml` `[project] version`. Read at runtime via `importlib.metadata.version("trakt-mcp-server")`. Never hard-code `__version__`.
+**Single source of truth**: `pyproject.toml` `[project] version`. Read at runtime via `importlib.metadata.version("trakt-mcp")`. Never hard-code `__version__`.
 
 **Runtime dependencies SSOT**: `pyproject.toml [project] dependencies`. Both Dockerfiles extract this list at build time using `tomllib`. Do not maintain a parallel `requirements.txt`.
 
@@ -238,7 +238,7 @@ Skipping is fine — the existing `ruff` dev commands and the CI `pr-title-lint.
 
 ### Authentication
 - OAuth device code flow
-- Tokens in `auth_token.json` (gitignored)
+- Tokens persisted to `~/.trakt-mcp/auth_token.json` by default; override with `TRAKT_AUTH_TOKEN_PATH` (Docker images set this to `/data/auth_token.json`)
 - `TraktAuthToken` model handles persistence
 - Global `active_auth_flow` tracks authorization
 

@@ -26,6 +26,42 @@ docker run -d --rm --name trakt_mcpserver \
   ghcr.io/wwiens/trakt_mcpserver:latest
 ```
 
+### Run with uvx (no clone, no install)
+
+Requires [uv](https://docs.astral.sh/uv/) installed.
+
+```bash
+uvx --from git+https://github.com/wwiens/trakt_mcpserver trakt-mcp
+```
+
+Pin to a release tag for reproducibility:
+
+```bash
+uvx --from git+https://github.com/wwiens/trakt_mcpserver@v0.9.0 trakt-mcp
+```
+
+**Claude Desktop / MCPhub configuration:**
+```json
+{
+  "mcpServers": {
+    "trakt": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/wwiens/trakt_mcpserver",
+        "trakt-mcp"
+      ],
+      "env": {
+        "TRAKT_CLIENT_ID": "your_client_id",
+        "TRAKT_CLIENT_SECRET": "your_client_secret"
+      }
+    }
+  }
+}
+```
+
+Your Trakt OAuth token is persisted to `~/.trakt-mcp/auth_token.json` (the directory is created on first login), so authorization survives across uvx invocations. To override the location — e.g. for Docker volumes or to keep multiple isolated accounts — set `TRAKT_AUTH_TOKEN_PATH` to an absolute path.
+
 ### Local Installation
 
 Requires Python 3.12 or newer.
@@ -766,7 +802,7 @@ The server uses Trakt's device authentication flow:
 2. You'll receive a code and a URL to visit on your browser
 3. After entering the code on the Trakt website and authorizing the app, inform Claude that you've completed the authorization
 4. Claude will check the authentication status and then fetch your personal data
-5. Your authentication token is stored securely in `auth_token.json` for future requests. In Docker, this is at `/data/auth_token.json` — mount a volume at `/data` (e.g. `-v trakt_auth:/data`) to persist auth across container recreations.
+5. Your authentication token is stored securely in `~/.trakt-mcp/auth_token.json` for future requests, with `0o600` permissions. Override the location with the `TRAKT_AUTH_TOKEN_PATH` env var; Docker images set it to `/data/auth_token.json` — mount a volume at `/data` (e.g. `-v trakt_auth:/data`) to persist auth across container recreations.
 
 You can log out at any time using the `clear_auth` tool.
 

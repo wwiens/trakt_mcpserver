@@ -68,7 +68,7 @@ async def _lifespan(_mcp: FastMCP) -> AsyncGenerator[None]:
 def create_server() -> FastMCP:
     """Create and configure the Trakt MCP server with all modules."""
     try:
-        version = _pkg_version("trakt-mcp-server")
+        version = _pkg_version("trakt-mcp")
     except PackageNotFoundError:
         version = "0.0.0+dev"
     logger.info("Starting trakt-mcp-server v%s", version)
@@ -87,15 +87,12 @@ def create_server() -> FastMCP:
 mcp = create_server()
 
 
-if __name__ == "__main__":
+def run() -> None:
+    """Console-script entry point (used by `[project.scripts]` and uvx)."""
     # Print to stderr to avoid polluting stdout (required for stdio transport)
     print("Starting Trakt MCP server...", file=sys.stderr)
-    print(
-        "Run 'fastmcp dev inspector server.py' to test in the MCP Inspector",
-        file=sys.stderr,
-    )
-    print(
-        "Run 'fastmcp install server.py' to install in a client",
-        file=sys.stderr,
-    )
     mcp.run()
+
+
+if __name__ == "__main__":
+    run()

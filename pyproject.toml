@@ -1,6 +1,6 @@
 [project]
-name = "trakt-mcp-server"
-version = "0.9.0"
+name = "trakt-mcp"
+version = "0.10.0"
 description = "Model Context Protocol server bridging AI models with the Trakt.tv API."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -11,6 +11,9 @@ dependencies = [
     "mcp>=1.27.0",
     "pydantic>=2.13,<3",
 ]
+
+[project.scripts]
+trakt-mcp = "server.main:run"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
