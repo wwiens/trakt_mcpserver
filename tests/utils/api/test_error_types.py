@@ -1,9 +1,8 @@
 """Tests for utils.api.error_types module."""
 
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
-if TYPE_CHECKING:
-    from tests.types_stub import MCPErrorWithData
+from tests.types_stub import MCPErrorWithData  # noqa: TC001
 from utils.api.error_types import (
     AuthenticationRequiredError,
     AuthorizationPendingError,

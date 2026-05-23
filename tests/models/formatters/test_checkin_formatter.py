@@ -1,11 +1,9 @@
 """Tests for checkin formatter module."""
 
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from models.formatters.checkin import CheckinFormatters
-
-if TYPE_CHECKING:
-    from models.types import CheckinResponse
+from models.types import CheckinResponse  # noqa: TC001
 
 
 class TestCheckinFormatters:
