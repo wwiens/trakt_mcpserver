@@ -1,5 +1,5 @@
 # mcp-proxy + Trakt MCP server (SSE -> stdio)
-FROM ghcr.io/sparfenyuk/mcp-proxy:latest
+FROM ghcr.io/sparfenyuk/mcp-proxy:latest AS base
 
 ARG VERSION=dev
 ARG REPO_URL=https://github.com/wwiens/trakt_mcpserver
@@ -51,9 +51,6 @@ ENV TRAKT_AUTH_TOKEN_PATH=/data/auth_token.json
 # Expose SSE port (will be overridden by runtime environment)
 EXPOSE 8080
 
-# Declare volume for auth token persistence across container restarts
-VOLUME /data
-
 # Switch to non-root user
 USER appuser
 
@@ -63,3 +60,11 @@ USER appuser
 # `--` separates proxy args from child args
 ENTRYPOINT ["mcp-proxy"]
 CMD ["--host", "0.0.0.0", "--port", "8080", "--pass-environment", "--", "python3", "/app/trakt_mcpserver/server.py"]
+
+# ── Variants ──────────────────────────────────────────────────────────────
+# PaaS-compatible (Railway, Fly.io, etc. that reject Dockerfile VOLUME).
+FROM base AS no-volume
+
+# Default: declares /data as a volume so auth persists without an explicit -v.
+FROM base AS with-volume
+VOLUME /data

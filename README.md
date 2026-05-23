@@ -802,7 +802,7 @@ The server uses Trakt's device authentication flow:
 2. You'll receive a code and a URL to visit on your browser
 3. After entering the code on the Trakt website and authorizing the app, inform Claude that you've completed the authorization
 4. Claude will check the authentication status and then fetch your personal data
-5. Your authentication token is stored securely in `~/.trakt-mcp/auth_token.json` for future requests, with `0o600` permissions. Override the location with the `TRAKT_AUTH_TOKEN_PATH` env var; Docker images set it to `/data/auth_token.json` — mount a volume at `/data` (e.g. `-v trakt_auth:/data`) to persist auth across container recreations.
+5. Your authentication token is stored securely in `~/.trakt-mcp/auth_token.json` for future requests, with `0o600` permissions. Override the location with the `TRAKT_AUTH_TOKEN_PATH` env var; Docker images set it to `/data/auth_token.json` — mount a volume at `/data` (e.g. `-v trakt_auth:/data`) to persist auth across container recreations. On PaaS providers (Railway, Fly.io) that reject the Dockerfile `VOLUME` instruction, use the `:latest-novolume` image and configure a platform-managed mount at `/data` instead.
 
 You can log out at any time using the `clear_auth` tool.
 
@@ -813,6 +813,7 @@ Two Docker images are available with different transport mechanisms. Each releas
 | Image Tag | Transport | Use Case |
 |-----------|-----------|----------|
 | `:latest` | SSE (HTTP) | Remote access, web clients, docker-compose |
+| `:latest-novolume` | SSE (HTTP) | PaaS like Railway/Fly.io that reject Dockerfile `VOLUME` |
 | `:latest-stdio` | stdio | MCPhub, Claude Desktop, local MCP clients |
 | `:stdio` | stdio | **Deprecated alias for `:latest-stdio` — will be removed at v1.0.0** |
 
@@ -868,6 +869,22 @@ docker run -d --rm --name trakt_mcpserver \
   -v trakt_auth:/data \
   -p 8080:8080 \
   trakt_mcpserver
+```
+
+### Deploying to PaaS (Railway, Fly.io)
+
+Some PaaS providers reject or discard Docker images that declare a `VOLUME` instruction, because they manage persistent storage through their own UI rather than Docker volumes. For these platforms, pull the `:latest-novolume` variant (functionally identical to `:latest`, just without the `VOLUME /data` declaration):
+
+```bash
+docker pull ghcr.io/wwiens/trakt_mcpserver:latest-novolume
+```
+
+To persist auth across restarts, attach platform-managed storage at `/data` (e.g. a Railway Volume mounted at `/data`), or override `TRAKT_AUTH_TOKEN_PATH` to a path on storage your platform already persists.
+
+To build the same variant locally:
+
+```bash
+docker build --target no-volume -t trakt_mcpserver:novolume .
 ```
 
 ### Using `docker compose`
