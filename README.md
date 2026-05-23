@@ -873,7 +873,7 @@ docker run -d --rm --name trakt_mcpserver \
 
 ### Deploying to PaaS (Railway, Fly.io)
 
-Some PaaS providers reject or discard Docker images that declare a `VOLUME` instruction, because they manage persistent storage through their own UI rather than Docker volumes. For these platforms, pull the `:latest-novolume` variant (functionally identical to `:latest`, just without the `VOLUME /data` declaration):
+Some PaaS providers reject or discard Docker images that declare a `VOLUME` instruction, because they manage persistent storage through their own UI rather than Docker volumes. For these platforms, pull the `:latest-novolume` variant — identical to `:latest` except the `VOLUME /data` declaration is omitted, so the platform's own storage layer can mount at `/data` without conflict:
 
 ```bash
 docker pull ghcr.io/wwiens/trakt_mcpserver:latest-novolume
