@@ -4,9 +4,10 @@ import json
 import logging
 import time
 from io import StringIO
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
-from tests.types_stub import LogRecordExtended  # noqa: TC001
+if TYPE_CHECKING:
+    from tests.types_stub import LogRecordExtended
 from utils.api.request_context import (
     RequestContext,
     clear_current_context,
