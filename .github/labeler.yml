@@ -1,0 +1,40 @@
+version: 1
+labels:
+  - label: "documentation"
+    title: "^docs(\\(.+\\))?!?:"
+  - label: "documentation"
+    files:
+      - ".*\\.md$"
+
+  - label: "bug"
+    title: "^fix(\\(.+\\))?!?:"
+
+  - label: "enhancement"
+    title: "^feat(\\(.+\\))?!?:"
+
+  - label: "ci"
+    title: "^(ci|build)(\\(.+\\))?!?:"
+  - label: "ci"
+    files:
+      - "^\\.github/workflows/.*"
+      - "^Dockerfile.*"
+      - "^\\.dockerignore$"
+
+  - label: "tests"
+    title: "^test(\\(.+\\))?!?:"
+  - label: "tests"
+    files:
+      - "^tests/.*"
+
+  - label: "dependencies"
+    title: "^chore\\(deps\\)!?:"
+  - label: "dependencies"
+    files:
+      - "^pyproject\\.toml$"
+      - "^requirements.*\\.txt$"
+
+  - label: "refactor"
+    title: "^refactor(\\(.+\\))?!?:"
+
+  - label: "breaking-change"
+    title: "^[a-z]+(\\(.+\\))?!:"
