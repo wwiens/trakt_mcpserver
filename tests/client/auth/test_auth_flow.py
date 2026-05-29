@@ -201,7 +201,8 @@ async def test_device_token_400_returns_authorization_pending() -> None:
 
         client = AuthClient()
 
-        with pytest.raises(AuthorizationPendingError):
+        with pytest.raises(AuthorizationPendingError) as exc_info:
             await client.get_device_token("device_code_123")
 
+        assert exc_info.value.data["error_type"] == "auth_pending"
         assert client.is_authenticated() is False
