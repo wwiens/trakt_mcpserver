@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from tests.types_stub import LogRecordExtended
-
 from utils.api.request_context import (
     RequestContext,
     clear_current_context,
