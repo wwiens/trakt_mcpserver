@@ -1,0 +1,10 @@
+name: "Trakt MCP CodeQL config"
+
+# Exclude py/unused-import: the query doesn't follow string forward
+# references (e.g. cast("Foo", x) where Foo is imported under
+# TYPE_CHECKING). Type-only imports in this codebase are the
+# Python-idiomatic placement, not dead code.
+# Actual gate for unused imports: ruff F401 (see pyproject.toml [tool.ruff.lint]).
+query-filters:
+  - exclude:
+      id: py/unused-import
