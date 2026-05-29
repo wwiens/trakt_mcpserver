@@ -77,5 +77,5 @@ class PersonListsClient(BaseClient):
             endpoint,
             response_type=ListItemResponse,
             params={"limit": limit},
-            max_items=limit if limit > 0 else None,
+            max_items=limit,
         )

@@ -21,9 +21,7 @@ from .structured_logging import get_structured_logger
 logger = get_structured_logger("trakt_mcp")
 
 # Standard MCP error codes (JSON-RPC 2.0)
-PARSE_ERROR: Final[int] = -32700
 INVALID_REQUEST: Final[int] = -32600
-METHOD_NOT_FOUND: Final[int] = -32601
 INVALID_PARAMS: Final[int] = -32602
 INTERNAL_ERROR: Final[int] = -32603
 
