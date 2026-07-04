@@ -8,6 +8,7 @@ from .checkin import CHECKIN_ENDPOINTS
 from .comments import COMMENTS_ENDPOINTS
 from .episodes import EPISODES_ENDPOINTS
 from .keys import EndpointKey
+from .lists import LISTS_ENDPOINTS
 from .movies import MOVIES_ENDPOINTS
 from .people import PEOPLE_ENDPOINTS
 from .progress import PROGRESS_ENDPOINTS
@@ -23,6 +24,7 @@ TRAKT_ENDPOINTS: Final[Mapping[EndpointKey, str]] = {
     **SHOWS_ENDPOINTS,
     **MOVIES_ENDPOINTS,
     **PEOPLE_ENDPOINTS,
+    **LISTS_ENDPOINTS,
     **PROGRESS_ENDPOINTS,
     **RECOMMENDATIONS_ENDPOINTS,
     **SEARCH_ENDPOINTS,
@@ -39,6 +41,7 @@ __all__ = [
     "CHECKIN_ENDPOINTS",
     "COMMENTS_ENDPOINTS",
     "EPISODES_ENDPOINTS",
+    "LISTS_ENDPOINTS",
     "MOVIES_ENDPOINTS",
     "PEOPLE_ENDPOINTS",
     "PROGRESS_ENDPOINTS",

@@ -3,7 +3,13 @@
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Final
 
-from models.types.api_responses import CastMember, CrewMember, ListItemResponse
+from models.types.api_responses import (
+    CastMember,
+    CrewMember,
+    ListItemResponse,
+    ListMediaItemResponse,
+    TrendingListResponse,
+)
 from models.types.pagination import PaginatedResponse
 from utils.formatting import DISPLAY_DATETIME_FORMAT, format_iso_timestamp
 
@@ -124,6 +130,97 @@ def format_list_items(
             if len(description) > MAX_OVERVIEW_LENGTH:
                 description = description[: MAX_OVERVIEW_LENGTH - 3] + "..."
             lines.append(f"  {description}")
+
+    return "\n".join(lines)
+
+
+def format_list_summary(
+    data: Sequence[TrendingListResponse] | PaginatedResponse[TrendingListResponse],
+    heading: str,
+) -> str:
+    """Format a collection of trending or popular list wrappers.
+
+    Args:
+        data: Either a sequence of list wrappers or a paginated response. Each
+            wrapper carries the list metadata under a nested ``list`` object.
+        heading: Section heading (e.g., "Trending Lists on Trakt")
+
+    Returns:
+        Formatted markdown text with one entry per list
+    """
+    lines: list[str] = [f"# {heading}", ""]
+
+    if isinstance(data, PaginatedResponse):
+        lines.append(format_pagination_header(data).rstrip("\n"))
+        lines.append("")
+        lists: Sequence[TrendingListResponse] = data.data
+    else:
+        lists = data
+
+    if not lists:
+        lines.append("No lists found.")
+        return "\n".join(lines)
+
+    lines.append(f"**{len(lists)} list(s)**")
+    lines.append("")
+
+    for wrapper in lists:
+        list_data = wrapper.get("list", {})
+        name = list_data.get("name", "Unknown List")
+        item_count = list_data.get("item_count", 0)
+        likes = list_data.get("likes", 0)
+        user = list_data.get("user", {})
+        username = user.get("username", "Unknown")
+
+        lines.append(f"- **{name}** by {username} ({item_count} items, {likes} likes)")
+
+        if description := list_data.get("description"):
+            if len(description) > MAX_OVERVIEW_LENGTH:
+                description = description[: MAX_OVERVIEW_LENGTH - 3] + "..."
+            lines.append(f"  {description}")
+
+    return "\n".join(lines)
+
+
+def format_list_items_media(
+    items: Sequence[ListMediaItemResponse],
+    context: str,
+) -> str:
+    """Format the media items contained in a user's list.
+
+    Each item names its media object via the ``type`` field (movie, show,
+    season, episode, or person); the matching object is unwrapped for display.
+
+    Args:
+        items: List item data from Trakt API
+        context: Display context for the heading (e.g., the list identifier)
+
+    Returns:
+        Formatted markdown text with one entry per item
+    """
+    lines: list[str] = [f"# Items in {context}", ""]
+
+    if not items:
+        lines.append("This list has no items.")
+        return "\n".join(lines)
+
+    lines.append(f"**{len(items)} item(s)**")
+    lines.append("")
+
+    for item in items:
+        # Dynamic media key (e.g. "movie"/"show") requires plain-mapping access.
+        fields: Mapping[str, Any] = item
+        item_type = item.get("type", "")
+        media: Mapping[str, Any] = fields.get(item_type) or {}
+        title = media.get("title") or media.get("name") or "Unknown"
+        title_str = format_title_year(title, media.get("year"))
+
+        lines.append(f"- **{title_str}** ({item_type})")
+
+        if overview := media.get("overview"):
+            if len(overview) > MAX_OVERVIEW_LENGTH:
+                overview = overview[: MAX_OVERVIEW_LENGTH - 3] + "..."
+            lines.append(f"  {overview}")
 
     return "\n".join(lines)
 

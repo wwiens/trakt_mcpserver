@@ -6,6 +6,7 @@ from .auth import AUTH_TOOLS
 from .checkin import CHECKIN_TOOLS
 from .comments import COMMENT_TOOLS
 from .episodes import EPISODE_TOOLS
+from .lists import LIST_TOOLS
 from .movies import MOVIE_TOOLS
 from .people import PEOPLE_TOOLS
 from .progress import PROGRESS_TOOLS
@@ -20,6 +21,7 @@ TOOL_NAMES: Final[frozenset[str]] = (
     SHOW_TOOLS
     | MOVIE_TOOLS
     | PEOPLE_TOOLS
+    | LIST_TOOLS
     | AUTH_TOOLS
     | USER_TOOLS
     | CHECKIN_TOOLS
@@ -37,6 +39,7 @@ __all__ = [
     "CHECKIN_TOOLS",
     "COMMENT_TOOLS",
     "EPISODE_TOOLS",
+    "LIST_TOOLS",
     "MOVIE_TOOLS",
     "PEOPLE_TOOLS",
     "PROGRESS_TOOLS",
