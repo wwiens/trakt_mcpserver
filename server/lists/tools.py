@@ -51,6 +51,8 @@ async def fetch_list_items(
     item_type: Literal[
         "all", "movies", "shows", "seasons", "episodes", "people"
     ] = "all",
+    limit: int = DEFAULT_LIMIT,
+    page: int | None = None,
 ) -> str:
     """Fetch the items on a user's list.
 
@@ -59,16 +61,26 @@ async def fetch_list_items(
         list_id: Trakt list ID or slug
         item_type: Filter by type: 'all', 'movies', 'shows', 'seasons',
             'episodes', 'people'
+        limit: Maximum items to return (default: 10, 0=fetch all). When page is
+            None, this caps total results. When page is specified, this is per page.
+        page: Page number. If None, auto-paginates up to 'limit' total items.
+            If specified, returns that page with pagination metadata.
 
     Returns:
         Formatted markdown with the list's items
     """
     params = ListItemsParams(list_owner=list_owner, list_id=list_id)
+    # Trakt paginates list items (max 250/page) — validate/normalize limit & page.
+    limit_params = LimitOnly(limit=limit, page=page)
     set_tool_context("list", params.list_id)
 
     client = get_client(ListsClient)
     items = await client.get_list_items(
-        params.list_owner, params.list_id, item_type=item_type
+        params.list_owner,
+        params.list_id,
+        item_type=item_type,
+        limit=limit_params.limit,
+        page=limit_params.page,
     )
 
     if isinstance(items, str):
@@ -176,8 +188,10 @@ def register_lists_tools(
             Literal["all", "movies", "shows", "seasons", "episodes", "people"],
             Field(description=LIST_ITEM_TYPE_DESCRIPTION),
         ] = "all",
+        limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+        page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
     ) -> str:
-        return await fetch_list_items(list_owner, list_id, item_type)
+        return await fetch_list_items(list_owner, list_id, item_type, limit, page)
 
     @mcp.tool(
         name="fetch_trending_lists",

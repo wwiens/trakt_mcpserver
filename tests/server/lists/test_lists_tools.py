@@ -22,7 +22,7 @@ def _future(result: Any) -> "asyncio.Future[Any]":
 
 
 @pytest.mark.asyncio
-async def test_fetch_list_items():
+async def test_fetch_list_items() -> None:
     sample_items = [
         {
             "rank": 1,
@@ -54,12 +54,16 @@ async def test_fetch_list_items():
         assert "2 item(s)" in result
 
         mock_client.get_list_items.assert_called_once_with(
-            "majeed_pk", "psychological-thrillers", item_type="all"
+            "majeed_pk",
+            "psychological-thrillers",
+            item_type="all",
+            limit=10,
+            page=None,
         )
 
 
 @pytest.mark.asyncio
-async def test_fetch_list_items_filters_by_type():
+async def test_fetch_list_items_filters_by_type() -> None:
     with patch("server.lists.tools.ListsClient") as mock_client_class:
         mock_client = mock_client_class.return_value
         mock_client.get_list_items.return_value = _future([])
@@ -72,12 +76,38 @@ async def test_fetch_list_items_filters_by_type():
 
         assert "This list has no items." in result
         mock_client.get_list_items.assert_called_once_with(
-            "majeed_pk", "psychological-thrillers", item_type="shows"
+            "majeed_pk",
+            "psychological-thrillers",
+            item_type="shows",
+            limit=10,
+            page=None,
         )
 
 
 @pytest.mark.asyncio
-async def test_fetch_trending_lists():
+async def test_fetch_list_items_forwards_pagination() -> None:
+    with patch("server.lists.tools.ListsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_list_items.return_value = _future([])
+
+        await fetch_list_items(
+            list_owner="majeed_pk",
+            list_id="psychological-thrillers",
+            limit=5,
+            page=2,
+        )
+
+        mock_client.get_list_items.assert_called_once_with(
+            "majeed_pk",
+            "psychological-thrillers",
+            item_type="all",
+            limit=5,
+            page=2,
+        )
+
+
+@pytest.mark.asyncio
+async def test_fetch_trending_lists() -> None:
     sample_lists = [
         {
             "like_count": 110,
@@ -107,7 +137,7 @@ async def test_fetch_trending_lists():
 
 
 @pytest.mark.asyncio
-async def test_fetch_popular_lists():
+async def test_fetch_popular_lists() -> None:
     sample_lists = [
         {
             "like_count": 90,

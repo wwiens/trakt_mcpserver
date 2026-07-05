@@ -12,7 +12,10 @@ class ListsFormatters:
     """Helper class for formatting list-related data for MCP responses."""
 
     @staticmethod
-    def format_list_items(items: list[ListMediaItemResponse], context: str) -> str:
+    def format_list_items(
+        items: list[ListMediaItemResponse] | PaginatedResponse[ListMediaItemResponse],
+        context: str,
+    ) -> str:
         """Format the items contained in a user's list."""
         return format_list_items_media(items, context)
 

@@ -183,7 +183,8 @@ def format_list_summary(
 
 
 def format_list_items_media(
-    items: Sequence[ListMediaItemResponse],
+    items: Sequence[ListMediaItemResponse]
+    | PaginatedResponse[ListMediaItemResponse],
     context: str,
 ) -> str:
     """Format the media items contained in a user's list.
@@ -192,7 +193,8 @@ def format_list_items_media(
     season, episode, or person); the matching object is unwrapped for display.
 
     Args:
-        items: List item data from Trakt API
+        items: List item data from Trakt API, either a sequence or a paginated
+            response.
         context: Display context for the heading (e.g., the list identifier)
 
     Returns:
@@ -200,14 +202,21 @@ def format_list_items_media(
     """
     lines: list[str] = [f"# Items in {context}", ""]
 
-    if not items:
+    if isinstance(items, PaginatedResponse):
+        lines.append(format_pagination_header(items).rstrip("\n"))
+        lines.append("")
+        media_items: Sequence[ListMediaItemResponse] = items.data
+    else:
+        media_items = items
+
+    if not media_items:
         lines.append("This list has no items.")
         return "\n".join(lines)
 
-    lines.append(f"**{len(items)} item(s)**")
+    lines.append(f"**{len(media_items)} item(s)**")
     lines.append("")
 
-    for item in items:
+    for item in media_items:
         # Dynamic media key (e.g. "movie"/"show") requires plain-mapping access.
         fields: Mapping[str, Any] = item
         item_type = item.get("type", "")
