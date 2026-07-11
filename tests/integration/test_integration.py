@@ -4,7 +4,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
@@ -49,7 +49,7 @@ async def test_auth_flow_integration() -> None:
         "token_type": "bearer",
     }
 
-    empty_flow: dict[str, Any] = {}
+    empty_flow: dict[str, object] = {}
     with (
         patch("httpx.AsyncClient") as mock_client,
         patch("builtins.open", mock_open()),
