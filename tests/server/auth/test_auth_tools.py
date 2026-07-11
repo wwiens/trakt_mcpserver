@@ -16,9 +16,10 @@ from utils.api.error_types import AuthorizationPendingError
 
 @pytest.mark.asyncio
 async def test_start_device_auth():
+    empty_flow: dict[str, Any] = {}
     with (
         patch("server.auth.tools.AuthClient") as mock_client_class,
-        patch("server.auth.tools.active_auth_flow", {}),
+        patch("server.auth.tools.active_auth_flow", empty_flow),
     ):
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = False
@@ -59,9 +60,10 @@ async def test_start_device_auth_already_authenticated():
 
 @pytest.mark.asyncio
 async def test_check_auth_status_no_active_flow():
+    empty_flow: dict[str, Any] = {}
     with (
         patch("server.auth.tools.AuthClient") as mock_client_class,
-        patch("server.auth.tools.active_auth_flow", {}),
+        patch("server.auth.tools.active_auth_flow", empty_flow),
     ):
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = False
@@ -263,9 +265,10 @@ async def test_clear_auth():
 
 @pytest.mark.asyncio
 async def test_clear_auth_not_authenticated():
+    empty_flow: dict[str, Any] = {}
     with (
         patch("server.auth.tools.AuthClient") as mock_client_class,
-        patch("server.auth.tools.active_auth_flow", {}),
+        patch("server.auth.tools.active_auth_flow", empty_flow),
     ):
         mock_client = mock_client_class.return_value
         mock_client.clear_auth_token.return_value = False
