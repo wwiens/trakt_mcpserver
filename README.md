@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/wwiens-trakt-mcpserver-badge.png)](https://mseep.ai/app/wwiens-trakt-mcpserver)
+
 # 🎬 MCP Trakt: Your AI's Gateway to Entertainment Data
 
 ![MCP Trakt](https://img.shields.io/badge/MCP-Trakt-ff69b4)
