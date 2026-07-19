@@ -4,7 +4,8 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Annotated
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 
 from client.pool import get_client
@@ -257,6 +258,8 @@ def register_recommendation_tools(
             "viewing history. Requires OAuth authentication. Use limit parameter "
             "(max 100) to control number of results."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read", "auth_required"},
     )
     async def fetch_movie_recommendations_tool(
         limit: Annotated[
@@ -283,6 +286,8 @@ def register_recommendation_tools(
             "viewing history. Requires OAuth authentication. Use limit parameter "
             "(max 100) to control number of results."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read", "auth_required"},
     )
     async def fetch_show_recommendations_tool(
         limit: Annotated[
@@ -307,6 +312,8 @@ def register_recommendation_tools(
             "Hide a movie from future recommendations. Requires OAuth authentication. "
             "Use Trakt ID, slug, or IMDB ID to identify the movie."
         ),
+        annotations=ToolAnnotations(destructiveHint=False),
+        tags={"write", "auth_required"},
     )
     async def hide_movie_recommendation_tool(
         movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
@@ -321,6 +328,8 @@ def register_recommendation_tools(
             "Requires OAuth authentication. "
             "Use Trakt ID, slug, or IMDB ID to identify the show."
         ),
+        annotations=ToolAnnotations(destructiveHint=False),
+        tags={"write", "auth_required"},
     )
     async def hide_show_recommendation_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -335,6 +344,8 @@ def register_recommendation_tools(
             "Requires OAuth authentication. "
             "Use Trakt ID, slug, or IMDB ID to identify the movie."
         ),
+        annotations=ToolAnnotations(destructiveHint=False),
+        tags={"write", "auth_required"},
     )
     async def unhide_movie_recommendation_tool(
         movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
@@ -349,6 +360,8 @@ def register_recommendation_tools(
             "Requires OAuth authentication. "
             "Use Trakt ID, slug, or IMDB ID to identify the show."
         ),
+        annotations=ToolAnnotations(destructiveHint=False),
+        tags={"write", "auth_required"},
     )
     async def unhide_show_recommendation_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],

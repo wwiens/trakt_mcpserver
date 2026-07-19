@@ -4,7 +4,8 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Annotated, Literal
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 
 from client.pool import get_client
@@ -169,6 +170,8 @@ def register_progress_tools(
             "For listing all watched shows, use fetch_user_watched_shows instead. "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read", "auth_required"},
     )
     async def fetch_show_progress_tool(
         show_id: Annotated[str, Field(description=SHOW_ID_DESCRIPTION)],
@@ -200,6 +203,8 @@ def register_progress_tools(
             "that were paused during playback with their progress percentage. "
             "Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read", "auth_required"},
     )
     async def fetch_playback_progress_tool(
         playback_type: Annotated[
@@ -215,6 +220,8 @@ def register_progress_tools(
             "Remove a paused playback progress item. Use the ID from "
             "fetch_playback_progress results. Requires OAuth authentication."
         ),
+        annotations=ToolAnnotations(destructiveHint=True),
+        tags={"write", "auth_required"},
     )
     async def remove_playback_item_tool(
         playback_id: Annotated[int, Field(description=PLAYBACK_ID_DESCRIPTION)],

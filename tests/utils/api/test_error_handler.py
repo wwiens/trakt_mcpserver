@@ -128,6 +128,23 @@ class TestStatusCodeHandlers:
         assert result.data is not None
         assert result.data["device_code"] == "device123"
 
+    def test_handle_bad_request_device_token_empty_body(self) -> None:
+        """400 on /oauth/device/token with empty body is authorization_pending.
+
+        Trakt sends HTTP 400 with no discriminating body while the user has
+        not yet authorized in the browser. Endpoint identity is the canonical
+        signal — not the response body.
+        """
+        result = TraktAPIErrorHandler.handle_bad_request(
+            endpoint="/oauth/device/token",
+            response_text="",
+            resource_id="device123",
+        )
+
+        assert isinstance(result, AuthorizationPendingError)
+        assert result.data is not None
+        assert result.data["device_code"] == "device123"
+
     def test_handle_bad_request_validation_error(self) -> None:
         """Test 400 Bad Request with validation keywords."""
         result = TraktAPIErrorHandler.handle_bad_request(

@@ -3,7 +3,8 @@
 from collections.abc import Awaitable, Callable
 from typing import Annotated, Any
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from pydantic import Field, ValidationError, field_validator
 
 from client.pool import get_client
@@ -193,6 +194,8 @@ def register_search_tools(
     @mcp.tool(
         name="search_shows",
         description="Search for TV shows on Trakt by title",
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read"},
     )
     async def search_shows_tool(
         query: Annotated[
@@ -209,6 +212,8 @@ def register_search_tools(
     @mcp.tool(
         name="search_movies",
         description="Search for movies on Trakt by title",
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read"},
     )
     async def search_movies_tool(
         query: Annotated[

@@ -76,7 +76,7 @@ Requires Python 3.12 or newer.
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
-   pip install -e .
+   pip install .
    ```
 
 3. **Set up your environment**
@@ -891,22 +891,30 @@ This project was built using AI-assisted development tools:
 - **[Aider](https://aider.chat/)** - AI pair programming tool for code collaboration
 - **[Claude Code](https://claude.ai/code)** - Claude's dedicated coding interface
 
-### Testing with MCP Inspector
+### Validating with the FastMCP CLI
 
-Validate your MCP server implementation and explore available tools, resources, and prompts.
+Inspect the server and exercise tools directly from the terminal. The `inspect`,
+`list`, and `call` commands have no Node dependency; `fastmcp dev inspector`
+launches the Node-based MCP Inspector UI via `npx`.
 
 <details>
-<summary><strong>View MCP Inspector commands</strong></summary>
+<summary><strong>View FastMCP CLI commands</strong></summary>
 
 ```bash
-# List available tools
-npx @modelcontextprotocol/inspector --cli python server.py --method tools/list
+# Text summary (tools/resources/prompts counts)
+fastmcp inspect server.py
 
-# List available resources
-npx @modelcontextprotocol/inspector --cli python server.py --method resources/list
+# Full MCP-protocol JSON report
+fastmcp inspect server.py --format mcp -o report.json
 
-# List available prompts
-npx @modelcontextprotocol/inspector --cli python server.py --method prompts/list
+# List tools/resources/prompts as JSON
+fastmcp list server.py --json --resources --prompts
+
+# Invoke a tool
+fastmcp call server.py fetch_trending_shows --args '{"limit": 5}'
+
+# Launch the server inside the MCP Inspector UI
+fastmcp dev inspector server.py
 ```
 
 </details>

@@ -3,7 +3,8 @@
 from collections.abc import Awaitable, Callable
 from typing import Annotated, Literal, NoReturn, TypedDict
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field, PositiveInt, ValidationError
 
 from client.comments.details import CommentDetailsClient
@@ -596,6 +597,8 @@ def register_comment_tools(
             "Supports optional pagination with 'page' parameter and "
             "safety cap 'max_pages'."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read"},
     )
     async def fetch_movie_comments_tool(
         movie_id: Annotated[str, Field(min_length=1, description=MOVIE_ID_DESCRIPTION)],
@@ -624,6 +627,8 @@ def register_comment_tools(
             "Supports optional pagination with 'page' parameter and "
             "safety cap 'max_pages'."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read"},
     )
     async def fetch_show_comments_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -652,6 +657,8 @@ def register_comment_tools(
             "Supports optional pagination with 'page' parameter and "
             "safety cap 'max_pages'."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read"},
     )
     async def fetch_season_comments_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -681,6 +688,8 @@ def register_comment_tools(
             "Supports optional pagination with 'page' parameter and "
             "safety cap 'max_pages'."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read"},
     )
     async def fetch_episode_comments_tool(
         show_id: Annotated[str, Field(min_length=1, description=SHOW_ID_DESCRIPTION)],
@@ -707,6 +716,8 @@ def register_comment_tools(
     @mcp.tool(
         name="fetch_comment",
         description="Fetch a specific comment from Trakt",
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read"},
     )
     async def fetch_comment_tool(
         comment_id: Annotated[
@@ -725,6 +736,8 @@ def register_comment_tools(
             "Supports optional pagination with 'page' parameter and "
             "safety cap 'max_pages'."
         ),
+        annotations=ToolAnnotations(readOnlyHint=True),
+        tags={"read"},
     )
     async def fetch_comment_replies_tool(
         comment_id: Annotated[

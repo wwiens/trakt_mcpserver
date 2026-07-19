@@ -3,7 +3,8 @@
 import logging
 from typing import Annotated, Any
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from client.checkin.client import CheckinClient
@@ -123,6 +124,8 @@ def register_checkin_tools(mcp: FastMCP) -> Any:
     @mcp.tool(
         name="checkin_to_show",
         description="Check in to a TV show episode you're currently watching on Trakt",
+        annotations=ToolAnnotations(destructiveHint=False),
+        tags={"write", "auth_required"},
     )
     async def checkin_to_show_tool(
         season: Annotated[int, Field(description=SEASON_DESCRIPTION)],

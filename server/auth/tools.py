@@ -5,7 +5,8 @@ import logging
 import time
 from typing import Any, TypedDict
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from client.auth import AuthClient
 from client.pool import get_client
@@ -211,6 +212,7 @@ def register_auth_tools(mcp: FastMCP) -> tuple[Any, Any, Any]:
     @mcp.tool(
         name="start_device_auth",
         description="Start the device authentication flow with Trakt TV",
+        tags={"auth_flow"},
     )
     async def start_device_auth_tool() -> str:
         return await start_device_auth()
@@ -218,6 +220,7 @@ def register_auth_tools(mcp: FastMCP) -> tuple[Any, Any, Any]:
     @mcp.tool(
         name="check_auth_status",
         description="Check the status of an ongoing device authentication flow",
+        tags={"auth_flow"},
     )
     async def check_auth_status_tool() -> str:
         return await check_auth_status()
@@ -225,6 +228,8 @@ def register_auth_tools(mcp: FastMCP) -> tuple[Any, Any, Any]:
     @mcp.tool(
         name="clear_auth",
         description="Clear the authentication token and log out of Trakt",
+        annotations=ToolAnnotations(destructiveHint=True),
+        tags={"write", "auth_flow"},
     )
     async def clear_auth_tool() -> str:
         return await clear_auth()
