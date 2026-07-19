@@ -1,6 +1,6 @@
 pytest==9.0.3
 pytest-asyncio>=1.0
-pyright>=1.1.409
+pyright==1.1.411
 ruff==0.15.12
 pip-audit>=2.9.0
 types-requests>=2.32.0
