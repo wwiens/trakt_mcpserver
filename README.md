@@ -893,7 +893,9 @@ This project was built using AI-assisted development tools:
 
 ### Validating with the FastMCP CLI
 
-Inspect the server and exercise tools directly from the terminal — no Node dependency.
+Inspect the server and exercise tools directly from the terminal. The `inspect`,
+`list`, and `call` commands have no Node dependency; `fastmcp dev inspector`
+launches the Node-based MCP Inspector UI via `npx`.
 
 <details>
 <summary><strong>View FastMCP CLI commands</strong></summary>

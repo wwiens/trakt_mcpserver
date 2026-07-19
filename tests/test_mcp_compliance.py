@@ -197,6 +197,10 @@ class TestMCPCompliance:
             timeout=60,
         )
         assert result.returncode != 0, "Invalid tool should return error"
+        combined = result.stdout + result.stderr
+        assert "definitely_not_a_real_tool" in combined, (
+            f"Error output should name the unknown tool:\n{combined}"
+        )
 
 
 class TestToolAnnotationsAndTags:
@@ -211,15 +215,20 @@ class TestToolAnnotationsAndTags:
         ]
         assert not untagged, f"Tools missing tags: {untagged}"
 
-    def test_annotations_populated_except_start_device_auth(
+    def test_annotations_populated_except_auth_flow_tools(
         self, mcp_report: dict[str, Any]
     ) -> None:
-        """Only ``start_device_auth`` lacks annotations (deliberate, flow-starter)."""
-        unannotated = [
+        """Only the device-flow tools lack annotations (deliberate).
+
+        ``start_device_auth`` starts the flow; ``check_auth_status`` polls it
+        and persists the token on success, so neither is read-only nor a
+        conventional write.
+        """
+        unannotated = {
             t["name"] for t in mcp_report["tools"] if t.get("annotations") is None
-        ]
-        assert unannotated == ["start_device_auth"], (
-            f"Unexpected tools with null annotations: {unannotated}"
+        }
+        assert unannotated == {"start_device_auth", "check_auth_status"}, (
+            f"Unexpected tools with null annotations: {sorted(unannotated)}"
         )
 
     def test_write_tools_destructive_partition(

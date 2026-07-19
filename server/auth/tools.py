@@ -220,8 +220,7 @@ def register_auth_tools(mcp: FastMCP) -> tuple[Any, Any, Any]:
     @mcp.tool(
         name="check_auth_status",
         description="Check the status of an ongoing device authentication flow",
-        annotations=ToolAnnotations(readOnlyHint=True),
-        tags={"read", "auth_flow"},
+        tags={"auth_flow"},
     )
     async def check_auth_status_tool() -> str:
         return await check_auth_status()
