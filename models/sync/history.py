@@ -6,6 +6,7 @@ from typing import Annotated, Literal, Self
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from models.types.ids import TraktIds
+from models.types.timestamps import WatchedAtValue
 
 
 class HistoryMovieInfo(BaseModel):
@@ -50,8 +51,12 @@ class WatchHistoryItem(BaseModel):
 class TraktHistoryItem(BaseModel):
     """Item for history add/remove requests."""
 
-    watched_at: datetime | None = Field(
-        default=None, description="Timestamp when watched (UTC, ISO 8601)"
+    watched_at: WatchedAtValue | None = Field(
+        default=None,
+        description=(
+            "Timestamp when watched (UTC, ISO 8601), or 'released' to use the "
+            "initial release date plus runtime, or 'unknown' for no date"
+        ),
     )
     title: str | None = None
     year: int | None = Field(default=None, ge=1800)

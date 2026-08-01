@@ -2,7 +2,6 @@
 
 import logging
 from collections.abc import Awaitable, Callable
-from datetime import datetime
 from typing import Annotated, Any, ClassVar, Literal
 
 from mcp.server.fastmcp import FastMCP
@@ -52,8 +51,9 @@ from models.sync.watchlist import (
 )
 from models.types.ids import TraktIds
 from models.types.pagination import PaginationParams
+from models.types.timestamps import WatchedAtValue
 from server.base import IdentifierValidatorMixin, ToolErrors
-from utils.api.errors import MCPError, handle_api_errors_func
+from utils.api.errors import InvalidParamsError, MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
 
@@ -735,8 +735,15 @@ class HistoryItemBase(IdentifierValidatorMixin):
 class HistoryRequestItem(HistoryItemBase):
     """Single history item for add operations."""
 
-    watched_at: datetime | None = Field(
-        default=None, description="ISO 8601 timestamp when watched"
+    watched_at: WatchedAtValue | None = Field(
+        default=None,
+        description=(
+            "ISO 8601 UTC timestamp, 'released' (initial release date + "
+            "runtime; shows/seasons/episodes only), or 'unknown' (no date)"
+        ),
+        json_schema_extra={
+            "examples": ["2024-01-15T20:30:00.000Z", "released", "unknown"]
+        },
     )
 
 
@@ -744,6 +751,25 @@ class HistoryRemoveItem(HistoryItemBase):
     """History item identifier for removal operations."""
 
     pass
+
+
+def _reject_released_sentinel_for_movies(
+    history_type: Literal["movies", "shows", "seasons", "episodes"],
+    items: list[HistoryRequestItem],
+) -> None:
+    """Reject watched_at='released', which Trakt supports for episodes only.
+
+    Shows and seasons expand to episodes server-side, so the sentinel is
+    meaningful for every type except movies.
+    """
+    if history_type != "movies":
+        return
+    if any(item.watched_at == "released" for item in items):
+        message = (
+            "watched_at='released' is only supported for shows, seasons and "
+            "episodes. Use an ISO 8601 timestamp or 'unknown' for movies."
+        )
+        raise InvalidParamsError(message)
 
 
 @handle_api_errors_func
@@ -823,15 +849,19 @@ async def add_to_history(
 
     Args:
         history_type: Type of content to add (movies, shows, seasons, episodes)
-        items: List of items to add with identification info and optional watched_at
+        items: List of items to add with identification info and optional
+            watched_at (ISO 8601 timestamp, 'released', or 'unknown')
 
     Returns:
         Summary of added history items with counts
 
     Raises:
         AuthenticationRequiredError: If user is not authenticated
+        InvalidParamsError: If watched_at='released' is used with movies
     """
     logger.debug("add_to_history called with type=%s", history_type)
+
+    _reject_released_sentinel_for_movies(history_type, items)
 
     client = get_client(SyncClient)
 
@@ -1123,7 +1153,8 @@ def register_sync_tools(
         name="add_to_history",
         description=(
             "Add items to watch history. Marks movies, shows, seasons, or episodes "
-            "as watched. Optionally specify when they were watched. "
+            "as watched. Optionally specify when they were watched via "
+            "'watched_at', which also accepts 'released' or 'unknown'. "
             "Requires OAuth authentication."
         ),
     )

@@ -1,6 +1,7 @@
 """Tests for sync history helper functions in server.sync.tools."""
 
 import sys
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -16,11 +17,16 @@ from models.sync.history import (
     TraktHistoryRequest,
 )
 from models.types.ids import TraktIds
+from models.types.timestamps import WatchedAtSentinel
 from server.sync.tools import (
+    HistoryRemoveItem,
+    HistoryRequestItem,
     _aggregate_summary,  # pyright: ignore[reportPrivateUsage]
     _batch_show_history_op,  # pyright: ignore[reportPrivateUsage]
     _get_show_season_ids,  # pyright: ignore[reportPrivateUsage]
+    _reject_released_sentinel_for_movies,  # pyright: ignore[reportPrivateUsage]
 )
+from utils.api.errors import InvalidParamsError
 
 # --- _aggregate_summary tests ---
 
@@ -280,3 +286,91 @@ class TestBatchShowHistoryOp:
         assert client_method.call_count == 3
         assert result.deleted is not None
         assert result.deleted.episodes == 22
+
+
+# --- watched_at sentinel tests ---
+
+
+class TestReleasedSentinelGuard:
+    """Tests for the _reject_released_sentinel_for_movies guard."""
+
+    def test_rejects_released_for_movies(self) -> None:
+        """Trakt supports 'released' for episodes only, so movies are rejected."""
+        items = [HistoryRequestItem(trakt_id="16662", watched_at="released")]
+
+        with pytest.raises(InvalidParamsError, match="released"):
+            _reject_released_sentinel_for_movies("movies", items)
+
+    @pytest.mark.parametrize("history_type", ["shows", "seasons", "episodes"])
+    def test_allows_released_for_episode_bearing_types(self, history_type: str) -> None:
+        """Shows and seasons expand to episodes server-side, so they are valid."""
+        items = [HistoryRequestItem(trakt_id="1390", watched_at="released")]
+
+        _reject_released_sentinel_for_movies(history_type, items)  # pyright: ignore[reportArgumentType]
+
+    def test_allows_unknown_for_movies(self) -> None:
+        """The 'unknown' sentinel carries no type restriction."""
+        items = [HistoryRequestItem(trakt_id="16662", watched_at="unknown")]
+
+        _reject_released_sentinel_for_movies("movies", items)
+
+    def test_allows_timestamp_for_movies(self) -> None:
+        """A normal timestamp is unaffected by the guard."""
+        items = [
+            HistoryRequestItem(
+                trakt_id="16662",
+                watched_at=datetime.fromisoformat("2024-01-15T20:30:00+00:00"),
+            )
+        ]
+
+        _reject_released_sentinel_for_movies("movies", items)
+
+
+class TestSentinelPropagation:
+    """Sentinels must survive the per-season batching path."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("sentinel", ["released", "unknown"])
+    async def test_sentinel_propagates_to_each_season(
+        self, sentinel: WatchedAtSentinel
+    ) -> None:
+        """Each generated per-season request carries the original watched_at."""
+        client_method = AsyncMock(
+            side_effect=[
+                _make_summary("added", episodes=10),
+                _make_summary("added", episodes=8),
+            ]
+        )
+        show_item = TraktHistoryItem(ids=TraktIds(trakt=1390), watched_at=sentinel)
+
+        with patch(
+            "server.sync.tools._get_show_season_ids",
+            new_callable=AsyncMock,
+            return_value=[201, 202],
+        ):
+            await _batch_show_history_op(client_method, [show_item], "added")
+
+        assert client_method.call_count == 2
+        for call in client_method.call_args_list:
+            request: TraktHistoryRequest = call.args[0]
+            assert request.seasons is not None
+            assert request.seasons[0].watched_at == sentinel
+
+
+class TestHistoryRequestItemSchema:
+    """The published MCP tool schema is the contract LLM clients read."""
+
+    def test_watched_at_advertises_datetime_and_sentinels(self) -> None:
+        """Schema must offer a date-time branch and the sentinel enum."""
+        schema = HistoryRequestItem.model_json_schema()
+        branches = schema["properties"]["watched_at"]["anyOf"]
+
+        assert {"type": "string", "format": "date-time"} in branches
+        assert any(branch.get("enum") == ["released", "unknown"] for branch in branches)
+        assert {"type": "null"} in branches
+
+    def test_remove_item_has_no_watched_at(self) -> None:
+        """DELETE /sync/history takes no watched_at, so it must not be advertised."""
+        schema = HistoryRemoveItem.model_json_schema()
+
+        assert "watched_at" not in schema["properties"]
