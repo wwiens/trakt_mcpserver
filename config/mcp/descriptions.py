@@ -36,6 +36,9 @@ __all__: Final[list[str]] = [
     "IGNORE_WATCHLISTED_DESCRIPTION",
     "LANGUAGE_DESCRIPTION",
     "LIMIT_DESCRIPTION",
+    "LIST_ID_DESCRIPTION",
+    "LIST_ITEM_TYPE_DESCRIPTION",
+    "LIST_OWNER_DESCRIPTION",
     "LIST_SORT_DESCRIPTION",
     "LIST_TYPE_DESCRIPTION",
     "MAX_PAGES_DESCRIPTION",
@@ -263,4 +266,14 @@ LIST_TYPE_DESCRIPTION: Final[str] = (
 )
 LIST_SORT_DESCRIPTION: Final[str] = (
     "List sort: 'popular', 'likes', 'comments', 'items', 'added', 'updated'"
+)
+LIST_OWNER_DESCRIPTION: Final[str] = (
+    "Trakt username (slug) that owns the list (e.g., 'justin', 'majeed_pk')"
+)
+LIST_ID_DESCRIPTION: Final[str] = (
+    "Trakt list ID or slug (e.g., '1337', 'psychological-thrillers')"
+)
+LIST_ITEM_TYPE_DESCRIPTION: Final[str] = (
+    "Filter items by type: 'all' (default), 'movies', 'shows', 'seasons', "
+    "'episodes', 'people'"
 )

@@ -484,3 +484,34 @@ class ListItemResponse(TypedDict):
     likes: int
     ids: TraktIdsDict
     user: ListUserResponse
+
+
+class ListMediaItemResponse(TypedDict):
+    """A single item within a user's list from Trakt API.
+
+    The ``type`` field names which media object is populated (e.g. ``"movie"``
+    fills ``movie``); the other media keys are absent for that item.
+    """
+
+    rank: int
+    id: int
+    listed_at: str
+    type: str
+    notes: NotRequired[str | None]
+    movie: NotRequired[MovieResponse]
+    show: NotRequired[ShowResponse]
+    season: NotRequired[SeasonResponse]
+    episode: NotRequired[EpisodeResponse]
+    person: NotRequired[PersonResponse]
+
+
+class TrendingListResponse(TypedDict):
+    """Wrapper for a trending or popular list from Trakt API.
+
+    Both ``/lists/trending`` and ``/lists/popular`` return this shape: the
+    list metadata nested under ``list`` plus engagement counters.
+    """
+
+    like_count: int
+    comment_count: int
+    list: ListItemResponse
