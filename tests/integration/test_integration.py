@@ -49,6 +49,7 @@ async def test_auth_flow_integration() -> None:
         "token_type": "bearer",
     }
 
+    empty_flow: dict[str, object] = {}
     with (
         patch("httpx.AsyncClient") as mock_client,
         patch("builtins.open", mock_open()),
@@ -57,7 +58,7 @@ async def test_auth_flow_integration() -> None:
             os.environ,
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
-        patch("server.auth.tools.active_auth_flow", {}),
+        patch("server.auth.tools.active_auth_flow", empty_flow),
         patch("os.path.exists", return_value=True),
     ):
         device_code_mock = MagicMock()
