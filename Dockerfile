@@ -7,6 +7,7 @@ LABEL org.opencontainers.image.version=${VERSION}
 LABEL org.opencontainers.image.source=${REPO_URL}
 LABEL org.opencontainers.image.title="trakt-mcp"
 LABEL org.opencontainers.image.description="MCP server for Trakt.tv"
+LABEL org.opencontainers.image.licenses="MIT"
 
 # Install Python and tools (base image is Alpine)
 RUN apk add --no-cache \
