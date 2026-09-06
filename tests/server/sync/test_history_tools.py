@@ -3,6 +3,7 @@
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Literal
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -288,9 +289,6 @@ class TestBatchShowHistoryOp:
         assert result.deleted.episodes == 22
 
 
-# --- watched_at sentinel tests ---
-
-
 class TestReleasedSentinelGuard:
     """Tests for the _reject_released_sentinel_for_movies guard."""
 
@@ -302,11 +300,13 @@ class TestReleasedSentinelGuard:
             _reject_released_sentinel_for_movies("movies", items)
 
     @pytest.mark.parametrize("history_type", ["shows", "seasons", "episodes"])
-    def test_allows_released_for_episode_bearing_types(self, history_type: str) -> None:
+    def test_allows_released_for_episode_bearing_types(
+        self, history_type: Literal["shows", "seasons", "episodes"]
+    ) -> None:
         """Shows and seasons expand to episodes server-side, so they are valid."""
         items = [HistoryRequestItem(trakt_id="1390", watched_at="released")]
 
-        _reject_released_sentinel_for_movies(history_type, items)  # pyright: ignore[reportArgumentType]
+        _reject_released_sentinel_for_movies(history_type, items)
 
     def test_allows_unknown_for_movies(self) -> None:
         """The 'unknown' sentinel carries no type restriction."""
