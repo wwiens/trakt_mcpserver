@@ -94,6 +94,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          target: with-volume
           push: true
           platforms: linux/amd64,linux/arm64
           build-args: |
@@ -101,6 +102,30 @@ jobs:
             REPO_URL=https://github.com/${{ github.repository }}
           tags: ${{ steps.meta-sse.outputs.tags }}
           labels: ${{ steps.meta-sse.outputs.labels }}
+
+      - name: Metadata (SSE no-volume)
+        id: meta-sse-novolume
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9  # v6.1.0
+        with:
+          images: ghcr.io/${{ github.repository }}
+          flavor: suffix=-novolume
+          tags: |
+            type=raw,value=${{ needs.semantic-release.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push SSE no-volume image
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf  # v7.2.0
+        with:
+          context: .
+          file: ./Dockerfile
+          target: no-volume
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            VERSION=${{ needs.semantic-release.outputs.version }}
+            REPO_URL=https://github.com/${{ github.repository }}
+          tags: ${{ steps.meta-sse-novolume.outputs.tags }}
+          labels: ${{ steps.meta-sse-novolume.outputs.labels }}
 
       - name: Metadata (stdio versioned)
         id: meta-stdio
