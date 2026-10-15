@@ -164,3 +164,39 @@ async def test_fetch_popular_lists() -> None:
         assert "42 items" in result
 
         mock_client.get_popular_lists.assert_called_once_with(limit=10, page=None)
+
+
+@pytest.mark.asyncio
+async def test_fetch_list_items_string_error() -> None:
+    with patch("server.lists.tools.ListsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_list_items.return_value = _future("Error: List not found")
+
+        result = await fetch_list_items(list_owner="majeed_pk", list_id="missing-list")
+
+        assert "# Error" in result
+        assert "Error accessing list_items" in result
+
+
+@pytest.mark.asyncio
+async def test_fetch_trending_lists_string_error() -> None:
+    with patch("server.lists.tools.ListsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_trending_lists.return_value = _future("Error: Unavailable")
+
+        result = await fetch_trending_lists()
+
+        assert "# Error" in result
+        assert "Error accessing trending_lists" in result
+
+
+@pytest.mark.asyncio
+async def test_fetch_popular_lists_string_error() -> None:
+    with patch("server.lists.tools.ListsClient") as mock_client_class:
+        mock_client = mock_client_class.return_value
+        mock_client.get_popular_lists.return_value = _future("Error: Unavailable")
+
+        result = await fetch_popular_lists()
+
+        assert "# Error" in result
+        assert "Error accessing popular_lists" in result
