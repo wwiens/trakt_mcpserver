@@ -113,7 +113,7 @@ Add to your Claude Desktop MCP configuration file:
 
 ## 🔒 Deploying as a remote server for claude.ai
 
-Running this server behind a public URL so **claude.ai** (web + mobile) can use it as a custom connector. Two things commonly trip people up:
+Running this server behind a public URL so **claude.ai** (web + mobile) can use it as a custom connector. A few things commonly trip people up:
 
 ### Transport: register `/mcp`, not `/sse`
 
@@ -124,7 +124,8 @@ claude.ai's custom connector expects **Streamable HTTP**. The `:latest` image (m
 Some VPS providers block inbound ports on certain IPs even with the OS firewall open (SSH works, 80/443 time out from the public internet). Then Let's Encrypt/Caddy can't complete a challenge and claude.ai can't reach you either. A **Cloudflare Tunnel** fixes this — the server dials **outbound** to Cloudflare, no inbound ports required:
 
 ```bash
-# on the server, alongside the container (SSE on 127.0.0.1:8899)
+# on the server: publish the container on localhost only, so the tunnel is the sole way in
+#   docker run -p 127.0.0.1:8899:8080 ...   (the image listens on 8080)
 cloudflared service install <TUNNEL_TOKEN>
 # tunnel ingress:  trakt.yourdomain.com -> http://localhost:8899
 # DNS: CNAME  trakt -> <tunnel-id>.cfargotunnel.com  (proxied)
@@ -134,11 +135,16 @@ Cloudflare terminates TLS and routes to your container. Add `disableChunkedEncod
 
 ### Locking down the open `/mcp` endpoint
 
-The MCP endpoint has **no auth** — anyone with the URL gets full access, including write tools. claude.ai's web connector **can't send custom headers** (only OAuth), so a bearer token or Cloudflare Access service-token won't work with it. Options:
+The MCP endpoint has **no auth**: anyone with the URL gets full access, including write tools. Options, strongest first:
 
-- **Full protection** — implement MCP OAuth 2.1 (DCR + PKCE + `WWW-Authenticate` + protected-resource metadata) so claude.ai runs the flow itself. (Heads-up: claude.ai-web OAuth against self-hosted servers is currently flaky — test on your own account and keep Claude Code CLI as a reliable fallback.)
-- **Practical palliative** — a Cloudflare WAF rule allowing only Anthropic's connector egress IPs (`160.79.104.0/21`, `2607:6bc0::/48`; see [Anthropic IP addresses](https://platform.claude.com/docs/en/api/ip-addresses)). Blocks bots/scanners/`curl` while keeping claude.ai working. It's **not per-user** (anyone who knows the URL and adds it as *their own* connector still egresses from those IPs), but it's a big step up from a fully-open endpoint.
-- For **Claude Code CLI** (not web) you can simply use `.mcp.json` `headers.Authorization: Bearer …` or a Cloudflare Access service token — both work there.
+- **OAuth 2.1** — implement MCP authorization so claude.ai runs the sign-in flow itself and access is per user. This is the only option that tells users apart.
+- **A shared secret header** — the connector dialog has a **Request headers** section (in beta, [not yet available to every account](https://claude.com/docs/connectors/custom/add-unlisted#authenticate-with-request-headers)). Choose *No sign-in*, add a header such as `x-api-key`, and have a Cloudflare WAF rule block every request to `/mcp` whose header value doesn't match. The same header works from Claude Code CLI (`headers` in `.mcp.json`).
+- **IP allowlist** — a Cloudflare WAF rule that only admits Anthropic's outbound range `160.79.104.0/21` ([Anthropic IP addresses](https://platform.claude.com/docs/en/api/ip-addresses); the IPv6 range listed there is inbound-only). It stops scanners and `curl`, but it is **not per-user**: anyone who adds your URL as their own connector also comes from that range.
+
+Two gotchas with the WAF options:
+
+- **The IP allowlist also blocks Claude Code CLI**, because the CLI connects from your machine, not from Anthropic. Exempt requests that carry your secret header, or run the server locally over stdio for the CLI.
+- **Return `404`, not `401`, on `/.well-known/oauth-authorization-server`, `/.well-known/oauth-protected-resource` and `/register`** if the server doesn't implement OAuth. A `401` there (for example, from a login page in front of the same domain) makes claude.ai try to register an OAuth client, and the connection fails with *"Couldn't register with sign-in service"*.
 
 ## ✨ Features
 
