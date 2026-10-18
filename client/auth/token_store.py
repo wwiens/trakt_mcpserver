@@ -93,7 +93,7 @@ class TokenStore:
         try:
             os.remove(self.path)
         except FileNotFoundError:
-            pass
+            pass  # Already gone, e.g. another process logged out first.
         except OSError:
             logger.warning(
                 "Failed to remove auth token file %s; orphaned file may remain",
