@@ -9,9 +9,17 @@ import threading
 import time
 from typing import Final
 
-from config.auth import OAUTH_REDIRECT_URI
+import httpx
+
+from config.auth import (
+    DEVICE_TOKEN_ERROR_MESSAGES,
+    DEVICE_TOKEN_PENDING_STATUS,
+    DEVICE_TOKEN_SLOW_DOWN_STATUS,
+    OAUTH_REDIRECT_URI,
+)
 from config.endpoints import TRAKT_ENDPOINTS
 from models.auth import DeviceTokenRequest, TraktAuthToken, TraktDeviceCode
+from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
 from utils.api.errors import (
     InvalidParamsError,
     InvalidRequestError,
@@ -31,6 +39,28 @@ AUTH_TOKEN_FILE: Final[str] = os.environ.get(
     "TRAKT_AUTH_TOKEN_PATH",
     os.path.expanduser("~/.trakt-mcp/auth_token.json"),
 )
+
+
+def _device_token_error(error: MCPError) -> MCPError:
+    """Map a failed device-token poll to the error its HTTP status documents.
+
+    Trakt answers these polls with empty bodies, so the generic HTTP error
+    mapping cannot tell "still pending" or "denied" apart from real failures.
+    """
+    cause = error.__cause__
+    if not isinstance(cause, httpx.HTTPStatusError):
+        return error
+    status = cause.response.status_code
+    if status == DEVICE_TOKEN_PENDING_STATUS and not cause.response.content:
+        return AuthorizationPendingError()
+    message = DEVICE_TOKEN_ERROR_MESSAGES.get(status)
+    if message is None:
+        return error
+    return DeviceAuthorizationError(
+        http_status=status,
+        message=message,
+        restart_required=status != DEVICE_TOKEN_SLOW_DOWN_STATUS,
+    )
 
 
 class AuthClient(BaseClient):
@@ -104,6 +134,12 @@ class AuthClient(BaseClient):
             return None
         return self.auth_token.created_at + self.auth_token.expires_in
 
+    def _with_client_secret(self, data: dict[str, str]) -> dict[str, str]:
+        """Add the deprecated client_secret to an OAuth body when configured."""
+        if self.client_secret:
+            return {**data, "client_secret": self.client_secret}
+        return data
+
     @handle_api_errors
     async def get_device_code(self) -> TraktDeviceCode:
         """Get a device code for authentication.
@@ -134,15 +170,19 @@ class AuthClient(BaseClient):
         """
         # Validate input with Pydantic
         payload = DeviceTokenRequest.model_validate({"code": device_code})
-        data = {
-            "code": payload.code,
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-        }
-
-        token = await self._post_typed_request(
-            TRAKT_ENDPOINTS["device_token"], data, response_type=TraktAuthToken
+        data = self._with_client_secret(
+            {"code": payload.code, "client_id": self.client_id}
         )
+
+        try:
+            token = await self._post_typed_request(
+                TRAKT_ENDPOINTS["device_token"], data, response_type=TraktAuthToken
+            )
+        except MCPError as error:
+            mapped = _device_token_error(error)
+            if mapped is error:
+                raise
+            raise mapped from error
         with self._token_lock:
             self._save_auth_token(token)
             self.auth_token = token
@@ -172,13 +212,14 @@ class AuthClient(BaseClient):
             if not auth_snapshot or not auth_snapshot.refresh_token:
                 return False
 
-            data = {
-                "refresh_token": auth_snapshot.refresh_token,
-                "client_id": self.client_id,
-                "client_secret": self.client_secret,
-                "redirect_uri": OAUTH_REDIRECT_URI,
-                "grant_type": "refresh_token",
-            }
+            data = self._with_client_secret(
+                {
+                    "refresh_token": auth_snapshot.refresh_token,
+                    "client_id": self.client_id,
+                    "redirect_uri": OAUTH_REDIRECT_URI,
+                    "grant_type": "refresh_token",
+                }
+            )
 
             try:
                 token = await self._post_typed_request(

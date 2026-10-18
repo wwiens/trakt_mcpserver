@@ -9,6 +9,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 from client.auth import AuthClient
+from config.auth import OAUTH_REDIRECT_URI
 from models.auth import TraktAuthToken, TraktDeviceCode
 from utils.api.error_types import TraktResourceNotFoundError
 from utils.api.errors import handle_api_errors_func
@@ -136,7 +137,7 @@ async def test_auth_client_get_device_code(monkeypatch: pytest.MonkeyPatch):
     mock_response.json.return_value = {
         "device_code": "device_code_123",
         "user_code": "USER123",
-        "verification_url": "https://trakt.tv/activate",
+        "verification_url": "https://auth.trakt.tv/activate",
         "expires_in": 600,
         "interval": 5,
     }
@@ -801,3 +802,138 @@ def test_clear_auth_token_file_deleted_externally(
     assert client.auth_token is None
     # Authorization header should be removed
     assert "Authorization" not in client.headers
+
+
+@pytest.mark.asyncio
+async def test_auth_client_init_without_client_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """client_secret is optional; Trakt deprecated it for user sign-in."""
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.delenv("TRAKT_CLIENT_SECRET", raising=False)
+
+    client = AuthClient()
+    assert client.client_id == "test_id"
+    assert client.client_secret is None
+
+
+def test_auth_client_sends_user_agent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Trakt recommends identifying the app and version via User-Agent."""
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+
+    client = AuthClient()
+    assert client.headers["User-Agent"].startswith("trakt-mcp/")
+
+
+async def _capture_refresh_request(
+    monkeypatch: pytest.MonkeyPatch, client_secret: str | None
+) -> tuple[str, dict[str, str]]:
+    """Run a successful refresh and return the URL and JSON body it posted."""
+    current_time = int(time.time())
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    if client_secret is None:
+        monkeypatch.delenv("TRAKT_CLIENT_SECRET", raising=False)
+    else:
+        monkeypatch.setenv("TRAKT_CLIENT_SECRET", client_secret)
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "access_token": "new_access_token",
+        "refresh_token": "new_refresh_token",
+        "expires_in": 604800,
+        "created_at": current_time,
+        "scope": "public",
+        "token_type": "bearer",
+    }
+    mock_response.raise_for_status = MagicMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch("os.open", return_value=3),
+        patch("os.fdopen") as mock_fdopen,
+        patch("os.replace"),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=mock_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+        mock_fdopen.return_value.__enter__ = MagicMock()
+        mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
+
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="old_access_token",
+            refresh_token="old_refresh_token",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+        assert await client.refresh_access_token() is True
+
+    call = mock_instance.post.call_args
+    return call.args[0], call.kwargs["json"]
+
+
+@pytest.mark.asyncio
+async def test_refresh_access_token_uses_auth_host_and_redirect_uri(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Refresh must target auth.trakt.tv and send the configured redirect URI."""
+    url, body = await _capture_refresh_request(monkeypatch, client_secret="secret")
+
+    assert url == "https://auth.trakt.tv/oauth/token"
+    assert body["redirect_uri"] == OAUTH_REDIRECT_URI
+    assert body["grant_type"] == "refresh_token"
+    assert body["refresh_token"] == "old_refresh_token"
+    assert body["client_secret"] == "secret"
+
+
+@pytest.mark.asyncio
+async def test_refresh_access_token_omits_unset_client_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Without TRAKT_CLIENT_SECRET the refresh body carries no client_secret."""
+    _, body = await _capture_refresh_request(monkeypatch, client_secret=None)
+
+    assert "client_secret" not in body
+    assert body["client_id"] == "test_id"
+
+
+@pytest.mark.asyncio
+async def test_get_device_token_omits_unset_client_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Device token polling works without a client secret on the auth host."""
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    monkeypatch.delenv("TRAKT_CLIENT_SECRET", raising=False)
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "access_token": "access",
+        "refresh_token": "refresh",
+        "expires_in": 604800,
+        "created_at": int(time.time()),
+        "scope": "public",
+        "token_type": "bearer",
+    }
+    mock_response.raise_for_status = MagicMock()
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch("os.open", return_value=3),
+        patch("os.fdopen") as mock_fdopen,
+        patch("os.replace"),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=mock_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+        mock_fdopen.return_value.__enter__ = MagicMock()
+        mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
+
+        await AuthClient().get_device_token("device_code_123")
+
+    call = mock_instance.post.call_args
+    assert call.args[0] == "https://auth.trakt.tv/oauth/device/token"
+    assert call.kwargs["json"] == {"code": "device_code_123", "client_id": "test_id"}

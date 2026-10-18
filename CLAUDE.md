@@ -6,7 +6,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 **Model Context Protocol (MCP) server** bridging AI models with Trakt.tv API. Built with FastMCP, providing entertainment data access with OAuth authentication.
 
-**Trakt API Reference**: See `trakt.apib` for complete API documentation and endpoint specifications.
+**Trakt API Reference**: https://developer.trakt.tv. For field names, request bodies, response shapes and status codes, use the OpenAPI spec at https://developer.trakt.tv/openapi.json. Guides are under `https://developer.trakt.tv/docs/<page>`; `https://developer.trakt.tv/sitemap.xml` lists every page. The pages are a JavaScript app, so fetch them with `curl` and strip the HTML.
 
 ## Architecture - Single Responsibility Principle
 
@@ -14,7 +14,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 **BEFORE ADDING FEATURES**: Examine existing code patterns, design style, and architectural conventions to ensure consistency.
 
-**Domain boundaries mirror `trakt.apib`**: Each top-level API resource (shows, movies, seasons, episodes, etc.) is its own domain — do NOT nest one domain's tools/clients inside another.
+**Domain boundaries mirror the Trakt API reference**: Each top-level API resource (shows, movies, seasons, episodes, etc.) is its own domain — do NOT nest one domain's tools/clients inside another.
 
 ### Current Structure
 
@@ -158,7 +158,7 @@ npx @modelcontextprotocol/inspector --cli python server.py --method tools/call  
 
 ### API & Tool Schema Compliance
 
-- **Read `trakt.apib` first** - Verify field names, request/response structures before implementing
+- **Read the OpenAPI spec first** (`https://developer.trakt.tv/openapi.json`) - Verify field names, request/response structures and status codes before implementing
 - **Match API field names exactly** - e.g., API uses `deleted` not `removed`
 - **Support all identifier types** - `trakt`, `slug`, `imdb`, `tmdb`, `tvdb` (validate formats: IMDB=`tt\d+`, others=numeric)
 - **Tool parameters must be unambiguous** - If flattening nested API structures (e.g., `{"movies": [...]}` → `items` + `type`), ensure LLM clients won't misinterpret; include examples in descriptions for complex inputs
@@ -239,6 +239,10 @@ Skipping is fine — the existing `ruff` dev commands and the CI `pr-title-lint.
 
 ### Authentication
 - OAuth device code flow
+- **All OAuth requests go to `https://auth.trakt.tv`** (`TRAKT_AUTH_BASE_URL`), not the API host. `AUTH_ENDPOINTS` are absolute URLs for this reason
+- `TRAKT_CLIENT_SECRET` is optional (deprecated by Trakt). Add it to OAuth bodies only via `AuthClient._with_client_secret()`
+- Refresh sends `redirect_uri` from `TRAKT_REDIRECT_URI` (default `http://localhost`). Trakt requires the field but only checks its format (HTTPS, loopback HTTP, or OOB), not the app's registered URIs. A live test on 2026-10-18 confirmed this
+- Refresh tokens are single-use; always persist the new pair. Access tokens last 7 days
 - Tokens persisted to `~/.trakt-mcp/auth_token.json` by default; override with `TRAKT_AUTH_TOKEN_PATH` (Docker images set this to `/data/auth_token.json`)
 - `TraktAuthToken` model handles persistence
 - Global `active_auth_flow` tracks authorization

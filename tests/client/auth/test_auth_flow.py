@@ -7,8 +7,8 @@ import pytest
 
 from client.auth import AuthClient
 from models.auth import TraktAuthToken, TraktDeviceCode
-from utils.api.error_types import AuthorizationPendingError
-from utils.api.errors import InvalidParamsError
+from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
+from utils.api.errors import InvalidParamsError, MCPError
 
 
 @pytest.mark.asyncio
@@ -16,7 +16,7 @@ async def test_complete_device_auth_flow():
     device_code_response = {
         "device_code": "device_code_123",
         "user_code": "USER123",
-        "verification_url": "https://trakt.tv/activate",
+        "verification_url": "https://auth.trakt.tv/activate",
         "expires_in": 600,
         "interval": 5,
     }
@@ -209,3 +209,69 @@ async def test_device_token_expired():
 
         # Verify the client is not authenticated
         assert client.is_authenticated() is False
+
+
+async def _poll_device_token_with_status(status: int, body: bytes = b"") -> None:
+    """Poll the device token endpoint against a mocked HTTP status."""
+    response = MagicMock(status_code=status, content=body, text=body.decode())
+    mock_error_response = MagicMock()
+    mock_error_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "error", request=MagicMock(), response=response
+    )
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch("os.path.exists", return_value=False),
+        patch.dict(os.environ, {"TRAKT_CLIENT_ID": "test_id"}),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=mock_error_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+        await AuthClient().get_device_token("device_code_123")
+
+
+@pytest.mark.asyncio
+async def test_device_token_empty_400_is_pending():
+    """Trakt signals 'pending' with a bodyless 400."""
+    with pytest.raises(AuthorizationPendingError):
+        await _poll_device_token_with_status(400)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [404, 409, 410, 418])
+async def test_device_token_terminal_statuses_require_restart(status: int):
+    """Invalid, used, expired and denied codes need a new device code."""
+    with pytest.raises(DeviceAuthorizationError) as exc_info:
+        await _poll_device_token_with_status(status)
+
+    assert exc_info.value.restart_required is True
+    assert exc_info.value.data == {"error_type": "device_auth", "http_status": status}
+    assert "start_device_auth" in exc_info.value.message
+
+
+@pytest.mark.asyncio
+async def test_device_token_denied_explains_development_app_restriction():
+    """418 mentions the Development-app user restriction seen in practice."""
+    with pytest.raises(DeviceAuthorizationError) as exc_info:
+        await _poll_device_token_with_status(418)
+
+    assert "Development apps" in exc_info.value.message
+
+
+@pytest.mark.asyncio
+async def test_device_token_slow_down_keeps_flow():
+    """429 slow-down is recoverable; polling may continue with the same code."""
+    with pytest.raises(DeviceAuthorizationError) as exc_info:
+        await _poll_device_token_with_status(429)
+
+    assert exc_info.value.restart_required is False
+
+
+@pytest.mark.asyncio
+async def test_device_token_unmapped_status_keeps_generic_error():
+    """Statuses outside the device-token contract keep the generic mapping."""
+    with pytest.raises(MCPError) as exc_info:
+        await _poll_device_token_with_status(500)
+
+    assert not isinstance(exc_info.value, DeviceAuthorizationError)
+    assert isinstance(exc_info.value.__cause__, httpx.HTTPStatusError)

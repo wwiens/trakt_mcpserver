@@ -35,7 +35,7 @@ async def test_auth_flow_integration() -> None:
     device_code_response: DeviceCodeResponse = {
         "device_code": "device_code_123",
         "user_code": "USER123",
-        "verification_url": "https://trakt.tv/activate",
+        "verification_url": "https://auth.trakt.tv/activate",
         "expires_in": 600,
         "interval": 5,
     }
@@ -86,7 +86,7 @@ async def test_auth_flow_integration() -> None:
         start_auth_result = await start_device_auth()
 
         assert "USER123" in start_auth_result
-        assert "https://trakt.tv/activate" in start_auth_result
+        assert "https://auth.trakt.tv/activate" in start_auth_result
 
         from server.auth.tools import active_auth_flow
 

@@ -24,7 +24,7 @@ class TestDirectImports:
         """Test auth constants have expected values when imported from main config."""
         assert AUTH_POLL_INTERVAL == 5
         assert AUTH_EXPIRATION == 600
-        assert AUTH_VERIFICATION_URL == "https://trakt.tv/activate"
+        assert AUTH_VERIFICATION_URL == "https://auth.trakt.tv/activate"
 
     def test_api_constants_have_correct_values(self) -> None:
         """Test API constants have expected values when imported from main config."""

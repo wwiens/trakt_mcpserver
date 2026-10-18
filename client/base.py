@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import os
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast, overload
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -47,6 +50,14 @@ def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
     return hasattr(cls, "model_validate") and hasattr(cls, "__annotations__")
 
 
+def _user_agent() -> str:
+    """Build the User-Agent Trakt recommends: app name and version."""
+    try:
+        return f"trakt-mcp/{_pkg_version('trakt-mcp')}"
+    except PackageNotFoundError:
+        return "trakt-mcp/0.0.0+dev"
+
+
 class BaseClient:
     """Base client with common HTTP functionality for Trakt API."""
 
@@ -56,17 +67,20 @@ class BaseClient:
     def __init__(self):
         """Initialize the base client with credentials from environment variables."""
         client_id = os.getenv("TRAKT_CLIENT_ID")
-        client_secret = os.getenv("TRAKT_CLIENT_SECRET")
 
-        if not client_id or not client_secret:
+        if not client_id:
             raise ValueError(
-                "Trakt API credentials not found. Please check your .env file."
+                "Trakt API credentials not found: TRAKT_CLIENT_ID is not set. "
+                + "Please check your .env file."
             )
 
         self.client_id: str = client_id
-        self.client_secret: str = client_secret
+        # Trakt deprecated client_secret for user sign-in; newer apps may not
+        # be issued one, so it is sent only when configured.
+        self.client_secret: str | None = os.getenv("TRAKT_CLIENT_SECRET") or None
         self.headers: dict[str, str] = {
             "Content-Type": "application/json",
+            "User-Agent": _user_agent(),
             "trakt-api-version": "2",
             "trakt-api-key": self.client_id,
         }
@@ -186,7 +200,8 @@ class BaseClient:
         """Make an HTTP request to the Trakt API."""
         # Set request context for error reporting if not already set
         if get_current_context() is None:
-            parts = [p for p in endpoint.split("/") if p]
+            # OAuth endpoints are absolute URLs on a separate host
+            parts = [p for p in urlsplit(endpoint).path.split("/") if p]
             resource_type = parts[0] if parts else None
             resource_id = parts[1] if len(parts) > 1 else None
             ctx = RequestContext().with_endpoint(endpoint, method)

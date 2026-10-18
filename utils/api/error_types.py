@@ -152,6 +152,29 @@ class AuthorizationPendingError(MCPError):
         )
 
 
+class DeviceAuthorizationError(MCPError):
+    """Raised when Trakt rejects a device-token poll with a documented status.
+
+    Covers invalid, already-used, expired and denied codes, plus slow-down.
+    ``restart_required`` is False only for slow-down, where polling may resume.
+    """
+
+    def __init__(self, http_status: int, message: str, restart_required: bool) -> None:
+        """Initialize device authorization error.
+
+        Args:
+            http_status: HTTP status returned by /oauth/device/token
+            message: User-facing explanation of the status
+            restart_required: Whether a new device code is needed
+        """
+        self.restart_required = restart_required
+        super().__init__(
+            code=-32001,
+            message=message,
+            data={"error_type": "device_auth", "http_status": http_status},
+        )
+
+
 class TraktValidationError(InvalidParamsError):
     """Raised when request parameters fail validation.
 

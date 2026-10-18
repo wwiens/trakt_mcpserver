@@ -9,10 +9,9 @@ from mcp.server.fastmcp import FastMCP
 
 from client.auth import AuthClient
 from client.pool import get_client
-from config.auth import AUTH_VERIFICATION_URL
 from models.formatters.auth import AuthFormatters
 from server.base import ToolErrors
-from utils.api.error_types import AuthorizationPendingError
+from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
 from utils.api.errors import InternalError
 
 # Set up logging
@@ -81,7 +80,7 @@ async def start_device_auth() -> str:
     expires_in = device_code_response.expires_in
     instructions = AuthFormatters.format_device_auth_instructions(
         user_code,
-        AUTH_VERIFICATION_URL,
+        device_code_response.verification_url,
         expires_in,
     )
 
@@ -155,6 +154,11 @@ I don't see that you've completed the authorization yet. Please make sure to:
 
 If you've already done this and are still seeing this message, please wait a
 few seconds and try again by telling me "Please check my authorization status"."""
+    except DeviceAuthorizationError as e:
+        if e.restart_required:
+            async with auth_flow_lock:
+                active_auth_flow = {}
+        return f"# Authorization Not Completed\n\n{e.message}"
     except InternalError as e:
         # Handle server errors gracefully to avoid breaking the polling loop
         logger.warning(f"Internal error during auth token retrieval: {e}")
