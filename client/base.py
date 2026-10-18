@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast, overload
 import httpx
 
 from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
-from config.auth import is_auth_host_url
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 from utils.api.errors import handle_api_errors
+from utils.api.hosts import is_auth_host_url
 from utils.api.request_context import (
     RequestContext,
     get_current_context,

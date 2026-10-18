@@ -19,6 +19,7 @@ from utils.api.errors import (
     MCPError,
     handle_api_errors,
     handle_api_errors_func,
+    token_refresh_scope,
 )
 
 
@@ -772,3 +773,46 @@ class TestRecoveryEdgeCases:
             await service.unauthorized_then_not_found()
 
         assert service.refresh_calls == [None]
+
+
+class TestTokenRefreshScope:
+    """A 401 raised during a refresh must not start a nested refresh."""
+
+    class Service:
+        def __init__(self) -> None:
+            self.refresh_calls = 0
+            self.auth_token = MagicMock(refresh_token="refresh")
+
+        def clear_auth_token(self) -> bool:
+            return True
+
+        async def refresh_access_token(
+            self, rejected_access_token: str | None = None
+        ) -> bool:
+            self.refresh_calls += 1
+            return True
+
+        @handle_api_errors
+        async def unauthorized(self) -> str:
+            request = httpx.Request("GET", "https://api.trakt.tv/users/me")
+            raise httpx.HTTPStatusError(
+                "401", request=request, response=httpx.Response(401, request=request)
+            )
+
+    @pytest.mark.asyncio
+    async def test_no_nested_refresh_inside_scope(self) -> None:
+        service = self.Service()
+
+        with token_refresh_scope(), pytest.raises(AuthenticationRequiredError):
+            await service.unauthorized()
+
+        assert service.refresh_calls == 0
+
+    @pytest.mark.asyncio
+    async def test_refresh_runs_outside_scope(self) -> None:
+        service = self.Service()
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.unauthorized()
+
+        assert service.refresh_calls == 1

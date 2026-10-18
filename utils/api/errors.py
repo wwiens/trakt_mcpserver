@@ -15,7 +15,7 @@ from typing import (
 
 import httpx
 
-from config.auth import is_auth_host_url
+from utils.api.hosts import is_auth_host_url
 
 from .request_context import RequestContext
 

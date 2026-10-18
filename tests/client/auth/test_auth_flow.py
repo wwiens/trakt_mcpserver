@@ -200,12 +200,12 @@ async def test_device_token_expired():
 
         client = AuthClient()
 
-        # An unrecognised 400 ends the flow with a clear message
+        # A non-OAuth 400 body says nothing about the code: back off, keep it
         with pytest.raises(DeviceAuthorizationError) as exc_info:
             await client.get_device_token("device_code_123")
 
-        assert exc_info.value.restart_required is True
-        assert "start_device_auth" in exc_info.value.message
+        assert exc_info.value.restart_required is False
+        assert "may still be valid" in exc_info.value.message
 
         # Verify the client is not authenticated
         assert client.is_authenticated() is False

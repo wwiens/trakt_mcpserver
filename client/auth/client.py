@@ -15,6 +15,7 @@ import httpx
 from pydantic import ValidationError
 
 from config.auth import (
+    DEVICE_POLL_UNEXPECTED_MESSAGE,
     DEVICE_TOKEN_ERROR_MESSAGES,
     DEVICE_TOKEN_OAUTH_ERROR_STATUSES,
     DEVICE_TOKEN_PENDING_STATUS,
@@ -123,10 +124,16 @@ def _device_token_error(error: MCPError) -> MCPError | None:
             return AuthorizationPendingError()
         status = DEVICE_TOKEN_OAUTH_ERROR_STATUSES.get(error_code or "")
         if status is None:
+            # A JSON OAuth error ends the flow; a non-OAuth body (e.g. a proxy
+            # page) says nothing about the code, so keep polling after a pause.
             return DeviceAuthorizationError(
                 http_status=response.status_code,
-                message=DEVICE_TOKEN_REJECTED_MESSAGE,
-                restart_required=True,
+                message=(
+                    DEVICE_TOKEN_REJECTED_MESSAGE
+                    if body
+                    else DEVICE_POLL_UNEXPECTED_MESSAGE
+                ),
+                restart_required=body is not None,
             )
     message = DEVICE_TOKEN_ERROR_MESSAGES.get(status)
     if message is None:
@@ -309,9 +316,9 @@ class AuthClient(BaseClient):
         # is on disk, and our in-memory refresh token is already spent.
         stored = self._load_auth_token()
         with self._token_lock:
-            if stored is None and self._token_persisted:
+            if self._token_persisted and not os.path.exists(AUTH_TOKEN_FILE):
                 # clear_auth ran in another tool call; refreshing would quietly
-                # sign the user back in.
+                # sign the user back in. (An unreadable file is not a logout.)
                 self._forget_token()
                 return False
             if stored is not None and (
@@ -348,41 +355,10 @@ class AuthClient(BaseClient):
             token = await self._post_typed_request(
                 TRAKT_ENDPOINTS["token"], data, response_type=TraktAuthToken
             )
-            with self._token_lock:
-                if self._token_persisted and not os.path.exists(AUTH_TOKEN_FILE):
-                    # Logged out while the refresh was in flight; honour that.
-                    self._forget_token()
-                    return False
-                self._save_auth_token(token)
-                self.auth_token = token
-                self._update_headers_with_token()
-            logger.info("Successfully refreshed access token")
-            return True
         except (InvalidRequestError, InvalidParamsError) as error:
-            # Only invalid_grant means the token itself is dead; Trakt also sends
-            # it for wrong client credentials, and revokes the token when it
-            # does. Anything else (e.g. invalid_request for a malformed
-            # TRAKT_REDIRECT_URI) leaves it usable, and clearing it would force a
-            # reconnect, which costs a Community App connection.
-            response = http_error_response(error)
-            body = _oauth_error_body(response) if response is not None else None
-            if body is None or body.error != OAUTH_ERROR_INVALID_GRANT:
-                logger.warning(
-                    "Refresh request rejected (HTTP %s); keeping refresh token."
-                    + " Check TRAKT_CLIENT_ID and TRAKT_REDIRECT_URI.",
-                    response.status_code if response else "unknown",
-                )
-                return False
-            # invalid_grant: Trakt has revoked or consumed this refresh token.
-            logger.warning(
-                "Refresh token rejected by server, clearing stale token",
-                exc_info=True,
-            )
-            self.clear_auth_token()
-            return False
-        except (MCPError, OSError, ValueError):
-            # Transient / local errors: InternalError (network/timeout),
-            # OSError (file I/O), ValueError (validation).
+            return self._handle_refresh_rejection(error, auth_snapshot.refresh_token)
+        except (MCPError, ValueError):
+            # Transient errors (network/timeout, 5xx) or an unparseable reply.
             # Keep the refresh token so the next attempt can succeed.
             logger.warning(
                 "Failed to refresh access token (transient"
@@ -390,6 +366,68 @@ class AuthClient(BaseClient):
                 exc_info=True,
             )
             return False
+        return self._adopt_refreshed_token(token)
+
+    def _adopt_refreshed_token(self, token: TraktAuthToken) -> bool:
+        """Use and persist a pair Trakt just issued; the old one is now spent."""
+        with self._token_lock:
+            if self._token_persisted and not os.path.exists(AUTH_TOKEN_FILE):
+                # Logged out while the refresh was in flight; honour that.
+                self._forget_token()
+                return False
+            self.auth_token = token
+            self._update_headers_with_token()
+            try:
+                self._save_auth_token(token)
+            except OSError:
+                # The previous refresh token is already spent, so dropping this
+                # pair would lose the login. Keep it for this session.
+                logger.error(
+                    "Refreshed token could not be saved to %s; it is kept in"
+                    + " memory only",
+                    AUTH_TOKEN_FILE,
+                    exc_info=True,
+                )
+        logger.info("Successfully refreshed access token")
+        return True
+
+    def _handle_refresh_rejection(
+        self, error: MCPError, sent_refresh_token: str
+    ) -> bool:
+        """Decide whether a rejected refresh means the stored token is dead.
+
+        Returns:
+            True if another process had already refreshed (its pair is adopted)
+        """
+        # Only invalid_grant means the token itself is dead; Trakt also sends
+        # it for wrong client credentials, and revokes the token when it
+        # does. Anything else (e.g. invalid_request for a malformed
+        # TRAKT_REDIRECT_URI) leaves it usable, and clearing it would force a
+        # reconnect, which costs a Community App connection.
+        response = http_error_response(error)
+        body = _oauth_error_body(response) if response is not None else None
+        if body is None or body.error != OAUTH_ERROR_INVALID_GRANT:
+            logger.warning(
+                "Refresh request rejected (HTTP %s); keeping refresh token."
+                + " Check TRAKT_CLIENT_ID and TRAKT_REDIRECT_URI.",
+                response.status_code if response else "unknown",
+            )
+            return False
+        # invalid_grant: Trakt has revoked or consumed this refresh token. But
+        # another server process sharing the token file may have won the race;
+        # its fresh pair must not be deleted.
+        stored = self._load_auth_token()
+        if stored is not None and stored.refresh_token != sent_refresh_token:
+            with self._token_lock:
+                self.auth_token = stored
+                self._update_headers_with_token()
+            return True
+        logger.warning(
+            "Refresh token rejected by server, clearing stale token",
+            exc_info=True,
+        )
+        self.clear_auth_token()
+        return False
 
     async def ensure_authenticated(self) -> bool:
         """Ensure the client is authenticated, refreshing the token if needed.
