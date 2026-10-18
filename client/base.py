@@ -50,6 +50,10 @@ def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
     return hasattr(cls, "model_validate") and hasattr(cls, "__annotations__")
 
 
+def _is_auth_host_url(url: str) -> bool:
+    return urlsplit(url).hostname == TRAKT_AUTH_HOST
+
+
 class BaseClient:
     """Base client with common HTTP functionality for Trakt API."""
 
@@ -186,9 +190,14 @@ class BaseClient:
         Returns:
             Headers to send, including Authorization only for the API host
         """
-        is_auth_host = urlsplit(endpoint).hostname == TRAKT_AUTH_HOST
-        if get_current_context() is None:
-            ctx = RequestContext().with_endpoint(endpoint, method)
+        is_auth_host = _is_auth_host_url(endpoint)
+        current = get_current_context()
+        # An earlier OAuth call (e.g. a token refresh) must not label errors from
+        # the API request that follows it in the same task.
+        if current is None or (
+            not is_auth_host and _is_auth_host_url(current.endpoint or "")
+        ):
+            ctx = (current or RequestContext()).with_endpoint(endpoint, method)
             # OAuth paths are not resources; "oauth"/"token" would mislabel errors.
             parts = [] if is_auth_host else [p for p in endpoint.split("/") if p]
             if len(parts) > 1:

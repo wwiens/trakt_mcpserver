@@ -386,3 +386,19 @@ async def test_device_code_invalid_client_keeps_stored_token():
     mock_remove.assert_not_called()
     # Only the device-code call; no refresh attempt against /oauth/token.
     assert mock_instance.post.call_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [(401, b'{"error": "invalid_client"}'), (400, b'{"error": "invalid_client"}')],
+)
+async def test_device_token_invalid_client_explains_credentials(
+    status: int, body: bytes
+):
+    """Bad client credentials while polling end the flow with a clear message."""
+    with pytest.raises(DeviceAuthorizationError) as exc_info:
+        await _poll_device_token_with_status(status, body)
+
+    assert exc_info.value.restart_required is True
+    assert "TRAKT_CLIENT_ID" in exc_info.value.message

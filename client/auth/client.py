@@ -38,6 +38,7 @@ from utils.api.errors import (
     InvalidRequestError,
     MCPError,
     handle_api_errors,
+    http_error_response,
 )
 
 from ..base import BaseClient
@@ -54,12 +55,6 @@ AUTH_TOKEN_FILE: Final[str] = os.environ.get(
 )
 
 
-def _http_error_response(error: MCPError) -> httpx.Response | None:
-    """Return the HTTP response behind an API error, if there was one."""
-    cause = error.__cause__
-    return cause.response if isinstance(cause, httpx.HTTPStatusError) else None
-
-
 def _oauth_error_body(response: httpx.Response) -> OAuthErrorResponse | None:
     """Parse an OAuth error body; None when it is empty or not a JSON object."""
     if not response.content:
@@ -70,14 +65,6 @@ def _oauth_error_body(response: httpx.Response) -> OAuthErrorResponse | None:
         return None
 
 
-def _is_pending_response(response: httpx.Response) -> bool:
-    """Trakt's documented pending reply is a 400, normally with an empty body."""
-    if not response.content:
-        return True
-    body = _oauth_error_body(response)
-    return body is not None and body.error == "authorization_pending"
-
-
 def _device_token_error(error: MCPError) -> MCPError | None:
     """Map a failed device-token poll to the error its HTTP status documents.
 
@@ -85,27 +72,33 @@ def _device_token_error(error: MCPError) -> MCPError | None:
     mapping cannot tell "still pending" or "denied" apart from real failures.
     Returns None when the status is outside the device-token contract.
     """
-    response = _http_error_response(error)
+    response = http_error_response(error)
     if response is None:
         return None
+    body = _oauth_error_body(response)
+    error_code = body.error if body else None
     status: int | None = response.status_code
-    if status == DEVICE_TOKEN_PENDING_STATUS:
-        if _is_pending_response(response):
-            return AuthorizationPendingError()
-        body = _oauth_error_body(response)
-        status = (
-            DEVICE_TOKEN_OAUTH_ERROR_STATUSES.get(body.error or "") if body else None
+    if status == HTTPStatus.UNAUTHORIZED or error_code == "invalid_client":
+        return DeviceAuthorizationError(
+            http_status=response.status_code,
+            message=INVALID_CLIENT_MESSAGE,
+            restart_required=True,
         )
-    message = DEVICE_TOKEN_ERROR_MESSAGES.get(status) if status else None
-    if status is None or message is None:
+    if status == DEVICE_TOKEN_PENDING_STATUS:
+        if not response.content or error_code == "authorization_pending":
+            return AuthorizationPendingError()
+        status = DEVICE_TOKEN_OAUTH_ERROR_STATUSES.get(error_code or "")
+        if status is None:
+            return None
+    message = DEVICE_TOKEN_ERROR_MESSAGES.get(status)
+    if message is None:
         return None
+    rate_limited = isinstance(error, TraktRateLimitError)
     return DeviceAuthorizationError(
         http_status=status,
         message=message,
         restart_required=status != DEVICE_TOKEN_SLOW_DOWN_STATUS,
-        retry_after=error.retry_after
-        if isinstance(error, TraktRateLimitError)
-        else None,
+        retry_after=error.retry_after if rate_limited else None,
     )
 
 
@@ -117,7 +110,7 @@ def _is_dead_refresh_token(error: MCPError) -> bool:
     malformed TRAKT_REDIRECT_URI, leave the token usable. Clearing it would force
     a reconnect, which costs a Community App connection.
     """
-    response = _http_error_response(error)
+    response = http_error_response(error)
     body = _oauth_error_body(response) if response is not None else None
     return body is not None and body.error == "invalid_grant"
 
@@ -214,7 +207,7 @@ class AuthClient(BaseClient):
                 TRAKT_ENDPOINTS["device_code"], data, response_type=TraktDeviceCode
             )
         except MCPError as error:
-            response = _http_error_response(error)
+            response = http_error_response(error)
             if response is None or response.status_code != HTTPStatus.UNAUTHORIZED:
                 raise
             raise InvalidRequestError(INVALID_CLIENT_MESSAGE) from error
@@ -256,7 +249,9 @@ class AuthClient(BaseClient):
             self._update_headers_with_token()
         return token
 
-    async def refresh_access_token(self) -> bool:
+    async def refresh_access_token(
+        self, rejected_access_token: str | None = None
+    ) -> bool:
         """Refresh the access token using the stored refresh token.
 
         Exchanges the refresh_token for a new access_token via the Trakt
@@ -265,16 +260,28 @@ class AuthClient(BaseClient):
         Thread-safe: Uses an async lock to prevent concurrent refresh attempts
         from racing and invalidating each other's tokens.
 
+        Args:
+            rejected_access_token: Access token the API just rejected with 401.
+                When given, refresh even if the token looks unexpired locally
+                (server-side revocation, clock skew), unless another call has
+                already replaced it.
+
         Returns:
             True if refresh succeeded, False if refresh failed
         """
         async with self._refresh_lock:
-            # Re-check after acquiring lock — another coroutine may have refreshed
-            if self.is_authenticated():
-                return True
-
             with self._token_lock:
                 auth_snapshot = self.auth_token
+
+            # Re-check after acquiring lock — another coroutine may have refreshed
+            if rejected_access_token is None:
+                if self.is_authenticated():
+                    return True
+            elif (
+                auth_snapshot is not None
+                and auth_snapshot.access_token != rejected_access_token
+            ):
+                return True
 
             if not auth_snapshot or not auth_snapshot.refresh_token:
                 return False
@@ -300,7 +307,7 @@ class AuthClient(BaseClient):
                 return True
             except (InvalidRequestError, InvalidParamsError) as error:
                 if not _is_dead_refresh_token(error):
-                    response = _http_error_response(error)
+                    response = http_error_response(error)
                     logger.warning(
                         "Refresh request rejected (HTTP %s); keeping refresh token."
                         + " Check TRAKT_CLIENT_ID and TRAKT_REDIRECT_URI.",

@@ -45,8 +45,14 @@ class ClearableAuthClient(Protocol):
 class RefreshableAuthClient(ClearableAuthClient, Protocol):
     """Protocol for clients that support token refresh on 401."""
 
-    async def refresh_access_token(self) -> bool:
+    async def refresh_access_token(
+        self, rejected_access_token: str | None = None
+    ) -> bool:
         """Refresh the access token using the stored refresh token.
+
+        Args:
+            rejected_access_token: Access token the server just answered with
+                401; refresh even if it still looks unexpired locally.
 
         Returns:
             True if refresh succeeded, False if refresh failed.
@@ -139,17 +145,26 @@ def _is_auth_required_error(error: MCPError) -> bool:
     return isinstance(error, AuthenticationRequiredError)
 
 
+def http_error_response(error: MCPError) -> httpx.Response | None:
+    """Return the HTTP response behind an API error, if there was one."""
+    cause = error.__cause__
+    return cause.response if isinstance(cause, httpx.HTTPStatusError) else None
+
+
 def _is_auth_host_error(error: MCPError) -> bool:
     """Check whether the failed request went to the OAuth host.
 
     A 401 there concerns the app's client credentials, not the user's access
     token, so refreshing or clearing the stored token cannot help.
     """
-    cause = error.__cause__
-    return (
-        isinstance(cause, httpx.HTTPStatusError)
-        and cause.request.url.host == TRAKT_AUTH_HOST
-    )
+    response = http_error_response(error)
+    return response is not None and response.request.url.host == TRAKT_AUTH_HOST
+
+
+def _access_token(client: object) -> str | None:
+    """Return the access token a client is currently sending, if any."""
+    token = getattr(getattr(client, "auth_token", None), "access_token", None)
+    return token if isinstance(token, str) else None
 
 
 def _build_error_data(
@@ -324,7 +339,9 @@ def handle_api_errors[OwnerT, **P, R](
                 and _has_refresh_token(self)
             ):
                 try:
-                    refreshed = await self.refresh_access_token()
+                    refreshed = await self.refresh_access_token(
+                        rejected_access_token=_access_token(self)
+                    )
                 except Exception:
                     logger.warning(
                         "Token refresh failed during 401 recovery", exc_info=True
@@ -341,8 +358,12 @@ def handle_api_errors[OwnerT, **P, R](
                         # Retry also failed — clear and raise the retry error
                         _auto_clear_invalid_token(self)
                         raise
+                # Refresh failed. refresh_access_token already cleared a dead
+                # (invalid_grant) token; anything else may be transient, and
+                # deleting the refresh token would force a costly reconnect.
+                raise
 
-            # No refresh possible or refresh failed — clear and raise original
+            # No refresh possible — the stored token is unusable.
             _auto_clear_invalid_token(self)
             raise
 

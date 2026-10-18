@@ -1029,3 +1029,66 @@ async def test_access_token_only_sent_to_api_host(
     sent_headers = mock_instance.post.call_args.kwargs["headers"]
     assert ("Authorization" in sent_headers) is expects_bearer
     assert client.headers["Authorization"] == "Bearer user_access_token"
+
+
+def _token_response(access_token: str) -> MagicMock:
+    response = MagicMock()
+    response.json.return_value = {
+        "access_token": access_token,
+        "refresh_token": f"{access_token}_refresh",
+        "expires_in": 604800,
+        "created_at": int(time.time()),
+        "scope": "public",
+        "token_type": "bearer",
+    }
+    response.raise_for_status = MagicMock()
+    return response
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("rejected_access_token", "expects_network_refresh"),
+    [
+        # 401 for the token we still hold: refresh despite local expiry saying ok.
+        ("current_access_token", True),
+        # Another call already replaced the rejected token: just retry.
+        ("older_access_token", False),
+        # Proactive refresh of an unexpired token: nothing to do.
+        (None, False),
+    ],
+)
+async def test_refresh_access_token_after_401(
+    monkeypatch: pytest.MonkeyPatch,
+    rejected_access_token: str | None,
+    expects_network_refresh: bool,
+) -> None:
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch("os.open", return_value=3),
+        patch("os.fdopen") as mock_fdopen,
+        patch("os.replace"),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=_token_response("new_access"))
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+        mock_fdopen.return_value.__enter__ = MagicMock()
+        mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
+
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="current_access_token",
+            refresh_token="current_refresh",
+            expires_in=604800,
+            created_at=int(time.time()),
+        )
+
+        assert await client.refresh_access_token(rejected_access_token) is True
+
+    assert mock_instance.post.called is expects_network_refresh
+    expected_access = (
+        "new_access" if expects_network_refresh else "current_access_token"
+    )
+    assert client.auth_token.access_token == expected_access

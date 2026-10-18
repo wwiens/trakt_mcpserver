@@ -226,7 +226,9 @@ class TestTokenRefreshChain:
                 self.clear_auth_token_called = True
                 return True
 
-            async def refresh_access_token(self) -> bool:
+            async def refresh_access_token(
+                self, rejected_access_token: str | None = None
+            ) -> bool:
                 self.refresh_called = True
                 return True
 
@@ -422,7 +424,9 @@ class TestTokenRefreshChain:
                 self.clear_count += 1
                 return True
 
-            async def refresh_access_token(self) -> bool:
+            async def refresh_access_token(
+                self, rejected_access_token: str | None = None
+            ) -> bool:
                 self.refresh_count += 1
                 await asyncio.sleep(0.01)
                 return True

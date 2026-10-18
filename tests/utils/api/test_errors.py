@@ -479,7 +479,9 @@ class TestHandleApiErrors401RefreshAndRetry:
             self.clear_auth_token_called = True
             return True
 
-        async def refresh_access_token(self) -> bool:
+        async def refresh_access_token(
+            self, rejected_access_token: str | None = None
+        ) -> bool:
             self.refresh_called = True
             return self.refresh_result
 
@@ -525,8 +527,12 @@ class TestHandleApiErrors401RefreshAndRetry:
         assert service.clear_auth_token_called is False
 
     @pytest.mark.asyncio
-    async def test_401_refresh_fails_clears_token_and_raises(self) -> None:
-        """Test: 401 triggers refresh, refresh fails, clears token and raises."""
+    async def test_401_refresh_fails_keeps_token_and_raises(self) -> None:
+        """Test: 401 triggers refresh, refresh fails, token is kept and it raises.
+
+        refresh_access_token clears a dead (invalid_grant) token itself; other
+        failures may be transient and must not cost the user a reconnect.
+        """
         service = self.MockRefreshableService()
         service.refresh_result = False
 
@@ -535,7 +541,7 @@ class TestHandleApiErrors401RefreshAndRetry:
 
         assert service.call_count == 1
         assert service.refresh_called is True
-        assert service.clear_auth_token_called is True
+        assert service.clear_auth_token_called is False
 
     @pytest.mark.asyncio
     async def test_401_no_refresh_token_clears_and_raises(self) -> None:
@@ -566,11 +572,13 @@ class TestHandleApiErrors401RefreshAndRetry:
         assert service.clear_auth_token_called is True
 
     @pytest.mark.asyncio
-    async def test_401_refresh_raises_exception_clears_and_raises(self) -> None:
-        """Test: refresh raises exception, clears token and raises original error."""
+    async def test_401_refresh_raises_exception_keeps_token_and_raises(self) -> None:
+        """Test: refresh raises, token is kept and the original error is raised."""
 
         class BrokenRefreshService(self.MockRefreshableService):
-            async def refresh_access_token(self) -> bool:
+            async def refresh_access_token(
+                self, rejected_access_token: str | None = None
+            ) -> bool:
                 self.refresh_called = True
                 raise RuntimeError("Refresh endpoint down")
 
@@ -581,7 +589,7 @@ class TestHandleApiErrors401RefreshAndRetry:
 
         assert service.call_count == 1
         assert service.refresh_called is True
-        assert service.clear_auth_token_called is True
+        assert service.clear_auth_token_called is False
 
     @pytest.mark.asyncio
     async def test_non_401_errors_do_not_trigger_refresh(self) -> None:
