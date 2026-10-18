@@ -150,10 +150,16 @@ def _is_auth_required_error(error: MCPError) -> bool:
     return isinstance(error, AuthenticationRequiredError)
 
 
+def _http_status_error(error: MCPError) -> httpx.HTTPStatusError | None:
+    """Return the HTTP error an MCPError was raised from, if any."""
+    cause = error.__cause__
+    return cause if isinstance(cause, httpx.HTTPStatusError) else None
+
+
 def http_error_response(error: MCPError) -> httpx.Response | None:
     """Return the HTTP response behind an API error, if there was one."""
-    cause = error.__cause__
-    return cause.response if isinstance(cause, httpx.HTTPStatusError) else None
+    cause = _http_status_error(error)
+    return cause.response if cause is not None else None
 
 
 def _is_auth_host_error(error: MCPError) -> bool:
@@ -162,25 +168,22 @@ def _is_auth_host_error(error: MCPError) -> bool:
     A 401 there concerns the app's client credentials, not the user's access
     token, so refreshing or clearing the stored token cannot help.
     """
-    cause = error.__cause__
-    return isinstance(cause, httpx.HTTPStatusError) and is_auth_host_url(
-        str(cause.request.url)
-    )
+    cause = _http_status_error(error)
+    return cause is not None and is_auth_host_url(str(cause.request.url))
 
 
-def _rejected_access_token(error: MCPError, client: object) -> str | None:
+def _rejected_access_token(error: MCPError) -> str | None:
     """Return the access token the failed request actually sent.
 
     Read from the request rather than the client, which another coroutine may
-    already have refreshed.
+    already have refreshed. None when the request carried no Bearer token, so
+    the refresh only happens if the client's own token has expired.
     """
-    cause = error.__cause__
-    if isinstance(cause, httpx.HTTPStatusError):
-        header = cause.request.headers.get("Authorization")
-        if isinstance(header, str) and header.startswith("Bearer "):
-            return header.removeprefix("Bearer ")
-    token = getattr(getattr(client, "auth_token", None), "access_token", None)
-    return token if isinstance(token, str) else None
+    cause = _http_status_error(error)
+    header = cause.request.headers.get("Authorization") if cause else None
+    if isinstance(header, str) and header.startswith("Bearer "):
+        return header.removeprefix("Bearer ")
+    return None
 
 
 _token_refresh_in_progress: ContextVar[bool] = ContextVar(
@@ -357,8 +360,12 @@ def handle_api_errors[OwnerT, **P, R](
                 method(self, *args, **kwargs),
             )
         except MCPError as first_error:
+            # Only a real HTTP 401 from the API host is recoverable here. A method
+            # raising AuthenticationRequiredError after ensure_authenticated()
+            # failed has already tried to refresh.
             if (
                 not _is_auth_required_error(first_error)
+                or _http_status_error(first_error) is None
                 or _is_auth_host_error(first_error)
                 or first_error.refresh_attempted
             ):
@@ -372,7 +379,7 @@ def handle_api_errors[OwnerT, **P, R](
             if isinstance(self, RefreshableAuthClient) and _has_refresh_token(self):
                 try:
                     refreshed = await self.refresh_access_token(
-                        rejected_access_token=_rejected_access_token(first_error, self)
+                        rejected_access_token=_rejected_access_token(first_error)
                     )
                 except Exception:
                     logger.warning(
@@ -387,9 +394,9 @@ def handle_api_errors[OwnerT, **P, R](
                             method(self, *args, **kwargs),
                         )
                     except MCPError as retry_error:
-                        # Retry also failed — clear and raise the retry error
+                        # The pair was just saved; a failed retry (404, 429, a
+                        # network error, even another 401) does not make it dead.
                         retry_error.refresh_attempted = True
-                        _auto_clear_invalid_token(self)
                         raise
                 # Refresh failed. refresh_access_token already cleared a dead
                 # (invalid_grant) token; anything else may be transient, and

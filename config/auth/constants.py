@@ -47,6 +47,10 @@ DEVICE_TOKEN_PENDING_STATUS: Final[int] = 400
 DEVICE_TOKEN_SLOW_DOWN_STATUS: Final[int] = 429
 # RFC 8628 section 3.5: on slow_down, increase the polling interval by 5 seconds.
 DEVICE_TOKEN_SLOW_DOWN_INCREMENT: Final[int] = 5
+# OAuth error codes Trakt returns in error bodies (RFC 6749 5.2, RFC 8628 3.5).
+OAUTH_ERROR_INVALID_GRANT: Final[str] = "invalid_grant"
+OAUTH_ERROR_INVALID_CLIENT: Final[str] = "invalid_client"
+OAUTH_ERROR_AUTHORIZATION_PENDING: Final[str] = "authorization_pending"
 # RFC 8628 section 3.5 error codes, mapped to Trakt's equivalent statuses, in
 # case auth.trakt.tv answers with a JSON 400 instead of a bare status.
 DEVICE_TOKEN_OAUTH_ERROR_STATUSES: Final[Mapping[str, int]] = {

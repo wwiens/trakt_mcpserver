@@ -187,7 +187,9 @@ If this error persists, you may need to restart the authentication process."""
     else:
         # Authentication successful
         async with auth_flow_lock:
-            active_auth_flow = {}
+            # A slow success for an older code must not end a newer flow.
+            if active_auth_flow.get("device_code") == device_code:
+                active_auth_flow = {}
         return _AUTH_SUCCESS_MESSAGE
 
 

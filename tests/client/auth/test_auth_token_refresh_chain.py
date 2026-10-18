@@ -6,7 +6,6 @@ refresh when access tokens expire (every 24h).
 """
 
 import asyncio
-import io
 import os
 import time
 from collections.abc import Awaitable, Callable, Generator
@@ -57,23 +56,21 @@ def _mock_post_response(data: dict[str, str | int]) -> MagicMock:
     return resp
 
 
-def _fake_fdopen(*_args: object, **_kwargs: object) -> io.StringIO:
-    """Stand-in for os.fdopen that returns an in-memory stream."""
-    return io.StringIO()
-
-
 @contextmanager
 def _patch_file_io() -> Generator[None, None, None]:
-    """Patch atomic-write file I/O used by _save_auth_token."""
-    fake_fd = 99
-    with (
-        patch("os.open", return_value=fake_fd),
-        patch("os.fdopen", side_effect=_fake_fdopen),
-        patch("os.replace"),
-        patch("os.makedirs"),
-        patch("os.fsync"),
-    ):
+    """Let token saves hit the isolated temp token file, then remove it.
+
+    Real writes keep disk and memory consistent, which refresh relies on to
+    detect a pair saved by another client or a logout via clear_auth.
+    """
+    import client.auth.client as auth_client_module
+
+    token_path = auth_client_module.AUTH_TOKEN_FILE
+    try:
         yield
+    finally:
+        if os.path.exists(token_path):
+            os.remove(token_path)
 
 
 class TestTokenRefreshChain:
@@ -512,3 +509,53 @@ class TestParallelClientRefresh:
         for client in (first, second):
             assert client.auth_token is not None
             assert client.auth_token.access_token == "fresh_access_parallel"
+
+
+class TestLogoutDuringRefresh:
+    """clear_auth in one tool call must not be undone by another's refresh."""
+
+    @pytest.mark.asyncio
+    async def test_refresh_after_logout_elsewhere_does_not_sign_back_in(
+        self, patched_httpx_client: MagicMock
+    ) -> None:
+        import client.auth.client as auth_client_module
+
+        token_path = auth_client_module.AUTH_TOKEN_FILE
+        patched_httpx_client.post = AsyncMock(
+            return_value=_mock_post_response(_make_fresh_token_data("zombie"))
+        )
+        with _patch_file_io():
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write(_make_expired_token(days_ago=1).model_dump_json())
+            waiting_call = AuthClient()
+            AuthClient().clear_auth_token()
+
+            assert await waiting_call.ensure_authenticated() is False
+            assert not os.path.exists(token_path)
+
+        patched_httpx_client.post.assert_not_called()
+        assert waiting_call.auth_token is None
+        assert "Authorization" not in waiting_call.headers
+
+    @pytest.mark.asyncio
+    async def test_logout_while_refresh_in_flight_is_honoured(
+        self, patched_httpx_client: MagicMock
+    ) -> None:
+        import client.auth.client as auth_client_module
+
+        token_path = auth_client_module.AUTH_TOKEN_FILE
+
+        async def post_then_logout(*args: object, **kwargs: object) -> MagicMock:
+            os.remove(token_path)
+            return _mock_post_response(_make_fresh_token_data("late"))
+
+        patched_httpx_client.post = AsyncMock(side_effect=post_then_logout)
+        with _patch_file_io():
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write(_make_expired_token(days_ago=1).model_dump_json())
+            client = AuthClient()
+
+            assert await client.ensure_authenticated() is False
+            assert not os.path.exists(token_path)
+
+        assert client.auth_token is None

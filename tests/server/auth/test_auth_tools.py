@@ -416,3 +416,27 @@ async def test_start_device_auth_when_authenticated_points_to_clear_auth():
 
     assert "already authenticated" in result
     assert "`clear_auth`" in result
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_late_success_keeps_newer_flow():
+    """A slow success for an old code must not erase a flow started meanwhile."""
+    import server.auth.tools as auth_tools
+
+    newer_flow = {**_active_flow(), "device_code": "newer_code"}
+
+    async def _succeed_after_new_flow_started(_device_code: str) -> None:
+        auth_tools.active_auth_flow = newer_flow
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+        mock_client.get_device_token.side_effect = _succeed_after_new_flow_started
+
+        result = await check_auth_status()
+
+        assert "Authentication Successful!" in result
+        assert auth_tools.active_auth_flow["device_code"] == "newer_code"

@@ -16,6 +16,7 @@ from utils.api.error_types import (
 from utils.api.errors import (
     InternalError,
     InvalidParamsError,
+    MCPError,
     handle_api_errors,
     handle_api_errors_func,
 )
@@ -568,8 +569,8 @@ class TestHandleApiErrors401RefreshAndRetry:
         # Called twice: first attempt + one retry
         assert service.call_count == 2
         assert service.refresh_called is True
-        # Token cleared after retry failure
-        assert service.clear_auth_token_called is True
+        # The just-refreshed pair is kept even though the retry failed
+        assert service.clear_auth_token_called is False
 
     @pytest.mark.asyncio
     async def test_401_refresh_raises_exception_keeps_token_and_raises(self) -> None:
@@ -703,3 +704,71 @@ class TestNested401Recovery:
             await service.inner_request()
 
         assert service.refresh_calls == ["sent_access"]
+
+
+class TestRecoveryEdgeCases:
+    """401 recovery must neither delete good tokens nor refresh needlessly."""
+
+    class Service:
+        def __init__(self) -> None:
+            self.refresh_calls: list[str | None] = []
+            self.clear_auth_token_called = False
+            self.calls = 0
+            self.auth_token = MagicMock(refresh_token="refresh", access_token="a")
+
+        def clear_auth_token(self) -> bool:
+            self.clear_auth_token_called = True
+            return True
+
+        async def refresh_access_token(
+            self, rejected_access_token: str | None = None
+        ) -> bool:
+            self.refresh_calls.append(rejected_access_token)
+            return True
+
+        @handle_api_errors
+        async def unauthorized_then_not_found(self) -> str:
+            self.calls += 1
+            status = 401 if self.calls == 1 else 404
+            request = httpx.Request("GET", "https://api.trakt.tv/shows/typo")
+            raise httpx.HTTPStatusError(
+                str(status),
+                request=request,
+                response=httpx.Response(status, request=request),
+            )
+
+        @handle_api_errors
+        async def raises_auth_required_itself(self) -> str:
+            raise AuthenticationRequiredError(action="access your ratings")
+
+    @pytest.mark.asyncio
+    async def test_failed_retry_after_refresh_keeps_new_token(self) -> None:
+        """A 404 on the retry (e.g. a mistyped slug) must not delete the pair."""
+        service = self.Service()
+
+        with pytest.raises(MCPError):
+            await service.unauthorized_then_not_found()
+
+        assert service.calls == 2
+        assert service.clear_auth_token_called is False
+
+    @pytest.mark.asyncio
+    async def test_no_refresh_without_http_401(self) -> None:
+        """ensure_authenticated() already tried; no second /oauth/token call."""
+        service = self.Service()
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.raises_auth_required_itself()
+
+        assert service.refresh_calls == []
+        assert service.clear_auth_token_called is False
+
+    @pytest.mark.asyncio
+    async def test_request_without_bearer_does_not_force_refresh(self) -> None:
+        """No Bearer on the failed request: refresh only if the token expired."""
+        service = self.Service()
+
+        with pytest.raises(MCPError):
+            await service.unauthorized_then_not_found()
+
+        assert service.refresh_calls == [None]
