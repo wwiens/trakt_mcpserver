@@ -52,6 +52,11 @@ def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
 class BaseClient:
     """Base client with common HTTP functionality for Trakt API."""
 
+    @property
+    def auth_token(self) -> TraktAuthToken | None:
+        """The user's OAuth token; only AuthClient has one (via a shared store)."""
+        return None
+
     BASE_URL = "https://api.trakt.tv"
     REQUEST_TIMEOUT = 30.0
 
@@ -76,7 +81,6 @@ class BaseClient:
             "trakt-api-key": self.client_id,
         }
 
-        self.auth_token: TraktAuthToken | None = None
         self._client: httpx.AsyncClient | None = None
         self._persistent: bool = False
         self._owns_client: bool = True
@@ -85,6 +89,8 @@ class BaseClient:
         """Update headers with authentication token."""
         if self.auth_token:
             self.headers["Authorization"] = f"Bearer {self.auth_token.access_token}"
+        else:
+            self.headers.pop("Authorization", None)
 
     async def __aenter__(self) -> BaseClient:
         """Enter async context and initialize shared client.

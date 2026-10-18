@@ -1,5 +1,6 @@
 import json
 import os
+import stat
 import threading
 import time
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
@@ -180,49 +181,32 @@ async def test_auth_client_get_device_token_success(monkeypatch: pytest.MonkeyPa
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
     monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
 
-    with (
-        patch("httpx.AsyncClient") as mock_client,
-        patch("dotenv.load_dotenv"),
-        patch("os.open") as mock_os_open,
-        patch("os.fdopen") as mock_fdopen,
-        patch("os.replace") as mock_replace,
-    ):
-        # Create mock instance with async methods
+    from client.auth.client import AUTH_TOKEN_FILE
+
+    with patch("httpx.AsyncClient") as mock_client, patch("dotenv.load_dotenv"):
         mock_instance = MagicMock()
         mock_instance.post = AsyncMock(return_value=mock_response)
         mock_instance.get = AsyncMock()
         mock_instance.aclose = AsyncMock()
         mock_client.return_value = mock_instance
 
-        # Set up the os.open and os.fdopen mocks
-        mock_fd = 3
-        mock_os_open.return_value = mock_fd
-        mock_file_obj = MagicMock()
-        mock_fdopen.return_value = mock_file_obj
-        mock_fdopen.return_value.__enter__ = mock_file_obj
-        mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
-
         client = AuthClient()
         result = await client.get_device_token("device_code_123")
         assert not isinstance(result, str)
 
-        # Result is a TraktAuthToken
         assert isinstance(result, TraktAuthToken)
         assert result.access_token == "access_token_123"
         assert result.refresh_token == "refresh_token_123"
 
-        # Verify that os.open was called with secure permissions on temp file
-        from client.auth.client import AUTH_TOKEN_FILE
-
-        mock_os_open.assert_called_once_with(
-            f"{AUTH_TOKEN_FILE}.tmp", os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600
-        )
-        # Verify atomic replace was called
-        mock_replace.assert_called_once_with(f"{AUTH_TOKEN_FILE}.tmp", AUTH_TOKEN_FILE)
-        # Verify that file write was called
-        assert mock_fdopen.return_value.write.called
-        # Optionally assert that JSON was written at least once
-        mock_fdopen.return_value.write.assert_called()
+    try:
+        # Written atomically, readable by the owner only, with no temp left over
+        assert stat.S_IMODE(os.stat(AUTH_TOKEN_FILE).st_mode) == 0o600
+        with open(AUTH_TOKEN_FILE, encoding="utf-8") as token_file:
+            assert TraktAuthToken.model_validate_json(token_file.read()) == result
+        token_dir = os.path.dirname(AUTH_TOKEN_FILE)
+        assert not [name for name in os.listdir(token_dir) if name.startswith(".")]
+    finally:
+        os.remove(AUTH_TOKEN_FILE)
 
 
 def test_clear_auth_token(monkeypatch: pytest.MonkeyPatch):

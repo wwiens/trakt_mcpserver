@@ -41,34 +41,21 @@ async def test_complete_device_auth_flow():
         ),
     ]
 
+    from client.auth.client import AUTH_TOKEN_FILE
+
     with (
         patch("httpx.AsyncClient") as mock_client,
-        patch("os.open", return_value=3) as mock_os_open,
-        patch("os.fdopen") as mock_fdopen,
-        patch("os.fsync"),
-        patch("os.replace") as mock_replace,
         patch.dict(
             os.environ,
             {"TRAKT_CLIENT_ID": "test_id", "TRAKT_CLIENT_SECRET": "test_secret"},
         ),
     ):
-        mock_file_obj = MagicMock()
-        mock_file_obj.fileno.return_value = 3
-        mock_fdopen.return_value = mock_file_obj
-
         # Create mock instance with async methods
         mock_instance = MagicMock()
         mock_instance.post = AsyncMock(side_effect=mock_responses)
         mock_instance.get = AsyncMock()
         mock_instance.aclose = AsyncMock()
         mock_client.return_value = mock_instance
-
-        # Set up the os.open and os.fdopen mocks
-        mock_os_open.return_value = 3
-        mock_file_obj = MagicMock()
-        mock_fdopen.return_value = mock_file_obj
-        mock_fdopen.return_value.__enter__ = mock_file_obj
-        mock_fdopen.return_value.__exit__ = MagicMock(return_value=None)
 
         client = AuthClient()
 
@@ -86,8 +73,12 @@ async def test_complete_device_auth_flow():
 
         assert client.is_authenticated() is True
 
-        assert mock_os_open.called
-        assert mock_replace.called
+    try:
+        with open(AUTH_TOKEN_FILE, encoding="utf-8") as token_file:
+            saved = TraktAuthToken.model_validate_json(token_file.read())
+        assert saved.access_token == "access_token_123"
+    finally:
+        os.remove(AUTH_TOKEN_FILE)
 
 
 # Test removed as refresh_token method doesn't exist in AuthClient

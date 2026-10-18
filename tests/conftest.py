@@ -44,6 +44,20 @@ def _isolate_auth_token_file(  # pyright: ignore[reportUnusedFunction]
         yield
 
 
+@pytest.fixture(autouse=True)
+def _fresh_token_stores() -> Generator[None, None, None]:  # pyright: ignore[reportUnusedFunction]
+    """Give each test its own process-wide token stores.
+
+    AuthClient instances share a TokenStore per token path, which would
+    otherwise carry one test's token into the next.
+    """
+    from client.auth import token_store
+
+    token_store._stores.clear()  # pyright: ignore[reportPrivateUsage]
+    yield
+    token_store._stores.clear()  # pyright: ignore[reportPrivateUsage]
+
+
 @pytest.fixture(autouse=True, scope="session")
 def trakt_env() -> Generator[None, None, None]:  # pyright: ignore[reportUnusedFunction]
     """Patch environment variables with test Trakt credentials.

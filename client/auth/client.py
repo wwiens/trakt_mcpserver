@@ -1,13 +1,8 @@
 """Authentication client for Trakt API."""
 
-import asyncio
-import contextlib
-import json
 import logging
 import os
-import threading
 import time
-import weakref
 from http import HTTPStatus
 from typing import Final
 
@@ -49,6 +44,7 @@ from utils.api.errors import (
 )
 
 from ..base import BaseClient
+from .token_store import TokenStore, get_token_store
 
 logger = logging.getLogger(__name__)
 
@@ -79,24 +75,6 @@ def _is_invalid_client(
     return response.status_code == HTTPStatus.UNAUTHORIZED or (
         body is not None and body.error == OAUTH_ERROR_INVALID_CLIENT
     )
-
-
-_refresh_locks: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Lock] = (
-    weakref.WeakKeyDictionary()
-)
-
-
-def _shared_refresh_lock() -> asyncio.Lock:
-    """Return the refresh lock shared by every AuthClient on this event loop.
-
-    get_client() builds a new AuthClient per tool call, so a per-instance lock
-    would let parallel calls spend the same single-use refresh token.
-    """
-    loop = asyncio.get_running_loop()
-    lock = _refresh_locks.get(loop)
-    if lock is None:
-        lock = _refresh_locks[loop] = asyncio.Lock()
-    return lock
 
 
 def _device_token_error(error: MCPError) -> MCPError | None:
@@ -148,63 +126,32 @@ def _device_token_error(error: MCPError) -> MCPError | None:
 
 
 class AuthClient(BaseClient):
-    """Client for handling Trakt authentication."""
+    """Client for handling Trakt authentication.
+
+    The token pair lives in the process-wide TokenStore for AUTH_TOKEN_FILE, so
+    every AuthClient (one per tool call) sees the same, current pair.
+    """
 
     def __init__(self):
         """Initialize the authentication client."""
         super().__init__()
-        # Guards all mutations to self.auth_token / self.headers["Authorization"].
-        # Used by both clear_auth_token (sync) and refresh_access_token (async,
-        # but never held across an await) to prevent interleaved writes.
-        self._token_lock: threading.Lock = threading.Lock()
-        # Try to load auth token if exists
-        self.auth_token: TraktAuthToken | None = self._load_auth_token()
-        # True while self.auth_token is the copy in AUTH_TOKEN_FILE. If the file
-        # then disappears, clear_auth ran elsewhere and must not be undone.
-        self._token_persisted: bool = self.auth_token is not None
-        if self.auth_token:
-            self._update_headers_with_token()
+        self._store: TokenStore = get_token_store(AUTH_TOKEN_FILE)
+        self._store.sync_from_disk()
+        self._update_headers_with_token()
 
-    def _load_auth_token(self) -> TraktAuthToken | None:
-        """Load authentication token from storage."""
-        if os.path.exists(AUTH_TOKEN_FILE):
-            try:
-                with open(AUTH_TOKEN_FILE, encoding="utf-8") as f:
-                    token_data = json.load(f)
-                    return TraktAuthToken.model_validate(token_data)
-            except Exception:
-                logger.exception("Error loading auth token from %s", AUTH_TOKEN_FILE)
-        return None
+    @property
+    def auth_token(self) -> TraktAuthToken | None:
+        """The current token pair, shared by every AuthClient in the process."""
+        return self._store.token
+
+    @auth_token.setter
+    def auth_token(self, token: TraktAuthToken | None) -> None:
+        self._store.token = token
 
     def _save_auth_token(self, token: TraktAuthToken) -> None:
-        """Save authentication token to storage."""
-        # Create file with secure permissions (user read/write only) using
-        # an atomic write-then-replace to avoid partial files.
-        # Ensure parent directory exists if there is one
-        parent_dir = os.path.dirname(AUTH_TOKEN_FILE)
-        if parent_dir:
-            os.makedirs(parent_dir, exist_ok=True)
-        tmp_path = f"{AUTH_TOKEN_FILE}.tmp"
-        fd = os.open(tmp_path, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
-        try:
-            try:
-                file_obj = os.fdopen(fd, "w", encoding="utf-8")
-            except Exception:
-                with contextlib.suppress(OSError):
-                    os.close(fd)
-                raise
-            with file_obj:
-                file_obj.write(token.model_dump_json())
-                file_obj.flush()
-                # fsync may not be available on all file objects or platforms
-                with contextlib.suppress(OSError, AttributeError, TypeError):
-                    os.fsync(file_obj.fileno())
-            os.replace(tmp_path, AUTH_TOKEN_FILE)
-            self._token_persisted = True
-        except Exception:
-            with contextlib.suppress(OSError):
-                os.remove(tmp_path)
-            raise
+        """Make ``token`` current, persist it and send it from now on."""
+        self._store.save(token)
+        self._update_headers_with_token()
 
     def is_authenticated(self) -> bool:
         """Check if the client is authenticated."""
@@ -280,10 +227,9 @@ class AuthClient(BaseClient):
             if mapped is None:
                 raise
             raise mapped from error
-        with self._token_lock:
-            self._save_auth_token(token)
-            self.auth_token = token
-            self._update_headers_with_token()
+        # The device code is now used up; the store keeps the pair in memory
+        # even if saving fails, so the user does not have to log in again.
+        self._save_auth_token(token)
         return token
 
     async def refresh_access_token(
@@ -294,8 +240,9 @@ class AuthClient(BaseClient):
         Exchanges the refresh_token for a new access_token via the Trakt
         OAuth token endpoint. On success, saves the new token pair to disk.
 
-        Thread-safe: Uses an async lock to prevent concurrent refresh attempts
-        from racing and invalidating each other's tokens.
+        Refreshes are serialised across tool calls and server processes,
+        since racing two refreshes with one single-use refresh token makes
+        Trakt reject (and revoke) the loser.
 
         Args:
             rejected_access_token: Access token the API just rejected with 401.
@@ -306,45 +253,29 @@ class AuthClient(BaseClient):
         Returns:
             True if refresh succeeded, False if refresh failed
         """
-        async with _shared_refresh_lock():
+        async with self._store.refresh_lock():
             with token_refresh_scope():
                 return await self._refresh_holding_lock(rejected_access_token)
 
     async def _refresh_holding_lock(self, rejected_access_token: str | None) -> bool:
-        """Refresh the token; the caller holds the shared refresh lock."""
-        # Another AuthClient may have refreshed while we waited; its pair
-        # is on disk, and our in-memory refresh token is already spent.
-        stored = self._load_auth_token()
-        with self._token_lock:
-            if self._token_persisted and not os.path.exists(AUTH_TOKEN_FILE):
-                # clear_auth ran in another tool call; refreshing would quietly
-                # sign the user back in. (An unreadable file is not a logout.)
-                self._forget_token()
-                return False
-            if stored is not None and (
-                self.auth_token is None
-                or stored.refresh_token != self.auth_token.refresh_token
-            ):
-                self.auth_token = stored
-                self._update_headers_with_token()
-            auth_snapshot = self.auth_token
+        """Refresh the token; the caller holds the refresh lock."""
+        # Another call or process may have refreshed or logged out meanwhile.
+        self._store.sync_from_disk()
+        self._update_headers_with_token()
+        current = self.auth_token
 
-        # Re-check after acquiring lock — another coroutine may have refreshed
         if rejected_access_token is None:
             if self.is_authenticated():
                 return True
-        elif (
-            auth_snapshot is not None
-            and auth_snapshot.access_token != rejected_access_token
-        ):
+        elif current is not None and current.access_token != rejected_access_token:
             return True
 
-        if not auth_snapshot or not auth_snapshot.refresh_token:
+        if not current or not current.refresh_token:
             return False
 
         data = self._with_client_secret(
             {
-                "refresh_token": auth_snapshot.refresh_token,
+                "refresh_token": current.refresh_token,
                 "client_id": self.client_id,
                 "redirect_uri": OAUTH_REDIRECT_URI,
                 "grant_type": "refresh_token",
@@ -356,7 +287,7 @@ class AuthClient(BaseClient):
                 TRAKT_ENDPOINTS["token"], data, response_type=TraktAuthToken
             )
         except (InvalidRequestError, InvalidParamsError) as error:
-            return self._handle_refresh_rejection(error, auth_snapshot.refresh_token)
+            return self._handle_refresh_rejection(error, current.refresh_token)
         except (MCPError, ValueError):
             # Transient errors (network/timeout, 5xx) or an unparseable reply.
             # Keep the refresh token so the next attempt can succeed.
@@ -366,28 +297,13 @@ class AuthClient(BaseClient):
                 exc_info=True,
             )
             return False
-        return self._adopt_refreshed_token(token)
 
-    def _adopt_refreshed_token(self, token: TraktAuthToken) -> bool:
-        """Use and persist a pair Trakt just issued; the old one is now spent."""
-        with self._token_lock:
-            if self._token_persisted and not os.path.exists(AUTH_TOKEN_FILE):
-                # Logged out while the refresh was in flight; honour that.
-                self._forget_token()
-                return False
-            self.auth_token = token
+        self._store.sync_from_disk()
+        if self.auth_token is None:
+            # Logged out while the refresh was in flight; honour that.
             self._update_headers_with_token()
-            try:
-                self._save_auth_token(token)
-            except OSError:
-                # The previous refresh token is already spent, so dropping this
-                # pair would lose the login. Keep it for this session.
-                logger.error(
-                    "Refreshed token could not be saved to %s; it is kept in"
-                    + " memory only",
-                    AUTH_TOKEN_FILE,
-                    exc_info=True,
-                )
+            return False
+        self._save_auth_token(token)
         logger.info("Successfully refreshed access token")
         return True
 
@@ -413,14 +329,14 @@ class AuthClient(BaseClient):
                 response.status_code if response else "unknown",
             )
             return False
-        # invalid_grant: Trakt has revoked or consumed this refresh token. But
-        # another server process sharing the token file may have won the race;
-        # its fresh pair must not be deleted.
-        stored = self._load_auth_token()
-        if stored is not None and stored.refresh_token != sent_refresh_token:
-            with self._token_lock:
-                self.auth_token = stored
-                self._update_headers_with_token()
+        # A server process without file locking (e.g. on Windows) may have won
+        # the race and saved a fresh pair; that pair must not be deleted.
+        self._store.sync_from_disk()
+        self._update_headers_with_token()
+        if (
+            self.auth_token is not None
+            and self.auth_token.refresh_token != sent_refresh_token
+        ):
             return True
         logger.warning(
             "Refresh token rejected by server, clearing stale token",
@@ -447,41 +363,15 @@ class AuthClient(BaseClient):
 
         return False
 
-    def _forget_token(self) -> None:
-        """Drop the in-memory token and its header; caller holds _token_lock."""
-        self.auth_token = None
-        self._token_persisted = False
-        self.headers.pop("Authorization", None)
-
     def clear_auth_token(self) -> bool:
-        """Clear the stored authentication token.
-
-        Thread-safe: Uses a lock to prevent race conditions when multiple
-        concurrent 401 responses trigger token clearing.
+        """Clear the stored authentication token and delete the token file.
 
         Returns:
             True if token was cleared, False if no token existed or already cleared
         """
-        with self._token_lock:
-            # Early exit if already cleared by another concurrent call
-            if self.auth_token is None:
-                return False
-
-            # Always clear in-memory state first
-            # (handles case where file was deleted externally)
-            self._forget_token()
-
-            # Attempt to remove file (suppress if already deleted)
-            try:
-                os.remove(AUTH_TOKEN_FILE)
-            except FileNotFoundError:
-                pass
-            except OSError:
-                logger.warning(
-                    "Failed to remove auth token file %s; orphaned file may remain",
-                    AUTH_TOKEN_FILE,
-                    exc_info=True,
-                )
-
-            logger.debug("Cleared authentication token and Authorization header")
-            return True
+        if self.auth_token is None:
+            return False
+        self._store.clear()
+        self._update_headers_with_token()
+        logger.debug("Cleared authentication token and Authorization header")
+        return True

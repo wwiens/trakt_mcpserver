@@ -9,7 +9,11 @@ from mcp.server.fastmcp import FastMCP
 
 from client.auth import AuthClient
 from client.pool import get_client
-from config.auth import DEVICE_TOKEN_SLOW_DOWN_INCREMENT, STALE_LOGIN_HINT
+from config.auth import (
+    DEVICE_TOKEN_SLOW_DOWN_INCREMENT,
+    DEVICE_TOKEN_SLOW_DOWN_STATUS,
+    STALE_LOGIN_HINT,
+)
 from models.formatters.auth import AuthFormatters
 from server.base import ToolErrors
 from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
@@ -160,6 +164,12 @@ If you've already done this and are still seeing this message, please wait a
 few seconds and try again by telling me "Please check my authorization status"."""
     except DeviceAuthorizationError as e:
         if not e.restart_required:
+            # Only Trakt's slow-down reply lengthens the polling interval.
+            if e.http_status != DEVICE_TOKEN_SLOW_DOWN_STATUS:
+                return (
+                    f"# Authorization Not Completed\n\n{e.message} "
+                    "Check the status again in a moment."
+                )
             wait = await _slow_down_polling(device_code, e.retry_after)
             return (
                 f"# Authorization Not Completed\n\n{e.message} "

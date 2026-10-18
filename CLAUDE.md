@@ -245,6 +245,7 @@ Skipping is fine — the existing `ruff` dev commands and the CI `pr-title-lint.
 - Refresh tokens are single-use; always persist the new pair. Access tokens last 7 days
 - Tokens persisted to `~/.trakt-mcp/auth_token.json` by default; override with `TRAKT_AUTH_TOKEN_PATH` (Docker images set this to `/data/auth_token.json`)
 - `TraktAuthToken` model handles persistence
+- The token pair lives in a process-wide `TokenStore` (`client/auth/token_store.py`), not on the per-call `AuthClient`. Refreshes are serialised in-process and across server processes (an `flock` on `<token file>.lock`), because refresh tokens are single-use and Trakt revokes the token on a racing reuse. Never write the token file directly; go through the store
 - Global `active_auth_flow` tracks authorization
 
 ## Testing Requirements

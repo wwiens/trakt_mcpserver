@@ -440,3 +440,24 @@ async def test_check_auth_status_late_success_keeps_newer_flow():
 
         assert "Authentication Successful!" in result
         assert auth_tools.active_auth_flow["device_code"] == "newer_code"
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_unexpected_reply_keeps_interval():
+    """Only Trakt's slow-down reply lengthens polling, not e.g. a proxy page."""
+    import server.auth.tools as auth_tools
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+        mock_client.get_device_token.side_effect = DeviceAuthorizationError(
+            http_status=400, message="Unexpected reply.", restart_required=False
+        )
+
+        result = await check_auth_status()
+
+        assert "Unexpected reply." in result
+        assert auth_tools.active_auth_flow["interval"] == 5

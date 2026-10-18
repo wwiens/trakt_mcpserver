@@ -528,7 +528,8 @@ class TestLogoutDuringRefresh:
 
         patched_httpx_client.post.assert_not_called()
         assert waiting_call.auth_token is None
-        assert "Authorization" not in waiting_call.headers
+        sent_headers = waiting_call._prepare_request("/sync/history", "GET")  # pyright: ignore[reportPrivateUsage]
+        assert "Authorization" not in sent_headers
 
     @pytest.mark.asyncio
     async def test_logout_while_refresh_in_flight_is_honoured(
@@ -628,15 +629,16 @@ class TestTokenFileEdgeCases:
         )
         client = AuthClient()
         client.auth_token = _make_expired_token(days_ago=1)
+        store = client._store  # pyright: ignore[reportPrivateUsage]
 
-        with patch.object(
-            client, "_save_auth_token", side_effect=OSError("read-only file system")
-        ):
+        with patch.object(store, "_write", side_effect=OSError("read-only")):
             assert await client.ensure_authenticated() is True
 
-        assert client.auth_token is not None
-        assert client.auth_token.access_token == "fresh_access_unsaved"
         assert client.headers["Authorization"] == "Bearer fresh_access_unsaved"
+        # The next tool call gets a new AuthClient, and must still see the pair.
+        next_call = AuthClient()
+        assert next_call.auth_token is not None
+        assert next_call.auth_token.access_token == "fresh_access_unsaved"
 
     @pytest.mark.asyncio
     async def test_unreadable_token_file_is_not_a_logout(

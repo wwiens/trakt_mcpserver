@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from config.auth import AUTH_VERIFICATION_URL
 from utils.api.errors import InvalidParamsError, InvalidRequestError, MCPError
 
 
@@ -95,7 +96,7 @@ class AuthenticationRequiredError(InvalidRequestError):
     def __init__(
         self,
         action: str,
-        auth_url: str = "https://trakt.tv/activate",
+        auth_url: str = AUTH_VERIFICATION_URL,
         message: str | None = None,
     ) -> None:
         """Initialize authentication required error.
@@ -174,6 +175,7 @@ class DeviceAuthorizationError(MCPError):
             restart_required: Whether a new device code is needed
             retry_after: Seconds from the Retry-After header, if Trakt sent one
         """
+        self.http_status = http_status
         self.restart_required = restart_required
         self.retry_after = retry_after
         super().__init__(
