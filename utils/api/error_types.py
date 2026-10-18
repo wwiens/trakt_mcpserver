@@ -159,15 +159,23 @@ class DeviceAuthorizationError(MCPError):
     ``restart_required`` is False only for slow-down, where polling may resume.
     """
 
-    def __init__(self, http_status: int, message: str, restart_required: bool) -> None:
+    def __init__(
+        self,
+        http_status: int,
+        message: str,
+        restart_required: bool,
+        retry_after: int | None = None,
+    ) -> None:
         """Initialize device authorization error.
 
         Args:
             http_status: HTTP status returned by /oauth/device/token
             message: User-facing explanation of the status
             restart_required: Whether a new device code is needed
+            retry_after: Seconds from the Retry-After header, if Trakt sent one
         """
         self.restart_required = restart_required
+        self.retry_after = retry_after
         super().__init__(
             code=-32001,
             message=message,

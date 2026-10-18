@@ -13,14 +13,17 @@ AUTH_VERIFICATION_URL: Final[str] = f"{TRAKT_AUTH_BASE_URL}/activate"
 # Required by the refresh-token exchange even though device flow has no callback.
 # Trakt validates only the format (HTTPS, loopback HTTP, or OOB), not the app's
 # registered list, so the default also works for older OOB-registered apps.
-OAUTH_REDIRECT_URI: Final[str] = os.environ.get(
-    "TRAKT_REDIRECT_URI", "http://localhost"
+# `or` also covers a variable that is set but blank (e.g. `-e TRAKT_REDIRECT_URI=`).
+OAUTH_REDIRECT_URI: Final[str] = (
+    os.environ.get("TRAKT_REDIRECT_URI") or "http://localhost"
 )
 
 _RESTART: Final[str] = "Start a new login with the `start_device_auth` tool."
 # Statuses documented for POST /oauth/device/token; Trakt sends them with no body.
 DEVICE_TOKEN_PENDING_STATUS: Final[int] = 400
 DEVICE_TOKEN_SLOW_DOWN_STATUS: Final[int] = 429
+# RFC 8628 section 3.5: on slow_down, increase the polling interval by 5 seconds.
+DEVICE_TOKEN_SLOW_DOWN_INCREMENT: Final[int] = 5
 DEVICE_TOKEN_ERROR_MESSAGES: Final[Mapping[int, str]] = {
     404: f"Trakt did not recognise this device code. {_RESTART}",
     409: f"This device code has already been used. {_RESTART}",
@@ -31,7 +34,5 @@ DEVICE_TOKEN_ERROR_MESSAGES: Final[Mapping[int, str]] = {
         "the app owner and users added on developer.trakt.tv. "
         f"{_RESTART}"
     ),
-    DEVICE_TOKEN_SLOW_DOWN_STATUS: (
-        "Checking too quickly. Wait a few seconds and check the status again."
-    ),
+    DEVICE_TOKEN_SLOW_DOWN_STATUS: "Trakt asked to slow down status checks.",
 }

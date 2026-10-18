@@ -1,5 +1,15 @@
 """Authentication models for the Trakt MCP server."""
 
-from .auth import DeviceTokenRequest, TraktAuthToken, TraktDeviceCode
+from .auth import (
+    DeviceTokenRequest,
+    OAuthErrorResponse,
+    TraktAuthToken,
+    TraktDeviceCode,
+)
 
-__all__ = ["DeviceTokenRequest", "TraktAuthToken", "TraktDeviceCode"]
+__all__ = [
+    "DeviceTokenRequest",
+    "OAuthErrorResponse",
+    "TraktAuthToken",
+    "TraktDeviceCode",
+]

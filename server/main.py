@@ -4,13 +4,12 @@ import logging
 import sys
 from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _pkg_version
 from typing import Final
 
 from mcp.server.fastmcp import FastMCP
 
 from client.pool import shutdown_clients
+from utils.version import package_version
 
 # Import all module registration functions
 from .auth import register_auth_resources, register_auth_tools
@@ -71,11 +70,7 @@ def create_server() -> FastMCP:
     Returns:
         Configured FastMCP server instance
     """
-    try:
-        version = _pkg_version("trakt-mcp")
-    except PackageNotFoundError:
-        version = "0.0.0+dev"
-    logger.info("Starting trakt-mcp v%s", version)
+    logger.info("Starting trakt-mcp v%s", package_version())
     mcp = FastMCP(name="trakt-mcp", lifespan=_lifespan)
     for register in REGISTRATIONS:
         register(mcp)

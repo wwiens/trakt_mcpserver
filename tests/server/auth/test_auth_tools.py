@@ -325,10 +325,55 @@ async def test_check_auth_status_slow_down_keeps_flow():
         mock_client = mock_client_class.return_value
         mock_client.is_authenticated.return_value = False
         mock_client.get_device_token.side_effect = DeviceAuthorizationError(
-            http_status=429, message="Checking too quickly.", restart_required=False
+            http_status=429, message="Slow down.", restart_required=False
         )
 
         result = await check_auth_status()
 
-        assert "Checking too quickly." in result
+        assert "Slow down." in result
+        assert "Wait 10 seconds" in result
         assert auth_tools.active_auth_flow["device_code"] == "device_code_123"
+        assert auth_tools.active_auth_flow["interval"] == 10
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_slow_down_honours_longer_retry_after():
+    import server.auth.tools as auth_tools
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+        mock_client.get_device_token.side_effect = DeviceAuthorizationError(
+            http_status=429,
+            message="Slow down.",
+            restart_required=False,
+            retry_after=30,
+        )
+
+        result = await check_auth_status()
+
+        assert "Wait 30 seconds" in result
+        assert auth_tools.active_auth_flow["interval"] == 30
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_already_used_code_but_token_saved():
+    """An overlapping check that already saved the token reports success."""
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        # First check: not yet authenticated. After the 409: token on disk.
+        mock_client.is_authenticated.side_effect = [False, True]
+        mock_client.get_device_token.side_effect = DeviceAuthorizationError(
+            http_status=409, message="Already used.", restart_required=True
+        )
+
+        result = await check_auth_status()
+
+        assert "Authentication Successful!" in result
+        assert "Already used." not in result

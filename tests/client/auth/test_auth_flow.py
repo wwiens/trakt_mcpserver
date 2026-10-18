@@ -211,9 +211,16 @@ async def test_device_token_expired():
         assert client.is_authenticated() is False
 
 
-async def _poll_device_token_with_status(status: int, body: bytes = b"") -> None:
+async def _poll_device_token_with_status(
+    status: int, body: bytes = b"", headers: dict[str, str] | None = None
+) -> None:
     """Poll the device token endpoint against a mocked HTTP status."""
-    response = MagicMock(status_code=status, content=body, text=body.decode())
+    response = httpx.Response(
+        status,
+        content=body,
+        headers=headers,
+        request=httpx.Request("POST", "https://auth.trakt.tv/oauth/device/token"),
+    )
     mock_error_response = MagicMock()
     mock_error_response.raise_for_status.side_effect = httpx.HTTPStatusError(
         "error", request=MagicMock(), response=response
@@ -275,3 +282,27 @@ async def test_device_token_unmapped_status_keeps_generic_error():
 
     assert not isinstance(exc_info.value, DeviceAuthorizationError)
     assert isinstance(exc_info.value.__cause__, httpx.HTTPStatusError)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("body", [b"{}", b'{"error": "authorization_pending"}'])
+async def test_device_token_json_400_without_other_error_is_pending(body: bytes):
+    """A JSON 400 is still 'pending' unless it names a different OAuth error."""
+    with pytest.raises(AuthorizationPendingError):
+        await _poll_device_token_with_status(400, body)
+
+
+@pytest.mark.asyncio
+async def test_device_token_400_with_other_oauth_error_is_not_pending():
+    with pytest.raises(MCPError) as exc_info:
+        await _poll_device_token_with_status(400, b'{"error": "invalid_client"}')
+
+    assert not isinstance(exc_info.value, AuthorizationPendingError)
+
+
+@pytest.mark.asyncio
+async def test_device_token_slow_down_carries_retry_after():
+    with pytest.raises(DeviceAuthorizationError) as exc_info:
+        await _poll_device_token_with_status(429, headers={"Retry-After": "12"})
+
+    assert exc_info.value.retry_after == 12

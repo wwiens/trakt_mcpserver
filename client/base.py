@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import os
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _pkg_version
 from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast, overload
 from urllib.parse import urlsplit
 
@@ -18,6 +16,7 @@ from utils.api.request_context import (
     get_current_context,
     set_current_context,
 )
+from utils.version import PACKAGE_NAME, package_version
 
 if TYPE_CHECKING:
     from models.auth import TraktAuthToken
@@ -50,14 +49,6 @@ def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
     return hasattr(cls, "model_validate") and hasattr(cls, "__annotations__")
 
 
-def _user_agent() -> str:
-    """Build the User-Agent Trakt recommends: app name and version."""
-    try:
-        return f"trakt-mcp/{_pkg_version('trakt-mcp')}"
-    except PackageNotFoundError:
-        return "trakt-mcp/0.0.0+dev"
-
-
 class BaseClient:
     """Base client with common HTTP functionality for Trakt API."""
 
@@ -80,7 +71,7 @@ class BaseClient:
         self.client_secret: str | None = os.getenv("TRAKT_CLIENT_SECRET") or None
         self.headers: dict[str, str] = {
             "Content-Type": "application/json",
-            "User-Agent": _user_agent(),
+            "User-Agent": f"{PACKAGE_NAME}/{package_version()}",
             "trakt-api-version": "2",
             "trakt-api-key": self.client_id,
         }
@@ -212,6 +203,10 @@ class BaseClient:
         # Ensure Authorization header is present when authenticated
         self._update_headers_with_token()
         request_headers = self.headers.copy()
+        # Absolute URLs are OAuth calls on auth.trakt.tv; those authenticate with
+        # client credentials, so the user's access token stays on the API host.
+        if urlsplit(endpoint).netloc:
+            request_headers.pop("Authorization", None)
         if headers:
             request_headers.update(headers)
 

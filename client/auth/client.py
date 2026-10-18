@@ -7,9 +7,11 @@ import logging
 import os
 import threading
 import time
+from http import HTTPStatus
 from typing import Final
 
 import httpx
+from pydantic import ValidationError
 
 from config.auth import (
     DEVICE_TOKEN_ERROR_MESSAGES,
@@ -18,7 +20,12 @@ from config.auth import (
     OAUTH_REDIRECT_URI,
 )
 from config.endpoints import TRAKT_ENDPOINTS
-from models.auth import DeviceTokenRequest, TraktAuthToken, TraktDeviceCode
+from models.auth import (
+    DeviceTokenRequest,
+    OAuthErrorResponse,
+    TraktAuthToken,
+    TraktDeviceCode,
+)
 from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
 from utils.api.errors import (
     InvalidParamsError,
@@ -41,26 +48,73 @@ AUTH_TOKEN_FILE: Final[str] = os.environ.get(
 )
 
 
-def _device_token_error(error: MCPError) -> MCPError:
+def _http_error_response(error: MCPError) -> httpx.Response | None:
+    """Return the HTTP response behind an API error, if there was one."""
+    cause = error.__cause__
+    return cause.response if isinstance(cause, httpx.HTTPStatusError) else None
+
+
+def _oauth_error_body(response: httpx.Response) -> OAuthErrorResponse | None:
+    """Parse an OAuth error body; None when it is empty or not a JSON object."""
+    if not response.content:
+        return None
+    try:
+        return OAuthErrorResponse.model_validate_json(response.content)
+    except ValidationError:
+        return None
+
+
+def _is_pending_response(response: httpx.Response) -> bool:
+    """Trakt's documented pending reply is a 400, normally with an empty body."""
+    if not response.content:
+        return True
+    body = _oauth_error_body(response)
+    return body is not None and body.error in (None, "authorization_pending")
+
+
+def _retry_after_seconds(response: httpx.Response) -> int | None:
+    value = response.headers.get("Retry-After")
+    return int(value) if isinstance(value, str) and value.isdigit() else None
+
+
+def _device_token_error(error: MCPError) -> MCPError | None:
     """Map a failed device-token poll to the error its HTTP status documents.
 
     Trakt answers these polls with empty bodies, so the generic HTTP error
     mapping cannot tell "still pending" or "denied" apart from real failures.
+    Returns None when the status is outside the device-token contract.
     """
-    cause = error.__cause__
-    if not isinstance(cause, httpx.HTTPStatusError):
-        return error
-    status = cause.response.status_code
-    if status == DEVICE_TOKEN_PENDING_STATUS and not cause.response.content:
+    response = _http_error_response(error)
+    if response is None:
+        return None
+    status = response.status_code
+    if status == DEVICE_TOKEN_PENDING_STATUS and _is_pending_response(response):
         return AuthorizationPendingError()
     message = DEVICE_TOKEN_ERROR_MESSAGES.get(status)
     if message is None:
-        return error
+        return None
     return DeviceAuthorizationError(
         http_status=status,
         message=message,
         restart_required=status != DEVICE_TOKEN_SLOW_DOWN_STATUS,
+        retry_after=_retry_after_seconds(response),
     )
+
+
+def _is_dead_refresh_token(error: MCPError) -> bool:
+    """True when Trakt says the refresh token itself can never be exchanged.
+
+    Other 4xx replies (e.g. invalid_request for a malformed TRAKT_REDIRECT_URI,
+    invalid_client) are configuration problems; clearing the token for those
+    would force a reconnect, which costs a Community App connection.
+    """
+    response = _http_error_response(error)
+    if response is None:
+        return True
+    if response.status_code == HTTPStatus.UNAUTHORIZED:
+        return True
+    body = _oauth_error_body(response)
+    return body is not None and body.error == "invalid_grant"
 
 
 class AuthClient(BaseClient):
@@ -165,8 +219,10 @@ class AuthClient(BaseClient):
             Authentication token
 
         Raises:
-            AppError: AuthenticationError | NetworkError | InternalError raised
-                by the handle_api_errors decorator when the exchange fails.
+            AuthorizationPendingError: The user has not approved the code yet.
+            DeviceAuthorizationError: Trakt reported an invalid, used, expired
+                or denied code, or asked to slow down.
+            MCPError: Any other failure, as mapped by handle_api_errors.
         """
         # Validate input with Pydantic
         payload = DeviceTokenRequest.model_validate({"code": device_code})
@@ -180,7 +236,7 @@ class AuthClient(BaseClient):
             )
         except MCPError as error:
             mapped = _device_token_error(error)
-            if mapped is error:
+            if mapped is None:
                 raise
             raise mapped from error
         with self._token_lock:
@@ -231,10 +287,18 @@ class AuthClient(BaseClient):
                     self._update_headers_with_token()
                 logger.info("Successfully refreshed access token")
                 return True
-            except (InvalidRequestError, InvalidParamsError):
-                # Permanent auth failure (HTTP 4xx: 401 revoked, 400 invalid_grant).
+            except (InvalidRequestError, InvalidParamsError) as error:
+                if not _is_dead_refresh_token(error):
+                    response = _http_error_response(error)
+                    logger.warning(
+                        "Refresh request rejected (HTTP %s); keeping refresh token."
+                        + " Check TRAKT_CLIENT_ID and TRAKT_REDIRECT_URI.",
+                        response.status_code if response else "unknown",
+                    )
+                    return False
+                # Permanent auth failure (401 revoked, 400 invalid_grant).
                 # On 401, @handle_api_errors already auto-clears via
-                # _auto_clear_invalid_token; this is a safety net for other 4xx.
+                # _auto_clear_invalid_token; this is a safety net.
                 logger.warning(
                     "Refresh token rejected by server, clearing stale token",
                     exc_info=True,

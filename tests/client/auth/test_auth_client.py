@@ -586,9 +586,11 @@ async def test_refresh_access_token_invalid_grant_clears_token(
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
     monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
 
-    mock_response = MagicMock()
-    mock_response.status_code = 400
-    mock_response.json.return_value = {"error": "invalid_grant"}
+    mock_response = httpx.Response(
+        400,
+        json={"error": "invalid_grant", "error_description": "session not found"},
+        request=httpx.Request("POST", "https://auth.trakt.tv/oauth/token"),
+    )
 
     with (
         patch("dotenv.load_dotenv"),
@@ -937,3 +939,89 @@ async def test_get_device_token_omits_unset_client_secret(
     call = mock_instance.post.call_args
     assert call.args[0] == "https://auth.trakt.tv/oauth/device/token"
     assert call.kwargs["json"] == {"code": "device_code_123", "client_id": "test_id"}
+
+
+@pytest.mark.asyncio
+async def test_refresh_access_token_config_error_keeps_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A 400 that is not invalid_grant (e.g. bad redirect URI) keeps the token.
+
+    Clearing it would force a reconnect, which costs a Community App slot.
+    """
+    current_time = int(time.time())
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+
+    error_response = httpx.Response(
+        400,
+        json={
+            "error": "invalid_request",
+            "error_description": "redirect_uri: Redirect URI must use HTTPS",
+        },
+        request=httpx.Request("POST", "https://auth.trakt.tv/oauth/token"),
+    )
+
+    with patch("httpx.AsyncClient") as mock_client, patch("os.remove") as mock_remove:
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(
+            return_value=MagicMock(
+                raise_for_status=MagicMock(
+                    side_effect=httpx.HTTPStatusError(
+                        "Bad Request",
+                        request=error_response.request,
+                        response=error_response,
+                    )
+                )
+            )
+        )
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="old_access_token",
+            refresh_token="old_refresh_token",
+            expires_in=3600,
+            created_at=current_time - 4000,
+            scope="public",
+            token_type="bearer",
+        )
+
+        assert await client.refresh_access_token() is False
+        assert client.auth_token is not None
+        assert client.auth_token.refresh_token == "old_refresh_token"
+        mock_remove.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "expects_bearer"),
+    [("https://auth.trakt.tv/oauth/device/code", False), ("/sync/history", True)],
+)
+async def test_access_token_only_sent_to_api_host(
+    monkeypatch: pytest.MonkeyPatch, endpoint: str, expects_bearer: bool
+) -> None:
+    """The user's Bearer token must not be sent to the OAuth host."""
+    monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
+    ok_response = MagicMock()
+    ok_response.json.return_value = {}
+    ok_response.raise_for_status = MagicMock()
+
+    with patch("httpx.AsyncClient") as mock_client:
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=ok_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        client = AuthClient()
+        client.auth_token = TraktAuthToken(
+            access_token="user_access_token",
+            refresh_token="refresh",
+            expires_in=3600,
+            created_at=int(time.time()),
+        )
+        await client._make_request("POST", endpoint, data={})  # pyright: ignore[reportPrivateUsage]
+
+    sent_headers = mock_instance.post.call_args.kwargs["headers"]
+    assert ("Authorization" in sent_headers) is expects_bearer
+    assert client.headers["Authorization"] == "Bearer user_access_token"

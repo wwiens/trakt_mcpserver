@@ -90,3 +90,15 @@ class TestRedirectUri:
         finally:
             monkeypatch.undo()
             importlib.reload(constants)
+
+    def test_blank_env_falls_back_to_default(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A set-but-blank variable must not send an empty redirect_uri."""
+        monkeypatch.setenv("TRAKT_REDIRECT_URI", "")
+        module = importlib.reload(constants)
+        try:
+            assert module.OAUTH_REDIRECT_URI == "http://localhost"
+        finally:
+            monkeypatch.undo()
+            importlib.reload(constants)
