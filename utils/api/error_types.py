@@ -3,7 +3,12 @@
 from typing import Any
 
 from config.auth import AUTH_VERIFICATION_URL
-from utils.api.errors import InvalidParamsError, InvalidRequestError, MCPError
+from utils.api.errors import (
+    AUTH_FLOW_ERROR,
+    InvalidParamsError,
+    InvalidRequestError,
+    MCPError,
+)
 
 
 def extract_auth_action(error: "AuthenticationRequiredError") -> str:
@@ -147,7 +152,7 @@ class AuthorizationPendingError(MCPError):
             data["expires_in"] = expires_in
 
         super().__init__(
-            code=-32001,  # Custom code for pending auth
+            code=AUTH_FLOW_ERROR,
             message="Authorization pending. User must approve device code.",
             data=data,
         )
@@ -179,7 +184,7 @@ class DeviceAuthorizationError(MCPError):
         self.restart_required = restart_required
         self.retry_after = retry_after
         super().__init__(
-            code=-32001,
+            code=AUTH_FLOW_ERROR,
             message=message,
             data={"error_type": "device_auth", "http_status": http_status},
         )

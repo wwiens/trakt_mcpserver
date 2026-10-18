@@ -1,5 +1,6 @@
 """Authentication client for Trakt API."""
 
+import asyncio
 import logging
 import os
 import time
@@ -253,6 +254,14 @@ class AuthClient(BaseClient):
         Returns:
             True if refresh succeeded, False if refresh failed
         """
+        # Run the locked refresh as its own task. Cancelling the tool call must
+        # not abandon a refresh Trakt may already have completed (the old
+        # refresh token would be spent and the new pair lost), nor leave the
+        # cross-process file lock held by a worker thread.
+        return await asyncio.shield(self._locked_refresh(rejected_access_token))
+
+    async def _locked_refresh(self, rejected_access_token: str | None) -> bool:
+        """Take the refresh lock, then refresh."""
         async with self._store.refresh_lock():
             with token_refresh_scope():
                 return await self._refresh_holding_lock(rejected_access_token)
@@ -369,9 +378,8 @@ class AuthClient(BaseClient):
         Returns:
             True if token was cleared, False if no token existed or already cleared
         """
-        if self.auth_token is None:
-            return False
-        self._store.clear()
+        # Always delete the file, even when it could not be loaded (corrupt).
+        cleared = self._store.clear()
         self._update_headers_with_token()
         logger.debug("Cleared authentication token and Authorization header")
-        return True
+        return cleared

@@ -100,6 +100,9 @@ class TokenStore:
                 self.path,
                 exc_info=True,
             )
+            # Treat the undeletable file as already seen, so the next sync does
+            # not load it again and quietly undo the logout in this process.
+            self._last_seen_on_disk = self._read()
         return had_token
 
     @contextlib.asynccontextmanager
@@ -124,8 +127,11 @@ class TokenStore:
         try:
             with open(self.path, encoding="utf-8") as token_file:
                 return TraktAuthToken.model_validate(json.load(token_file))
-        except Exception:
-            logger.exception("Error loading auth token from %s", self.path)
+        except (OSError, ValueError) as error:
+            # Checked on every tool call, so no traceback; clear_auth removes it.
+            logger.warning(
+                "Ignoring unreadable auth token file %s: %s", self.path, error
+            )
             return None
 
     def _write(self, token: TraktAuthToken) -> None:

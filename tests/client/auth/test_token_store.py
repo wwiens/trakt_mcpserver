@@ -137,3 +137,64 @@ class TestCrossProcessRefresh:
             assert client.auth_token is not None
             assert client.auth_token.access_token == "b_access"
         assert os.path.exists(token_path)
+
+
+class TestCancellationDuringRefresh:
+    @pytest.mark.asyncio
+    async def test_cancelled_call_still_saves_the_new_pair_and_releases_lock(
+        self, token_path: str, http_post: AsyncMock
+    ) -> None:
+        """Trakt may already have spent the old refresh token; the pair it
+        issues must be kept even though the tool call was cancelled."""
+        _write(token_path, _token("a", expired=True))
+        request_sent = asyncio.Event()
+        release_response = asyncio.Event()
+
+        async def slow_refresh(*args: object, **kwargs: object) -> MagicMock:
+            request_sent.set()
+            await release_response.wait()
+            return _token_response(_token("b"))
+
+        http_post.side_effect = slow_refresh
+        client = AuthClient()
+        call = asyncio.create_task(client.ensure_authenticated())
+        await request_sent.wait()
+        call.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await call
+
+        release_response.set()
+        store = client._store  # pyright: ignore[reportPrivateUsage]
+        async with asyncio.timeout(2), store.refresh_lock():
+            pass
+
+        assert store.token is not None
+        assert store.token.access_token == "b_access"
+        with open(token_path, encoding="utf-8") as token_file:
+            assert "b_access" in token_file.read()
+
+
+class TestClearEdgeCases:
+    def test_failed_delete_does_not_undo_logout(self, token_path: str) -> None:
+        _write(token_path, _token("a"))
+        store = TokenStore(token_path)
+        store.sync_from_disk()
+
+        with patch("os.remove", side_effect=PermissionError("read-only volume")):
+            assert store.clear() is True
+        store.sync_from_disk()
+
+        assert store.token is None
+
+    def test_clear_auth_removes_a_corrupt_file(
+        self, token_path: str, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with open(token_path, "w", encoding="utf-8") as token_file:
+            token_file.write("{not json")
+
+        client = AuthClient()
+
+        assert client.auth_token is None
+        assert all(record.exc_info is None for record in caplog.records)
+        assert client.clear_auth_token() is False
+        assert not os.path.exists(token_path)

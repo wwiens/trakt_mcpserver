@@ -28,6 +28,8 @@ logger = get_structured_logger("trakt_mcp")
 INVALID_REQUEST: Final[int] = -32600
 INVALID_PARAMS: Final[int] = -32602
 INTERNAL_ERROR: Final[int] = -32603
+# Server-defined range (-32000 to -32099): device authorization flow states.
+AUTH_FLOW_ERROR: Final[int] = -32001
 
 
 @runtime_checkable

@@ -361,7 +361,8 @@ def test_clear_auth_token_concurrent_calls(monkeypatch: pytest.MonkeyPatch) -> N
     # Others should return False (already cleared)
     assert results.count(False) == 4
     # File removal should only be called once
-    assert remove_call_count == 1
+    # Every call deletes the file (a no-op once gone); only one cleared a token
+    assert remove_call_count == 5
     # Token should be cleared
     assert client.auth_token is None
 
@@ -388,8 +389,8 @@ def test_clear_auth_token_already_none(monkeypatch: pytest.MonkeyPatch) -> None:
         result = client.clear_auth_token()
 
         assert result is False
-        # os.remove should never be called
-        mock_remove.assert_not_called()
+        # The file is still removed, in case it exists but could not be loaded
+        mock_remove.assert_called_once()
 
 
 @pytest.mark.asyncio
