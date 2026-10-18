@@ -54,3 +54,16 @@ def test_first_api_context_is_kept_for_later_requests(client: BaseClient) -> Non
     context = get_current_context()
     assert context is not None
     assert context.endpoint == "/shows/breaking-bad"
+
+
+def test_oauth_call_mid_task_gets_its_own_context(client: BaseClient) -> None:
+    """A refresh during an API call is labelled with the OAuth endpoint."""
+    client._prepare_request("/shows/breaking-bad", "GET")  # pyright: ignore[reportPrivateUsage]
+    api_context = get_current_context()
+    client._prepare_request("https://auth.trakt.tv/oauth/token", "POST")  # pyright: ignore[reportPrivateUsage]
+
+    oauth_context = get_current_context()
+    assert oauth_context is not None and api_context is not None
+    assert oauth_context.endpoint == "https://auth.trakt.tv/oauth/token"
+    assert oauth_context.resource_type is None
+    assert oauth_context.correlation_id == api_context.correlation_id

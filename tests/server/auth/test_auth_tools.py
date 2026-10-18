@@ -404,3 +404,15 @@ async def test_check_auth_status_stale_reply_keeps_newer_flow():
 
         assert "Expired." in result
         assert auth_tools.active_auth_flow["device_code"] == "newer_code"
+
+
+@pytest.mark.asyncio
+async def test_start_device_auth_when_authenticated_points_to_clear_auth():
+    """A locally valid token Trakt rejects must not leave the user stuck."""
+    with patch("server.auth.tools.AuthClient") as mock_client_class:
+        mock_client_class.return_value.is_authenticated.return_value = True
+
+        result = await start_device_auth()
+
+    assert "already authenticated" in result
+    assert "`clear_auth`" in result

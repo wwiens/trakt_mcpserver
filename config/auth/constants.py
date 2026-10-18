@@ -3,6 +3,7 @@
 import os
 from collections.abc import Mapping
 from typing import Final
+from urllib.parse import urlsplit
 
 # Authentication constants
 AUTH_POLL_INTERVAL: Final[int] = 5  # seconds
@@ -11,6 +12,13 @@ AUTH_EXPIRATION: Final[int] = 600  # seconds (10 minutes)
 TRAKT_AUTH_HOST: Final[str] = "auth.trakt.tv"
 TRAKT_AUTH_BASE_URL: Final[str] = f"https://{TRAKT_AUTH_HOST}"
 AUTH_VERIFICATION_URL: Final[str] = f"{TRAKT_AUTH_BASE_URL}/activate"
+
+
+def is_auth_host_url(url: str) -> bool:
+    """Check whether a URL targets the OAuth host rather than the API host."""
+    return urlsplit(url).hostname == TRAKT_AUTH_HOST
+
+
 # Required by the refresh-token exchange even though device flow has no callback.
 # Trakt validates only the format (HTTPS, loopback HTTP, or OOB), not the app's
 # registered list, so the default also works for older OOB-registered apps.
@@ -25,6 +33,15 @@ INVALID_CLIENT_MESSAGE: Final[str] = (
 )
 
 _RESTART: Final[str] = "Start a new login with the `start_device_auth` tool."
+DEVICE_TOKEN_REJECTED_MESSAGE: Final[str] = (
+    f"Trakt rejected the device code request. {_RESTART}"
+)
+# Shown when a token looks valid locally but tools still report auth errors,
+# e.g. after Trakt rejected it for a reason that did not clear it.
+STALE_LOGIN_HINT: Final[str] = (
+    "If tools still report that authentication is required, run `clear_auth` "
+    "and then `start_device_auth` to log in again."
+)
 # Statuses documented for POST /oauth/device/token; Trakt sends them with no body.
 DEVICE_TOKEN_PENDING_STATUS: Final[int] = 400
 DEVICE_TOKEN_SLOW_DOWN_STATUS: Final[int] = 429

@@ -644,3 +644,62 @@ class TestHandleApiErrors401RefreshAndRetry:
             await service.method_401()
 
         assert service.clear_auth_token_called is True
+
+
+class TestNested401Recovery:
+    """A 401 is recovered once even when decorated methods are nested."""
+
+    class NestedService:
+        def __init__(self) -> None:
+            self.refresh_calls: list[str | None] = []
+            self.clear_auth_token_called = False
+            self.auth_token = MagicMock(
+                refresh_token="valid_refresh", access_token="current_access"
+            )
+
+        def clear_auth_token(self) -> bool:
+            self.clear_auth_token_called = True
+            return True
+
+        async def refresh_access_token(
+            self, rejected_access_token: str | None = None
+        ) -> bool:
+            self.refresh_calls.append(rejected_access_token)
+            return False
+
+        @handle_api_errors
+        async def inner_request(self) -> str:
+            request = httpx.Request(
+                "GET",
+                "https://api.trakt.tv/sync/history",
+                headers={"Authorization": "Bearer sent_access"},
+            )
+            raise httpx.HTTPStatusError(
+                "401",
+                request=request,
+                response=httpx.Response(401, request=request),
+            )
+
+        @handle_api_errors
+        async def outer_method(self) -> str:
+            return await self.inner_request()
+
+    @pytest.mark.asyncio
+    async def test_outer_layer_does_not_refresh_again(self) -> None:
+        service = self.NestedService()
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.outer_method()
+
+        assert len(service.refresh_calls) == 1
+        assert service.clear_auth_token_called is False
+
+    @pytest.mark.asyncio
+    async def test_rejected_token_comes_from_the_failed_request(self) -> None:
+        """The token the request sent is what was rejected, not client state."""
+        service = self.NestedService()
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.inner_request()
+
+        assert service.refresh_calls == ["sent_access"]

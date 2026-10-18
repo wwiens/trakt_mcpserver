@@ -7,6 +7,7 @@ refresh when access tokens expire (every 24h).
 
 import asyncio
 import io
+import os
 import time
 from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
@@ -281,12 +282,20 @@ class TestTokenRefreshChain:
                 token_type="bearer",
             )
 
-            # Second refresh: Trakt rejects the refresh_token with 401
+            # Second refresh: Trakt rejects the revoked refresh_token
+            token_request = httpx.Request("POST", "https://auth.trakt.tv/oauth/token")
             revoked_resp = MagicMock(spec=httpx.Response)
-            revoked_resp.status_code = 401
-            revoked_resp.text = "Unauthorized"
             revoked_resp.raise_for_status.side_effect = httpx.HTTPStatusError(
-                message="401", request=MagicMock(), response=revoked_resp
+                message="400",
+                request=token_request,
+                response=httpx.Response(
+                    400,
+                    json={
+                        "error": "invalid_grant",
+                        "error_description": "session not found",
+                    },
+                    request=token_request,
+                ),
             )
             patched_httpx_client.post.return_value = revoked_resp
 
@@ -303,7 +312,10 @@ class TestTokenRefreshChain:
     async def test_recursive_refresh_avoidance(
         self, patched_httpx_client: MagicMock
     ) -> None:
-        """401 on the refresh HTTP call does not deadlock or recurse."""
+        """401 on the refresh HTTP call does not deadlock or recurse.
+
+        A bare 401 is not invalid_grant, so the refresh token is kept.
+        """
         resp_401 = MagicMock(spec=httpx.Response)
         resp_401.status_code = 401
         resp_401.text = "Unauthorized"
@@ -318,7 +330,8 @@ class TestTokenRefreshChain:
             result = await client.refresh_access_token()
 
         assert result is False
-        assert client.auth_token is None
+        assert client.auth_token is not None
+        assert client.auth_token.refresh_token == "refresh_token_1d"
 
     # ------------------------------------------------------------------
     # 8. End-to-end: proactive refresh then API call
@@ -460,3 +473,42 @@ class TestTokenRefreshChain:
         assert svc.clear_count == 0
         assert svc.refresh_count == 5
         assert len(results) == 5
+
+
+class TestParallelClientRefresh:
+    """Separate AuthClient instances (one per tool call) share a refresh."""
+
+    @pytest.mark.asyncio
+    async def test_parallel_clients_spend_refresh_token_once(
+        self, patched_httpx_client: MagicMock
+    ) -> None:
+        """The second client adopts the pair the first saved instead of
+        re-sending the spent refresh token (which Trakt answers with
+        invalid_grant, deleting the new token)."""
+        import client.auth.client as auth_client_module
+
+        token_path = auth_client_module.AUTH_TOKEN_FILE
+        fresh_data = _make_fresh_token_data("parallel")
+
+        async def slow_post(*args: object, **kwargs: object) -> MagicMock:
+            await asyncio.sleep(0.05)
+            return _mock_post_response(fresh_data)
+
+        patched_httpx_client.post = AsyncMock(side_effect=slow_post)
+        try:
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write(_make_expired_token(days_ago=1).model_dump_json())
+
+            first, second = AuthClient(), AuthClient()
+            results = await asyncio.gather(
+                first.ensure_authenticated(), second.ensure_authenticated()
+            )
+        finally:
+            if os.path.exists(token_path):
+                os.remove(token_path)
+
+        assert results == [True, True]
+        assert patched_httpx_client.post.call_count == 1
+        for client in (first, second):
+            assert client.auth_token is not None
+            assert client.auth_token.access_token == "fresh_access_parallel"

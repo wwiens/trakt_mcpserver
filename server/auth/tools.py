@@ -9,7 +9,7 @@ from mcp.server.fastmcp import FastMCP
 
 from client.auth import AuthClient
 from client.pool import get_client
-from config.auth import DEVICE_TOKEN_SLOW_DOWN_INCREMENT
+from config.auth import DEVICE_TOKEN_SLOW_DOWN_INCREMENT, STALE_LOGIN_HINT
 from models.formatters.auth import AuthFormatters
 from server.base import ToolErrors
 from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
@@ -52,7 +52,7 @@ async def start_device_auth() -> str:
 
     # Check if already authenticated
     if client.is_authenticated():
-        return "You are already authenticated with Trakt."
+        return f"You are already authenticated with Trakt. {STALE_LOGIN_HINT}"
 
     # Get device code
     device_code_response = await client.get_device_code()
@@ -111,7 +111,7 @@ async def check_auth_status() -> str:
 
     # Check if already authenticated
     if client.is_authenticated():
-        return _AUTH_SUCCESS_MESSAGE
+        return f"{_AUTH_SUCCESS_MESSAGE}\n\n{STALE_LOGIN_HINT}"
 
     # Check if there's an active flow
     global active_auth_flow

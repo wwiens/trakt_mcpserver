@@ -7,6 +7,7 @@ import logging
 import os
 import threading
 import time
+import weakref
 from http import HTTPStatus
 from typing import Final
 
@@ -17,6 +18,7 @@ from config.auth import (
     DEVICE_TOKEN_ERROR_MESSAGES,
     DEVICE_TOKEN_OAUTH_ERROR_STATUSES,
     DEVICE_TOKEN_PENDING_STATUS,
+    DEVICE_TOKEN_REJECTED_MESSAGE,
     DEVICE_TOKEN_SLOW_DOWN_STATUS,
     INVALID_CLIENT_MESSAGE,
     OAUTH_REDIRECT_URI,
@@ -39,6 +41,7 @@ from utils.api.errors import (
     MCPError,
     handle_api_errors,
     http_error_response,
+    token_refresh_scope,
 )
 
 from ..base import BaseClient
@@ -65,6 +68,33 @@ def _oauth_error_body(response: httpx.Response) -> OAuthErrorResponse | None:
         return None
 
 
+def _is_invalid_client(
+    response: httpx.Response, body: OAuthErrorResponse | None
+) -> bool:
+    """Trakt rejected the app's client credentials rather than the request."""
+    return response.status_code == HTTPStatus.UNAUTHORIZED or (
+        body is not None and body.error == "invalid_client"
+    )
+
+
+_refresh_locks: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Lock] = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def _shared_refresh_lock() -> asyncio.Lock:
+    """Return the refresh lock shared by every AuthClient on this event loop.
+
+    get_client() builds a new AuthClient per tool call, so a per-instance lock
+    would let parallel calls spend the same single-use refresh token.
+    """
+    loop = asyncio.get_running_loop()
+    lock = _refresh_locks.get(loop)
+    if lock is None:
+        lock = _refresh_locks[loop] = asyncio.Lock()
+    return lock
+
+
 def _device_token_error(error: MCPError) -> MCPError | None:
     """Map a failed device-token poll to the error its HTTP status documents.
 
@@ -73,12 +103,13 @@ def _device_token_error(error: MCPError) -> MCPError | None:
     Returns None when the status is outside the device-token contract.
     """
     response = http_error_response(error)
-    if response is None:
+    # The generic handler already recognises an authorization_pending body.
+    if response is None or isinstance(error, AuthorizationPendingError):
         return None
     body = _oauth_error_body(response)
     error_code = body.error if body else None
     status: int | None = response.status_code
-    if status == HTTPStatus.UNAUTHORIZED or error_code == "invalid_client":
+    if _is_invalid_client(response, body):
         return DeviceAuthorizationError(
             http_status=response.status_code,
             message=INVALID_CLIENT_MESSAGE,
@@ -89,7 +120,11 @@ def _device_token_error(error: MCPError) -> MCPError | None:
             return AuthorizationPendingError()
         status = DEVICE_TOKEN_OAUTH_ERROR_STATUSES.get(error_code or "")
         if status is None:
-            return None
+            return DeviceAuthorizationError(
+                http_status=response.status_code,
+                message=DEVICE_TOKEN_REJECTED_MESSAGE,
+                restart_required=True,
+            )
     message = DEVICE_TOKEN_ERROR_MESSAGES.get(status)
     if message is None:
         return None
@@ -125,7 +160,6 @@ class AuthClient(BaseClient):
         # Used by both clear_auth_token (sync) and refresh_access_token (async,
         # but never held across an await) to prevent interleaved writes.
         self._token_lock: threading.Lock = threading.Lock()
-        self._refresh_lock: asyncio.Lock = asyncio.Lock()
         # Try to load auth token if exists
         self.auth_token: TraktAuthToken | None = self._load_auth_token()
         if self.auth_token:
@@ -208,7 +242,9 @@ class AuthClient(BaseClient):
             )
         except MCPError as error:
             response = http_error_response(error)
-            if response is None or response.status_code != HTTPStatus.UNAUTHORIZED:
+            if response is None or not _is_invalid_client(
+                response, _oauth_error_body(response)
+            ):
                 raise
             raise InvalidRequestError(INVALID_CLIENT_MESSAGE) from error
 
@@ -269,68 +305,82 @@ class AuthClient(BaseClient):
         Returns:
             True if refresh succeeded, False if refresh failed
         """
-        async with self._refresh_lock:
-            with self._token_lock:
-                auth_snapshot = self.auth_token
+        async with _shared_refresh_lock():
+            with token_refresh_scope():
+                return await self._refresh_holding_lock(rejected_access_token)
 
-            # Re-check after acquiring lock — another coroutine may have refreshed
-            if rejected_access_token is None:
-                if self.is_authenticated():
-                    return True
-            elif (
-                auth_snapshot is not None
-                and auth_snapshot.access_token != rejected_access_token
+    async def _refresh_holding_lock(self, rejected_access_token: str | None) -> bool:
+        """Refresh the token; the caller holds the shared refresh lock."""
+        # Another AuthClient may have refreshed while we waited; its pair
+        # is on disk, and our in-memory refresh token is already spent.
+        stored = self._load_auth_token()
+        with self._token_lock:
+            if stored is not None and (
+                self.auth_token is None
+                or stored.refresh_token != self.auth_token.refresh_token
             ):
+                self.auth_token = stored
+                self._update_headers_with_token()
+            auth_snapshot = self.auth_token
+
+        # Re-check after acquiring lock — another coroutine may have refreshed
+        if rejected_access_token is None:
+            if self.is_authenticated():
                 return True
+        elif (
+            auth_snapshot is not None
+            and auth_snapshot.access_token != rejected_access_token
+        ):
+            return True
 
-            if not auth_snapshot or not auth_snapshot.refresh_token:
-                return False
+        if not auth_snapshot or not auth_snapshot.refresh_token:
+            return False
 
-            data = self._with_client_secret(
-                {
-                    "refresh_token": auth_snapshot.refresh_token,
-                    "client_id": self.client_id,
-                    "redirect_uri": OAUTH_REDIRECT_URI,
-                    "grant_type": "refresh_token",
-                }
+        data = self._with_client_secret(
+            {
+                "refresh_token": auth_snapshot.refresh_token,
+                "client_id": self.client_id,
+                "redirect_uri": OAUTH_REDIRECT_URI,
+                "grant_type": "refresh_token",
+            }
+        )
+
+        try:
+            token = await self._post_typed_request(
+                TRAKT_ENDPOINTS["token"], data, response_type=TraktAuthToken
             )
-
-            try:
-                token = await self._post_typed_request(
-                    TRAKT_ENDPOINTS["token"], data, response_type=TraktAuthToken
-                )
-                with self._token_lock:
-                    self._save_auth_token(token)
-                    self.auth_token = token
-                    self._update_headers_with_token()
-                logger.info("Successfully refreshed access token")
-                return True
-            except (InvalidRequestError, InvalidParamsError) as error:
-                if not _is_dead_refresh_token(error):
-                    response = http_error_response(error)
-                    logger.warning(
-                        "Refresh request rejected (HTTP %s); keeping refresh token."
-                        + " Check TRAKT_CLIENT_ID and TRAKT_REDIRECT_URI.",
-                        response.status_code if response else "unknown",
-                    )
-                    return False
-                # invalid_grant: Trakt has revoked or consumed this refresh token.
+            with self._token_lock:
+                self._save_auth_token(token)
+                self.auth_token = token
+                self._update_headers_with_token()
+            logger.info("Successfully refreshed access token")
+            return True
+        except (InvalidRequestError, InvalidParamsError) as error:
+            if not _is_dead_refresh_token(error):
+                response = http_error_response(error)
                 logger.warning(
-                    "Refresh token rejected by server, clearing stale token",
-                    exc_info=True,
-                )
-                self.clear_auth_token()
-                return False
-            except (MCPError, OSError, ValueError):
-                # Transient / local errors: InternalError (network/timeout),
-                # OSError (file I/O), ValueError (validation).
-                # Keep the refresh token so the next attempt can succeed.
-                logger.warning(
-                    "Failed to refresh access token (transient"
-                    + " error), keeping refresh token for next attempt",
-                    exc_info=True,
+                    "Refresh request rejected (HTTP %s); keeping refresh token."
+                    + " Check TRAKT_CLIENT_ID and TRAKT_REDIRECT_URI.",
+                    response.status_code if response else "unknown",
                 )
                 return False
+            # invalid_grant: Trakt has revoked or consumed this refresh token.
+            logger.warning(
+                "Refresh token rejected by server, clearing stale token",
+                exc_info=True,
+            )
+            self.clear_auth_token()
+            return False
+        except (MCPError, OSError, ValueError):
+            # Transient / local errors: InternalError (network/timeout),
+            # OSError (file I/O), ValueError (validation).
+            # Keep the refresh token so the next attempt can succeed.
+            logger.warning(
+                "Failed to refresh access token (transient"
+                + " error), keeping refresh token for next attempt",
+                exc_info=True,
+            )
+            return False
 
     async def ensure_authenticated(self) -> bool:
         """Ensure the client is authenticated, refreshing the token if needed.

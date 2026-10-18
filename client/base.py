@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import os
 from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast, overload
-from urllib.parse import urlsplit
 
 import httpx
 
 from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
-from config.auth import TRAKT_AUTH_HOST
+from config.auth import is_auth_host_url
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 from utils.api.errors import handle_api_errors
 from utils.api.request_context import (
@@ -48,10 +47,6 @@ def _is_list_response(result: Any) -> TypeGuard[list[dict[str, Any]]]:
 def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
     """Type guard for Pydantic models."""
     return hasattr(cls, "model_validate") and hasattr(cls, "__annotations__")
-
-
-def _is_auth_host_url(url: str) -> bool:
-    return urlsplit(url).hostname == TRAKT_AUTH_HOST
 
 
 class BaseClient:
@@ -190,14 +185,17 @@ class BaseClient:
         Returns:
             Headers to send, including Authorization only for the API host
         """
-        is_auth_host = _is_auth_host_url(endpoint)
+        is_auth_host = is_auth_host_url(endpoint)
         current = get_current_context()
-        # An earlier OAuth call (e.g. a token refresh) must not label errors from
-        # the API request that follows it in the same task.
-        if current is None or (
-            not is_auth_host and _is_auth_host_url(current.endpoint or "")
-        ):
-            ctx = (current or RequestContext()).with_endpoint(endpoint, method)
+        # OAuth calls (e.g. a token refresh mid-task) get their own labels, and
+        # the API request after one must not keep them. Correlation ID is kept.
+        if current is None or is_auth_host or is_auth_host_url(current.endpoint or ""):
+            fresh = (
+                RequestContext(correlation_id=current.correlation_id)
+                if current
+                else RequestContext()
+            )
+            ctx = fresh.with_endpoint(endpoint, method)
             # OAuth paths are not resources; "oauth"/"token" would mislabel errors.
             parts = [] if is_auth_host else [p for p in endpoint.split("/") if p]
             if len(parts) > 1:

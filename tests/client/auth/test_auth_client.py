@@ -478,9 +478,11 @@ async def test_refresh_access_token_auth_failure_clears_token(
     monkeypatch.setenv("TRAKT_CLIENT_ID", "test_id")
     monkeypatch.setenv("TRAKT_CLIENT_SECRET", "test_secret")
 
-    mock_response = MagicMock()
-    mock_response.status_code = 401
-    mock_response.json.return_value = {"error": "invalid_grant"}
+    mock_response = httpx.Response(
+        401,
+        json={"error": "invalid_grant"},
+        request=httpx.Request("POST", "https://auth.trakt.tv/oauth/token"),
+    )
 
     with (
         patch("dotenv.load_dotenv"),

@@ -8,7 +8,7 @@ import pytest
 from client.auth import AuthClient
 from models.auth import TraktAuthToken, TraktDeviceCode
 from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
-from utils.api.errors import InvalidParamsError, InvalidRequestError, MCPError
+from utils.api.errors import InvalidRequestError, MCPError
 
 
 @pytest.mark.asyncio
@@ -200,12 +200,12 @@ async def test_device_token_expired():
 
         client = AuthClient()
 
-        # Try to get a token, should raise InvalidParamsError because code has expired
-        with pytest.raises(InvalidParamsError) as exc_info:
+        # An unrecognised 400 ends the flow with a clear message
+        with pytest.raises(DeviceAuthorizationError) as exc_info:
             await client.get_device_token("device_code_123")
 
-        # Verify the error contains information about expired token
-        assert "expired_token" in str(exc_info.value.data)
+        assert exc_info.value.restart_required is True
+        assert "start_device_auth" in exc_info.value.message
 
         # Verify the client is not authenticated
         assert client.is_authenticated() is False
