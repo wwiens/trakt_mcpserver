@@ -8,7 +8,8 @@ from typing import Final
 AUTH_POLL_INTERVAL: Final[int] = 5  # seconds
 AUTH_EXPIRATION: Final[int] = 600  # seconds (10 minutes)
 # Trakt requires all OAuth requests to use this host, not the API host.
-TRAKT_AUTH_BASE_URL: Final[str] = "https://auth.trakt.tv"
+TRAKT_AUTH_HOST: Final[str] = "auth.trakt.tv"
+TRAKT_AUTH_BASE_URL: Final[str] = f"https://{TRAKT_AUTH_HOST}"
 AUTH_VERIFICATION_URL: Final[str] = f"{TRAKT_AUTH_BASE_URL}/activate"
 # Required by the refresh-token exchange even though device flow has no callback.
 # Trakt validates only the format (HTTPS, loopback HTTP, or OOB), not the app's
@@ -16,6 +17,11 @@ AUTH_VERIFICATION_URL: Final[str] = f"{TRAKT_AUTH_BASE_URL}/activate"
 # `or` also covers a variable that is set but blank (e.g. `-e TRAKT_REDIRECT_URI=`).
 OAUTH_REDIRECT_URI: Final[str] = (
     os.environ.get("TRAKT_REDIRECT_URI") or "http://localhost"
+)
+
+INVALID_CLIENT_MESSAGE: Final[str] = (
+    "Trakt rejected the app's Client ID (invalid_client). Check that "
+    "TRAKT_CLIENT_ID matches the Client ID shown on developer.trakt.tv."
 )
 
 _RESTART: Final[str] = "Start a new login with the `start_device_auth` tool."

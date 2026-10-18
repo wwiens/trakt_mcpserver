@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
+from config.auth import TRAKT_AUTH_HOST
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 from utils.api.errors import handle_api_errors
 from utils.api.request_context import (
@@ -185,21 +186,20 @@ class BaseClient:
         Returns:
             Headers to send, including Authorization only for the API host
         """
-        url = urlsplit(endpoint)
+        is_auth_host = urlsplit(endpoint).hostname == TRAKT_AUTH_HOST
         if get_current_context() is None:
-            parts = [p for p in url.path.split("/") if p]
-            resource_type = parts[0] if parts else None
-            resource_id = parts[1] if len(parts) > 1 else None
             ctx = RequestContext().with_endpoint(endpoint, method)
-            if resource_type and resource_id:
-                ctx = ctx.with_resource(resource_type, resource_id)
+            # OAuth paths are not resources; "oauth"/"token" would mislabel errors.
+            parts = [] if is_auth_host else [p for p in endpoint.split("/") if p]
+            if len(parts) > 1:
+                ctx = ctx.with_resource(parts[0], parts[1])
             set_current_context(ctx)
 
         self._update_headers_with_token()
         request_headers = self.headers.copy()
-        # Absolute URLs are OAuth calls on auth.trakt.tv; those authenticate with
-        # client credentials, so the user's access token stays on the API host.
-        if url.netloc:
+        # OAuth calls authenticate with client credentials, so the user's access
+        # token is only sent to the API host.
+        if is_auth_host:
             request_headers.pop("Authorization", None)
         return request_headers
 
@@ -302,8 +302,7 @@ class BaseClient:
         Note:
             DELETE requests typically return 204 No Content on success.
         """
-        self._update_headers_with_token()
-        request_headers = self.headers
+        request_headers = self._prepare_request(endpoint, "DELETE")
 
         client = self._get_client()
         should_close = self._client is None

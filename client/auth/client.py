@@ -18,6 +18,7 @@ from config.auth import (
     DEVICE_TOKEN_OAUTH_ERROR_STATUSES,
     DEVICE_TOKEN_PENDING_STATUS,
     DEVICE_TOKEN_SLOW_DOWN_STATUS,
+    INVALID_CLIENT_MESSAGE,
     OAUTH_REDIRECT_URI,
 )
 from config.endpoints import TRAKT_ENDPOINTS
@@ -74,7 +75,7 @@ def _is_pending_response(response: httpx.Response) -> bool:
     if not response.content:
         return True
     body = _oauth_error_body(response)
-    return body is not None and body.error in (None, "authorization_pending")
+    return body is not None and body.error == "authorization_pending"
 
 
 def _device_token_error(error: MCPError) -> MCPError | None:
@@ -117,11 +118,7 @@ def _is_dead_refresh_token(error: MCPError) -> bool:
     a reconnect, which costs a Community App connection.
     """
     response = _http_error_response(error)
-    if response is None:
-        return True
-    if response.status_code == HTTPStatus.UNAUTHORIZED:
-        return True
-    body = _oauth_error_body(response)
+    body = _oauth_error_body(response) if response is not None else None
     return body is not None and body.error == "invalid_grant"
 
 
@@ -212,9 +209,15 @@ class AuthClient(BaseClient):
         data = {
             "client_id": self.client_id,
         }
-        return await self._post_typed_request(
-            TRAKT_ENDPOINTS["device_code"], data, response_type=TraktDeviceCode
-        )
+        try:
+            return await self._post_typed_request(
+                TRAKT_ENDPOINTS["device_code"], data, response_type=TraktDeviceCode
+            )
+        except MCPError as error:
+            response = _http_error_response(error)
+            if response is None or response.status_code != HTTPStatus.UNAUTHORIZED:
+                raise
+            raise InvalidRequestError(INVALID_CLIENT_MESSAGE) from error
 
     @handle_api_errors
     async def get_device_token(self, device_code: str) -> TraktAuthToken:
@@ -304,9 +307,7 @@ class AuthClient(BaseClient):
                         response.status_code if response else "unknown",
                     )
                     return False
-                # Permanent auth failure (401 revoked, 400 invalid_grant).
-                # On 401, @handle_api_errors already auto-clears via
-                # _auto_clear_invalid_token; this is a safety net.
+                # invalid_grant: Trakt has revoked or consumed this refresh token.
                 logger.warning(
                     "Refresh token rejected by server, clearing stale token",
                     exc_info=True,

@@ -996,7 +996,11 @@ async def test_refresh_access_token_config_error_keeps_token(
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("endpoint", "expects_bearer"),
-    [("https://auth.trakt.tv/oauth/device/code", False), ("/sync/history", True)],
+    [
+        ("https://auth.trakt.tv/oauth/device/code", False),
+        ("/sync/history", True),
+        ("https://api.trakt.tv/sync/history", True),
+    ],
 )
 async def test_access_token_only_sent_to_api_host(
     monkeypatch: pytest.MonkeyPatch, endpoint: str, expects_bearer: bool

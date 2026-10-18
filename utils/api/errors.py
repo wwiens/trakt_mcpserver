@@ -13,6 +13,8 @@ from typing import (
 
 import httpx
 
+from config.auth import TRAKT_AUTH_HOST
+
 from .request_context import RequestContext
 
 # Set up structured logging
@@ -135,6 +137,19 @@ def _is_auth_required_error(error: MCPError) -> bool:
     from .error_types import AuthenticationRequiredError
 
     return isinstance(error, AuthenticationRequiredError)
+
+
+def _is_auth_host_error(error: MCPError) -> bool:
+    """Check whether the failed request went to the OAuth host.
+
+    A 401 there concerns the app's client credentials, not the user's access
+    token, so refreshing or clearing the stored token cannot help.
+    """
+    cause = error.__cause__
+    return (
+        isinstance(cause, httpx.HTTPStatusError)
+        and cause.request.url.host == TRAKT_AUTH_HOST
+    )
 
 
 def _build_error_data(
@@ -292,7 +307,9 @@ def handle_api_errors[OwnerT, **P, R](
                 method(self, *args, **kwargs),
             )
         except MCPError as first_error:
-            if not _is_auth_required_error(first_error):
+            if not _is_auth_required_error(first_error) or _is_auth_host_error(
+                first_error
+            ):
                 raise
 
             # 401 path — attempt refresh if client supports it.

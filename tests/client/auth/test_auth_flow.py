@@ -8,7 +8,7 @@ import pytest
 from client.auth import AuthClient
 from models.auth import TraktAuthToken, TraktDeviceCode
 from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
-from utils.api.errors import InvalidParamsError, MCPError
+from utils.api.errors import InvalidParamsError, InvalidRequestError, MCPError
 
 
 @pytest.mark.asyncio
@@ -285,11 +285,19 @@ async def test_device_token_unmapped_status_keeps_generic_error():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("body", [b"{}", b'{"error": "authorization_pending"}'])
-async def test_device_token_json_400_without_other_error_is_pending(body: bytes):
-    """A JSON 400 is still 'pending' unless it names a different OAuth error."""
+async def test_device_token_json_authorization_pending_is_pending():
+    """An explicit RFC 8628 authorization_pending body is also 'pending'."""
     with pytest.raises(AuthorizationPendingError):
-        await _poll_device_token_with_status(400, body)
+        await _poll_device_token_with_status(400, b'{"error": "authorization_pending"}')
+
+
+@pytest.mark.asyncio
+async def test_device_token_json_400_without_error_code_is_not_pending():
+    """Only an empty body or an explicit code means pending, not any JSON."""
+    with pytest.raises(MCPError) as exc_info:
+        await _poll_device_token_with_status(400, b"{}")
+
+    assert not isinstance(exc_info.value, AuthorizationPendingError)
 
 
 @pytest.mark.asyncio
@@ -330,3 +338,51 @@ async def test_device_token_rfc8628_json_errors(
         "http_status": expected_status,
     }
     assert exc_info.value.restart_required is restart_required
+
+
+@pytest.mark.asyncio
+async def test_device_code_invalid_client_keeps_stored_token():
+    """A mistyped TRAKT_CLIENT_ID (401 invalid_client) must not delete the token.
+
+    The 401 concerns the app, not the user's token: no refresh is attempted
+    (Trakt would revoke the token) and auth_token.json is left alone.
+    """
+    request = httpx.Request("POST", "https://auth.trakt.tv/oauth/device/code")
+    response = httpx.Response(
+        401,
+        json={"error": "invalid_client", "error_description": "client not found"},
+        request=request,
+    )
+    mock_error_response = MagicMock()
+    mock_error_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "Unauthorized", request=request, response=response
+    )
+    expired_token = TraktAuthToken(
+        access_token="expired_access",
+        refresh_token="still_valid_refresh",
+        expires_in=3600,
+        created_at=int(time.time()) - 7200,
+    )
+
+    with (
+        patch("httpx.AsyncClient") as mock_client,
+        patch("os.path.exists", return_value=False),
+        patch("os.remove") as mock_remove,
+        patch.dict(os.environ, {"TRAKT_CLIENT_ID": "mistyped_id"}),
+    ):
+        mock_instance = MagicMock()
+        mock_instance.post = AsyncMock(return_value=mock_error_response)
+        mock_instance.aclose = AsyncMock()
+        mock_client.return_value = mock_instance
+
+        client = AuthClient()
+        client.auth_token = expired_token
+
+        with pytest.raises(InvalidRequestError) as exc_info:
+            await client.get_device_code()
+
+    assert "TRAKT_CLIENT_ID" in exc_info.value.message
+    assert client.auth_token is expired_token
+    mock_remove.assert_not_called()
+    # Only the device-code call; no refresh attempt against /oauth/token.
+    assert mock_instance.post.call_count == 1
