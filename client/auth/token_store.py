@@ -168,7 +168,16 @@ class TokenStore:
                 exc_info=True,
             )
             return None
-        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        except OSError:
+            lock_file.close()
+            logger.warning(
+                "Cannot lock token lock file; refreshes are not coordinated"
+                + " with other server processes",
+                exc_info=True,
+            )
+            return None
         return lock_file
 
     def _release_file_lock(self, lock_file: IO[str] | None) -> None:

@@ -9,6 +9,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
+from config.auth import STALE_LOGIN_HINT
 from models.auth.auth import TraktAuthToken, TraktDeviceCode
 from server.auth.tools import check_auth_status, clear_auth, start_device_auth
 from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
@@ -109,7 +110,7 @@ async def test_check_auth_status_already_authenticated():
         result = await check_auth_status()
 
         assert "Authentication Successful!" in result
-        assert "Authentication Successful!" in result
+        assert STALE_LOGIN_HINT in result
 
         mock_client.is_authenticated.assert_called_once()
 

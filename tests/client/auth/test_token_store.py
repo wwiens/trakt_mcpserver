@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 import client.auth.client as auth_client_module
+import client.auth.token_store as token_store_module
 from client.auth.client import AuthClient
 from client.auth.token_store import TokenStore
 from models.auth import TraktAuthToken
@@ -109,6 +110,10 @@ class TestUnsavedPairSurvives:
 
 
 class TestCrossProcessRefresh:
+    @pytest.mark.skipif(
+        token_store_module.fcntl is None,
+        reason="requires fcntl file locking to serialise the two stores",
+    )
     @pytest.mark.asyncio
     async def test_second_process_adopts_first_process_pair(
         self, token_path: str, http_post: AsyncMock
@@ -198,3 +203,22 @@ class TestClearEdgeCases:
         assert all(record.exc_info is None for record in caplog.records)
         assert client.clear_auth_token() is False
         assert not os.path.exists(token_path)
+
+
+class TestFileLockFailure:
+    @pytest.mark.skipif(
+        token_store_module.fcntl is None, reason="requires fcntl file locking"
+    )
+    @pytest.mark.asyncio
+    async def test_flock_error_falls_back_to_in_process_lock(
+        self, token_path: str
+    ) -> None:
+        """A filesystem without flock support (e.g. some NFS) must not block
+        refreshes."""
+        store = TokenStore(token_path)
+
+        with patch.object(
+            token_store_module.fcntl, "flock", side_effect=OSError("ENOLCK")
+        ):
+            async with asyncio.timeout(2), store.refresh_lock():
+                pass
