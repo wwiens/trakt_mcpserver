@@ -271,6 +271,7 @@ class TraktRateLimitError(TraktAPIError):
             message: Optional custom message
             **context: Additional context information
         """
+        self.retry_after: int | None = retry_after
         if message is None:
             if retry_after is not None:
                 message = f"Rate limit exceeded. Please retry in {retry_after} seconds."

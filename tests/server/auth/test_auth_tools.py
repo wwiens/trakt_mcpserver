@@ -109,7 +109,7 @@ async def test_check_auth_status_already_authenticated():
         result = await check_auth_status()
 
         assert "Authentication Successful!" in result
-        assert "You are now authenticated with Trakt" in result
+        assert "Authentication Successful!" in result
 
         mock_client.is_authenticated.assert_called_once()
 
@@ -377,3 +377,30 @@ async def test_check_auth_status_already_used_code_but_token_saved():
 
         assert "Authentication Successful!" in result
         assert "Already used." not in result
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_stale_reply_keeps_newer_flow():
+    """A late 410 for an old code must not erase a flow started meanwhile."""
+    import server.auth.tools as auth_tools
+
+    newer_flow = {**_active_flow(), "device_code": "newer_code"}
+
+    async def _expire_after_new_flow_started(_device_code: str) -> None:
+        auth_tools.active_auth_flow = newer_flow
+        raise DeviceAuthorizationError(
+            http_status=410, message="Expired.", restart_required=True
+        )
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+        mock_client.get_device_token.side_effect = _expire_after_new_flow_started
+
+        result = await check_auth_status()
+
+        assert "Expired." in result
+        assert auth_tools.active_auth_flow["device_code"] == "newer_code"

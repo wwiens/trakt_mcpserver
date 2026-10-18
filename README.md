@@ -24,7 +24,7 @@ You need your own Trakt API app to get a Client ID:
 2. **App type**: choose **Development** for personal use. Only you and the people you add can sign in.
 3. **Redirect URIs**: enter `http://localhost`. The server signs in with the device code flow and never receives a callback, but Trakt requires at least one URI on the app.
 4. **Allowed origins**: leave blank. They only apply to code running in a web browser.
-5. Copy the **Client ID** into `TRAKT_CLIENT_ID`. If Trakt also issues a Client Secret, you can set it as `TRAKT_CLIENT_SECRET`. It's optional because Trakt has deprecated it for user sign-in.
+5. Copy the **Client ID** into `TRAKT_CLIENT_ID`. If Trakt issued your app a Client Secret (older apps have one), set it as `TRAKT_CLIENT_SECRET`. New apps don't get one, so leave it unset.
 
 ### Docker Quickstart
 ```bash

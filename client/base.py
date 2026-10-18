@@ -179,6 +179,30 @@ class BaseClient:
         except (ValueError, TypeError) as e:
             raise ValueError(f"Invalid pagination headers in response: {e}") from e
 
+    def _prepare_request(self, endpoint: str, method: str) -> dict[str, str]:
+        """Set the error-reporting context and build headers for one request.
+
+        Returns:
+            Headers to send, including Authorization only for the API host
+        """
+        url = urlsplit(endpoint)
+        if get_current_context() is None:
+            parts = [p for p in url.path.split("/") if p]
+            resource_type = parts[0] if parts else None
+            resource_id = parts[1] if len(parts) > 1 else None
+            ctx = RequestContext().with_endpoint(endpoint, method)
+            if resource_type and resource_id:
+                ctx = ctx.with_resource(resource_type, resource_id)
+            set_current_context(ctx)
+
+        self._update_headers_with_token()
+        request_headers = self.headers.copy()
+        # Absolute URLs are OAuth calls on auth.trakt.tv; those authenticate with
+        # client credentials, so the user's access token stays on the API host.
+        if url.netloc:
+            request_headers.pop("Authorization", None)
+        return request_headers
+
     @handle_api_errors
     async def _make_request(
         self,
@@ -189,24 +213,7 @@ class BaseClient:
         headers: dict[str, str] | None = None,
     ) -> Any:
         """Make an HTTP request to the Trakt API."""
-        # Set request context for error reporting if not already set
-        if get_current_context() is None:
-            # OAuth endpoints are absolute URLs on a separate host
-            parts = [p for p in urlsplit(endpoint).path.split("/") if p]
-            resource_type = parts[0] if parts else None
-            resource_id = parts[1] if len(parts) > 1 else None
-            ctx = RequestContext().with_endpoint(endpoint, method)
-            if resource_type and resource_id:
-                ctx = ctx.with_resource(resource_type, resource_id)
-            set_current_context(ctx)
-
-        # Ensure Authorization header is present when authenticated
-        self._update_headers_with_token()
-        request_headers = self.headers.copy()
-        # Absolute URLs are OAuth calls on auth.trakt.tv; those authenticate with
-        # client credentials, so the user's access token stays on the API host.
-        if urlsplit(endpoint).netloc:
-            request_headers.pop("Authorization", None)
+        request_headers = self._prepare_request(endpoint, method)
         if headers:
             request_headers.update(headers)
 
@@ -401,19 +408,7 @@ class BaseClient:
         Raises:
             ValueError: If response format is invalid or headers missing
         """
-        # Set request context for error reporting if not already set
-        if get_current_context() is None:
-            parts = [p for p in endpoint.split("/") if p]
-            resource_type = parts[0] if parts else None
-            resource_id = parts[1] if len(parts) > 1 else None
-            ctx = RequestContext().with_endpoint(endpoint, "GET")
-            if resource_type and resource_id:
-                ctx = ctx.with_resource(resource_type, resource_id)
-            set_current_context(ctx)
-
-        # Ensure Authorization header is present when authenticated
-        self._update_headers_with_token()
-        request_headers = self.headers
+        request_headers = self._prepare_request(endpoint, "GET")
 
         client = self._get_client()
         should_close = self._client is None  # Only close if temporary client

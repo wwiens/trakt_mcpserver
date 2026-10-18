@@ -15,6 +15,7 @@ from pydantic import ValidationError
 
 from config.auth import (
     DEVICE_TOKEN_ERROR_MESSAGES,
+    DEVICE_TOKEN_OAUTH_ERROR_STATUSES,
     DEVICE_TOKEN_PENDING_STATUS,
     DEVICE_TOKEN_SLOW_DOWN_STATUS,
     OAUTH_REDIRECT_URI,
@@ -26,7 +27,11 @@ from models.auth import (
     TraktAuthToken,
     TraktDeviceCode,
 )
-from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
+from utils.api.error_types import (
+    AuthorizationPendingError,
+    DeviceAuthorizationError,
+    TraktRateLimitError,
+)
 from utils.api.errors import (
     InvalidParamsError,
     InvalidRequestError,
@@ -72,11 +77,6 @@ def _is_pending_response(response: httpx.Response) -> bool:
     return body is not None and body.error in (None, "authorization_pending")
 
 
-def _retry_after_seconds(response: httpx.Response) -> int | None:
-    value = response.headers.get("Retry-After")
-    return int(value) if isinstance(value, str) and value.isdigit() else None
-
-
 def _device_token_error(error: MCPError) -> MCPError | None:
     """Map a failed device-token poll to the error its HTTP status documents.
 
@@ -87,26 +87,34 @@ def _device_token_error(error: MCPError) -> MCPError | None:
     response = _http_error_response(error)
     if response is None:
         return None
-    status = response.status_code
-    if status == DEVICE_TOKEN_PENDING_STATUS and _is_pending_response(response):
-        return AuthorizationPendingError()
-    message = DEVICE_TOKEN_ERROR_MESSAGES.get(status)
-    if message is None:
+    status: int | None = response.status_code
+    if status == DEVICE_TOKEN_PENDING_STATUS:
+        if _is_pending_response(response):
+            return AuthorizationPendingError()
+        body = _oauth_error_body(response)
+        status = (
+            DEVICE_TOKEN_OAUTH_ERROR_STATUSES.get(body.error or "") if body else None
+        )
+    message = DEVICE_TOKEN_ERROR_MESSAGES.get(status) if status else None
+    if status is None or message is None:
         return None
     return DeviceAuthorizationError(
         http_status=status,
         message=message,
         restart_required=status != DEVICE_TOKEN_SLOW_DOWN_STATUS,
-        retry_after=_retry_after_seconds(response),
+        retry_after=error.retry_after
+        if isinstance(error, TraktRateLimitError)
+        else None,
     )
 
 
 def _is_dead_refresh_token(error: MCPError) -> bool:
     """True when Trakt says the refresh token itself can never be exchanged.
 
-    Other 4xx replies (e.g. invalid_request for a malformed TRAKT_REDIRECT_URI,
-    invalid_client) are configuration problems; clearing the token for those
-    would force a reconnect, which costs a Community App connection.
+    Trakt revokes the token itself on invalid_grant, which it also returns for
+    wrong client credentials. Other 4xx replies, such as invalid_request for a
+    malformed TRAKT_REDIRECT_URI, leave the token usable. Clearing it would force
+    a reconnect, which costs a Community App connection.
     """
     response = _http_error_response(error)
     if response is None:

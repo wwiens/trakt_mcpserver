@@ -24,6 +24,13 @@ DEVICE_TOKEN_PENDING_STATUS: Final[int] = 400
 DEVICE_TOKEN_SLOW_DOWN_STATUS: Final[int] = 429
 # RFC 8628 section 3.5: on slow_down, increase the polling interval by 5 seconds.
 DEVICE_TOKEN_SLOW_DOWN_INCREMENT: Final[int] = 5
+# RFC 8628 section 3.5 error codes, mapped to Trakt's equivalent statuses, in
+# case auth.trakt.tv answers with a JSON 400 instead of a bare status.
+DEVICE_TOKEN_OAUTH_ERROR_STATUSES: Final[Mapping[str, int]] = {
+    "slow_down": DEVICE_TOKEN_SLOW_DOWN_STATUS,
+    "expired_token": 410,
+    "access_denied": 418,
+}
 DEVICE_TOKEN_ERROR_MESSAGES: Final[Mapping[int, str]] = {
     404: f"Trakt did not recognise this device code. {_RESTART}",
     409: f"This device code has already been used. {_RESTART}",

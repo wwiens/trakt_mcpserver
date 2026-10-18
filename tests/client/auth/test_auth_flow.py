@@ -306,3 +306,27 @@ async def test_device_token_slow_down_carries_retry_after():
         await _poll_device_token_with_status(429, headers={"Retry-After": "12"})
 
     assert exc_info.value.retry_after == 12
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("oauth_error", "expected_status", "restart_required"),
+    [
+        ("slow_down", 429, False),
+        ("expired_token", 410, True),
+        ("access_denied", 418, True),
+    ],
+)
+async def test_device_token_rfc8628_json_errors(
+    oauth_error: str, expected_status: int, restart_required: bool
+):
+    """RFC 8628 JSON 400 errors map to the same handling as Trakt's statuses."""
+    body = f'{{"error": "{oauth_error}"}}'.encode()
+    with pytest.raises(DeviceAuthorizationError) as exc_info:
+        await _poll_device_token_with_status(400, body)
+
+    assert exc_info.value.data == {
+        "error_type": "device_auth",
+        "http_status": expected_status,
+    }
+    assert exc_info.value.restart_required is restart_required

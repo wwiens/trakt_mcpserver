@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import time
-from typing import Any, TypedDict
+from typing import Any, Final, TypedDict
 
 from mcp.server.fastmcp import FastMCP
 
@@ -28,7 +28,7 @@ class AuthFlowState(TypedDict):
     last_poll: int
 
 
-_AUTH_SUCCESS_MESSAGE = """# Authentication Successful!
+_AUTH_SUCCESS_MESSAGE: Final[str] = """# Authentication Successful!
 
 You have successfully authorized the Trakt MCP application. You can now access
 your personal Trakt data using tools like `fetch_user_watched_shows` and
@@ -111,12 +111,7 @@ async def check_auth_status() -> str:
 
     # Check if already authenticated
     if client.is_authenticated():
-        return """# Authentication Successful!
-
-You are now authenticated with Trakt. You can access your personal data using
-tools like `fetch_user_watched_shows` and `fetch_user_watched_movies`.
-
-If you want to log out at any point, you can use the `clear_auth` tool."""
+        return _AUTH_SUCCESS_MESSAGE
 
     # Check if there's an active flow
     global active_auth_flow
@@ -171,7 +166,9 @@ few seconds and try again by telling me "Please check my authorization status"."
                 f"Wait {wait} seconds, then check the status again."
             )
         async with auth_flow_lock:
-            active_auth_flow = {}
+            # A late reply for an older code must not end a newer flow.
+            if active_auth_flow.get("device_code") == device_code:
+                active_auth_flow = {}
         # An overlapping check may already have exchanged this code (409) and
         # saved the token; a fresh client re-reads it from disk.
         if get_client(AuthClient).is_authenticated():
