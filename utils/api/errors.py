@@ -2,7 +2,9 @@
 
 import functools
 import json
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Generator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import (
     Any,
     Concatenate,
@@ -12,6 +14,8 @@ from typing import (
 )
 
 import httpx
+
+from utils.api.hosts import is_auth_host_url
 
 from .request_context import RequestContext
 
@@ -24,6 +28,8 @@ logger = get_structured_logger("trakt_mcp")
 INVALID_REQUEST: Final[int] = -32600
 INVALID_PARAMS: Final[int] = -32602
 INTERNAL_ERROR: Final[int] = -32603
+# Server-defined range (-32000 to -32099): device authorization flow states.
+AUTH_FLOW_ERROR: Final[int] = -32001
 
 
 @runtime_checkable
@@ -43,8 +49,14 @@ class ClearableAuthClient(Protocol):
 class RefreshableAuthClient(ClearableAuthClient, Protocol):
     """Protocol for clients that support token refresh on 401."""
 
-    async def refresh_access_token(self) -> bool:
+    async def refresh_access_token(
+        self, rejected_access_token: str | None = None
+    ) -> bool:
         """Refresh the access token using the stored refresh token.
+
+        Args:
+            rejected_access_token: Access token the server just answered with
+                401; refresh even if it still looks unexpired locally.
 
         Returns:
             True if refresh succeeded, False if refresh failed.
@@ -91,6 +103,9 @@ class MCPError(Exception):
         self.code = code
         self.message = message
         self.data: dict[str, Any] | None = data
+        # Set once a 401 recovery has run, so outer @handle_api_errors layers
+        # re-raise instead of spending the single-use refresh token again.
+        self.refresh_attempted: bool = False
         super().__init__(message)
 
     def to_dict(self) -> dict[str, Any]:
@@ -135,6 +150,61 @@ def _is_auth_required_error(error: MCPError) -> bool:
     from .error_types import AuthenticationRequiredError
 
     return isinstance(error, AuthenticationRequiredError)
+
+
+def _http_status_error(error: MCPError) -> httpx.HTTPStatusError | None:
+    """Return the HTTP error an MCPError was raised from, if any."""
+    cause = error.__cause__
+    return cause if isinstance(cause, httpx.HTTPStatusError) else None
+
+
+def http_error_response(error: MCPError) -> httpx.Response | None:
+    """Return the HTTP response behind an API error, if there was one."""
+    cause = _http_status_error(error)
+    return cause.response if cause is not None else None
+
+
+def _is_auth_host_error(error: MCPError) -> bool:
+    """Check whether the failed request went to the OAuth host.
+
+    A 401 there concerns the app's client credentials, not the user's access
+    token, so refreshing or clearing the stored token cannot help.
+    """
+    cause = _http_status_error(error)
+    return cause is not None and is_auth_host_url(str(cause.request.url))
+
+
+def _rejected_access_token(error: MCPError) -> str | None:
+    """Return the access token the failed request actually sent.
+
+    Read from the request rather than the client, which another coroutine may
+    already have refreshed. None when the request carried no Bearer token, so
+    the refresh only happens if the client's own token has expired.
+    """
+    cause = _http_status_error(error)
+    header = cause.request.headers.get("Authorization") if cause else None
+    if isinstance(header, str) and header.startswith("Bearer "):
+        return header.removeprefix("Bearer ")
+    return None
+
+
+_token_refresh_in_progress: ContextVar[bool] = ContextVar(
+    "trakt_token_refresh_in_progress", default=False
+)
+
+
+@contextmanager
+def token_refresh_scope() -> Generator[None]:
+    """Mark the current task as running a token refresh.
+
+    A 401 raised inside the refresh must not start another refresh. This is
+    task-local, unlike the process-wide refresh lock that other tasks share.
+    """
+    reset_token = _token_refresh_in_progress.set(True)
+    try:
+        yield
+    finally:
+        _token_refresh_in_progress.reset(reset_token)
 
 
 def _build_error_data(
@@ -292,22 +362,27 @@ def handle_api_errors[OwnerT, **P, R](
                 method(self, *args, **kwargs),
             )
         except MCPError as first_error:
-            if not _is_auth_required_error(first_error):
+            # Only a real HTTP 401 from the API host is recoverable here. A method
+            # raising AuthenticationRequiredError after ensure_authenticated()
+            # failed has already tried to refresh.
+            if (
+                not _is_auth_required_error(first_error)
+                or _http_status_error(first_error) is None
+                or _is_auth_host_error(first_error)
+                or first_error.refresh_attempted
+            ):
+                raise
+            first_error.refresh_attempted = True
+
+            # A 401 inside refresh_access_token's own request: let it decide.
+            if _token_refresh_in_progress.get():
                 raise
 
-            # 401 path — attempt refresh if client supports it.
-            # Guard against recursive refresh: if _refresh_lock is held,
-            # we're already inside refresh_access_token's HTTP call chain.
-            refresh_lock = getattr(self, "_refresh_lock", None)
-            already_refreshing = refresh_lock is not None and refresh_lock.locked()
-
-            if (
-                not already_refreshing
-                and isinstance(self, RefreshableAuthClient)
-                and _has_refresh_token(self)
-            ):
+            if isinstance(self, RefreshableAuthClient) and _has_refresh_token(self):
                 try:
-                    refreshed = await self.refresh_access_token()
+                    refreshed = await self.refresh_access_token(
+                        rejected_access_token=_rejected_access_token(first_error)
+                    )
                 except Exception:
                     logger.warning(
                         "Token refresh failed during 401 recovery", exc_info=True
@@ -320,12 +395,17 @@ def handle_api_errors[OwnerT, **P, R](
                         return await _execute_with_error_handling(
                             method(self, *args, **kwargs),
                         )
-                    except MCPError:
-                        # Retry also failed — clear and raise the retry error
-                        _auto_clear_invalid_token(self)
+                    except MCPError as retry_error:
+                        # The pair was just saved; a failed retry (404, 429, a
+                        # network error, even another 401) does not make it dead.
+                        retry_error.refresh_attempted = True
                         raise
+                # Refresh failed. refresh_access_token already cleared a dead
+                # (invalid_grant) token; anything else may be transient, and
+                # deleting the refresh token would force a costly reconnect.
+                raise
 
-            # No refresh possible or refresh failed — clear and raise original
+            # No refresh possible — the stored token is unusable.
             _auto_clear_invalid_token(self)
             raise
 

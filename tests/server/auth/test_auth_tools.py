@@ -9,9 +9,10 @@ import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
+from config.auth import STALE_LOGIN_HINT
 from models.auth.auth import TraktAuthToken, TraktDeviceCode
 from server.auth.tools import check_auth_status, clear_auth, start_device_auth
-from utils.api.error_types import AuthorizationPendingError
+from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
 
 
 @pytest.mark.asyncio
@@ -27,7 +28,7 @@ async def test_start_device_auth():
         device_code_model = TraktDeviceCode(
             device_code="device_code_123",
             user_code="USER123",
-            verification_url="https://trakt.tv/activate",
+            verification_url="https://auth.trakt.tv/activate",
             expires_in=600,
             interval=5,
         )
@@ -39,7 +40,7 @@ async def test_start_device_auth():
         result = await start_device_auth()
 
         assert "USER123" in result
-        assert "https://trakt.tv/activate" in result
+        assert "https://auth.trakt.tv/activate" in result
 
         mock_client.is_authenticated.assert_called_once()
         mock_client.get_device_code.assert_called_once()
@@ -109,7 +110,7 @@ async def test_check_auth_status_already_authenticated():
         result = await check_auth_status()
 
         assert "Authentication Successful!" in result
-        assert "You are now authenticated with Trakt" in result
+        assert STALE_LOGIN_HINT in result
 
         mock_client.is_authenticated.assert_called_once()
 
@@ -278,3 +279,186 @@ async def test_clear_auth_not_authenticated():
         assert "You were not authenticated with Trakt" in result
 
         mock_client.clear_auth_token.assert_called_once()
+
+
+def _active_flow() -> dict[str, Any]:
+    return {
+        "device_code": "device_code_123",
+        "expires_at": int(time.time()) + 500,
+        "interval": 5,
+        "last_poll": int(time.time()) - 10,
+    }
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_denied_clears_flow():
+    """A denied code ends the flow and shows Trakt's reason."""
+    import server.auth.tools as auth_tools
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+        mock_client.get_device_token.side_effect = DeviceAuthorizationError(
+            http_status=418,
+            message="Trakt denied this device code.",
+            restart_required=True,
+        )
+
+        result = await check_auth_status()
+
+        assert "Authorization Not Completed" in result
+        assert "Trakt denied this device code." in result
+        assert auth_tools.active_auth_flow == {}
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_slow_down_keeps_flow():
+    """Slow-down keeps the flow so the user can check again with the same code."""
+    import server.auth.tools as auth_tools
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+        mock_client.get_device_token.side_effect = DeviceAuthorizationError(
+            http_status=429, message="Slow down.", restart_required=False
+        )
+
+        result = await check_auth_status()
+
+        assert "Slow down." in result
+        assert "Wait 10 seconds" in result
+        assert auth_tools.active_auth_flow["device_code"] == "device_code_123"
+        assert auth_tools.active_auth_flow["interval"] == 10
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_slow_down_honours_longer_retry_after():
+    import server.auth.tools as auth_tools
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+        mock_client.get_device_token.side_effect = DeviceAuthorizationError(
+            http_status=429,
+            message="Slow down.",
+            restart_required=False,
+            retry_after=30,
+        )
+
+        result = await check_auth_status()
+
+        assert "Wait 30 seconds" in result
+        assert auth_tools.active_auth_flow["interval"] == 30
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_already_used_code_but_token_saved():
+    """An overlapping check that already saved the token reports success."""
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        # First check: not yet authenticated. After the 409: token on disk.
+        mock_client.is_authenticated.side_effect = [False, True]
+        mock_client.get_device_token.side_effect = DeviceAuthorizationError(
+            http_status=409, message="Already used.", restart_required=True
+        )
+
+        result = await check_auth_status()
+
+        assert "Authentication Successful!" in result
+        assert "Already used." not in result
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_stale_reply_keeps_newer_flow():
+    """A late 410 for an old code must not erase a flow started meanwhile."""
+    import server.auth.tools as auth_tools
+
+    newer_flow = {**_active_flow(), "device_code": "newer_code"}
+
+    async def _expire_after_new_flow_started(_device_code: str) -> None:
+        auth_tools.active_auth_flow = newer_flow
+        raise DeviceAuthorizationError(
+            http_status=410, message="Expired.", restart_required=True
+        )
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+        mock_client.get_device_token.side_effect = _expire_after_new_flow_started
+
+        result = await check_auth_status()
+
+        assert "Expired." in result
+        assert auth_tools.active_auth_flow["device_code"] == "newer_code"
+
+
+@pytest.mark.asyncio
+async def test_start_device_auth_when_authenticated_points_to_clear_auth():
+    """A locally valid token Trakt rejects must not leave the user stuck."""
+    with patch("server.auth.tools.AuthClient") as mock_client_class:
+        mock_client_class.return_value.is_authenticated.return_value = True
+
+        result = await start_device_auth()
+
+    assert "already authenticated" in result
+    assert "`clear_auth`" in result
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_late_success_keeps_newer_flow():
+    """A slow success for an old code must not erase a flow started meanwhile."""
+    import server.auth.tools as auth_tools
+
+    newer_flow = {**_active_flow(), "device_code": "newer_code"}
+
+    async def _succeed_after_new_flow_started(_device_code: str) -> None:
+        auth_tools.active_auth_flow = newer_flow
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+        mock_client.get_device_token.side_effect = _succeed_after_new_flow_started
+
+        result = await check_auth_status()
+
+        assert "Authentication Successful!" in result
+        assert auth_tools.active_auth_flow["device_code"] == "newer_code"
+
+
+@pytest.mark.asyncio
+async def test_check_auth_status_unexpected_reply_keeps_interval():
+    """Only Trakt's slow-down reply lengthens polling, not e.g. a proxy page."""
+    import server.auth.tools as auth_tools
+
+    with (
+        patch("server.auth.tools.AuthClient") as mock_client_class,
+        patch("server.auth.tools.active_auth_flow", _active_flow()),
+    ):
+        mock_client = mock_client_class.return_value
+        mock_client.is_authenticated.return_value = False
+        mock_client.get_device_token.side_effect = DeviceAuthorizationError(
+            http_status=400, message="Unexpected reply.", restart_required=False
+        )
+
+        result = await check_auth_status()
+
+        assert "Unexpected reply." in result
+        assert auth_tools.active_auth_flow["interval"] == 5

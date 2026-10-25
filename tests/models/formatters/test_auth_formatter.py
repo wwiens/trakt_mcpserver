@@ -50,21 +50,21 @@ class TestAuthFormatters:
         """Test that instructions include direct link with code."""
         result = AuthFormatters.format_device_auth_instructions(
             user_code="ABC123",
-            verification_url="https://trakt.tv/activate",
+            verification_url="https://auth.trakt.tv/activate",
             expires_in=600,
         )
         assert isinstance(result, str)
         # Should include direct link format: verification_url/user_code
-        assert "https://trakt.tv/activate/ABC123" in result
+        assert "https://auth.trakt.tv/activate/ABC123" in result
         # Should also include fallback with manual code entry
         assert "ABC123" in result
-        assert "https://trakt.tv/activate" in result
+        assert "https://auth.trakt.tv/activate" in result
 
     def test_format_device_auth_instructions_includes_expiration(self) -> None:
         """Test that instructions include expiration time in minutes."""
         result = AuthFormatters.format_device_auth_instructions(
             user_code="XYZ789",
-            verification_url="https://trakt.tv/activate",
+            verification_url="https://auth.trakt.tv/activate",
             expires_in=600,  # 10 minutes
         )
         assert "10 minutes" in result

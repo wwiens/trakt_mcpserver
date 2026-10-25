@@ -2,11 +2,11 @@
 
 import logging
 from collections.abc import Generator
-from importlib.metadata import PackageNotFoundError
 
 import pytest
 
 import server.main as main_module
+from utils.version import UNINSTALLED_VERSION
 
 
 @pytest.fixture
@@ -36,10 +36,7 @@ def test_create_server_falls_back_when_package_metadata_missing(
     """When importlib.metadata cannot find the distribution, the logged version
     is the '0.0.0+dev' fallback rather than raising."""
 
-    def _raise(_name: str) -> str:
-        raise PackageNotFoundError
-
-    monkeypatch.setattr(main_module, "_pkg_version", _raise)
+    monkeypatch.setattr(main_module, "package_version", lambda: UNINSTALLED_VERSION)
 
     main_module.create_server()
 
@@ -54,10 +51,7 @@ def test_create_server_logs_resolved_version_when_package_present(
     """When the distribution is installed, the logged version comes from
     importlib.metadata.version, not the fallback."""
 
-    def _fixed_version(_name: str) -> str:
-        return "1.2.3"
-
-    monkeypatch.setattr(main_module, "_pkg_version", _fixed_version)
+    monkeypatch.setattr(main_module, "package_version", lambda: "1.2.3")
 
     main_module.create_server()
 
