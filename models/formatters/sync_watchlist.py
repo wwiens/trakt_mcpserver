@@ -32,7 +32,6 @@ class SyncWatchlistFormatters:
         label = "" if watchlist_type == "all" else f"{watchlist_type} "
         heading = f"Your {label.title()}Watchlist"
         empty_subject = f"Your {label}watchlist"
-        item_noun = "items" if watchlist_type == "all" else None
 
         # Handle empty state
         if not items:
@@ -71,7 +70,7 @@ class SyncWatchlistFormatters:
         # Handle pluralization
         count = len(items)
         if watchlist_type == "all":
-            noun = item_noun  # Use "items" for "all" case
+            noun = "items"
         else:
             # Existing singular/plural derivation
             noun = watchlist_type[:-1] if count == 1 else watchlist_type

@@ -42,3 +42,9 @@ def test_zero_limit_with_items_is_rejected(client: StubClient) -> None:
     """A zero page size alongside real items is a bad header, not the quirk."""
     with pytest.raises(ValueError, match="Invalid pagination headers"):
         client._extract_pagination_headers(_response("0", "5"))
+
+
+def test_negative_limit_on_empty_result_is_rejected(client: StubClient) -> None:
+    """Only the zero-limit quirk is tolerated, not any invalid limit."""
+    with pytest.raises(ValueError, match="Invalid pagination headers"):
+        client._extract_pagination_headers(_response("-5", "0"))
