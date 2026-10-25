@@ -70,8 +70,6 @@ jobs:
 
   pypi:
     needs: semantic-release
-    # Lives here, not in a `release: published` workflow: releases created with
-    # GITHUB_TOKEN don't trigger other workflows. Manual dispatch backfills a tag.
     if: >-
       !cancelled() && (
         needs.semantic-release.outputs.released == 'true' ||
