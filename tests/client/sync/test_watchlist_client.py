@@ -619,7 +619,7 @@ class TestSyncWatchlistClient:
         assert not isinstance(result, str)
 
         assert result.is_empty
-        assert result.pagination.items_per_page == 0
+        assert result.pagination.items_per_page == 1
         assert result.pagination.next_page() is None
         assert result.page_info_summary() == "0 total items"
 

@@ -175,6 +175,9 @@ class BaseClient:
             items_per_page = int(response.headers.get("X-Pagination-Limit", "10"))
             total_pages = int(response.headers.get("X-Pagination-Page-Count", "1"))
             total_items = int(response.headers.get("X-Pagination-Item-Count", "0"))
+            # An empty watchlist fetched without page/limit reports limit 0.
+            if total_items == 0:
+                items_per_page = max(items_per_page, 1)
 
             return PaginationMetadata(
                 current_page=current_page,
