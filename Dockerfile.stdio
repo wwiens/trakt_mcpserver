@@ -9,6 +9,7 @@ LABEL org.opencontainers.image.version=${VERSION}
 LABEL org.opencontainers.image.source=${REPO_URL}
 LABEL org.opencontainers.image.title="trakt-mcp"
 LABEL org.opencontainers.image.description="MCP server for Trakt.tv"
+LABEL org.opencontainers.image.licenses="MIT"
 
 # Install curl for potential debugging (optional, can be removed for smaller image)
 RUN apt-get update && apt-get install -y --no-install-recommends \
