@@ -5,6 +5,47 @@ From v0.9.1 onward, entries are generated automatically by `python-semantic-rele
 
 <!-- version list -->
 
+## v0.11.0 (2026-10-25)
+
+### Build System
+
+- Declare MIT license in package and image metadata (#62)
+  ([#62](https://github.com/wwiens/trakt_mcpserver/pull/62),
+  [`0c8e5b5`](https://github.com/wwiens/trakt_mcpserver/commit/0c8e5b5524536bf7bd3c54882fb9836ad9ddf3c7))
+
+- **deps-dev**: Upgrade and pin pyright to 1.1.411 (#59)
+  ([#59](https://github.com/wwiens/trakt_mcpserver/pull/59),
+  [`f38936d`](https://github.com/wwiens/trakt_mcpserver/commit/f38936dac59639849409d24cfe0aed9b1782352a))
+
+### Continuous Integration
+
+- Auto-label PRs by conventional commit title and file paths (#56)
+  ([#56](https://github.com/wwiens/trakt_mcpserver/pull/56),
+  [`4ea76af`](https://github.com/wwiens/trakt_mcpserver/commit/4ea76af3dcfec65eb43ebd9d30dadc0a2cb04d11))
+
+- Publish to PyPI on GitHub Release (#52) ([#52](https://github.com/wwiens/trakt_mcpserver/pull/52),
+  [`6bec169`](https://github.com/wwiens/trakt_mcpserver/commit/6bec169c9d20e15068da5f842c1e1bf76dc9271e))
+
+- SHA-pin third-party actions (#53) ([#53](https://github.com/wwiens/trakt_mcpserver/pull/53),
+  [`abbfc7f`](https://github.com/wwiens/trakt_mcpserver/commit/abbfc7fed03fe0c9d4a169efea64231230a7d702))
+
+### Documentation
+
+- Add the MIT LICENSE file the README links to (#61)
+  ([#61](https://github.com/wwiens/trakt_mcpserver/pull/61),
+  [`4763df0`](https://github.com/wwiens/trakt_mcpserver/commit/4763df07e822890c7fa897fa6c5156fa9f8dccf0))
+
+### Features
+
+- Auth host migration (#64) ([#64](https://github.com/wwiens/trakt_mcpserver/pull/64),
+  [`d477b39`](https://github.com/wwiens/trakt_mcpserver/commit/d477b391218065228117b3a9e77e9a2ebdd13de4))
+
+### Refactoring
+
+- Codeql dead code cleanup (#54) ([#54](https://github.com/wwiens/trakt_mcpserver/pull/54),
+  [`7ab6c4d`](https://github.com/wwiens/trakt_mcpserver/commit/7ab6c4df70741f12af9432148a5c75436f565c88))
+
+
 ## v0.10.0 (2026-05-22)
 
 ### Continuous Integration
