@@ -29,19 +29,21 @@ class SyncWatchlistFormatters:
         items = paginated_items.data
         pagination = paginated_items.pagination
 
-        # Determine display label and item noun based on watchlist_type
+        # Determine heading, empty-state subject and item noun from watchlist_type
         if watchlist_type == "all":
-            display_label = "Watchlist"
+            heading = "Your Watchlist"
+            empty_subject = "Your watchlist"
             item_noun = "items"
         else:
-            display_label = watchlist_type
+            heading = f"Your {watchlist_type.title()} Watchlist"
+            empty_subject = f"Your {watchlist_type} watchlist"
             item_noun = None  # Will be computed later based on count
 
         # Handle empty state
         if not items:
-            lines: list[str] = [f"# Your {display_label.title()} Watchlist", ""]
+            lines: list[str] = [f"# {heading}", ""]
             empty_msg = (
-                f"Your {display_label} watchlist is empty."
+                f"{empty_subject} is empty."
                 " Use the `add_user_watchlist` tool"
                 " to add items to your watchlist."
             )
@@ -54,7 +56,7 @@ class SyncWatchlistFormatters:
 
         # Title with sort info
         sort_desc = f" (sorted by {sort_by}, {sort_how})"
-        lines = [f"# Your {display_label.title()} Watchlist{sort_desc}", ""]
+        lines = [f"# {heading}{sort_desc}", ""]
 
         # Show pagination summary at the top
         lines.append(f"📄 **{paginated_items.page_info_summary()}**")
