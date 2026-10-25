@@ -139,10 +139,17 @@ class TestPaginationMetadata:
                 current_page=0, items_per_page=10, total_pages=1, total_items=10
             )
 
-        # Invalid: items_per_page must be >= 1
+        # Valid: Trakt sends items_per_page=0 for an unpaginated empty watchlist
+        metadata = PaginationMetadata(
+            current_page=1, items_per_page=0, total_pages=1, total_items=0
+        )
+        assert metadata.items_per_page == 0
+        assert metadata.next_page() is None
+
+        # Invalid: items_per_page must be >= 0
         with pytest.raises(ValidationError):
             PaginationMetadata(
-                current_page=1, items_per_page=0, total_pages=1, total_items=10
+                current_page=1, items_per_page=-1, total_pages=1, total_items=10
             )
 
         # Invalid: total_pages must be >= 0

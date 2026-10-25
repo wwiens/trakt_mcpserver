@@ -36,10 +36,13 @@ class PaginationMetadata(BaseModel):
     - X-Pagination-Limit -> items_per_page
     - X-Pagination-Page-Count -> total_pages
     - X-Pagination-Item-Count -> total_items
+
+    Trakt sends X-Pagination-Limit: 0 for an empty watchlist requested without
+    page/limit, so items_per_page allows 0.
     """
 
     current_page: int = Field(ge=1, description="Current page number")
-    items_per_page: int = Field(ge=1, description="Items returned per page")
+    items_per_page: int = Field(ge=0, description="Items returned per page")
     total_pages: int = Field(ge=0, description="Total number of pages")
     total_items: int = Field(
         ge=0,
