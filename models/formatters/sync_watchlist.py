@@ -29,15 +29,10 @@ class SyncWatchlistFormatters:
         items = paginated_items.data
         pagination = paginated_items.pagination
 
-        # Determine heading, empty-state subject and item noun from watchlist_type
-        if watchlist_type == "all":
-            heading = "Your Watchlist"
-            empty_subject = "Your watchlist"
-            item_noun = "items"
-        else:
-            heading = f"Your {watchlist_type.title()} Watchlist"
-            empty_subject = f"Your {watchlist_type} watchlist"
-            item_noun = None  # Will be computed later based on count
+        label = "" if watchlist_type == "all" else f"{watchlist_type} "
+        heading = f"Your {label.title()}Watchlist"
+        empty_subject = f"Your {label}watchlist"
+        item_noun = "items" if watchlist_type == "all" else None
 
         # Handle empty state
         if not items:

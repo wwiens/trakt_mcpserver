@@ -81,7 +81,7 @@ class TestSyncWatchlistFormatters:
     def test_format_user_watchlist_empty_all(self) -> None:
         """Test empty watchlist of all types names it once, not twice."""
         pagination = PaginationMetadata(
-            current_page=1, items_per_page=0, total_pages=1, total_items=0
+            current_page=1, items_per_page=1, total_pages=1, total_items=0
         )
         paginated_response = PaginatedResponse[TraktWatchlistItem](
             data=[], pagination=pagination
