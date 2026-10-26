@@ -1,6 +1,6 @@
 [project]
 name = "trakt-mcp"
-version = "0.11.0"
+version = "0.11.1"
 description = "Model Context Protocol server bridging AI models with the Trakt.tv API."
 readme = "README.md"
 license = "MIT"

@@ -5,6 +5,20 @@ From v0.9.1 onward, entries are generated automatically by `python-semantic-rele
 
 <!-- version list -->
 
+## v0.11.1 (2026-10-26)
+
+### Bug Fixes
+
+- Empty pagination limit (#66) ([#66](https://github.com/wwiens/trakt_mcpserver/pull/66),
+  [`88ee070`](https://github.com/wwiens/trakt_mcpserver/commit/88ee070977e1cb450a9e65dc70f0223e0b66d365))
+
+### Continuous Integration
+
+- Publish to PyPI from release workflow (#65)
+  ([#65](https://github.com/wwiens/trakt_mcpserver/pull/65),
+  [`1de672c`](https://github.com/wwiens/trakt_mcpserver/commit/1de672caa09f43039d5352cdd0e3c7e1813384bd))
+
+
 ## v0.11.0 (2026-10-25)
 
 ### Build System
