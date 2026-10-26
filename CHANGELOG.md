@@ -5,6 +5,14 @@ From v0.9.1 onward, entries are generated automatically by `python-semantic-rele
 
 <!-- version list -->
 
+## v0.11.2 (2026-10-26)
+
+### Bug Fixes
+
+- Watched at sentinels (#63) ([#63](https://github.com/wwiens/trakt_mcpserver/pull/63),
+  [`0991e5c`](https://github.com/wwiens/trakt_mcpserver/commit/0991e5c383efb4e95f1f3a36dceaaa77631fe8d5))
+
+
 ## v0.11.1 (2026-10-26)
 
 ### Bug Fixes
