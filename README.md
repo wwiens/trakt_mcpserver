@@ -39,14 +39,16 @@ docker run -d --rm --name trakt_mcpserver \
 
 Requires [uv](https://docs.astral.sh/uv/) installed.
 
+The installed package reads credentials from environment variables only. It does not load a `.env` file, so set `TRAKT_CLIENT_ID` in the shell or in your MCP client's `env` block (see below).
+
 ```bash
-uvx trakt-mcp
+TRAKT_CLIENT_ID=your_client_id uvx trakt-mcp
 ```
 
 Pin to a release for reproducibility:
 
 ```bash
-uvx trakt-mcp@0.11.2
+TRAKT_CLIENT_ID=your_client_id uvx trakt-mcp@0.11.2
 ```
 
 **Claude Desktop / MCPhub configuration:**
@@ -68,11 +70,11 @@ Your Trakt OAuth token is persisted to `~/.trakt-mcp/auth_token.json` (the direc
 
 ### Install with pip
 
-Requires Python 3.12 or newer.
+Requires Python 3.12 or newer. As with uvx, credentials come from environment variables, not a `.env` file.
 
 ```bash
 pip install trakt-mcp
-trakt-mcp
+TRAKT_CLIENT_ID=your_client_id trakt-mcp
 ```
 
 ### Local Installation
@@ -900,7 +902,10 @@ docker run -d --rm --name trakt_mcpserver \
 
 ### Using `docker compose`
 
+`docker-compose.yml` reads credentials from `.env` in the repository root, so create it first:
+
 ```bash
+cp .env.example .env  # then set TRAKT_CLIENT_ID in .env
 # Builds the docker image using the default Dockerfile (SSE variant) and starts the service
 docker compose up
 ```
