@@ -47,6 +47,10 @@ EndpointKey = Literal[
     "person_movies",
     "person_shows",
     "person_lists",
+    # Lists
+    "list_items",
+    "trending_lists",
+    "popular_lists",
     # Progress
     "show_progress_watched",
     "sync_playback",

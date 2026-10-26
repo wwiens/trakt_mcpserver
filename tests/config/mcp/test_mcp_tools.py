@@ -5,6 +5,7 @@ from config.mcp.tools import (
     CHECKIN_TOOLS,
     COMMENT_TOOLS,
     EPISODE_TOOLS,
+    LIST_TOOLS,
     MOVIE_TOOLS,
     PEOPLE_TOOLS,
     PROGRESS_TOOLS,
@@ -50,6 +51,16 @@ class TestToolNames:
             "fetch_anticipated_movies",
         ]
         for tool in movie_tools:
+            assert tool in TOOL_NAMES
+
+    def test_list_tools_exist(self) -> None:
+        """Test list-related tools are present."""
+        list_tools = [
+            "fetch_list_items",
+            "fetch_trending_lists",
+            "fetch_popular_lists",
+        ]
+        for tool in list_tools:
             assert tool in TOOL_NAMES
 
     def test_auth_tools_exist(self) -> None:
@@ -147,6 +158,7 @@ class TestToolNames:
             "SHOW_TOOLS": SHOW_TOOLS,
             "MOVIE_TOOLS": MOVIE_TOOLS,
             "PEOPLE_TOOLS": PEOPLE_TOOLS,
+            "LIST_TOOLS": LIST_TOOLS,
             "AUTH_TOOLS": AUTH_TOOLS,
             "USER_TOOLS": USER_TOOLS,
             "CHECKIN_TOOLS": CHECKIN_TOOLS,
@@ -170,6 +182,7 @@ class TestToolNames:
             SHOW_TOOLS
             | MOVIE_TOOLS
             | PEOPLE_TOOLS
+            | LIST_TOOLS
             | AUTH_TOOLS
             | USER_TOOLS
             | CHECKIN_TOOLS

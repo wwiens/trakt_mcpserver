@@ -144,6 +144,7 @@ Add to your Claude Desktop MCP configuration file:
 - **Explore people** with biographies, social media, and full filmographies
 - **Browse a person's credits** across movies and shows with character names and episode counts
 - **Find lists** containing a specific person
+- **Browse community lists**: discover trending and popular lists, and read the items on any user's list, optionally filtered by type
 
 ### 👤 Personal Trakt Data
 - **View Your Watched Shows**: Get a complete list of shows you've personally watched
@@ -195,7 +196,7 @@ Add to your Claude Desktop MCP configuration file:
 - Provides tools for fetching real-time entertainment information
 - Enables AI models to offer personalized entertainment recommendations
 - Simple authentication and logout process
-- **Pagination support** for list endpoints (trending, popular, anticipated, favorited, played, watched, search, comments, ratings, watchlist):
+- **Pagination support** for list endpoints (trending, popular, anticipated, favorited, played, watched, search, comments, ratings, watchlist, lists):
   - Pass `page: int` for single-page results with pagination metadata
   - Omit `page` to auto-paginate and return up to `limit` total items as a flat list
   - Use `limit=0` to fetch all available results (capped at 100 for safety)
@@ -488,6 +489,25 @@ fetch_person_lists(person_id="bryan-cranston", list_type="personal", sort="likes
 </details>
 
 <details>
+<summary><strong>List Tools</strong></summary>
+
+```python
+# Get trending lists (most active community lists right now)
+fetch_trending_lists(limit=10)
+
+# Get popular lists (most liked and commented all-time), single page
+fetch_popular_lists(limit=10, page=1)
+
+# Get the items on a user's list
+fetch_list_items(list_owner="majeed_pk", list_id="psychological-thrillers")
+
+# Get only the movies on a list
+fetch_list_items(list_owner="majeed_pk", list_id="psychological-thrillers", item_type="movies")
+```
+
+</details>
+
+<details>
 <summary><strong>Authentication & User Tools</strong></summary>
 
 ```python
@@ -772,6 +792,9 @@ Once installed, Claude can use this MCP server to answer questions about enterta
 - "What movies has Bryan Cranston been in?"
 - "What TV shows has Bryan Cranston appeared in?"
 - "What lists feature Bryan Cranston?"
+- "What lists are trending on Trakt right now?"
+- "Show me the most popular lists on Trakt"
+- "What's on majeed_pk's psychological-thrillers list?"
 
 **Personal Data (Requires Authentication):**
 - "What was the last show I watched?"
