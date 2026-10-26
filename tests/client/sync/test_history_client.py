@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from contextlib import suppress
+from datetime import datetime
 from typing import TYPE_CHECKING, Final
 from unittest.mock import patch
 
@@ -29,6 +30,7 @@ if TYPE_CHECKING:
 
     from client.sync.client import SyncClient
     from models.auth.auth import TraktAuthToken
+    from models.types.timestamps import WatchedAtSentinel
 
 
 SAMPLE_MOVIE_HISTORY_ITEM: Final[dict[str, object]] = {
@@ -303,6 +305,74 @@ class TestSyncHistoryClient:
             assert result.added is not None
             assert result.added.movies == 1
             mock_request.assert_called_once()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("sentinel", ["released", "unknown"])
+    async def test_add_to_history_sends_sentinel_verbatim(
+        self,
+        authenticated_sync_client: SyncClient,
+        sentinel: WatchedAtSentinel,
+    ) -> None:
+        """Sentinel watched_at values reach the request payload unchanged."""
+        with patch.object(
+            authenticated_sync_client, "_post_typed_request"
+        ) as mock_request:
+            mock_request.return_value = create_history_summary(added_movies=1)
+
+            request = TraktHistoryRequest(
+                episodes=[
+                    TraktHistoryItem(ids=TraktIds(trakt=62085), watched_at=sentinel)
+                ],
+            )
+
+            await authenticated_sync_client.add_to_history(request)
+
+            payload = mock_request.call_args.args[1]
+            assert payload["episodes"][0]["watched_at"] == sentinel
+
+    @pytest.mark.asyncio
+    async def test_add_to_history_serializes_datetime_as_iso(
+        self,
+        authenticated_sync_client: SyncClient,
+    ) -> None:
+        """Datetime watched_at values are serialized, not passed as objects."""
+        with patch.object(
+            authenticated_sync_client, "_post_typed_request"
+        ) as mock_request:
+            mock_request.return_value = create_history_summary(added_movies=1)
+
+            request = TraktHistoryRequest(
+                movies=[
+                    TraktHistoryItem(
+                        ids=TraktIds(trakt=16662),
+                        watched_at=datetime.fromisoformat("2024-01-15T20:30:00+00:00"),
+                    )
+                ],
+            )
+
+            await authenticated_sync_client.add_to_history(request)
+
+            watched_at = mock_request.call_args.args[1]["movies"][0]["watched_at"]
+            assert watched_at == "2024-01-15T20:30:00Z"
+
+    @pytest.mark.asyncio
+    async def test_add_to_history_omits_unset_watched_at(
+        self,
+        authenticated_sync_client: SyncClient,
+    ) -> None:
+        """An unset watched_at is absent so Trakt records the current time."""
+        with patch.object(
+            authenticated_sync_client, "_post_typed_request"
+        ) as mock_request:
+            mock_request.return_value = create_history_summary(added_movies=1)
+
+            request = TraktHistoryRequest(
+                movies=[TraktHistoryItem(ids=TraktIds(trakt=16662))],
+            )
+
+            await authenticated_sync_client.add_to_history(request)
+
+            assert "watched_at" not in mock_request.call_args.args[1]["movies"][0]
 
     @pytest.mark.asyncio
     async def test_remove_from_history_success(
