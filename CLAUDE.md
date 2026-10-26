@@ -81,12 +81,6 @@ pip install -r requirements-dev.txt
 cp .env.example .env
 ```
 
-### Published package (PyPI)
-```bash
-pip install trakt-mcp    # Install the released package
-uvx trakt-mcp            # Run without installing
-```
-
 ### Docker
 ```bash
 # Build stdio image
