@@ -66,6 +66,15 @@ uvx trakt-mcp@0.11.2
 
 Your Trakt OAuth token is persisted to `~/.trakt-mcp/auth_token.json` (the directory is created on first login), so authorization survives across uvx invocations. To override the location — e.g. for Docker volumes or to keep multiple isolated accounts — set `TRAKT_AUTH_TOKEN_PATH` to an absolute path.
 
+### Install with pip
+
+Requires Python 3.12 or newer.
+
+```bash
+pip install trakt-mcp
+trakt-mcp
+```
+
 ### Local Installation
 
 Requires Python 3.12 or newer.
