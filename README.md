@@ -30,7 +30,6 @@ You need your own Trakt API app to get a Client ID:
 ```bash
 docker run -d --rm --name trakt_mcpserver \
   -e TRAKT_CLIENT_ID=your_client_id \
-  -e TRAKT_CLIENT_SECRET=your_client_secret \
   -v trakt_auth:/data \
   -p 8080:8080 \
   ghcr.io/wwiens/trakt_mcpserver:latest
@@ -41,13 +40,13 @@ docker run -d --rm --name trakt_mcpserver \
 Requires [uv](https://docs.astral.sh/uv/) installed.
 
 ```bash
-uvx --from git+https://github.com/wwiens/trakt_mcpserver trakt-mcp
+uvx trakt-mcp
 ```
 
-Pin to a release tag for reproducibility:
+Pin to a release for reproducibility:
 
 ```bash
-uvx --from git+https://github.com/wwiens/trakt_mcpserver@v0.9.0 trakt-mcp
+uvx trakt-mcp@0.11.2
 ```
 
 **Claude Desktop / MCPhub configuration:**
@@ -56,14 +55,9 @@ uvx --from git+https://github.com/wwiens/trakt_mcpserver@v0.9.0 trakt-mcp
   "mcpServers": {
     "trakt": {
       "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/wwiens/trakt_mcpserver",
-        "trakt-mcp"
-      ],
+      "args": ["trakt-mcp"],
       "env": {
-        "TRAKT_CLIENT_ID": "your_client_id",
-        "TRAKT_CLIENT_SECRET": "your_client_secret"
+        "TRAKT_CLIENT_ID": "your_client_id"
       }
     }
   }
@@ -71,6 +65,15 @@ uvx --from git+https://github.com/wwiens/trakt_mcpserver@v0.9.0 trakt-mcp
 ```
 
 Your Trakt OAuth token is persisted to `~/.trakt-mcp/auth_token.json` (the directory is created on first login), so authorization survives across uvx invocations. To override the location — e.g. for Docker volumes or to keep multiple isolated accounts — set `TRAKT_AUTH_TOKEN_PATH` to an absolute path.
+
+### Install with pip
+
+Requires Python 3.12 or newer.
+
+```bash
+pip install trakt-mcp
+trakt-mcp
+```
 
 ### Local Installation
 
@@ -96,7 +99,6 @@ Requires Python 3.12 or newer.
    Then edit `.env` to add your Trakt API credentials:
    ```bash
    TRAKT_CLIENT_ID=your_client_id
-   TRAKT_CLIENT_SECRET=your_client_secret
    ```
 
 4. **Run the server**
@@ -113,8 +115,7 @@ Add to your Claude Desktop MCP configuration file:
       "command": "python",
       "args": ["/path/to/your/server.py"],
       "env": {
-        "TRAKT_CLIENT_ID": "your_client_id",
-        "TRAKT_CLIENT_SECRET": "your_client_secret"
+        "TRAKT_CLIENT_ID": "your_client_id"
       }
     }
   }
@@ -672,10 +673,22 @@ add_to_history(
     items=[{"trakt_id": "314", "watched_at": "2024-01-15T20:30:00.000Z"}]
 )
 
+# Add movies watched on an unknown date
+add_to_history(
+    history_type="movies",
+    items=[{"trakt_id": "314", "watched_at": "unknown"}]
+)
+
 # Add episodes to watch history
 add_to_history(
     history_type="episodes",
     items=[{"trakt_id": "62085"}]  # Breaking Bad S01E01
+)
+
+# Add episodes at their release date + runtime (not supported for movies)
+add_to_history(
+    history_type="episodes",
+    items=[{"trakt_id": "62085", "watched_at": "released"}]
 )
 
 # Remove movies from watch history
@@ -843,7 +856,6 @@ Use the `:latest-stdio` image (or pin a version like `:0.9.0-stdio`) for MCP cli
 # Pull and run the stdio image
 docker run -i --rm --name trakt_mcpserver_stdio \
   -e TRAKT_CLIENT_ID=your_client_id \
-  -e TRAKT_CLIENT_SECRET=your_client_secret \
   -v trakt_auth:/data \
   ghcr.io/wwiens/trakt_mcpserver:latest-stdio
 ```
@@ -857,7 +869,6 @@ docker run -i --rm --name trakt_mcpserver_stdio \
       "args": [
         "run", "-i", "--rm", "--name", "trakt_mcpserver_stdio",
         "-e", "TRAKT_CLIENT_ID=your_client_id",
-        "-e", "TRAKT_CLIENT_SECRET=your_client_secret",
         "-v", "trakt_auth:/data",
         "ghcr.io/wwiens/trakt_mcpserver:latest-stdio"
       ]
@@ -874,7 +885,6 @@ Use the `:latest` image for HTTP-based access:
 # Option 1: Pull and run from GHCR (recommended)
 docker run -d --rm --name trakt_mcpserver \
   -e TRAKT_CLIENT_ID=your_client_id \
-  -e TRAKT_CLIENT_SECRET=your_client_secret \
   -v trakt_auth:/data \
   -p 8080:8080 \
   ghcr.io/wwiens/trakt_mcpserver:latest
@@ -883,7 +893,6 @@ docker run -d --rm --name trakt_mcpserver \
 docker build -t trakt_mcpserver .
 docker run -d --rm --name trakt_mcpserver \
   -e TRAKT_CLIENT_ID=your_client_id \
-  -e TRAKT_CLIENT_SECRET=your_client_secret \
   -v trakt_auth:/data \
   -p 8080:8080 \
   trakt_mcpserver
