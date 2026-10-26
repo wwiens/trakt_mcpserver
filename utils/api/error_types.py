@@ -2,7 +2,13 @@
 
 from typing import Any
 
-from utils.api.errors import InvalidParamsError, InvalidRequestError, MCPError
+from config.auth import AUTH_VERIFICATION_URL
+from utils.api.errors import (
+    AUTH_FLOW_ERROR,
+    InvalidParamsError,
+    InvalidRequestError,
+    MCPError,
+)
 
 
 def extract_auth_action(error: "AuthenticationRequiredError") -> str:
@@ -95,7 +101,7 @@ class AuthenticationRequiredError(InvalidRequestError):
     def __init__(
         self,
         action: str,
-        auth_url: str = "https://trakt.tv/activate",
+        auth_url: str = AUTH_VERIFICATION_URL,
         message: str | None = None,
     ) -> None:
         """Initialize authentication required error.
@@ -146,9 +152,41 @@ class AuthorizationPendingError(MCPError):
             data["expires_in"] = expires_in
 
         super().__init__(
-            code=-32001,  # Custom code for pending auth
+            code=AUTH_FLOW_ERROR,
             message="Authorization pending. User must approve device code.",
             data=data,
+        )
+
+
+class DeviceAuthorizationError(MCPError):
+    """Raised when Trakt rejects a device-token poll with a documented status.
+
+    Covers invalid, already-used, expired and denied codes, plus slow-down.
+    ``restart_required`` is False only for slow-down, where polling may resume.
+    """
+
+    def __init__(
+        self,
+        http_status: int,
+        message: str,
+        restart_required: bool,
+        retry_after: int | None = None,
+    ) -> None:
+        """Initialize device authorization error.
+
+        Args:
+            http_status: HTTP status returned by /oauth/device/token
+            message: User-facing explanation of the status
+            restart_required: Whether a new device code is needed
+            retry_after: Seconds from the Retry-After header, if Trakt sent one
+        """
+        self.http_status = http_status
+        self.restart_required = restart_required
+        self.retry_after = retry_after
+        super().__init__(
+            code=AUTH_FLOW_ERROR,
+            message=message,
+            data={"error_type": "device_auth", "http_status": http_status},
         )
 
 
@@ -240,6 +278,7 @@ class TraktRateLimitError(TraktAPIError):
             message: Optional custom message
             **context: Additional context information
         """
+        self.retry_after: int | None = retry_after
         if message is None:
             if retry_after is not None:
                 message = f"Rate limit exceeded. Please retry in {retry_after} seconds."

@@ -46,6 +46,7 @@ RUN chown -R appuser:appuser /app
 
 # Environment variables (pass at runtime via -e or --env-file)
 ENV TRAKT_CLIENT_ID=""
+# Optional: Trakt deprecated client_secret for user sign-in
 ENV TRAKT_CLIENT_SECRET=""
 ENV TRAKT_AUTH_TOKEN_PATH=/data/auth_token.json
 

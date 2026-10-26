@@ -24,6 +24,13 @@ class TraktAuthToken(BaseModel):
     token_type: str = "bearer"  # noqa: S105 # OAuth token type, not a password
 
 
+class OAuthErrorResponse(BaseModel):
+    """Error body returned by Trakt OAuth endpoints (RFC 6749 section 5.2)."""
+
+    error: str | None = None
+    error_description: str | None = None
+
+
 class DeviceTokenRequest(BaseModel):
     """Request model for device token exchange."""
 

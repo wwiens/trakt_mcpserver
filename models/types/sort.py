@@ -18,7 +18,7 @@ CommentSortFull = Literal[
     "watched",
 ]
 
-# Specific sort types for each endpoint (from trakt.apib)
+# Specific sort types for each endpoint (from the Trakt OpenAPI spec)
 MovieCommentSort = (
     CommentSortExtended  # newest, oldest, likes, replies, highest, lowest, plays
 )

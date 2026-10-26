@@ -78,6 +78,24 @@ class TestSyncWatchlistFormatters:
             "0 total items" in result
         )  # Single page shows total items, not "Page 1 of 1"
 
+    def test_format_user_watchlist_empty_all(self) -> None:
+        """Test empty watchlist of all types names it once, not twice."""
+        pagination = PaginationMetadata(
+            current_page=1, items_per_page=1, total_pages=1, total_items=0
+        )
+        paginated_response = PaginatedResponse[TraktWatchlistItem](
+            data=[], pagination=pagination
+        )
+
+        result = SyncWatchlistFormatters.format_user_watchlist(
+            paginated_response, "all", "rank", "asc"
+        )
+
+        assert result.startswith("# Your Watchlist\n")
+        assert "Your watchlist is empty." in result
+        assert "Watchlist Watchlist" not in result
+        assert "Watchlist watchlist" not in result
+
     def test_format_user_watchlist_with_notes(self) -> None:
         """Test formatting watchlist with VIP notes."""
         items = [
@@ -142,7 +160,8 @@ class TestSyncWatchlistFormatters:
         )
 
         # Verify grouping by type
-        assert "# Your Watchlist Watchlist (sorted by rank, asc)" in result
+        assert "# Your Watchlist (sorted by rank, asc)" in result
+        assert "Watchlist Watchlist" not in result
         assert "## Episodes" in result
         assert "## Movies" in result
         assert "## Shows" in result

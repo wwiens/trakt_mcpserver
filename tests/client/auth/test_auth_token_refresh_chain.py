@@ -6,7 +6,7 @@ refresh when access tokens expire (every 24h).
 """
 
 import asyncio
-import io
+import os
 import time
 from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
@@ -56,23 +56,21 @@ def _mock_post_response(data: dict[str, str | int]) -> MagicMock:
     return resp
 
 
-def _fake_fdopen(*_args: object, **_kwargs: object) -> io.StringIO:
-    """Stand-in for os.fdopen that returns an in-memory stream."""
-    return io.StringIO()
-
-
 @contextmanager
 def _patch_file_io() -> Generator[None, None, None]:
-    """Patch atomic-write file I/O used by _save_auth_token."""
-    fake_fd = 99
-    with (
-        patch("os.open", return_value=fake_fd),
-        patch("os.fdopen", side_effect=_fake_fdopen),
-        patch("os.replace"),
-        patch("os.makedirs"),
-        patch("os.fsync"),
-    ):
+    """Let token saves hit the isolated temp token file, then remove it.
+
+    Real writes keep disk and memory consistent, which refresh relies on to
+    detect a pair saved by another client or a logout via clear_auth.
+    """
+    import client.auth.client as auth_client_module
+
+    token_path = auth_client_module.AUTH_TOKEN_FILE
+    try:
         yield
+    finally:
+        if os.path.exists(token_path):
+            os.remove(token_path)
 
 
 class TestTokenRefreshChain:
@@ -179,7 +177,7 @@ class TestTokenRefreshChain:
     async def test_concurrent_ensure_authenticated_single_refresh(
         self, patched_httpx_client: MagicMock
     ) -> None:
-        """Five concurrent callers share one refresh via _refresh_lock."""
+        """Five concurrent callers share one refresh via the shared refresh lock."""
         fresh_data = _make_fresh_token_data("concurrent")
 
         async def slow_post(*args: object, **kwargs: object) -> MagicMock:
@@ -213,20 +211,20 @@ class TestTokenRefreshChain:
             refresh_called: bool
             clear_auth_token_called: bool
             auth_token: MagicMock
-            _refresh_lock: asyncio.Lock
 
             def __init__(self) -> None:
                 self.call_count = 0
                 self.refresh_called = False
                 self.clear_auth_token_called = False
                 self.auth_token = MagicMock(refresh_token="valid")
-                self._refresh_lock = asyncio.Lock()
 
             def clear_auth_token(self) -> bool:
                 self.clear_auth_token_called = True
                 return True
 
-            async def refresh_access_token(self) -> bool:
+            async def refresh_access_token(
+                self, rejected_access_token: str | None = None
+            ) -> bool:
                 self.refresh_called = True
                 return True
 
@@ -279,12 +277,20 @@ class TestTokenRefreshChain:
                 token_type="bearer",
             )
 
-            # Second refresh: Trakt rejects the refresh_token with 401
+            # Second refresh: Trakt rejects the revoked refresh_token
+            token_request = httpx.Request("POST", "https://auth.trakt.tv/oauth/token")
             revoked_resp = MagicMock(spec=httpx.Response)
-            revoked_resp.status_code = 401
-            revoked_resp.text = "Unauthorized"
             revoked_resp.raise_for_status.side_effect = httpx.HTTPStatusError(
-                message="401", request=MagicMock(), response=revoked_resp
+                message="400",
+                request=token_request,
+                response=httpx.Response(
+                    400,
+                    json={
+                        "error": "invalid_grant",
+                        "error_description": "session not found",
+                    },
+                    request=token_request,
+                ),
             )
             patched_httpx_client.post.return_value = revoked_resp
 
@@ -301,7 +307,10 @@ class TestTokenRefreshChain:
     async def test_recursive_refresh_avoidance(
         self, patched_httpx_client: MagicMock
     ) -> None:
-        """401 on the refresh HTTP call does not deadlock or recurse."""
+        """401 on the refresh HTTP call does not deadlock or recurse.
+
+        A bare 401 is not invalid_grant, so the refresh token is kept.
+        """
         resp_401 = MagicMock(spec=httpx.Response)
         resp_401.status_code = 401
         resp_401.text = "Unauthorized"
@@ -316,7 +325,8 @@ class TestTokenRefreshChain:
             result = await client.refresh_access_token()
 
         assert result is False
-        assert client.auth_token is None
+        assert client.auth_token is not None
+        assert client.auth_token.refresh_token == "refresh_token_1d"
 
     # ------------------------------------------------------------------
     # 8. End-to-end: proactive refresh then API call
@@ -395,34 +405,31 @@ class TestTokenRefreshChain:
         """Multiple methods get 401 concurrently; each refreshes independently."""
 
         class ConcurrentService:
-            """Service where refresh does NOT hold _refresh_lock.
+            """Service whose refresh does no locking of its own.
 
-            The decorator checks _refresh_lock.locked() only as a recursion
-            guard (to avoid refreshing from within refresh's own HTTP call).
-            In real AuthClient, refresh_access_token holds the lock internally
-            for dedup, but the decorator's check is strictly anti-recursion.
-            Here we test that sequential 401→refresh→retry works for each
-            concurrent caller independently.
+            Real AuthClient serialises refreshes with a lock shared across
+            instances; recursion is guarded by token_refresh_scope. Here each
+            concurrent 401→refresh→retry is checked to work independently.
             """
 
             refresh_count: int
             clear_count: int
             auth_token: MagicMock
-            _refresh_lock: asyncio.Lock
             call_counts: dict[str, int]
 
             def __init__(self) -> None:
                 self.refresh_count = 0
                 self.clear_count = 0
                 self.auth_token = MagicMock(refresh_token="valid")
-                self._refresh_lock = asyncio.Lock()
                 self.call_counts: dict[str, int] = {}
 
             def clear_auth_token(self) -> bool:
                 self.clear_count += 1
                 return True
 
-            async def refresh_access_token(self) -> bool:
+            async def refresh_access_token(
+                self, rejected_access_token: str | None = None
+            ) -> bool:
                 self.refresh_count += 1
                 await asyncio.sleep(0.01)
                 return True
@@ -456,3 +463,202 @@ class TestTokenRefreshChain:
         assert svc.clear_count == 0
         assert svc.refresh_count == 5
         assert len(results) == 5
+
+
+class TestParallelClientRefresh:
+    """Separate AuthClient instances (one per tool call) share a refresh."""
+
+    @pytest.mark.asyncio
+    async def test_parallel_clients_spend_refresh_token_once(
+        self, patched_httpx_client: MagicMock
+    ) -> None:
+        """The second client adopts the pair the first saved instead of
+        re-sending the spent refresh token (which Trakt answers with
+        invalid_grant, deleting the new token)."""
+        import client.auth.client as auth_client_module
+
+        token_path = auth_client_module.AUTH_TOKEN_FILE
+        fresh_data = _make_fresh_token_data("parallel")
+
+        async def slow_post(*args: object, **kwargs: object) -> MagicMock:
+            await asyncio.sleep(0.05)
+            return _mock_post_response(fresh_data)
+
+        patched_httpx_client.post = AsyncMock(side_effect=slow_post)
+        try:
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write(_make_expired_token(days_ago=1).model_dump_json())
+
+            first, second = AuthClient(), AuthClient()
+            results = await asyncio.gather(
+                first.ensure_authenticated(), second.ensure_authenticated()
+            )
+        finally:
+            if os.path.exists(token_path):
+                os.remove(token_path)
+
+        assert results == [True, True]
+        assert patched_httpx_client.post.call_count == 1
+        for client in (first, second):
+            assert client.auth_token is not None
+            assert client.auth_token.access_token == "fresh_access_parallel"
+
+
+class TestLogoutDuringRefresh:
+    """clear_auth in one tool call must not be undone by another's refresh."""
+
+    @pytest.mark.asyncio
+    async def test_refresh_after_logout_elsewhere_does_not_sign_back_in(
+        self, patched_httpx_client: MagicMock
+    ) -> None:
+        import client.auth.client as auth_client_module
+
+        token_path = auth_client_module.AUTH_TOKEN_FILE
+        patched_httpx_client.post = AsyncMock(
+            return_value=_mock_post_response(_make_fresh_token_data("zombie"))
+        )
+        with _patch_file_io():
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write(_make_expired_token(days_ago=1).model_dump_json())
+            waiting_call = AuthClient()
+            AuthClient().clear_auth_token()
+
+            assert await waiting_call.ensure_authenticated() is False
+            assert not os.path.exists(token_path)
+
+        patched_httpx_client.post.assert_not_called()
+        assert waiting_call.auth_token is None
+        sent_headers = waiting_call._prepare_request("/sync/history", "GET")  # pyright: ignore[reportPrivateUsage]
+        assert "Authorization" not in sent_headers
+
+    @pytest.mark.asyncio
+    async def test_logout_while_refresh_in_flight_is_honoured(
+        self, patched_httpx_client: MagicMock
+    ) -> None:
+        import client.auth.client as auth_client_module
+
+        token_path = auth_client_module.AUTH_TOKEN_FILE
+
+        async def post_then_logout(*args: object, **kwargs: object) -> MagicMock:
+            os.remove(token_path)
+            return _mock_post_response(_make_fresh_token_data("late"))
+
+        patched_httpx_client.post = AsyncMock(side_effect=post_then_logout)
+        with _patch_file_io():
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write(_make_expired_token(days_ago=1).model_dump_json())
+            client = AuthClient()
+
+            assert await client.ensure_authenticated() is False
+            assert not os.path.exists(token_path)
+
+        assert client.auth_token is None
+
+
+def _invalid_grant_post() -> MagicMock:
+    token_request = httpx.Request("POST", "https://auth.trakt.tv/oauth/token")
+    rejected = MagicMock(spec=httpx.Response)
+    rejected.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "400",
+        request=token_request,
+        response=httpx.Response(
+            400,
+            json={"error": "invalid_grant", "error_description": "invalid"},
+            request=token_request,
+        ),
+    )
+    return rejected
+
+
+class TestSharedTokenFileAcrossProcesses:
+    """Another server process may refresh the shared token file first."""
+
+    @pytest.mark.asyncio
+    async def test_invalid_grant_adopts_pair_saved_by_other_process(
+        self, patched_httpx_client: MagicMock
+    ) -> None:
+        import client.auth.client as auth_client_module
+
+        token_path = auth_client_module.AUTH_TOKEN_FILE
+        other_process_pair = TraktAuthToken.model_validate(
+            _make_fresh_token_data("other_process")
+        )
+
+        async def other_process_wins(*args: object, **kwargs: object) -> MagicMock:
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write(other_process_pair.model_dump_json())
+            return _invalid_grant_post()
+
+        patched_httpx_client.post = AsyncMock(side_effect=other_process_wins)
+        with _patch_file_io():
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write(_make_expired_token(days_ago=1).model_dump_json())
+            client = AuthClient()
+
+            assert await client.ensure_authenticated() is True
+            assert os.path.exists(token_path)
+
+        assert client.auth_token is not None
+        assert client.auth_token.refresh_token == other_process_pair.refresh_token
+
+    @pytest.mark.asyncio
+    async def test_invalid_grant_for_our_own_token_still_clears(
+        self, patched_httpx_client: MagicMock
+    ) -> None:
+        import client.auth.client as auth_client_module
+
+        token_path = auth_client_module.AUTH_TOKEN_FILE
+        patched_httpx_client.post = AsyncMock(return_value=_invalid_grant_post())
+        with _patch_file_io():
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write(_make_expired_token(days_ago=1).model_dump_json())
+            client = AuthClient()
+
+            assert await client.ensure_authenticated() is False
+            assert not os.path.exists(token_path)
+
+
+class TestTokenFileEdgeCases:
+    @pytest.mark.asyncio
+    async def test_save_failure_keeps_new_pair_in_memory(
+        self, patched_httpx_client: MagicMock
+    ) -> None:
+        """After a 200 the old refresh token is spent; keep the new pair."""
+        patched_httpx_client.post.return_value = _mock_post_response(
+            _make_fresh_token_data("unsaved")
+        )
+        client = AuthClient()
+        client.auth_token = _make_expired_token(days_ago=1)
+        store = client._store  # pyright: ignore[reportPrivateUsage]
+
+        with patch.object(store, "_write", side_effect=OSError("read-only")):
+            assert await client.ensure_authenticated() is True
+
+        assert client.headers["Authorization"] == "Bearer fresh_access_unsaved"
+        # The next tool call gets a new AuthClient, and must still see the pair.
+        next_call = AuthClient()
+        assert next_call.auth_token is not None
+        assert next_call.auth_token.access_token == "fresh_access_unsaved"
+
+    @pytest.mark.asyncio
+    async def test_unreadable_token_file_is_not_a_logout(
+        self, patched_httpx_client: MagicMock
+    ) -> None:
+        """Only a missing file means clear_auth ran; a corrupt one does not."""
+        import client.auth.client as auth_client_module
+
+        token_path = auth_client_module.AUTH_TOKEN_FILE
+        patched_httpx_client.post.return_value = _mock_post_response(
+            _make_fresh_token_data("after_corrupt")
+        )
+        with _patch_file_io():
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write(_make_expired_token(days_ago=1).model_dump_json())
+            client = AuthClient()
+            with open(token_path, "w", encoding="utf-8") as token_file:
+                token_file.write("{not json")
+
+            assert await client.ensure_authenticated() is True
+
+        assert client.auth_token is not None
+        assert client.auth_token.access_token == "fresh_access_after_corrupt"
