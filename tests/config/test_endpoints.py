@@ -4,6 +4,7 @@ from typing import ClassVar
 
 # Test imports from domain-specific config modules
 from config.endpoints import TRAKT_ENDPOINTS, EndpointKey
+from config.endpoints.auth import AUTH_ENDPOINTS
 
 
 class TestTraktEndpoints:
@@ -20,7 +21,7 @@ class TestTraktEndpoints:
         for endpoint in auth_endpoints:
             assert endpoint in TRAKT_ENDPOINTS
             assert isinstance(TRAKT_ENDPOINTS[endpoint], str)
-            assert TRAKT_ENDPOINTS[endpoint].startswith("/")
+            assert TRAKT_ENDPOINTS[endpoint].startswith("https://auth.trakt.tv/")
 
     def test_show_endpoints_exist(self) -> None:
         """Test show-related endpoints are present."""
@@ -103,18 +104,21 @@ class TestTraktEndpoints:
 class TestEndpointUrlFormats:
     """Test endpoint URL formats and structure."""
 
-    def test_all_endpoints_start_with_slash(self) -> None:
-        """Test all endpoints start with forward slash."""
+    def test_api_endpoints_start_with_slash(self) -> None:
+        """Test API endpoints are relative; OAuth endpoints are absolute."""
         for endpoint_key, endpoint_url in TRAKT_ENDPOINTS.items():
+            if endpoint_key in AUTH_ENDPOINTS:
+                continue
             assert endpoint_url.startswith("/"), (
                 f"Endpoint {endpoint_key} should start with '/'"
             )
 
     def test_auth_endpoint_formats(self) -> None:
         """Test authentication endpoint URL formats."""
-        assert TRAKT_ENDPOINTS["device_code"] == "/oauth/device/code"
-        assert TRAKT_ENDPOINTS["device_token"] == "/oauth/device/token"
-        assert TRAKT_ENDPOINTS["revoke"] == "/oauth/revoke"
+        base = "https://auth.trakt.tv"
+        assert TRAKT_ENDPOINTS["device_code"] == f"{base}/oauth/device/code"
+        assert TRAKT_ENDPOINTS["device_token"] == f"{base}/oauth/device/token"
+        assert TRAKT_ENDPOINTS["revoke"] == f"{base}/oauth/revoke"
 
     def test_oauth_endpoints_contain_oauth(self) -> None:
         """Test OAuth endpoints contain 'oauth' in path."""

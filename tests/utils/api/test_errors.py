@@ -16,8 +16,10 @@ from utils.api.error_types import (
 from utils.api.errors import (
     InternalError,
     InvalidParamsError,
+    MCPError,
     handle_api_errors,
     handle_api_errors_func,
+    token_refresh_scope,
 )
 
 
@@ -479,7 +481,9 @@ class TestHandleApiErrors401RefreshAndRetry:
             self.clear_auth_token_called = True
             return True
 
-        async def refresh_access_token(self) -> bool:
+        async def refresh_access_token(
+            self, rejected_access_token: str | None = None
+        ) -> bool:
             self.refresh_called = True
             return self.refresh_result
 
@@ -525,8 +529,12 @@ class TestHandleApiErrors401RefreshAndRetry:
         assert service.clear_auth_token_called is False
 
     @pytest.mark.asyncio
-    async def test_401_refresh_fails_clears_token_and_raises(self) -> None:
-        """Test: 401 triggers refresh, refresh fails, clears token and raises."""
+    async def test_401_refresh_fails_keeps_token_and_raises(self) -> None:
+        """Test: 401 triggers refresh, refresh fails, token is kept and it raises.
+
+        refresh_access_token clears a dead (invalid_grant) token itself; other
+        failures may be transient and must not cost the user a reconnect.
+        """
         service = self.MockRefreshableService()
         service.refresh_result = False
 
@@ -535,7 +543,7 @@ class TestHandleApiErrors401RefreshAndRetry:
 
         assert service.call_count == 1
         assert service.refresh_called is True
-        assert service.clear_auth_token_called is True
+        assert service.clear_auth_token_called is False
 
     @pytest.mark.asyncio
     async def test_401_no_refresh_token_clears_and_raises(self) -> None:
@@ -562,15 +570,17 @@ class TestHandleApiErrors401RefreshAndRetry:
         # Called twice: first attempt + one retry
         assert service.call_count == 2
         assert service.refresh_called is True
-        # Token cleared after retry failure
-        assert service.clear_auth_token_called is True
+        # The just-refreshed pair is kept even though the retry failed
+        assert service.clear_auth_token_called is False
 
     @pytest.mark.asyncio
-    async def test_401_refresh_raises_exception_clears_and_raises(self) -> None:
-        """Test: refresh raises exception, clears token and raises original error."""
+    async def test_401_refresh_raises_exception_keeps_token_and_raises(self) -> None:
+        """Test: refresh raises, token is kept and the original error is raised."""
 
         class BrokenRefreshService(self.MockRefreshableService):
-            async def refresh_access_token(self) -> bool:
+            async def refresh_access_token(
+                self, rejected_access_token: str | None = None
+            ) -> bool:
                 self.refresh_called = True
                 raise RuntimeError("Refresh endpoint down")
 
@@ -581,7 +591,7 @@ class TestHandleApiErrors401RefreshAndRetry:
 
         assert service.call_count == 1
         assert service.refresh_called is True
-        assert service.clear_auth_token_called is True
+        assert service.clear_auth_token_called is False
 
     @pytest.mark.asyncio
     async def test_non_401_errors_do_not_trigger_refresh(self) -> None:
@@ -636,3 +646,173 @@ class TestHandleApiErrors401RefreshAndRetry:
             await service.method_401()
 
         assert service.clear_auth_token_called is True
+
+
+class TestNested401Recovery:
+    """A 401 is recovered once even when decorated methods are nested."""
+
+    class NestedService:
+        def __init__(self) -> None:
+            self.refresh_calls: list[str | None] = []
+            self.clear_auth_token_called = False
+            self.auth_token = MagicMock(
+                refresh_token="valid_refresh", access_token="current_access"
+            )
+
+        def clear_auth_token(self) -> bool:
+            self.clear_auth_token_called = True
+            return True
+
+        async def refresh_access_token(
+            self, rejected_access_token: str | None = None
+        ) -> bool:
+            self.refresh_calls.append(rejected_access_token)
+            return False
+
+        @handle_api_errors
+        async def inner_request(self) -> str:
+            request = httpx.Request(
+                "GET",
+                "https://api.trakt.tv/sync/history",
+                headers={"Authorization": "Bearer sent_access"},
+            )
+            raise httpx.HTTPStatusError(
+                "401",
+                request=request,
+                response=httpx.Response(401, request=request),
+            )
+
+        @handle_api_errors
+        async def outer_method(self) -> str:
+            return await self.inner_request()
+
+    @pytest.mark.asyncio
+    async def test_outer_layer_does_not_refresh_again(self) -> None:
+        service = self.NestedService()
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.outer_method()
+
+        assert len(service.refresh_calls) == 1
+        assert service.clear_auth_token_called is False
+
+    @pytest.mark.asyncio
+    async def test_rejected_token_comes_from_the_failed_request(self) -> None:
+        """The token the request sent is what was rejected, not client state."""
+        service = self.NestedService()
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.inner_request()
+
+        assert service.refresh_calls == ["sent_access"]
+
+
+class TestRecoveryEdgeCases:
+    """401 recovery must neither delete good tokens nor refresh needlessly."""
+
+    class Service:
+        def __init__(self) -> None:
+            self.refresh_calls: list[str | None] = []
+            self.clear_auth_token_called = False
+            self.calls = 0
+            self.auth_token = MagicMock(refresh_token="refresh", access_token="a")
+
+        def clear_auth_token(self) -> bool:
+            self.clear_auth_token_called = True
+            return True
+
+        async def refresh_access_token(
+            self, rejected_access_token: str | None = None
+        ) -> bool:
+            self.refresh_calls.append(rejected_access_token)
+            return True
+
+        @handle_api_errors
+        async def unauthorized_then_not_found(self) -> str:
+            self.calls += 1
+            status = 401 if self.calls == 1 else 404
+            request = httpx.Request("GET", "https://api.trakt.tv/shows/typo")
+            raise httpx.HTTPStatusError(
+                str(status),
+                request=request,
+                response=httpx.Response(status, request=request),
+            )
+
+        @handle_api_errors
+        async def raises_auth_required_itself(self) -> str:
+            raise AuthenticationRequiredError(action="access your ratings")
+
+    @pytest.mark.asyncio
+    async def test_failed_retry_after_refresh_keeps_new_token(self) -> None:
+        """A 404 on the retry (e.g. a mistyped slug) must not delete the pair."""
+        service = self.Service()
+
+        with pytest.raises(MCPError):
+            await service.unauthorized_then_not_found()
+
+        assert service.calls == 2
+        assert service.clear_auth_token_called is False
+
+    @pytest.mark.asyncio
+    async def test_no_refresh_without_http_401(self) -> None:
+        """ensure_authenticated() already tried; no second /oauth/token call."""
+        service = self.Service()
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.raises_auth_required_itself()
+
+        assert service.refresh_calls == []
+        assert service.clear_auth_token_called is False
+
+    @pytest.mark.asyncio
+    async def test_request_without_bearer_does_not_force_refresh(self) -> None:
+        """No Bearer on the failed request: refresh only if the token expired."""
+        service = self.Service()
+
+        with pytest.raises(MCPError):
+            await service.unauthorized_then_not_found()
+
+        assert service.refresh_calls == [None]
+
+
+class TestTokenRefreshScope:
+    """A 401 raised during a refresh must not start a nested refresh."""
+
+    class Service:
+        def __init__(self) -> None:
+            self.refresh_calls = 0
+            self.auth_token = MagicMock(refresh_token="refresh")
+
+        def clear_auth_token(self) -> bool:
+            return True
+
+        async def refresh_access_token(
+            self, rejected_access_token: str | None = None
+        ) -> bool:
+            self.refresh_calls += 1
+            return True
+
+        @handle_api_errors
+        async def unauthorized(self) -> str:
+            request = httpx.Request("GET", "https://api.trakt.tv/users/me")
+            raise httpx.HTTPStatusError(
+                "401", request=request, response=httpx.Response(401, request=request)
+            )
+
+    @pytest.mark.asyncio
+    async def test_no_nested_refresh_inside_scope(self) -> None:
+        service = self.Service()
+
+        with token_refresh_scope(), pytest.raises(AuthenticationRequiredError):
+            await service.unauthorized()
+
+        assert service.refresh_calls == 0
+
+    @pytest.mark.asyncio
+    async def test_refresh_runs_outside_scope(self) -> None:
+        service = self.Service()
+
+        with pytest.raises(AuthenticationRequiredError):
+            await service.unauthorized()
+
+        assert service.refresh_calls == 1

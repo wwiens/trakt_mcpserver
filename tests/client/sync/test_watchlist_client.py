@@ -598,6 +598,31 @@ class TestSyncWatchlistClient:
             assert result.is_single_page
             assert result.pagination.total_items == 0
 
+    @pytest.mark.asyncio
+    async def test_get_sync_watchlist_empty_unpaginated_headers(
+        self, authenticated_client: SyncWatchlistClient
+    ) -> None:
+        """Test empty watchlist without page/limit, where Trakt sends limit 0."""
+        response = httpx.Response(
+            200,
+            json=[],
+            headers={
+                "X-Pagination-Page": "1",
+                "X-Pagination-Limit": "0",
+                "X-Pagination-Page-Count": "1",
+                "X-Pagination-Item-Count": "0",
+            },
+            request=httpx.Request("GET", "https://api.trakt.tv/sync/watchlist"),
+        )
+        with patch("httpx.AsyncClient.get", AsyncMock(return_value=response)):
+            result = await authenticated_client.get_sync_watchlist()
+        assert not isinstance(result, str)
+
+        assert result.is_empty
+        assert result.pagination.items_per_page == 1
+        assert result.pagination.next_page() is None
+        assert result.page_info_summary() == "0 total items"
+
 
 class TestSyncWatchlistSecurity:
     """Security tests for watchlist functionality."""

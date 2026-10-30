@@ -22,13 +22,15 @@ class TestAuthEndpoints:
         for endpoint in auth_endpoints:
             assert endpoint in AUTH_ENDPOINTS
             assert isinstance(AUTH_ENDPOINTS[endpoint], str)
-            assert AUTH_ENDPOINTS[endpoint].startswith("/")
+            assert AUTH_ENDPOINTS[endpoint].startswith("https://auth.trakt.tv/")
 
     def test_auth_endpoint_formats(self) -> None:
         """Test authentication endpoint URL formats."""
-        assert AUTH_ENDPOINTS["device_code"] == "/oauth/device/code"
-        assert AUTH_ENDPOINTS["device_token"] == "/oauth/device/token"
-        assert AUTH_ENDPOINTS["revoke"] == "/oauth/revoke"
+        base = "https://auth.trakt.tv"
+        assert AUTH_ENDPOINTS["device_code"] == f"{base}/oauth/device/code"
+        assert AUTH_ENDPOINTS["device_token"] == f"{base}/oauth/device/token"
+        assert AUTH_ENDPOINTS["token"] == f"{base}/oauth/token"
+        assert AUTH_ENDPOINTS["revoke"] == f"{base}/oauth/revoke"
 
     def test_oauth_endpoints_contain_oauth(self) -> None:
         """Test OAuth endpoints contain 'oauth' in path."""
@@ -37,11 +39,11 @@ class TestAuthEndpoints:
                 f"Auth endpoint {endpoint_key} should contain 'oauth'"
             )
 
-    def test_all_endpoints_start_with_slash(self) -> None:
-        """Test all endpoints start with forward slash."""
+    def test_all_endpoints_use_auth_host(self) -> None:
+        """Test all OAuth endpoints target the dedicated auth host."""
         for endpoint_key, endpoint_url in AUTH_ENDPOINTS.items():
-            assert endpoint_url.startswith("/"), (
-                f"Endpoint {endpoint_key} should start with '/'"
+            assert endpoint_url.startswith("https://auth.trakt.tv/"), (
+                f"Endpoint {endpoint_key} should use https://auth.trakt.tv"
             )
 
     def test_endpoint_naming_conventions(self) -> None:

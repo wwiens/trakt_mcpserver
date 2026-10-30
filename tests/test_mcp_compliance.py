@@ -121,9 +121,7 @@ class TestMCPCompliance:
     def test_server_info_compliance(self, mcp_report: dict[str, Any]) -> None:
         """Server reports identifying info."""
         info: dict[str, Any] = mcp_report["serverInfo"]
-        assert info["name"] == "trakt-mcp-server", (
-            f"Unexpected server name: {info['name']}"
-        )
+        assert info["name"] == "trakt-mcp", f"Unexpected server name: {info['name']}"
         assert isinstance(info["version"], str) and info["version"].strip(), (
             f"Server version must be non-empty string: {info['version']}"
         )

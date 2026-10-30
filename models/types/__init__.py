@@ -63,6 +63,7 @@ from .sort import (
     SeasonCommentSort,
     ShowCommentSort,
 )
+from .timestamps import WatchedAtSentinel, WatchedAtValue
 
 __all__ = [
     "INVALID_LANGUAGE_MSG",
@@ -119,6 +120,8 @@ __all__ = [
     "UserWatchedSeason",
     "UserWatchedShow",
     "VideoResponse",
+    "WatchedAtSentinel",
+    "WatchedAtValue",
     "WatchedMovieWrapper",
     "WatchedShowWrapper",
     "validate_language",

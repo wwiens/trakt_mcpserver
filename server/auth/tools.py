@@ -3,17 +3,21 @@
 import asyncio
 import logging
 import time
-from typing import Any, TypedDict
+from typing import Any, Final, TypedDict
 
 from fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
 from client.auth import AuthClient
 from client.pool import get_client
-from config.auth import AUTH_VERIFICATION_URL
+from config.auth import (
+    DEVICE_TOKEN_SLOW_DOWN_INCREMENT,
+    DEVICE_TOKEN_SLOW_DOWN_STATUS,
+    STALE_LOGIN_HINT,
+)
 from models.formatters.auth import AuthFormatters
 from server.base import ToolErrors
-from utils.api.error_types import AuthorizationPendingError
+from utils.api.error_types import AuthorizationPendingError, DeviceAuthorizationError
 from utils.api.errors import InternalError
 
 # Set up logging
@@ -28,6 +32,14 @@ class AuthFlowState(TypedDict):
     interval: int
     last_poll: int
 
+
+_AUTH_SUCCESS_MESSAGE: Final[str] = """# Authentication Successful!
+
+You have successfully authorized the Trakt MCP application. You can now access
+your personal Trakt data using tools like `fetch_user_watched_shows` and
+`fetch_user_watched_movies`.
+
+If you want to log out at any point, you can use the `clear_auth` tool."""
 
 # Authentication storage for active device code flows
 active_auth_flow: AuthFlowState | dict[str, Any] = {}
@@ -45,7 +57,7 @@ async def start_device_auth() -> str:
 
     # Check if already authenticated
     if client.is_authenticated():
-        return "You are already authenticated with Trakt."
+        return f"You are already authenticated with Trakt. {STALE_LOGIN_HINT}"
 
     # Get device code
     device_code_response = await client.get_device_code()
@@ -82,7 +94,7 @@ async def start_device_auth() -> str:
     expires_in = device_code_response.expires_in
     instructions = AuthFormatters.format_device_auth_instructions(
         user_code,
-        AUTH_VERIFICATION_URL,
+        device_code_response.verification_url,
         expires_in,
     )
 
@@ -104,12 +116,7 @@ async def check_auth_status() -> str:
 
     # Check if already authenticated
     if client.is_authenticated():
-        return """# Authentication Successful!
-
-You are now authenticated with Trakt. You can access your personal data using
-tools like `fetch_user_watched_shows` and `fetch_user_watched_movies`.
-
-If you want to log out at any point, you can use the `clear_auth` tool."""
+        return f"{_AUTH_SUCCESS_MESSAGE}\n\n{STALE_LOGIN_HINT}"
 
     # Check if there's an active flow
     global active_auth_flow
@@ -156,6 +163,28 @@ I don't see that you've completed the authorization yet. Please make sure to:
 
 If you've already done this and are still seeing this message, please wait a
 few seconds and try again by telling me "Please check my authorization status"."""
+    except DeviceAuthorizationError as e:
+        if not e.restart_required:
+            # Only Trakt's slow-down reply lengthens the polling interval.
+            if e.http_status != DEVICE_TOKEN_SLOW_DOWN_STATUS:
+                return (
+                    f"# Authorization Not Completed\n\n{e.message} "
+                    "Check the status again in a moment."
+                )
+            wait = await _slow_down_polling(device_code, e.retry_after)
+            return (
+                f"# Authorization Not Completed\n\n{e.message} "
+                f"Wait {wait} seconds, then check the status again."
+            )
+        async with auth_flow_lock:
+            # A late reply for an older code must not end a newer flow.
+            if active_auth_flow.get("device_code") == device_code:
+                active_auth_flow = {}
+        # An overlapping check may already have exchanged this code (409) and
+        # saved the token; a fresh client re-reads it from disk.
+        if get_client(AuthClient).is_authenticated():
+            return _AUTH_SUCCESS_MESSAGE
+        return f"# Authorization Not Completed\n\n{e.message}"
     except InternalError as e:
         # Handle server errors gracefully to avoid breaking the polling loop
         logger.warning(f"Internal error during auth token retrieval: {e}")
@@ -169,14 +198,26 @@ If this error persists, you may need to restart the authentication process."""
     else:
         # Authentication successful
         async with auth_flow_lock:
-            active_auth_flow = {}
-        return """# Authentication Successful!
+            # A slow success for an older code must not end a newer flow.
+            if active_auth_flow.get("device_code") == device_code:
+                active_auth_flow = {}
+        return _AUTH_SUCCESS_MESSAGE
 
-You have successfully authorized the Trakt MCP application. You can now access
-your personal Trakt data using tools like `fetch_user_watched_shows` and
-`fetch_user_watched_movies`.
 
-If you want to log out at any point, you can use the `clear_auth` tool."""
+async def _slow_down_polling(device_code: str, retry_after: int | None) -> int:
+    """Lengthen the polling interval after Trakt's slow-down reply.
+
+    Returns:
+        Seconds the user should wait before checking again
+    """
+    async with auth_flow_lock:
+        if active_auth_flow.get("device_code") != device_code:
+            return retry_after or DEVICE_TOKEN_SLOW_DOWN_INCREMENT
+        interval = active_auth_flow["interval"] + DEVICE_TOKEN_SLOW_DOWN_INCREMENT
+        if retry_after is not None:
+            interval = max(interval, retry_after)
+        active_auth_flow["interval"] = interval
+        return interval
 
 
 async def clear_auth() -> str:

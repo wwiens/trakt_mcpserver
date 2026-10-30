@@ -10,11 +10,13 @@ import httpx
 from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
 from models.types.pagination import PaginatedResponse, PaginationMetadata
 from utils.api.errors import handle_api_errors
+from utils.api.hosts import is_auth_host_url
 from utils.api.request_context import (
     RequestContext,
     get_current_context,
     set_current_context,
 )
+from utils.version import PACKAGE_NAME, package_version
 
 if TYPE_CHECKING:
     from models.auth import TraktAuthToken
@@ -50,28 +52,35 @@ def _is_pydantic_model(cls: type[object]) -> TypeGuard[type[PydanticModel]]:
 class BaseClient:
     """Base client with common HTTP functionality for Trakt API."""
 
+    @property
+    def auth_token(self) -> TraktAuthToken | None:
+        """The user's OAuth token; only AuthClient has one (via a shared store)."""
+        return None
+
     BASE_URL = "https://api.trakt.tv"
     REQUEST_TIMEOUT = 30.0
 
     def __init__(self):
         """Initialize the base client with credentials from environment variables."""
         client_id = os.getenv("TRAKT_CLIENT_ID")
-        client_secret = os.getenv("TRAKT_CLIENT_SECRET")
 
-        if not client_id or not client_secret:
+        if not client_id:
             raise ValueError(
-                "Trakt API credentials not found. Please check your .env file."
+                "Trakt API credentials not found: TRAKT_CLIENT_ID is not set. "
+                + "Please check your .env file."
             )
 
         self.client_id: str = client_id
-        self.client_secret: str = client_secret
+        # Trakt deprecated client_secret for user sign-in; newer apps may not
+        # be issued one, so it is sent only when configured.
+        self.client_secret: str | None = os.getenv("TRAKT_CLIENT_SECRET") or None
         self.headers: dict[str, str] = {
             "Content-Type": "application/json",
+            "User-Agent": f"{PACKAGE_NAME}/{package_version()}",
             "trakt-api-version": "2",
             "trakt-api-key": self.client_id,
         }
 
-        self.auth_token: TraktAuthToken | None = None
         self._client: httpx.AsyncClient | None = None
         self._persistent: bool = False
         self._owns_client: bool = True
@@ -80,6 +89,8 @@ class BaseClient:
         """Update headers with authentication token."""
         if self.auth_token:
             self.headers["Authorization"] = f"Bearer {self.auth_token.access_token}"
+        else:
+            self.headers.pop("Authorization", None)
 
     async def __aenter__(self) -> BaseClient:
         """Enter async context and initialize shared client.
@@ -161,9 +172,14 @@ class BaseClient:
         """
         try:
             current_page = int(response.headers.get("X-Pagination-Page", "1"))
-            items_per_page = int(response.headers.get("X-Pagination-Limit", "10"))
+            items_per_page = int(
+                response.headers.get("X-Pagination-Limit", str(DEFAULT_LIMIT))
+            )
             total_pages = int(response.headers.get("X-Pagination-Page-Count", "1"))
             total_items = int(response.headers.get("X-Pagination-Item-Count", "0"))
+            # An empty watchlist fetched without page/limit reports limit 0.
+            if total_items == 0 and items_per_page == 0:
+                items_per_page = 1
 
             return PaginationMetadata(
                 current_page=current_page,
@@ -173,6 +189,37 @@ class BaseClient:
             )
         except (ValueError, TypeError) as e:
             raise ValueError(f"Invalid pagination headers in response: {e}") from e
+
+    def _prepare_request(self, endpoint: str, method: str) -> dict[str, str]:
+        """Set the error-reporting context and build headers for one request.
+
+        Returns:
+            Headers to send, including Authorization only for the API host
+        """
+        is_auth_host = is_auth_host_url(endpoint)
+        current = get_current_context()
+        # OAuth calls (e.g. a token refresh mid-task) get their own labels, and
+        # the API request after one must not keep them. Correlation ID is kept.
+        if current is None or is_auth_host or is_auth_host_url(current.endpoint or ""):
+            fresh = (
+                RequestContext(correlation_id=current.correlation_id)
+                if current
+                else RequestContext()
+            )
+            ctx = fresh.with_endpoint(endpoint, method)
+            # OAuth paths are not resources; "oauth"/"token" would mislabel errors.
+            parts = [] if is_auth_host else [p for p in endpoint.split("/") if p]
+            if len(parts) > 1:
+                ctx = ctx.with_resource(parts[0], parts[1])
+            set_current_context(ctx)
+
+        self._update_headers_with_token()
+        request_headers = self.headers.copy()
+        # OAuth calls authenticate with client credentials, so the user's access
+        # token is only sent to the API host.
+        if is_auth_host:
+            request_headers.pop("Authorization", None)
+        return request_headers
 
     @handle_api_errors
     async def _make_request(
@@ -184,19 +231,7 @@ class BaseClient:
         headers: dict[str, str] | None = None,
     ) -> Any:
         """Make an HTTP request to the Trakt API."""
-        # Set request context for error reporting if not already set
-        if get_current_context() is None:
-            parts = [p for p in endpoint.split("/") if p]
-            resource_type = parts[0] if parts else None
-            resource_id = parts[1] if len(parts) > 1 else None
-            ctx = RequestContext().with_endpoint(endpoint, method)
-            if resource_type and resource_id:
-                ctx = ctx.with_resource(resource_type, resource_id)
-            set_current_context(ctx)
-
-        # Ensure Authorization header is present when authenticated
-        self._update_headers_with_token()
-        request_headers = self.headers.copy()
+        request_headers = self._prepare_request(endpoint, method)
         if headers:
             request_headers.update(headers)
 
@@ -285,8 +320,7 @@ class BaseClient:
         Note:
             DELETE requests typically return 204 No Content on success.
         """
-        self._update_headers_with_token()
-        request_headers = self.headers
+        request_headers = self._prepare_request(endpoint, "DELETE")
 
         client = self._get_client()
         should_close = self._client is None
@@ -391,19 +425,7 @@ class BaseClient:
         Raises:
             ValueError: If response format is invalid or headers missing
         """
-        # Set request context for error reporting if not already set
-        if get_current_context() is None:
-            parts = [p for p in endpoint.split("/") if p]
-            resource_type = parts[0] if parts else None
-            resource_id = parts[1] if len(parts) > 1 else None
-            ctx = RequestContext().with_endpoint(endpoint, "GET")
-            if resource_type and resource_id:
-                ctx = ctx.with_resource(resource_type, resource_id)
-            set_current_context(ctx)
-
-        # Ensure Authorization header is present when authenticated
-        self._update_headers_with_token()
-        request_headers = self.headers
+        request_headers = self._prepare_request(endpoint, "GET")
 
         client = self._get_client()
         should_close = self._client is None  # Only close if temporary client

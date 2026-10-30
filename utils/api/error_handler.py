@@ -8,7 +8,6 @@ from typing import Any
 
 import httpx
 
-from config.endpoints.auth import AUTH_ENDPOINTS
 from utils.api.errors import (
     InternalError,
     InvalidParamsError,
@@ -117,15 +116,9 @@ class TraktAPIErrorHandler:
     ) -> InvalidParamsError | AuthorizationPendingError | TraktValidationError:
         """Handle 400 Bad Request errors."""
         response_text = context.get("response_text", "")
-        endpoint = context.get("endpoint") or ""
 
-        # Trakt's OAuth device-flow token endpoint returns HTTP 400 with an
-        # empty body while the user has not yet authorized. Endpoint identity
-        # is the canonical signal; the substring check is a defensive fallback.
-        if (
-            endpoint.endswith(AUTH_ENDPOINTS["device_token"])
-            or "authorization_pending" in response_text.lower()
-        ):
+        # Check for authorization pending (OAuth device flow)
+        if "authorization_pending" in response_text.lower():
             return AuthorizationPendingError(
                 device_code=context.get("resource_id"),
             )

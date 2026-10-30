@@ -1,5 +1,10 @@
 """Tests for auth constants module."""
 
+import importlib
+
+import pytest
+
+from config.auth import constants
 from config.auth.constants import (
     AUTH_EXPIRATION,
     AUTH_POLL_INTERVAL,
@@ -24,7 +29,7 @@ class TestAuthConstants:
 
     def test_auth_verification_url_value(self) -> None:
         """Test AUTH_VERIFICATION_URL has correct value and type."""
-        assert AUTH_VERIFICATION_URL == "https://trakt.tv/activate"
+        assert AUTH_VERIFICATION_URL == "https://auth.trakt.tv/activate"
         assert isinstance(AUTH_VERIFICATION_URL, str)
         # Verify it's a valid URL format
         assert AUTH_VERIFICATION_URL.startswith("https://")
@@ -63,3 +68,37 @@ class TestAuthConstants:
         for constant in constants:
             # Should be one of the basic immutable types
             assert isinstance(constant, int | str | float | bool | tuple)
+
+
+class TestRedirectUri:
+    """OAUTH_REDIRECT_URI must match the URI registered on the Trakt app."""
+
+    def test_defaults_to_localhost(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("TRAKT_REDIRECT_URI", raising=False)
+        module = importlib.reload(constants)
+        try:
+            assert module.OAUTH_REDIRECT_URI == "http://localhost"
+        finally:
+            monkeypatch.undo()
+            importlib.reload(constants)
+
+    def test_env_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("TRAKT_REDIRECT_URI", "http://127.0.0.1:8080/cb")
+        module = importlib.reload(constants)
+        try:
+            assert module.OAUTH_REDIRECT_URI == "http://127.0.0.1:8080/cb"
+        finally:
+            monkeypatch.undo()
+            importlib.reload(constants)
+
+    def test_blank_env_falls_back_to_default(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A set-but-blank variable must not send an empty redirect_uri."""
+        monkeypatch.setenv("TRAKT_REDIRECT_URI", "")
+        module = importlib.reload(constants)
+        try:
+            assert module.OAUTH_REDIRECT_URI == "http://localhost"
+        finally:
+            monkeypatch.undo()
+            importlib.reload(constants)

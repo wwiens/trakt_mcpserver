@@ -3,10 +3,11 @@
 All clients share a single ``httpx.AsyncClient`` for connection reuse across
 Trakt API requests. Non-authenticated client *wrappers* are cached as
 singletons per class. ``AuthClient`` wrappers are returned fresh per call so
-each tool invocation re-reads ``auth_token.json`` from disk — auth state
-(``self.auth_token``, ``self.headers``) lives on the wrapper, so caching it
-would let login/refresh/clear go stale across tool calls. The shared httpx
-client carries no auth state and is safe to share. Direct ``SomeClient()``
+each tool invocation picks up changes other server processes made to
+``auth_token.json``. The token itself lives in the process-wide
+``TokenStore`` (``client/auth/token_store.py``), shared by every wrapper;
+only ``self.headers`` is per wrapper and is rebuilt before each request. The
+shared httpx client carries no auth state and is safe to share. Direct ``SomeClient()``
 instantiation is unaffected and still opens/closes a fresh HTTP client per
 request.
 """
@@ -51,7 +52,8 @@ def get_client[T: BaseClient](cls: type[T]) -> T:
     """Return a pooled client for the given class.
 
     For ``AuthClient`` subclasses, returns a fresh wrapper per call so each
-    tool invocation re-reads ``auth_token.json`` from disk; the wrapper
+    tool invocation syncs the shared token store with ``auth_token.json``; the
+    wrapper
     shares the process-wide ``httpx.AsyncClient`` via ``enable_pooling()``.
     For all other ``BaseClient`` subclasses, returns a cached singleton
     wrapper wired to the same shared ``httpx.AsyncClient``.

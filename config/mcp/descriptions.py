@@ -248,7 +248,11 @@ HISTORY_END_AT_DESCRIPTION: Final[str] = (
 HISTORY_ITEMS_DESCRIPTION: Final[str] = (
     "List of items to add to history. Each item must include "
     "either an identifier (trakt_id, slug, imdb_id, tmdb_id, tvdb_id) "
-    "or both 'title' and 'year'. Optional 'watched_at' (ISO 8601 timestamp)"
+    "or both 'title' and 'year'. Optional 'watched_at' accepts an ISO 8601 "
+    "UTC timestamp (e.g. '2024-01-15T20:30:00.000Z'), the literal 'released' "
+    "to use each episode's release date plus runtime (shows, seasons and "
+    "episodes only), or the literal 'unknown' to mark the item watched with "
+    "no specific date. Omit it to record the current time."
 )
 HISTORY_REMOVE_ITEMS_DESCRIPTION: Final[str] = (
     "List of items to remove from history. Each item must include "

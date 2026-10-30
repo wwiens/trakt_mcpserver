@@ -447,3 +447,13 @@ class TestFormatAuthRequiredMessage:
         assert "Authentication Required" in result
         assert "access shows" in result
         assert "start_device_auth" in result
+
+
+def test_authentication_required_error_uses_current_activation_url() -> None:
+    from config.auth import AUTH_VERIFICATION_URL
+    from utils.api.error_types import AuthenticationRequiredError
+
+    error = AuthenticationRequiredError(action="view your history")
+
+    assert error.data is not None
+    assert AUTH_VERIFICATION_URL in str(error.data)
