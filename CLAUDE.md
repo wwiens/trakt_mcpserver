@@ -121,7 +121,7 @@ python server.py                                                          # Dire
 fastmcp dev inspector server.py                                           # Launch in MCP Inspector
 fastmcp inspect server.py --format mcp -o report.json                     # Full MCP-protocol JSON
 fastmcp list server.py --json --resources --prompts                       # List tools/resources/prompts as JSON
-fastmcp call server.py <tool-name> [--args '{"k": "v"}']                  # Invoke a tool
+fastmcp call server.py <tool-name> [k=v ...] [--input-json '{"k": "v"}']  # Invoke a tool
 ```
 
 ## Code Quality Requirements

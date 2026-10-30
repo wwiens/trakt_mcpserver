@@ -944,7 +944,7 @@ fastmcp inspect server.py --format mcp -o report.json
 fastmcp list server.py --json --resources --prompts
 
 # Invoke a tool
-fastmcp call server.py fetch_trending_shows --args '{"limit": 5}'
+fastmcp call server.py fetch_trending_shows limit=5
 
 # Launch the server inside the MCP Inspector UI
 fastmcp dev inspector server.py
