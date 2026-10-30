@@ -180,6 +180,21 @@ class TestStatusCodeHandlers:
         assert result.data["endpoint"] == "/movies/inception"
         assert result.data["correlation_id"] == "test-789"
 
+    def test_handle_no_content_names_endpoint(self) -> None:
+        """204 on a GET is not-found, worded around the endpoint."""
+        result = TraktAPIErrorHandler.handle_no_content(
+            resource_type="shows",
+            resource_id="breaking-bad",
+            endpoint="/shows/breaking-bad/seasons/99/info",
+        )
+
+        assert isinstance(result, TraktResourceNotFoundError)
+        assert "/shows/breaking-bad/seasons/99/info" in result.message
+        assert "'breaking-bad' was not found" not in result.message
+        assert result.data is not None
+        assert result.data["resource_type"] == "show"
+        assert result.data["resource_id"] == "breaking-bad"
+
     def test_handle_not_found_defaults(self) -> None:
         """Test 404 handling with default values."""
         result = TraktAPIErrorHandler.handle_not_found()
