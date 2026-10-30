@@ -401,7 +401,7 @@ def register_episode_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
             "Fetch detailed information about a specific TV show episode, "
             "including overview, air date, runtime, and ratings."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_episode_summary_tool(
@@ -416,7 +416,7 @@ def register_episode_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         description=(
             "Fetch ratings and voting statistics for a specific TV show episode."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_episode_ratings_tool(
@@ -432,7 +432,7 @@ def register_episode_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
             "Fetch engagement statistics for a specific TV show episode "
             "including watchers, plays, collectors, and comments."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_episode_stats_tool(
@@ -448,7 +448,7 @@ def register_episode_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
             "Fetch cast and crew for a specific TV show episode, "
             "including character names and episode counts."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_episode_people_tool(
@@ -464,7 +464,7 @@ def register_episode_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
             "Fetch videos (trailers, recaps, etc.) for a specific TV show episode. "
             "Set embed_markdown=False for simple links."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_episode_videos_tool(
@@ -483,7 +483,7 @@ def register_episode_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         description=(
             "Fetch users currently watching a specific TV show episode right now."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_episode_watching_tool(
@@ -498,7 +498,7 @@ def register_episode_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
         description=(
             "Fetch translations for a specific TV show episode in different languages."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_episode_translations_tool(
@@ -512,7 +512,7 @@ def register_episode_tools(mcp: FastMCP) -> tuple[ToolHandler, ...]:
     @mcp.tool(
         name="fetch_episode_lists",
         description="Fetch lists that contain a specific TV show episode.",
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_episode_lists_tool(

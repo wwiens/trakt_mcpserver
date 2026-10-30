@@ -269,7 +269,7 @@ def register_auth_tools(mcp: FastMCP) -> tuple[Any, Any, Any]:
     @mcp.tool(
         name="clear_auth",
         description="Clear the authentication token and log out of Trakt",
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructive_hint=True),
         tags={"write", "auth_flow"},
     )
     async def clear_auth_tool() -> str:

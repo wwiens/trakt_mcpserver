@@ -266,21 +266,21 @@ class TestToolAnnotationsAndTags:
             ann: dict[str, Any] = tool.get("annotations") or {}
             if tool["name"] in destructive_writes:
                 assert ann.get("destructiveHint") is True, (
-                    f"{tool['name']} must have destructiveHint=True"
+                    f"{tool['name']} must have destructive_hint=True"
                 )
             elif tool["name"] in additive_writes:
                 assert ann.get("destructiveHint") is False, (
-                    f"{tool['name']} must have destructiveHint=False"
+                    f"{tool['name']} must have destructive_hint=False"
                 )
 
     def test_all_read_tools_marked_readonly(self, mcp_report: dict[str, Any]) -> None:
-        """Every tool tagged ``read`` declares ``readOnlyHint=True``."""
+        """Every tool tagged ``read`` declares ``read_only_hint=True``."""
         for tool in mcp_report["tools"]:
             tags = tool.get("_meta", {}).get("fastmcp", {}).get("tags", [])
             if "read" in tags:
                 ann: dict[str, Any] = tool.get("annotations") or {}
                 assert ann.get("readOnlyHint") is True, (
-                    f"Read tool {tool['name']} missing readOnlyHint=True"
+                    f"Read tool {tool['name']} missing read_only_hint=True"
                 )
 
     def test_auth_required_covers_writes_and_user_reads(

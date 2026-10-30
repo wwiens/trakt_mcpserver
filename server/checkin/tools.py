@@ -124,7 +124,7 @@ def register_checkin_tools(mcp: FastMCP) -> Any:
     @mcp.tool(
         name="checkin_to_show",
         description="Check in to a TV show episode you're currently watching on Trakt",
-        annotations=ToolAnnotations(destructiveHint=False),
+        annotations=ToolAnnotations(destructive_hint=False),
         tags={"write", "auth_required"},
     )
     async def checkin_to_show_tool(

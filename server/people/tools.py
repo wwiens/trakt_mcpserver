@@ -213,7 +213,7 @@ def register_people_tools(
             "birthday, biography, social media. "
             "Basic (extended=false): name and IDs only."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_person_summary_tool(
@@ -232,7 +232,7 @@ def register_people_tools(
             "Returns cast roles and crew positions grouped by "
             "department."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_person_movies_tool(
@@ -250,7 +250,7 @@ def register_people_tools(
             "Returns cast roles with episode counts and crew "
             "positions grouped by department."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_person_shows_tool(
@@ -268,7 +268,7 @@ def register_people_tools(
             "Returns personal or official lists sorted by "
             "popularity, likes, or other criteria."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_person_lists_tool(

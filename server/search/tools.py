@@ -194,7 +194,7 @@ def register_search_tools(
     @mcp.tool(
         name="search_shows",
         description="Search for TV shows on Trakt by title",
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def search_shows_tool(
@@ -212,7 +212,7 @@ def register_search_tools(
     @mcp.tool(
         name="search_movies",
         description="Search for movies on Trakt by title",
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def search_movies_tool(

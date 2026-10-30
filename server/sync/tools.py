@@ -976,7 +976,7 @@ def register_sync_tools(
             "Supports optional pagination with 'page' parameter. "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read", "auth_required"},
     )
     async def fetch_user_ratings_tool(
@@ -1002,7 +1002,7 @@ def register_sync_tools(
         description=(
             "Add new ratings for the authenticated user. Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(destructiveHint=False),
+        annotations=ToolAnnotations(destructive_hint=False),
         tags={"write", "auth_required"},
     )
     async def add_user_ratings_tool(
@@ -1025,7 +1025,7 @@ def register_sync_tools(
         description=(
             "Remove ratings for the authenticated user. Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructive_hint=True),
         tags={"write", "auth_required"},
     )
     async def remove_user_ratings_tool(
@@ -1050,7 +1050,7 @@ def register_sync_tools(
             "Supports optional pagination with 'page' parameter and sorting options. "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read", "auth_required"},
     )
     async def fetch_user_watchlist_tool(
@@ -1086,7 +1086,7 @@ def register_sync_tools(
             "Supports optional notes (VIP only, 500 character limit). "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(destructiveHint=False),
+        annotations=ToolAnnotations(destructive_hint=False),
         tags={"write", "auth_required"},
     )
     async def add_user_watchlist_tool(
@@ -1110,7 +1110,7 @@ def register_sync_tools(
             "Remove items from the authenticated user's watchlist. "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructive_hint=True),
         tags={"write", "auth_required"},
     )
     async def remove_user_watchlist_tool(
@@ -1137,7 +1137,7 @@ def register_sync_tools(
             "Supports optional pagination with 'page' parameter. "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read", "auth_required"},
     )
     async def fetch_history_tool(
@@ -1172,7 +1172,7 @@ def register_sync_tools(
             "'watched_at', which also accepts 'released' or 'unknown'. "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(destructiveHint=False),
+        annotations=ToolAnnotations(destructive_hint=False),
         tags={"write", "auth_required"},
     )
     async def add_to_history_tool(
@@ -1194,7 +1194,7 @@ def register_sync_tools(
             "or episodes from your watched history. "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(destructiveHint=True),
+        annotations=ToolAnnotations(destructive_hint=True),
         tags={"write", "auth_required"},
     )
     async def remove_from_history_tool(

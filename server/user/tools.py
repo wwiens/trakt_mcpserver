@@ -169,7 +169,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
             "use fetch_history with history_type='shows' and item_id instead. "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read", "auth_required"},
     )
     @ToolErrors.with_error_handling(
@@ -197,7 +197,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
             "use fetch_history with history_type='movies' and item_id instead. "
             "Requires OAuth authentication."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read", "auth_required"},
     )
     @ToolErrors.with_error_handling(

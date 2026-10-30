@@ -597,7 +597,7 @@ def register_comment_tools(
             "Supports optional pagination with 'page' parameter and "
             "safety cap 'max_pages'."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_movie_comments_tool(
@@ -627,7 +627,7 @@ def register_comment_tools(
             "Supports optional pagination with 'page' parameter and "
             "safety cap 'max_pages'."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_show_comments_tool(
@@ -657,7 +657,7 @@ def register_comment_tools(
             "Supports optional pagination with 'page' parameter and "
             "safety cap 'max_pages'."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_season_comments_tool(
@@ -688,7 +688,7 @@ def register_comment_tools(
             "Supports optional pagination with 'page' parameter and "
             "safety cap 'max_pages'."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_episode_comments_tool(
@@ -716,7 +716,7 @@ def register_comment_tools(
     @mcp.tool(
         name="fetch_comment",
         description="Fetch a specific comment from Trakt",
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_comment_tool(
@@ -736,7 +736,7 @@ def register_comment_tools(
             "Supports optional pagination with 'page' parameter and "
             "safety cap 'max_pages'."
         ),
-        annotations=ToolAnnotations(readOnlyHint=True),
+        annotations=ToolAnnotations(read_only_hint=True),
         tags={"read"},
     )
     async def fetch_comment_replies_tool(
