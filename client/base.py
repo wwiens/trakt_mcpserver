@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import os
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast, overload
 
 import httpx
 
 from config.api import DEFAULT_LIMIT, DEFAULT_MAX_PAGES, effective_limit
 from models.types.pagination import PaginatedResponse, PaginationMetadata
+from utils.api.error_handler import TraktAPIErrorHandler
 from utils.api.errors import handle_api_errors
 from utils.api.hosts import is_auth_host_url
 from utils.api.request_context import (
@@ -263,6 +265,17 @@ class BaseClient:
                     timeout=self.REQUEST_TIMEOUT,
                 )
             response.raise_for_status()
+            if (
+                response.status_code == HTTPStatus.NO_CONTENT
+                and method.upper() == "GET"
+            ):
+                context = get_current_context()
+                raise TraktAPIErrorHandler.handle_no_content(
+                    endpoint=endpoint,
+                    resource_type=context.resource_type if context else None,
+                    resource_id=context.resource_id if context else None,
+                    correlation_id=context.correlation_id if context else None,
+                )
             return response.json()
         finally:
             if should_close:

@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from typing import Final
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from client.pool import shutdown_clients
 from utils.version import package_version
@@ -70,8 +70,9 @@ def create_server() -> FastMCP:
     Returns:
         Configured FastMCP server instance
     """
-    logger.info("Starting trakt-mcp v%s", package_version())
-    mcp = FastMCP(name="trakt-mcp", lifespan=_lifespan)
+    version = package_version()
+    logger.info("Starting trakt-mcp v%s", version)
+    mcp = FastMCP(name="trakt-mcp", version=version, lifespan=_lifespan)
     for register in REGISTRATIONS:
         register(mcp)
     logger.info("All Trakt MCP modules registered successfully")

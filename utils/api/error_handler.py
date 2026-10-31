@@ -175,9 +175,26 @@ class TraktAPIErrorHandler:
         return TraktResourceNotFoundError(
             resource_type=resource_type,
             resource_id=resource_id,
+            message=context.get("message"),
+            http_status=context.get("http_status", 404),
             endpoint=context.get("endpoint"),
             correlation_id=context.get("correlation_id"),
         )
+
+    @classmethod
+    def handle_no_content(cls, **context: Any) -> TraktResourceNotFoundError:
+        """Handle 204 No Content on a GET.
+
+        Trakt answers some single-record endpoints (ratings, stats, season
+        info) with an empty 204 instead of a 404 when the record is missing.
+        The response doesn't say which path segment is missing, so the
+        message names the endpoint rather than guessing the resource.
+        """
+        message = (
+            f"Trakt returned no data for '{context.get('endpoint')}'. "
+            "The requested item may not exist."
+        )
+        return cls.handle_not_found(**context, message=message, http_status=204)
 
     @classmethod
     def handle_conflict(cls, **context: Any) -> InvalidRequestError:

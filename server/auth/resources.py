@@ -2,7 +2,7 @@
 
 from collections.abc import Callable, Coroutine
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from client.auth import AuthClient
 from client.pool import get_client
