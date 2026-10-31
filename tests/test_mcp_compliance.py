@@ -11,6 +11,12 @@ from typing import Any, Final
 
 import pytest
 
+from server.prompts.basic import (
+    BasicPromptHandler,
+    discover_trending,
+    search_entertainment,
+)
+
 REPO_ROOT: Final[Path] = Path(__file__).parent.parent
 SERVER_PATH: Final[str] = str(REPO_ROOT / "server.py")
 
@@ -337,6 +343,39 @@ class TestMCPFunctionalCompliance:
         assert isinstance(mcp_server, FastMCP), (
             "Server must use FastMCP for MCP compliance"
         )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("prompt_name", "handler", "key_phrase"),
+        [
+            ("discover_trending", discover_trending, "trending on Trakt"),
+            ("search_entertainment", search_entertainment, "search for a movie"),
+        ],
+    )
+    async def test_prompt_renders_single_user_message(
+        self,
+        prompt_name: str,
+        handler: BasicPromptHandler,
+        key_phrase: str,
+    ) -> None:
+        """``get_prompt`` serializes each basic prompt as one user text message."""
+        from fastmcp import Client
+        from mcp.types import TextContent
+
+        import server
+
+        async with Client(server.create_server()) as client:
+            result = await client.get_prompt(prompt_name)
+
+        assert len(result.messages) == 1
+        message = result.messages[0]
+        assert message.role == "user"
+        assert isinstance(message.content, TextContent)
+        assert message.content.type == "text"
+        expected = (await handler())[0].content
+        assert isinstance(expected, TextContent)
+        assert message.content.text == expected.text
+        assert key_phrase in message.content.text
 
 
 class TestMCPSpecificationDetails:
