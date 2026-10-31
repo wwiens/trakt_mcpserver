@@ -176,6 +176,7 @@ class TraktAPIErrorHandler:
             resource_type=resource_type,
             resource_id=resource_id,
             message=context.get("message"),
+            http_status=context.get("http_status", 404),
             endpoint=context.get("endpoint"),
             correlation_id=context.get("correlation_id"),
         )
@@ -193,7 +194,7 @@ class TraktAPIErrorHandler:
             f"Trakt returned no data for '{context.get('endpoint')}'. "
             "The requested item may not exist."
         )
-        return cls.handle_not_found(**context, message=message)
+        return cls.handle_not_found(**context, message=message, http_status=204)
 
     @classmethod
     def handle_conflict(cls, **context: Any) -> InvalidRequestError:

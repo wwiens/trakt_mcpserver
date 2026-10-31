@@ -236,6 +236,7 @@ class TraktResourceNotFoundError(TraktAPIError):
         resource_type: str,
         resource_id: str,
         message: str | None = None,
+        http_status: int = 404,
         **context: Any,
     ) -> None:
         """Initialize resource not found error.
@@ -244,6 +245,7 @@ class TraktResourceNotFoundError(TraktAPIError):
             resource_type: Type of resource (show, movie, user, etc.)
             resource_id: ID of the resource that wasn't found
             message: Optional custom message
+            http_status: Upstream status; 204 when Trakt sent an empty body
             **context: Additional context information
         """
         if message is None:
@@ -254,7 +256,7 @@ class TraktResourceNotFoundError(TraktAPIError):
             message=message,
             resource_type=resource_type,
             resource_id=resource_id,
-            http_status=404,
+            http_status=http_status,
             **context,
         )
 

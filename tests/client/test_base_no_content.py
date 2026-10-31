@@ -47,6 +47,7 @@ async def test_get_no_content_raises_not_found() -> None:
     assert exc_info.value.data is not None
     assert exc_info.value.data["resource_type"] == "show"
     assert exc_info.value.data["resource_id"] == "breaking-bad"
+    assert exc_info.value.data["http_status"] == 204
 
 
 @pytest.mark.asyncio

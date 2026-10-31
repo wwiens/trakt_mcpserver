@@ -179,6 +179,7 @@ class TestStatusCodeHandlers:
         assert result.data["resource_id"] == "inception"
         assert result.data["endpoint"] == "/movies/inception"
         assert result.data["correlation_id"] == "test-789"
+        assert result.data["http_status"] == 404
 
     def test_handle_no_content_names_endpoint(self) -> None:
         """204 on a GET is not-found, worded around the endpoint."""
@@ -194,6 +195,7 @@ class TestStatusCodeHandlers:
         assert result.data is not None
         assert result.data["resource_type"] == "show"
         assert result.data["resource_id"] == "breaking-bad"
+        assert result.data["http_status"] == 204
 
     def test_handle_not_found_defaults(self) -> None:
         """Test 404 handling with default values."""
