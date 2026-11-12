@@ -99,4 +99,8 @@ EndpointKey = Literal[
     # User
     "user_watched_shows",
     "user_watched_movies",
+    "user_lists",
+    "user_list",
+    "user_list_items",
+    "user_list_items_remove",
 ]

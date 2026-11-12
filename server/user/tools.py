@@ -13,6 +13,7 @@ from config.auth import AUTH_VERIFICATION_URL
 from config.mcp.descriptions import USER_LIMIT_DESCRIPTION
 from models.formatters.user import UserFormatters
 from server.base import ToolErrors
+from server.user.lists import register_user_list_tools
 from utils.api.error_types import AuthenticationRequiredError
 
 # Type aliases for user tools
@@ -155,6 +156,7 @@ def register_user_tools(mcp: FastMCP) -> tuple[ToolHandler, ToolHandler]:
     Returns:
         Tuple of tool handlers for type checker visibility
     """
+    register_user_list_tools(mcp)
 
     @mcp.tool(
         name="fetch_user_watched_shows",

@@ -523,6 +523,26 @@ add_user_watchlist(watchlist_type="movies", items=[{"trakt_id": "314", "notes": 
 
 # Remove items from watchlist
 remove_user_watchlist(watchlist_type="movies", items=[{"trakt_id": "314"}])
+
+# Fetch your personal custom lists (OAuth required for all list tools)
+fetch_user_lists()
+
+# Create a personal list (only name is required; private by default)
+create_user_list(name="Weekend picks", description="Watch next", privacy="private")
+
+# Update only supplied settings; numeric Trakt IDs or slugs identify your lists
+update_user_list(list_id="weekend-picks", name="Weekend movies", sort_by="title")
+
+# Add list items using the same identifiers and optional VIP notes as watchlist
+add_user_list_items(list_id="weekend-picks", item_type="movies",
+                    items=[{"trakt_id": "314", "notes": "Must watch!"}])
+
+# Remove list items (movies, shows, seasons, or episodes)
+remove_user_list_items(list_id="weekend-picks", item_type="movies",
+                       items=[{"trakt_id": "314"}])
+
+# Permanently delete a list and all its items
+delete_user_list(list_id="weekend-picks")
 ```
 
 </details>

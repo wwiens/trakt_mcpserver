@@ -33,11 +33,12 @@ class TestUserEndpoints:
         assert USER_ENDPOINTS["user_watched_movies"] == "/sync/watched/movies"
 
     def test_sync_endpoints_contain_sync(self) -> None:
-        """Test sync endpoints contain 'sync' in path."""
+        """Keep watched-data sync endpoints separate from personal lists."""
         for endpoint_key, endpoint_url in USER_ENDPOINTS.items():
-            assert "sync" in endpoint_url, (
-                f"User endpoint {endpoint_key} should contain 'sync'"
-            )
+            if endpoint_key.startswith("user_watched_"):
+                assert "sync" in endpoint_url
+            else:
+                assert endpoint_url.startswith("/users/:id/lists")
 
     def test_all_endpoints_start_with_slash(self) -> None:
         """Test all endpoints start with forward slash."""

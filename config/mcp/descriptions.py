@@ -63,6 +63,17 @@ __all__: Final[list[str]] = [
     "SHOW_SPOILERS_DESCRIPTION",
     "SORT_DIRECTION_DESCRIPTION",
     "USER_LIMIT_DESCRIPTION",
+    "USER_LIST_ALLOW_COMMENTS_DESCRIPTION",
+    "USER_LIST_DESCRIPTION_DESCRIPTION",
+    "USER_LIST_DISPLAY_NUMBERS_DESCRIPTION",
+    "USER_LIST_ID_DESCRIPTION",
+    "USER_LIST_ITEMS_DESCRIPTION",
+    "USER_LIST_ITEM_TYPE_DESCRIPTION",
+    "USER_LIST_NAME_DESCRIPTION",
+    "USER_LIST_PRIVACY_DESCRIPTION",
+    "USER_LIST_REMOVE_ITEMS_DESCRIPTION",
+    "USER_LIST_SORT_BY_DESCRIPTION",
+    "USER_LIST_SORT_HOW_DESCRIPTION",
     "WATCHLIST_ITEMS_DESCRIPTION",
     "WATCHLIST_REMOVE_ITEMS_DESCRIPTION",
     "WATCHLIST_SORT_BY_DESCRIPTION",
@@ -267,4 +278,37 @@ LIST_TYPE_DESCRIPTION: Final[str] = (
 )
 LIST_SORT_DESCRIPTION: Final[str] = (
     "List sort: 'popular', 'likes', 'comments', 'items', 'added', 'updated'"
+)
+
+USER_LIST_ID_DESCRIPTION: Final[str] = (
+    "Trakt numeric list ID or list slug owned by the authenticated user."
+)
+USER_LIST_NAME_DESCRIPTION: Final[str] = "Name of the personal list."
+USER_LIST_DESCRIPTION_DESCRIPTION: Final[str] = (
+    "Description of the personal list; an empty string clears it."
+)
+USER_LIST_PRIVACY_DESCRIPTION: Final[str] = (
+    "Visibility: private, link (anyone with share link), friends, or public."
+)
+USER_LIST_DISPLAY_NUMBERS_DESCRIPTION: Final[str] = "Number each item in the list."
+USER_LIST_ALLOW_COMMENTS_DESCRIPTION: Final[str] = "Allow comments on the list."
+USER_LIST_SORT_BY_DESCRIPTION: Final[str] = (
+    "List order: rank, added, title, released, runtime, popularity, random, "
+    "percentage, imdb_rating, tmdb_rating, rt_tomatometer, rt_audience, metascore, "
+    "votes, imdb_votes, tmdb_votes, my_rating, watched, or collected."
+)
+USER_LIST_SORT_HOW_DESCRIPTION: Final[str] = "List sort direction: asc or desc."
+USER_LIST_ITEMS_DESCRIPTION: Final[str] = (
+    "Items to add, using watchlist input shape. Each item needs trakt_id, slug, "
+    "imdb_id, tmdb_id, tvdb_id, or title and year. "
+    'Example: [{"trakt_id": "314", "notes": "Watch soon"}]. '
+    "Optional notes require VIP (500 characters maximum)."
+)
+USER_LIST_REMOVE_ITEMS_DESCRIPTION: Final[str] = (
+    "Items to remove, using watchlist input shape. Each item needs trakt_id, slug, "
+    "imdb_id, tmdb_id, tvdb_id, or title and year. "
+    'Example: [{"trakt_id": "314"}].'
+)
+USER_LIST_ITEM_TYPE_DESCRIPTION: Final[str] = (
+    "Content type for all supplied items: movies, shows, seasons, or episodes."
 )
