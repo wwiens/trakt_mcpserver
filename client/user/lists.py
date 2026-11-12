@@ -2,8 +2,16 @@
 
 from client.auth import AuthClient
 from client.endpoints import build_endpoint
+from config.api import DEFAULT_LIMIT
 from models.sync.watchlist import SyncWatchlistSummary, TraktSyncWatchlistRequest
-from models.user.lists import CreateUserList, UpdateUserList, UserList
+from models.types.pagination import PaginatedResponse
+from models.user.lists import (
+    CreateUserList,
+    UpdateUserList,
+    UserList,
+    UserListItem,
+    UserListItemType,
+)
 from utils.api.error_types import AuthenticationRequiredError
 from utils.api.errors import handle_api_errors
 
@@ -21,6 +29,27 @@ class UserListsClient(AuthClient):
         await self._require_list_auth()
         return await self.auto_paginate(
             build_endpoint("user_lists", id="me"), response_type=UserList
+        )
+
+    @handle_api_errors
+    async def get_user_list_items(
+        self,
+        list_id: str,
+        item_type: UserListItemType | None = None,
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+    ) -> list[UserListItem] | PaginatedResponse[UserListItem]:
+        """Read your list, including private items, with standard pagination."""
+        await self._require_list_auth()
+        endpoint = (
+            build_endpoint(
+                "user_list_items_type", id="me", list_id=list_id, type=item_type
+            )
+            if item_type is not None
+            else build_endpoint("user_list_items", id="me", list_id=list_id)
+        )
+        return await self._fetch_paginated(
+            endpoint, response_type=UserListItem, limit=limit, page=page
         )
 
     @handle_api_errors

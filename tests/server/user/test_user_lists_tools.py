@@ -10,7 +10,8 @@ from pydantic import ValidationError
 
 from config.mcp.tools.user import USER_TOOLS
 from models.sync.watchlist import SyncWatchlistSummary
-from models.user.lists import UserList, UserListIds
+from models.types.pagination import PaginatedResponse, PaginationMetadata
+from models.user.lists import UserList, UserListIds, UserListItem
 from server.sync.watchlist_inputs import (
     UserWatchlistIdentifier,
     UserWatchlistRequestItem,
@@ -19,6 +20,7 @@ from server.user.lists import (
     add_user_list_items,
     create_user_list,
     delete_user_list,
+    fetch_user_list_items,
     fetch_user_lists,
     register_user_list_tools,
     remove_user_list_items,
@@ -196,7 +198,7 @@ async def test_title_and_year_identification() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "operation", ["fetch", "create", "update", "delete", "add", "remove"]
+    "operation", ["fetch", "create", "update", "delete", "add", "remove", "read"]
 )
 async def test_api_error_strings_are_not_formatted(operation: str) -> None:
     with (
@@ -211,11 +213,14 @@ async def test_api_error_strings_are_not_formatted(operation: str) -> None:
             "delete_user_list",
             "add_user_list_items",
             "remove_user_list_items",
+            "get_user_list_items",
         ):
             setattr(client, name, AsyncMock(return_value="API error: list not found"))
         match operation:
             case "fetch":
                 result = await fetch_user_lists()
+            case "read":
+                result = await fetch_user_list_items("weekend")
             case "create":
                 result = await create_user_list("Weekend")
             case "update":
@@ -233,6 +238,7 @@ async def test_api_error_strings_are_not_formatted(operation: str) -> None:
         assert result == "# Error\n\nError accessing user_list"
         formatters.format_lists.assert_not_called()
         formatters.format_items.assert_not_called()
+        formatters.format_list_items.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -301,4 +307,77 @@ async def test_mcp_invalid_arguments(tool: str, arguments: dict[str, object]) ->
     with patch("server.user.lists.UserListsClient") as factory:
         with pytest.raises(ToolError):
             await mcp.call_tool(tool, arguments)
+        factory.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("page", [None, 2])
+async def test_fetch_personal_list_items(page: int | None) -> None:
+    """Show private content and preserve pagination metadata from the client."""
+    item = UserListItem.model_validate(
+        {
+            "rank": 3,
+            "id": 9001,
+            "listed_at": "2026-01-01T00:00:00Z",
+            "notes": "Private note",
+            "type": "movie",
+            "movie": {"title": "The Matrix", "year": 1999, "ids": {"trakt": 314}},
+        }
+    )
+    response = (
+        PaginatedResponse(
+            data=[item],
+            pagination=PaginationMetadata(
+                current_page=2, items_per_page=2, total_pages=3, total_items=6
+            ),
+        )
+        if page is not None
+        else [item]
+    )
+    with patch("server.user.lists.UserListsClient") as factory:
+        client = factory.return_value
+        client.get_user_list_items = AsyncMock(return_value=response)
+        result = await fetch_user_list_items(42, item_type="movie", limit=2, page=page)
+        client.get_user_list_items.assert_awaited_once_with(
+            "42", item_type="movie", limit=2, page=page
+        )
+    for text in ("#3", "The Matrix (1999)", "movie", "314", "9001", "Private note"):
+        assert text in result
+    if page is not None:
+        assert "Page 2 of 3" in result
+        assert "Previous: page 1" in result
+        assert "Next: page 3" in result
+
+
+@pytest.mark.asyncio
+async def test_fetch_personal_list_items_empty() -> None:
+    with patch("server.user.lists.UserListsClient") as factory:
+        client = factory.return_value
+        client.get_user_list_items = AsyncMock(return_value=[])
+        assert "No items found" in await fetch_user_list_items("weekend", limit=0)
+        client.get_user_list_items.assert_awaited_once_with(
+            "weekend", item_type=None, limit=0, page=None
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"list_id": ""},
+        {"list_id": "weekend", "item_type": "movies"},
+        {"list_id": "weekend", "limit": -1},
+        {"list_id": "weekend", "limit": 101},
+        {"list_id": "weekend", "page": 0},
+        {"list_id": "weekend", "limit": 0, "page": 1},
+    ],
+)
+async def test_fetch_personal_list_items_invalid_arguments(
+    arguments: dict[str, object],
+) -> None:
+    mcp = FastMCP("test")
+    register_user_list_tools(mcp)
+    with patch("server.user.lists.UserListsClient") as factory:
+        with pytest.raises(ToolError):
+            await mcp.call_tool("fetch_user_list_items", arguments)
         factory.assert_not_called()

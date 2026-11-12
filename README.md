@@ -527,6 +527,12 @@ remove_user_watchlist(watchlist_type="movies", items=[{"trakt_id": "314"}])
 # Fetch your personal custom lists (OAuth required for all list tools)
 fetch_user_lists()
 
+# Read items of your own list, including private lists (0=all, capped at 100)
+fetch_user_list_items(list_id="weekend-picks", limit=0)
+
+# Filter by singular type and request one page with navigation metadata
+fetch_user_list_items(list_id="weekend-picks", item_type="movie", limit=10, page=1)
+
 # Create a personal list (only name is required; private by default)
 create_user_list(name="Weekend picks", description="Watch next", privacy="private")
 

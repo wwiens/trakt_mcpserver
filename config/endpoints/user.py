@@ -13,4 +13,5 @@ USER_ENDPOINTS: Final[Mapping[EndpointKey, str]] = {
     "user_list": "/users/:id/lists/:list_id",
     "user_list_items": "/users/:id/lists/:list_id/items",
     "user_list_items_remove": "/users/:id/lists/:list_id/items/remove",
+    "user_list_items_type": "/users/:id/lists/:list_id/items/:type",
 }

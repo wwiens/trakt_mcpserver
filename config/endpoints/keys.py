@@ -103,4 +103,5 @@ EndpointKey = Literal[
     "user_list",
     "user_list_items",
     "user_list_items_remove",
+    "user_list_items_type",
 ]

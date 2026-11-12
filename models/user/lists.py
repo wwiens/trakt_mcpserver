@@ -1,8 +1,15 @@
 """Request and response models for personal user lists."""
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
+
+from models.movies.movie import TraktMovie
+from models.shows.episode import TraktEpisode
+from models.shows.show import TraktShow
+from models.sync.watchlist import TraktSeason
+from models.types.ids import TraktIds
 
 ListPrivacy = Literal["private", "link", "friends", "public"]
 ListSortBy = Literal[
@@ -27,6 +34,7 @@ ListSortBy = Literal[
     "collected",
 ]
 ListSortHow = Literal["asc", "desc"]
+UserListItemType = Literal["movie", "show", "season", "episode", "person"]
 
 
 class UserListFields(BaseModel):
@@ -74,3 +82,25 @@ class UserList(BaseModel):
     privacy: ListPrivacy
     item_count: int = Field(ge=0)
     ids: UserListIds
+
+
+class UserListPerson(BaseModel):
+    """Person identity within a personal list item."""
+
+    name: str
+    ids: TraktIds
+
+
+class UserListItem(BaseModel):
+    """Personal list entry, distinct from the underlying media's Trakt ID."""
+
+    rank: int = Field(ge=1)
+    id: int = Field(ge=1)
+    listed_at: datetime
+    notes: str | None = None
+    type: UserListItemType
+    movie: TraktMovie | None = None
+    show: TraktShow | None = None
+    season: TraktSeason | None = None
+    episode: TraktEpisode | None = None
+    person: UserListPerson | None = None

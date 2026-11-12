@@ -7,7 +7,10 @@ from pydantic import BaseModel, Field
 
 from client.pool import get_client
 from client.user.lists import UserListsClient
+from config.api import DEFAULT_LIMIT
 from config.mcp.descriptions import (
+    LIMIT_DESCRIPTION,
+    PAGE_DESCRIPTION,
     USER_LIST_ALLOW_COMMENTS_DESCRIPTION,
     USER_LIST_DESCRIPTION_DESCRIPTION,
     USER_LIST_DISPLAY_NUMBERS_DESCRIPTION,
@@ -16,6 +19,7 @@ from config.mcp.descriptions import (
     USER_LIST_ITEMS_DESCRIPTION,
     USER_LIST_NAME_DESCRIPTION,
     USER_LIST_PRIVACY_DESCRIPTION,
+    USER_LIST_READ_ITEM_TYPE_DESCRIPTION,
     USER_LIST_REMOVE_ITEMS_DESCRIPTION,
     USER_LIST_SORT_BY_DESCRIPTION,
     USER_LIST_SORT_HOW_DESCRIPTION,
@@ -29,8 +33,9 @@ from models.user.lists import (
     ListSortBy,
     ListSortHow,
     UpdateUserList,
+    UserListItemType,
 )
-from server.base import ToolErrors
+from server.base import LimitOnly, ToolErrors
 from server.sync.watchlist_inputs import (
     UserWatchlistIdentifier,
     UserWatchlistRequestItem,
@@ -65,6 +70,12 @@ class UserListIdentifier(BaseModel):
     """Validate a list identifier before constructing an endpoint."""
 
     list_id: str = Field(min_length=1)
+
+
+class UserListItemsParams(LimitOnly):
+    """Validate list-content filters and standard limit/page combinations."""
+
+    item_type: UserListItemType | None = None
 
 
 def _list_id(list_id: str | int) -> str:
@@ -106,6 +117,32 @@ async def fetch_user_lists() -> str:
     """
     result = await get_client(UserListsClient).get_user_lists()
     return UserListFormatters.format_lists(_result_or_raise(result, "fetch_user_lists"))
+
+
+@handle_api_errors_func
+async def fetch_user_list_items(
+    list_id: ListId,
+    item_type: Annotated[
+        UserListItemType | None,
+        Field(description=USER_LIST_READ_ITEM_TYPE_DESCRIPTION),
+    ] = None,
+    limit: Annotated[int, Field(description=LIMIT_DESCRIPTION)] = DEFAULT_LIMIT,
+    page: Annotated[int | None, Field(description=PAGE_DESCRIPTION)] = None,
+) -> str:
+    """Read items of your own list, including private lists. Requires OAuth.
+
+    Filter by singular item type, or omit for all types. With page omitted,
+    auto-paginates up to limit total items (0 uses the repository safety cap).
+    With page specified, returns that page and navigation metadata.
+    """
+    identifier = _list_id(list_id)
+    params = UserListItemsParams(item_type=item_type, limit=limit, page=page)
+    result = await get_client(UserListsClient).get_user_list_items(
+        identifier, item_type=params.item_type, limit=params.limit, page=params.page
+    )
+    return UserListFormatters.format_list_items(
+        _result_or_raise(result, "fetch_user_list_items", identifier), identifier
+    )
 
 
 @handle_api_errors_func
@@ -231,6 +268,7 @@ def register_user_list_tools(mcp: FastMCP) -> None:
         delete_user_list,
         add_user_list_items,
         remove_user_list_items,
+        fetch_user_list_items,
     ):
         wrapped = ToolErrors.with_error_handling(
             operation=f"{handler.__name__}_tool", tool=handler.__name__

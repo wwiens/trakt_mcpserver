@@ -9,8 +9,16 @@ import httpx
 import pytest
 
 from client.user.lists import UserListsClient
+from models.auth import TraktAuthToken
 from models.sync.watchlist import SyncWatchlistSummary, TraktSyncWatchlistRequest
-from models.user.lists import CreateUserList, UpdateUserList, UserList
+from models.types.pagination import PaginatedResponse
+from models.user.lists import (
+    CreateUserList,
+    UpdateUserList,
+    UserList,
+    UserListItem,
+    UserListItemType,
+)
 from utils.api.error_types import (
     AuthenticationRequiredError,
     TraktResourceNotFoundError,
@@ -52,6 +60,8 @@ def _operation(client: UserListsClient, operation: str) -> Awaitable[object]:
             return client.add_user_list_items("weekend", request)
         case "remove":
             return client.remove_user_list_items("weekend", request)
+        case "read":
+            return client.get_user_list_items("weekend")
         case _:
             raise AssertionError(operation)
 
@@ -124,7 +134,7 @@ async def test_list_http_contract(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "operation", ["fetch", "create", "update", "delete", "add", "remove"]
+    "operation", ["fetch", "create", "update", "delete", "add", "remove", "read"]
 )
 async def test_lists_require_oauth(operation: str) -> None:
     """Never issue an API request for unauthenticated callers."""
@@ -139,7 +149,7 @@ async def test_lists_require_oauth(operation: str) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("operation", ["update", "delete", "add", "remove"])
+@pytest.mark.parametrize("operation", ["update", "delete", "add", "remove", "read"])
 async def test_missing_list(operation: str) -> None:
     """Preserve the existing structured 404 error mapping."""
     await _assert_http_error(operation, 404, TraktResourceNotFoundError)
@@ -203,3 +213,113 @@ async def test_fetch_lists_includes_all_pages() -> None:
             result = await client.get_user_lists()
     assert len(result) == 2
     assert pages == ["1", "2"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "item_type", [None, "movie", "show", "season", "episode", "person"]
+)
+async def test_read_list_items_authenticated_http(
+    item_type: UserListItemType | None, mock_auth_token: TraktAuthToken
+) -> None:
+    """Use OAuth and singular type paths, safely encoding the private list ID."""
+    requests: list[httpx.Request] = []
+    content_type = item_type or "movie"
+    content: dict[str, object] = {"ids": {"trakt": 314}}
+    match content_type:
+        case "person":
+            content["name"] = "Keanu Reeves"
+        case "season":
+            content["number"] = 1
+        case "episode":
+            content.update({"season": 1, "number": 2, "title": "Pilot"})
+        case _:
+            content.update({"title": "Weekend pick", "year": 1999})
+    payload = {
+        "rank": 1,
+        "id": 9001,
+        "listed_at": "2026-01-01T00:00:00Z",
+        "notes": "Private note",
+        "type": content_type,
+        content_type: content,
+    }
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=[payload])
+
+    client = UserListsClient()
+    client.auth_token = mock_auth_token
+    async with httpx.AsyncClient(
+        base_url=client.BASE_URL, transport=httpx.MockTransport(handle)
+    ) as http:
+        with (
+            patch.object(client, "_client", http),
+            patch.object(client, "ensure_authenticated", AsyncMock(return_value=True)),
+        ):
+            result = await client.get_user_list_items("private /?#", item_type)
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert result[0] == UserListItem.model_validate(payload)
+    assert len(requests) == 1
+    request = requests[0]
+    suffix = f"/{item_type}" if item_type else ""
+    assert request.url.raw_path.split(b"?")[0].decode() == (
+        "/users/me/lists/private%20%2F%3F%23/items" + suffix
+    )
+    assert request.headers["Authorization"] == f"Bearer {mock_auth_token.access_token}"
+    assert request.url.params["limit"] == "10"
+    assert request.url.params["page"] == "1"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("limit", "page", "count", "expected_pages"),
+    [(2, None, 2, ["1", "2"]), (1, 2, 1, ["2"]), (0, None, 100, ["1"])],
+)
+async def test_read_list_items_pagination(
+    limit: int, page: int | None, count: int, expected_pages: list[str]
+) -> None:
+    """Auto-paginate, expose one page, and retain the fetch-all safety cap."""
+    pages: list[str] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        current = request.url.params["page"]
+        pages.append(current)
+        size = 100 if limit == 0 else 1
+        payload = {
+            "rank": 1,
+            "id": 9001,
+            "listed_at": "2026-01-01T00:00:00Z",
+            "type": "movie",
+            "movie": {"title": "Test", "ids": {"trakt": 314}},
+        }
+        return httpx.Response(
+            200,
+            json=[payload] * size,
+            headers={
+                "X-Pagination-Page": current,
+                "X-Pagination-Limit": str(size),
+                "X-Pagination-Page-Count": "2",
+                "X-Pagination-Item-Count": str(size * 2),
+            },
+        )
+
+    client = UserListsClient()
+    async with httpx.AsyncClient(
+        base_url=client.BASE_URL, transport=httpx.MockTransport(handle)
+    ) as http:
+        with (
+            patch.object(client, "_client", http),
+            patch.object(client, "ensure_authenticated", AsyncMock(return_value=True)),
+        ):
+            result = await client.get_user_list_items("weekend", limit=limit, page=page)
+    assert pages == expected_pages
+    if page is not None:
+        assert isinstance(result, PaginatedResponse)
+        assert len(result.data) == count
+        assert result.pagination.current_page == page
+        assert result.pagination.has_previous_page
+    else:
+        assert isinstance(result, list)
+        assert len(result) == count

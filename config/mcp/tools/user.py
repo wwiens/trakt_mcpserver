@@ -12,5 +12,6 @@ USER_TOOLS: Final[frozenset[str]] = frozenset(
         "delete_user_list",
         "add_user_list_items",
         "remove_user_list_items",
+        "fetch_user_list_items",
     }
 )

@@ -71,6 +71,7 @@ __all__: Final[list[str]] = [
     "USER_LIST_ITEM_TYPE_DESCRIPTION",
     "USER_LIST_NAME_DESCRIPTION",
     "USER_LIST_PRIVACY_DESCRIPTION",
+    "USER_LIST_READ_ITEM_TYPE_DESCRIPTION",
     "USER_LIST_REMOVE_ITEMS_DESCRIPTION",
     "USER_LIST_SORT_BY_DESCRIPTION",
     "USER_LIST_SORT_HOW_DESCRIPTION",
@@ -311,4 +312,8 @@ USER_LIST_REMOVE_ITEMS_DESCRIPTION: Final[str] = (
 )
 USER_LIST_ITEM_TYPE_DESCRIPTION: Final[str] = (
     "Content type for all supplied items: movies, shows, seasons, or episodes."
+)
+USER_LIST_READ_ITEM_TYPE_DESCRIPTION: Final[str] = (
+    "Optional singular item type: movie, show, season, episode, or person. "
+    "Omit to read all types, including items of your private lists."
 )
