@@ -53,6 +53,10 @@ from models.types.ids import TraktIds
 from models.types.pagination import PaginationParams
 from models.types.timestamps import WatchedAtValue
 from server.base import IdentifierValidatorMixin, ToolErrors
+from server.sync.watchlist_inputs import (
+    UserWatchlistIdentifier,
+    UserWatchlistRequestItem,
+)
 from utils.api.errors import InvalidParamsError, MCPError, handle_api_errors_func
 
 logger = logging.getLogger("trakt_mcp")
@@ -344,30 +348,6 @@ class UserWatchlistParams(BaseModel):
         if v is None or v == "":
             return None
         return v
-
-
-class UserWatchlistRequestItem(IdentifierValidatorMixin):
-    """Single watchlist item for add operations (with optional notes)."""
-
-    _identifier_error_prefix: ClassVar[str] = "Watchlist item"
-
-    notes: str | None = Field(
-        default=None,
-        max_length=500,
-        description="Optional notes (VIP only, 500 char max)",
-    )
-
-    @field_validator("notes", mode="before")
-    @classmethod
-    def _strip_notes(cls, v: object) -> object:
-        """Strip whitespace from notes field."""
-        return v.strip() if isinstance(v, str) else v
-
-
-class UserWatchlistIdentifier(IdentifierValidatorMixin):
-    """Watchlist item identifier for removal operations (no notes)."""
-
-    _identifier_error_prefix: ClassVar[str] = "Watchlist item"
 
 
 class UserWatchlistRequest(BaseModel):

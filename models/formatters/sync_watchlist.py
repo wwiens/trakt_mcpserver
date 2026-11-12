@@ -155,7 +155,11 @@ class SyncWatchlistFormatters:
 
     @staticmethod
     def format_user_watchlist_summary(
-        summary: SyncWatchlistSummary, operation: str, watchlist_type: str
+        summary: SyncWatchlistSummary,
+        operation: str,
+        watchlist_type: str,
+        *,
+        collection_label: str = "Watchlist",
     ) -> str:
         """Format add/remove operation results with counts.
 
@@ -163,12 +167,13 @@ class SyncWatchlistFormatters:
             summary: Summary of the sync operation
             operation: Type of operation ("added" or "removed")
             watchlist_type: Type of content operated on
+            collection_label: Display name for the personal collection.
 
         Returns:
             Formatted markdown text with operation results and summary
         """
         lines: list[str] = [
-            f"# Watchlist {operation.title()} - {watchlist_type.title()}",
+            f"# {collection_label} {operation.title()} - {watchlist_type.title()}",
             "",
         ]
 
@@ -185,7 +190,7 @@ class SyncWatchlistFormatters:
                 summary_msg = (
                     f"✅ Successfully {operation} **{total}**"
                     f" {watchlist_type} item(s)"
-                    " to/from your watchlist."
+                    f" to/from your {collection_label.lower()}."
                 )
                 lines.append(summary_msg)
                 lines.append("")
@@ -216,12 +221,14 @@ class SyncWatchlistFormatters:
         if operation == "added" and summary.existing:
             existing_count = getattr(summary.existing, watchlist_type, 0)
             if existing_count > 0:
-                lines.append(f"## Items Already in Watchlist ({existing_count})")
+                lines.append(
+                    f"## Items Already in {collection_label} ({existing_count})"
+                )
                 lines.append("")
                 existing_msg = (
                     f"**{existing_count}** {watchlist_type}"
                     " item(s) were already in your"
-                    " watchlist and were not added again."
+                    f" {collection_label.lower()} and were not added again."
                 )
                 lines.append(existing_msg)
                 lines.append("")
